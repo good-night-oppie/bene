@@ -1,10 +1,39 @@
-# Phase 1 — bene API surface extraction (working plan)
+# Phase 1 — bene working plan
 
 **Created:** 2026-05-30
-**Spec:** `.harness/spec.md`
+**Spec:** `.harness/spec.md` (bootstrap version — pending operator review)
 **Reference impl:** https://github.com/good-night-oppie/ionq (`ionq.evolve` + `ionq.runner` + cross-agent stores)
 
-## Goal (from spec.md)
+## ⚠️ Phase 1 framing conflict — operator decision pending
+
+After bootstrap, operator handed over `/tmp/bene-situation-ab-memo.md`
+describing a different Phase 1 candidate. See `.harness/notes.md` for the
+full memo capture.
+
+Two candidate framings:
+
+| Framing | What it is | Cost | Time-to-result |
+|---|---|---|---|
+| **A. Spec extraction** (current spec.md) | Extract API surface from ionq.evolve → `docs/spec/` for future bene clean-room rebuild | ~4-6h docs | Static deliverable |
+| **B. Situation A/B experiment** (memo) | One-line patch + N runs of `scripts/eval_mutate_vs_baseline.py` to measure if `_build_situation_brief()` injection lifts bug_attribution accuracy ≥5% over situation-OFF baseline | ~1h code + 2-4h compute | Concrete experimental finding |
+
+Bootstrap default = **A**. Memo proposes **B**. **B** is more concrete,
+time-bounded, and actionable — produces a measured finding rather than a
+spec doc. **A** is groundwork for a future rebuild that may or may not
+happen.
+
+Operator needs to confirm which is the active Phase 1 before I start
+either. If **B**, operator also needs to rewrite `.harness/spec.md` +
+`.harness/files-allowed` (both are agent-deny-listed per my own bootstrap
+rule).
+
+## Plan A (spec extraction) — original bootstrap below
+
+> Below remains the original Phase 1 plan as initially bootstrapped. If
+> the operator confirms Plan A, proceed as-is. If Plan B wins, this
+> section becomes "Plan A — deferred until after Plan B lands".
+
+## Goal (Plan A)
 
 Extract a complete, implementation-independent API spec for bene into
 `docs/spec/`. No Python code in `src/bene/` this phase.
