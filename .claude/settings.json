@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Edit(.claude/hooks/**)",
+      "Write(.claude/hooks/**)",
+      "Edit(.claude/agents/**)",
+      "Write(.claude/agents/**)",
+      "Edit(.claude/settings.json)",
+      "Write(.claude/settings.json)",
+      "Edit(.cursor/hooks/**)",
+      "Edit(.cursor/hooks.json)",
+      "Edit(.harness/spec.md)",
+      "Edit(.harness/files-allowed)",
+      "Edit(.harness/test-count)",
+      "Edit(.harness/judge.log)",
+      "Write(.harness/judge.log)",
+      "Edit(.harness/hook-events.jsonl)",
+      "Write(.harness/hook-events.jsonl)",
+      "Edit(.harness/shadow-state.json)",
+      "Edit(.harness/heldout-state.json)",
+      "Edit(.harness/holdout-spec.md)",
+      "Read(.harness/holdout-spec.md)",
+      "Edit(.harness/heldout-tests/**)",
+      "Read(.harness/heldout-tests/**)",
+      "Edit(.harness/REWARD_HACK_PROTOCOL.md)",
+      "Edit(hooks/_bene_hooks/**)",
+      "Write(hooks/_bene_hooks/**)",
+      "Edit(tests/conftest.py)",
+      "Edit(pytest.ini)",
+      "Edit(setup.cfg)",
+      "Edit(.github/workflows/**)",
+      "Write(.github/workflows/**)",
+      "Bash(git commit*--no-verify*)",
+      "Bash(git commit*-n *)",
+      "Bash(git push*--force*)",
+      "Bash(git push*-f *)",
+      "Bash(git reset*--hard*)",
+      "Bash(pytest*--ignore*)",
+      "Bash(pytest*-k 'not *')",
+      "Bash(rm tests/*)",
+      "Bash(rm -rf tests*)",
+      "Bash(rm -rf .harness*)"
+    ],
+    "defaultMode": "auto"
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/spec-injector.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/stop-integrity-check.py",
+            "timeout": 240
+          }
+        ]
+      }
+    ]
+  }
+}

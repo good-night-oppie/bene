@@ -54,8 +54,26 @@ Phase 1 task that may be the actual intent:
 
 ### Companion artifacts (not core to A/B but worth carrying)
 
-ARC marquee results that prove ionq vs trex byte-identical given pinned
-RNG and quantify noise floor (cv ≈ 0.5-2.6 unpinned, 0.0 pinned):
+ARC marquee on `ionq` vs `trex` (full search-set: 6 games × 3 seeds —
+random / systematic / productive_first). Three runs progressively
+tightened the comparison:
+
+| Run | Config | Finding |
+|---|---|---|
+| Single trial | N=1 each impl | trex looked 7-19× higher RHAE than ionq — pure noise sample |
+| N=10 noise | unpinned | Welch \|t\| < 0.5 across all 3 seeds; mean diff is RNG noise. cv ≈ 0.5-2.6 |
+| Pinned RNG=42 | deterministic | byte-identical RHAE to 9 decimal places across all 3 seeds × 6 games |
+
+→ ionq vs trex are runtime-equivalent given pinned RNG. The 96.6%
+mechanical-rename derived-work finding from ionq's
+`.harness/plan.md` §1 is now extended to **identical runtime
+behavior**, not just identical source.
+
+→ Implication for any future MUTATE A/B (here or in ionq): must pin
+RNG to extract signal — N=10 unpinned cv ≈ 1-2.5× the mean is too
+noisy to detect <50% lift.
+
+Artifacts (volatile, in /tmp):
 
 - `/tmp/ionq-arc-marquee-results.json`
 - `/tmp/trex-arc-marquee-results.json`
