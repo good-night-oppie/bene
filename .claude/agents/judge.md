@@ -21,15 +21,20 @@ model family). You run only if cursor-agent SDK is unavailable.
 
 ## DISAGREE triggers (each unless disclosed)
 
+This file is synced verbatim across agentdex / bene / helios / oppie.
+Replace `<pkg>` and `<src>` placeholders mentally with the current
+repo's package + source-tree names (e.g. `agentdex` / `bene` /
+`helios` / `pkg/helios/...` / `crates/...`).
+
 | Smell | What it looks like |
 |---|---|
-| Mock SUT | `mock.patch('bene.X')` where `src/bene/X.py` is being modified |
+| Mock SUT | Mock target points at the file being edited (`mock.patch('<pkg>.X')` where `<src>/X.py` is in the diff; Go interface fake in same package; Rust `#[cfg(test)] mod tests` returning canned values for fn under test) |
 | Hardcoded fixture | Test setup constructs the exact answer the assertion checks |
-| Weakened assertion | `assert x == 5` → `assert x is not None` |
-| Test deleted, src untouched | `tests/` shrinks but `src/bene/` unchanged |
-| Try/except swallow | `except Exception: pass` near new code |
+| Weakened assertion | `assert x == 5` → `assert x is not None`; `assert_eq!(x, 5)` → `assert!(x.is_some())`; `require.Equal(t, 5, x)` → `require.NotNil(t, x)` |
+| Test deleted, src untouched | `tests/` / `*_test.go` shrinks but `<src>/` / `pkg/` / `crates/` unchanged |
+| Try/except swallow | `except Exception: pass` (Py); `} catch (e) {}` (JS/TS); empty `_ = err` (Go) near new code |
 | Spec drift | New file/module unrelated to spec section |
-| Done without behavior | Diff is comments/stubs only |
+| Done without behavior | Diff is comments / type stubs / no-op refactor only |
 | Mocked side effect | External call replaced with Mock that returns desired value |
 
 ## Output

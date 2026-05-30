@@ -1,9 +1,13 @@
-"""bene-hooks — synced from agentdex (canonical hook source).
+"""Reward-hack hook chain — synced across good-night-oppie repos.
 
-bene is a substrate serving agentdex (the product). The hook chain
-here is a downstream mirror of agentdex's `_agentdex_hooks/`; do not
-author new detector logic here, PR to agentdex first then re-sync.
-Sync via agentdex/scripts/sync-hooks.sh.
+Canonical source: agentdex/hooks/_bene_hooks/.
+Mirrors: bene/_bene_hooks, helios/_helios_hooks, oppie/_oppie_hooks.
+
+The .claude/hooks/ and .cursor/hooks/ shims in each repo delegate
+here. To author new detector logic: PR to agentdex first, then run
+agentdex/scripts/sync-hooks.sh to propagate downstream. The package
+name (`_<repo>_hooks`) and env var (`<REPO>_HOOKS_BASE_REF`) are
+sed-rewritten per target by the sync script.
 """
 from __future__ import annotations
 
