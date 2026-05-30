@@ -1,7 +1,9 @@
-"""bene-hooks shared library.
+"""bene-hooks — synced from agentdex (canonical hook source).
 
-Single source of truth for hook logic. The .claude/hooks/ and .cursor/hooks/
-directories contain thin executable shims that delegate here.
+bene is a substrate serving agentdex (the product). The hook chain
+here is a downstream mirror of agentdex's `_agentdex_hooks/`; do not
+author new detector logic here, PR to agentdex first then re-sync.
+Sync via agentdex/scripts/sync-hooks.sh.
 """
 from __future__ import annotations
 

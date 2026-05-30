@@ -41,6 +41,8 @@ def run() -> tuple[int, int, str]:
         cmd = ["npx", "vitest", "run"]
     elif RUNNER == "jest":
         cmd = ["npx", "jest", "--ci"]
+    elif RUNNER == "go":
+        cmd = ["go", "test", "-count=1", "-short", "./..."]
     else:
         return -1, 0, f"unknown runner: {RUNNER}"
 
@@ -53,8 +55,12 @@ def run() -> tuple[int, int, str]:
         return int(structured["passed"]), r.returncode, (r.stderr or r.stdout)[-1500:]
 
     # Text fallback
-    m = re.search(r"(\d+)\s+passed", r.stdout)
-    count = int(m.group(1)) if m else 0
+    if RUNNER == "go":
+        # `go test ./...` prints one "--- PASS: TestName" per test plus per-package "ok ..." summary.
+        count = len(re.findall(r"^--- PASS:", r.stdout, re.MULTILINE))
+    else:
+        m = re.search(r"(\d+)\s+passed", r.stdout)
+        count = int(m.group(1)) if m else 0
     return count, r.returncode, (r.stdout or r.stderr or "")[-1500:]
 
 

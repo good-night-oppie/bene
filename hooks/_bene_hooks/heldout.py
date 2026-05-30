@@ -26,7 +26,9 @@ from .git_state import changed_files
 
 
 SAMPLE_RATE = 15 / 100.0
-RISK_PATHS = ("tests/", "src/bene/", "docs/spec/")
+# Default risk paths — common across Python, JS, Go layouts.
+# Override at project install time via .harness/risk-paths (one prefix per line).
+RISK_PATHS = ("tests/", "internal/", "pkg/", "src/", "lib/")
 STATE_FILE = "heldout-state.json"
 
 
@@ -61,25 +63,40 @@ def should_sample() -> bool:
     return rng.random() < SAMPLE_RATE
 
 
+def _heldout_cmd(heldout_dir: Path) -> tuple[list[str] | None, str]:
+    """Return (cmd, language). Detect by file extensions in heldout dir."""
+    has_py = any(heldout_dir.glob("test_*.py")) or any(heldout_dir.glob("*_test.py"))
+    has_go = any(heldout_dir.glob("*_test.go"))
+    if has_go:
+        if not shutil.which("go"):
+            return None, "go"
+        return ["go", "test", "-count=1", "-short", "./..."], "go"
+    if has_py:
+        if shutil.which("uv"):
+            return ["uv", "run", "python", "-m", "pytest", str(heldout_dir), "-x", "-q"], "py"
+        if shutil.which("pytest"):
+            return ["pytest", str(heldout_dir), "-x", "-q"], "py"
+        return None, "py"
+    return None, "unknown"
+
+
 def run_heldout_tests() -> tuple[bool, str]:
     """Returns (failed: bool, message: str)."""
     heldout_dir = harness_dir() / "heldout-tests"
     if not heldout_dir.exists() or not any(heldout_dir.iterdir()):
         return False, ""
 
-    if not shutil.which("uv") and not shutil.which("pytest"):
-        return False, "[heldout] no pytest on PATH; fail-open"
+    cmd, lang = _heldout_cmd(heldout_dir)
+    if cmd is None:
+        return False, f"[heldout] runner for '{lang}' unavailable; fail-open"
 
-    cmd = (
-        ["uv", "run", "python", "-m", "pytest", str(heldout_dir), "-x", "-q"]
-        if shutil.which("uv")
-        else ["pytest", str(heldout_dir), "-x", "-q"]
-    )
-    r = subprocess.run(cmd, cwd=str(project_root()), capture_output=True, text=True, timeout=120)
+    cwd = str(heldout_dir if lang == "go" else project_root())
+    r = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=120)
     state = _read_state()
     state.setdefault("runs", []).append(
         {
             "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "lang": lang,
             "rc": r.returncode,
             "tail": (r.stdout or r.stderr or "")[-500:],
         }
@@ -87,9 +104,10 @@ def run_heldout_tests() -> tuple[bool, str]:
     state["runs"] = state["runs"][-50:]  # cap log
     _write_state(state)
     if r.returncode != 0:
+        glob = "*_test.go" if lang == "go" else "test_*.py"
         return (
             True,
-            f"[heldout-tests] {len(list(heldout_dir.glob('test_*.py')))} held-out test(s) failed.\n"
+            f"[heldout-tests] {len(list(heldout_dir.glob(glob)))} held-out test(s) failed.\n"
             f"This means visible tests pass but held-out behavior is broken — classic spec gaming.\n"
             f"{(r.stdout or r.stderr or '')[-1500:]}",
         )

@@ -20,28 +20,44 @@ from .paths import harness_dir
 
 SUPPRESSION_RE = re.compile(
     r"^\+(?!\+\+).*("
+    # Python / pytest
     r"@pytest\.mark\.skip|"
     r"@pytest\.mark\.xfail|"
     r"#\s*noqa(?:\s|$|:)|"
     r"#\s*type:\s*ignore|"
     r"#\s*pragma:\s*no\s*cover|"
+    # JS / TS
     r"it\.skip\(|"
     r"describe\.skip\(|"
-    r"test\.skip\("
+    r"test\.skip\(|"
+    # Go
+    r"\bt\.Skip(?:Now)?\s*\(|"
+    r"//\s*nolint(?:\s|:|$)|"
+    r"//\s*\+build\s+ignore|"
+    r"//go:build\s+ignore"
     r")",
     re.MULTILINE,
 )
 
 VERIFIER_PATHS = (
+    # Python
     "tests/conftest.py",
     "pyproject.toml",
     "pytest.ini",
     "setup.cfg",
+    # JS / TS
+    "vitest.config",
+    "jest.config",
+    # Go
+    "go.mod",
+    "go.sum",
+    ".golangci.yml",
+    ".golangci.yaml",
+    "Makefile",
+    # CI + harness
     ".github/workflows/",
     ".harness/holdout",
     ".harness/heldout-tests",
-    "vitest.config",
-    "jest.config",
 )
 
 
