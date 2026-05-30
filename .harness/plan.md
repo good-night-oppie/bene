@@ -115,18 +115,18 @@ Order chosen to minimize forward-reference between modules:
 
 ## Task list
 
-- [ ] 1. `docs/spec/core.md`
-- [ ] 2. `docs/spec/skills.md`
-- [ ] 3. `docs/spec/memory.md`
-- [ ] 4. `docs/spec/shared_log.md`
-- [ ] 5. `docs/spec/runner.md`
-- [ ] 6. `docs/spec/candidate.md`
-- [ ] 7. `docs/spec/evaluator.md`
-- [ ] 8. `docs/spec/proposer.md`
-- [ ] 9. `docs/spec/search.md`
-- [ ] 10. `docs/spec/CONTRACT.md`
-- [ ] 11. `docs/spec/SUMMARY.md`
-- [ ] Operator review pass
+- [x] 1. `docs/spec/core.md`        — committed 939b79a
+- [x] 2. `docs/spec/skills.md`      — committed 939b79a
+- [x] 3. `docs/spec/memory.md`      — committed 939b79a
+- [x] 4. `docs/spec/shared_log.md`  — committed 939b79a
+- [x] 5. `docs/spec/runner.md`      — committed 87f617e
+- [x] 6. `docs/spec/candidate.md`   — committed 87f617e
+- [x] 7. `docs/spec/evaluator.md`   — committed 87f617e
+- [x] 8. `docs/spec/proposer.md`    — this batch
+- [x] 9. `docs/spec/search.md`      — this batch
+- [x] 10. `docs/spec/CONTRACT.md`   — this batch
+- [x] 11. `docs/spec/SUMMARY.md`    — this batch
+- [ ] Operator review pass (pending — see SUMMARY.md sign-off block)
 
 ## Spec-page template (use for all 9 module pages)
 
