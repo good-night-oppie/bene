@@ -1,0 +1,25 @@
+# In-scope files for Phase 1: API surface extraction.
+# Stop hook blocks edits to anything not matching a pattern here.
+# Glob patterns: exact, prefix/**, prefix/*, fnmatch.
+
+# --- spec docs (THE deliverable for this phase) ---
+docs/spec/**
+
+# --- harness scratch (agent may write here) ---
+.harness/disclosure.md
+.harness/plan.md
+.harness/notes.md
+
+# --- project metadata (light edits OK if spec extraction reveals issues) ---
+README.md
+
+# --- explicitly OUT OF SCOPE — Phase 2 territory ---
+# src/bene/**             — implementation (Phase 2)
+# tests/**                — behavioral tests (Phase 2, after spec freeze)
+# pyproject.toml          — dep additions require ### scope: disclosure
+# .gitignore              — change requires disclosure
+# .harness/spec.md        — operator-set
+# .harness/files-allowed  — meta-file, operator-only
+# .harness/REWARD_HACK_PROTOCOL.md — upstream protocol
+# LICENSE                 — legal
+# .github/workflows/**    — CI; gate via disclosure if needed
