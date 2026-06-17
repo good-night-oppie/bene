@@ -41,7 +41,6 @@ Run AI coding agents inside one SQLite file each — its files, its tool calls, 
 
 The name nods to Frank Herbert's Bene Gesserit: a Sisterhood whose power is not raw force but patient framework — ancestral memory, knowledge seeded ahead of need, and a multi-generation breeding program. A raw LLM, like a beast, reacts only to what is in front of it and can only destroy; *"兽物的意识无法超越眼前所见……它们，只会毁灭，不会创造……而人，则需框架逻辑，来理解世界。"* A human — and an agent that wants to build rather than merely react — needs a framework. BENE is that framework.
 
-
 ## The Bene Gesserit Framing
 
 BENE's backronym — **B**reeding-program · **E**volutionary · **N**exus · **E**ngrams — maps one-to-one onto its real features. We started with the Dune metaphor because it actually fit. Each motif lines up with a concrete capability; the table below is the receipts. If the metaphor stops carrying weight, we drop it.
@@ -102,11 +101,11 @@ predecessor frameworks (`docs/research/GAP-AUDIT.md`). Architecture:
 Try it (keyless, <60s, fresh directory):
 
 ```bash
-uv run bene demo --no-ui     # the five-capability story
-uv run bene senses --json    # what an incoming agent reads first
-uv run bene trust <agent_id> # computed trust: 4 signals + composite
-uv run bene experiments ls   # the probe/evolution journal
-uv run bene sweep <agent_id> # debt sweep over an agent's VFS
+bene demo --no-ui     # the five-capability story
+bene senses --json    # what an incoming agent reads first
+bene trust <agent_id> # computed trust: 4 signals + composite
+bene experiments ls   # the probe/evolution journal
+bene sweep <agent_id> # debt sweep over an agent's VFS
 ```
 
 Legacy 0.1.0 APIs are untouched: the kernel is additive (v2 tables), and
@@ -115,32 +114,38 @@ legacy stores mirror into engrams only when explicitly attached
 
 ## Quick Start
 
-Install with `uv` from the framework repository root (private preview — the public [bene-site](https://github.com/EdwardTang/bene-site) repo carries the site and receipts docs, not the Python package):
+Install from PyPI:
 
 ```bash
-cd bene   # your framework checkout
-uv sync
-uv run bene setup
+pip install bene        # or: pipx install bene  ·  uv tool install bene
 ```
 
-`bene setup` creates `bene.yaml`, initializes `bene.db` for quick start and deploy bene locally, and can install BENE as an MCP server for Claude Code.
+> **`bene: command not found`?** The install environment's `bin` directory isn't on your `PATH`. Use `pipx install bene` (it puts `bene` on your `PATH` for you), activate the virtualenv you installed into, or add the install bin directory (e.g. `~/.local/bin`) to your `PATH`.
+
+Then initialize a project:
+
+```bash
+bene setup
+```
+
+`bene setup` creates `bene.yaml`, initializes `bene.db`, and can install BENE as an MCP server for Claude Code.
 
 Run the demo without model keys:
 
 ```bash
-uv run bene demo
+bene demo
 ```
 
 Run a single agent:
 
 ```bash
-uv run bene run "Refactor auth.py for testability" --name refactor-auth
+bene run "Refactor auth.py for testability" --name refactor-auth
 ```
 
 Run several agents in parallel:
 
 ```bash
-uv run bene parallel \
+bene parallel \
   --task security "Review auth.py for security risks" \
   --task tests "Write focused unit tests for auth.py" \
   --task docs "Update the auth module documentation"
@@ -149,10 +154,10 @@ uv run bene parallel \
 Inspect the result:
 
 ```bash
-uv run bene ls
-uv run bene status <agent_id>
-uv run bene logs <agent_id>
-uv run bene read <agent_id> /path/in/agent/vfs
+bene ls
+bene status <agent_id>
+bene logs <agent_id>
+bene read <agent_id> /path/in/agent/vfs
 ```
 
 ## Why BENE Exists
@@ -169,7 +174,6 @@ BENE makes agent execution explicit:
 | Reuse what worked | Skills and memories are searchable across agents. |
 | Coordinate multiple agents | Shared logs support intent, vote, decision, commit, result, and abort entries. |
 | Move work between machines | A run is a portable SQLite database. |
-
 
 ## Core Concepts
 
@@ -206,10 +210,10 @@ Per-agent VFS gives logical isolation — reach for an OS sandbox if you don't t
 Checkpoints snapshot an agent's files and key-value state. They are useful before risky edits, during long-running agent loops, and when comparing alternate approaches.
 
 ```bash
-uv run bene checkpoint <agent_id> --label before-refactor
-uv run bene checkpoints <agent_id>
-uv run bene diff <agent_id> --from <checkpoint_a> --to <checkpoint_b>
-uv run bene restore <agent_id> --checkpoint <checkpoint_id>
+bene checkpoint <agent_id> --label before-refactor
+bene checkpoints <agent_id>
+bene diff <agent_id> --from <checkpoint_a> --to <checkpoint_b>
+bene restore <agent_id> --checkpoint <checkpoint_id>
 ```
 
 ### Events And Logs
@@ -217,15 +221,15 @@ uv run bene restore <agent_id> --checkpoint <checkpoint_id>
 BENE records an append-only event history for each agent. The CLI exposes both high-level agent logs and raw SQL for deeper debugging.
 
 ```bash
-uv run bene logs <agent_id> --tail 100
-uv run bene query "SELECT event_type, created_at FROM events ORDER BY event_id DESC LIMIT 20"
+bene logs <agent_id> --tail 100
+bene query "SELECT event_type, created_at FROM events ORDER BY event_id DESC LIMIT 20"
 ```
 
 Use `--json` when scripting:
 
 ```bash
-uv run bene --json ls
-uv run bene --json status <agent_id>
+bene --json ls
+bene --json status <agent_id>
 ```
 
 ## CLI Reference
@@ -233,83 +237,80 @@ uv run bene --json status <agent_id>
 ### Setup And Execution
 
 ```bash
-uv run bene init                         # create a database
-uv run bene setup                        # create bene.yaml and optional MCP config
-uv run bene run "task" --name agent      # run one agent
-uv run bene run "task" -n agent --ask    # ask clarifying questions first
-uv run bene parallel -t a "..." -t b "..."  # run multiple agents
+bene init                         # create a database
+bene setup                        # create bene.yaml and optional MCP config
+bene run "task" --name agent      # run one agent
+bene run "task" -n agent --ask    # ask clarifying questions first
+bene parallel -t a "..." -t b "..."  # run multiple agents
 ```
 
 ### Inspection
 
 ```bash
-uv run bene ls
-uv run bene status <agent_id>
-uv run bene logs <agent_id>
-uv run bene read <agent_id> /file
-uv run bene index <agent_id>
-uv run bene search "TODO"
-uv run bene query "SELECT * FROM agents"
+bene ls
+bene status <agent_id>
+bene logs <agent_id>
+bene read <agent_id> /file
+bene index <agent_id>
+bene search "TODO"
+bene query "SELECT * FROM agents"
 ```
 
 ### Checkpoints And Portability
 
 ```bash
-uv run bene checkpoint <agent_id> --label safe-point
-uv run bene checkpoints <agent_id>
-uv run bene diff <agent_id> --from <a> --to <b>
-uv run bene restore <agent_id> --checkpoint <checkpoint_id>
-uv run bene export <agent_id> --output agent.db
-uv run bene import agent.db --merge
+bene checkpoint <agent_id> --label safe-point
+bene checkpoints <agent_id>
+bene diff <agent_id> --from <a> --to <b>
+bene restore <agent_id> --checkpoint <checkpoint_id>
+bene export <agent_id> --output agent.db
+bene import agent.db --merge
 ```
 
 ### Interfaces
 
 ```bash
-uv run bene dashboard                    # terminal dashboard
-uv run bene ui                           # web UI
-uv run bene demo                         # seeded demo plus UI
-uv run bene serve                        # MCP over stdio
-uv run bene serve --transport sse --port 8788
+bene dashboard                    # terminal dashboard
+bene ui                           # web UI
+bene demo                         # seeded demo plus UI
+bene serve                        # MCP over stdio
+bene serve --transport sse --port 8788
 ```
 
 ### Shared Knowledge
 
 ```bash
-uv run bene memory write <agent_id> "Found retry bug" --type insight --key retry-bug
-uv run bene memory search "retry"
-uv run bene memory ls
+bene memory write <agent_id> "Found retry bug" --type insight --key retry-bug
+bene memory search "retry"
+bene memory ls
 
-uv run bene skills save \
+bene skills save \
   --name fastapi_security_review \
   --description "Review a FastAPI service for common security failures" \
   --template "Review {target} for auth, injection, and unsafe deserialization risks."
-uv run bene skills search "fastapi security"
-uv run bene skills apply 1 --param target=api.py
+bene skills search "fastapi security"
+bene skills apply 1 --param target=api.py
 
-uv run bene log tail --n 20
-uv run bene log ls
+bene log tail --n 20
+bene log ls
 ```
-
 
 ### Meta-Harness
 
 The meta-harness runs an evolutionary search over harness strategies. It evaluates candidate harnesses on a benchmark, stores traces in the harness VFS, and exposes frontier inspection commands.
 
 ```bash
-uv run bene mh search --benchmark text_classify --iterations 20 --candidates 3
-uv run bene mh search --benchmark math_rag --background
-uv run bene mh status <search_agent_id>
-uv run bene mh frontier <search_agent_id>
-uv run bene mh inspect <search_agent_id> <harness_id>
-uv run bene mh resume <search_agent_id> --benchmark text_classify
-uv run bene mh lint <search_agent_id>
-uv run bene mh knowledge
+bene mh search --benchmark text_classify --iterations 20 --candidates 3
+bene mh search --benchmark math_rag --background
+bene mh status <search_agent_id>
+bene mh frontier <search_agent_id>
+bene mh inspect <search_agent_id> <harness_id>
+bene mh resume <search_agent_id> --benchmark text_classify
+bene mh lint <search_agent_id>
+bene mh knowledge
 ```
 
 Current CLI benchmark choices are `text_classify`, `math_rag`, and `agentic_coding`.
-
-
 
 ## MCP Server
 
@@ -318,13 +319,13 @@ BENE exposes its agent lifecycle, VFS, checkpoint, query, memory, skill, shared-
 Start the server over stdio:
 
 ```bash
-uv run bene serve --transport stdio
+bene serve --transport stdio
 ```
 
 Start the server over SSE:
 
 ```bash
-uv run bene serve --transport sse --host 127.0.0.1 --port 8788
+bene serve --transport sse --host 127.0.0.1 --port 8788
 ```
 
 `bene setup` can install a Claude Code MCP entry that runs:
@@ -457,13 +458,20 @@ The `examples/` directory contains runnable examples for common workflows:
 - `safety_voting.py`: model a human-in-the-loop safety gate.
 - `meta_harness_*.py`: evaluate and improve harness strategies.
 
-Run an example with:
+Run an example from a checkout of the source repo (the `examples/` directory ships with the repo, not the PyPI package):
 
 ```bash
 uv run python examples/library_basics.py
 ```
 
 ## Development
+
+Working from a checkout of the framework repo (instead of the PyPI package), use `uv` and prefix CLI commands with `uv run` — e.g. `uv run bene ls` — so they run against the local source without installing:
+
+```bash
+uv sync          # set up the environment from the checkout
+uv run bene ls   # run the CLI from source
+```
 
 Install development dependencies:
 
