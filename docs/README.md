@@ -101,7 +101,7 @@ Client setup and the full 37 MCP tools: [MCP Integration](mcp-integration.md).
 
 ## Example scripts
 
-In [`examples/`](../examples/) at the repo root:
+In `examples/` at the repo root:
 
 - `library_basics.py` — VFS operations, no LLMs involved
 - `code_review_swarm.py` — 4 review agents in parallel

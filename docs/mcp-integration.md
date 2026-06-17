@@ -12,7 +12,7 @@ On this page:
 
 - [Connect Claude Code](#connect-claude-code)
 - [Run the server directly](#run-the-server-directly)
-- [The cheaper path: the `--json` CLI](#the-cheaper-path-the---json-cli)
+- [The cheaper path: the JSON CLI](#the-cheaper-path-the-json-cli)
 - [Tool reference](#tool-reference)
 - [Conversations that work today](#conversations-that-work-today)
 - [What the CLI-first path adds](#what-the-cli-first-path-adds)
@@ -149,7 +149,7 @@ When no `bene.yaml` is present, the server falls back to the `claude_code` provi
 
 <a id="cli-alternative"></a>
 
-## The cheaper path: the `--json` CLI
+## The cheaper path: the JSON CLI
 
 Every BENE command accepts `--json`. That means any agent that can run a shell command can drive BENE with structured output — no MCP client, no schema injection:
 

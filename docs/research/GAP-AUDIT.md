@@ -1,6 +1,6 @@
 # KAOS & the 0.1.0 predecessor/BENE-0.1.0 Gap Audit
 
-> **Historical snapshot** — audited at commit `6c55fa3` (v0.1.0 baseline, 2026-06). BENE 0.2.0 (shipped 2026-06-11) closes most BENE-side gaps below; for current state see `docs/design/BENE2-DESIGN.md` §4 and `docs/design/CLAIMS-AUDIT.md`.
+> **Historical snapshot** — audited at commit `6c55fa3` (v0.1.0 baseline, 2026-06). BENE 0.2.0 (shipped 2026-06-11) closes most BENE-side gaps below; for current state see `docs/design/BENE2-DESIGN.md` §4.
 
 Purpose: evidence base for the "subsume and surpass" claims of BENE 2.0. This audit inventories two community-peer lineages — KAOS v0.9.1 (the sibling orchestration framework at `/home/admin/gh/kaos`) and BENE 0.1.0 itself (the rebranded the 0.1.0 predecessor, this repo) — enumerates each peer's verified capability surface, and documents each peer's shortcomings with verbatim, command-level evidence. The subsumption table at the end lists every capability from both peers as a row; the "BENE 2.0 mechanism" column was a skeleton; phase 2 filled all 55 rows in `docs/design/BENE2-DESIGN.md` §4. Every claim below was verified against source (grep/find/read), not docs alone — both peers' CLAUDE.md files are stale on their own MCP tool counts.
 
