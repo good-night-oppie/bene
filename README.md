@@ -130,6 +130,8 @@ bene setup
 
 `bene setup` creates `bene.yaml`, initializes `bene.db`, and can install BENE as an MCP server for Claude Code.
 
+> **The MCP install needs `uv`.** If you accept the Claude Code MCP step, `bene setup` writes an entry that launches the server via `uv run --project … bene serve` — so `uv` must be on your `PATH` for the MCP server to start, even when you installed BENE with `pip`/`pipx`. Install [uv](https://docs.astral.sh/uv/) first, or skip the MCP step and run `bene serve --transport stdio` yourself.
+
 Run the demo without model keys:
 
 ```bash
