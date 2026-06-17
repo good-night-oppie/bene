@@ -292,7 +292,7 @@ const Hero = () => (
           </p>
         </div>
         <div className="flex flex-col gap-3">
-          <Pill>30 seconds with the repo: init, smoke, grep your agent's memory</Pill>
+          <Pill>30 seconds to first run: init, smoke, grep your agent's memory</Pill>
           <Pill>one bene.db, no cloud, no keys</Pill>
           <Pill>works inside Claude Code, Cursor, Aider</Pill>
         </div>
@@ -303,9 +303,9 @@ const Hero = () => (
         <span className="text-bene-accent">pip</span> install bene
         <br />
         <br />
-        <span className="text-bene-muted"># have the repo? smoke it (≈1s — 12 engrams, 4 experiment runs):</span>
+        <span className="text-bene-muted"># smoke it (≈1s — 12 engrams, 4 experiment runs):</span>
         <br />
-        <span className="text-bene-accent">uv</span> run bene init && <span className="text-bene-accent">uv</span> run bene demo --no-ui
+        <span className="text-bene-accent">bene</span> init && <span className="text-bene-accent">bene</span> demo --no-ui
         <br />
         <br />
         sqlite3 /tmp/bene-demo-*/story.db <span className="text-[#A3E635]">"SELECT tier, kind, substr(title,1,60) FROM engrams ORDER BY created_at DESC LIMIT 5;"</span>
@@ -472,7 +472,7 @@ const Proof = () => {
   const [a, setA] = useState(0);
   const tabs = [
     { l: 'Tab 1: Install + smoke', c: 'Runs with zero keys, zero cloud.',
-      r: (<><span className="text-bene-muted"># install from PyPI</span><br/>$ pip install bene<br/><br/><span className="text-bene-muted"># have the repo? smoke it:</span><br/>$ uv run bene init && uv run bene demo --no-ui<br/><span className="text-bene-muted">[trace]</span> initializing harness...<br/><span className="text-bene-accent">[probe]</span> running baseline evaluation...<br/><span className="text-bene-muted">[evolve]</span> generating candidate strategies...<br/><span className="text-bene-muted">[trace]</span> story complete in 0.3s — 12 engrams, 4 experiment runs.</>) },
+      r: (<><span className="text-bene-muted"># install from PyPI</span><br/>$ pip install bene<br/><br/><span className="text-bene-muted"># smoke it:</span><br/>$ bene init && bene demo --no-ui<br/><span className="text-bene-muted">[trace]</span> initializing harness...<br/><span className="text-bene-accent">[probe]</span> running baseline evaluation...<br/><span className="text-bene-muted">[evolve]</span> generating candidate strategies...<br/><span className="text-bene-muted">[trace]</span> story complete in 0.3s — 12 engrams, 4 experiment runs.</>) },
     { l: 'Tab 2: Planner + Executor', c: 'Two agents, one bene.db. Intent → vote → decide is the only path between shared decisions.',
       r: (<><span className="text-bene-accent">from</span> bene <span className="text-bene-accent">import</span> Bene<br/><span className="text-bene-accent">from</span> bene.shared_log <span className="text-bene-accent">import</span> SharedLog<br/><br/>harness = Bene(<span className="text-[#A3E635]">'bene.db'</span>)<br/>log = SharedLog(harness.conn)<br/>planner = harness.spawn(<span className="text-[#A3E635]">'planner'</span>)<br/>executor = harness.spawn(<span className="text-[#A3E635]">'executor'</span>)<br/><br/><span className="text-bene-muted"># Intent → Vote → Decide — the only path between shared decisions</span><br/>i = log.intent(agent_id=planner, action=<span className="text-[#A3E635]">'execute_plan'</span>)<br/>log.vote(agent_id=executor, intent_id=i, approve=<span className="text-bene-accent">True</span>, reason=<span className="text-[#A3E635]">'plan looks safe'</span>)<br/>log.decide(intent_id=i, agent_id=planner)<br/><br/><span className="text-bene-muted"># decision passed: True — 1 approve</span></>) },
     { l: 'Tab 3: Grep the engrams', c: "Open the demo's story.db with sqlite3, SELECT FROM engrams — no vendor API between you and what shipped.",
@@ -498,7 +498,7 @@ const Proof = () => {
         </div>
       </div>
       <p className="font-mono text-sm text-bene-text border-l-2 border-bene-accent pl-4">
-        Run <code className="text-bene-accent">uv run bene dashboard</code>. The same .db drives a live TUI with no extra instrumentation.
+        Run <code className="text-bene-accent">bene dashboard</code>. The same .db drives a live TUI with no extra instrumentation.
       </p>
     </Section>
   );
@@ -944,14 +944,14 @@ const Lore = () => {
           <br />
           pip install bene
           <br />
-          <span className="text-bene-muted"># have the repo? init, smoke, watch it live:</span>
+          <span className="text-bene-muted"># init, smoke, watch it live:</span>
           <br />
-          uv run bene init && uv run bene demo --no-ui && uv run bene dashboard
+          bene init && bene demo --no-ui && bene dashboard
           <br />
           <br />
           <span className="text-bene-muted"># MCP-capable agents:</span>
           <br />
-          uv run bene serve --transport stdio
+          bene serve --transport stdio
         </Terminal>
       </div>
       <div className="border-t border-bene-dim pt-16 grid md:grid-cols-2 gap-12">
