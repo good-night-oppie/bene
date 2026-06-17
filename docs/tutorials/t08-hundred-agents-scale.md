@@ -351,7 +351,7 @@ Worth restating plainly: 847 agents, 8 minutes 47 seconds, 809 files migrated, 3
 
 - [README](../README.md) — BENE overview and full doc index
 - [Use Cases](../use-cases.md) — more real-world patterns
-- [Component guide: Meta-Harness CORAL](../meta-harness.md#coral-getting-unstuck-v060)
+- [Component guide: Meta-Harness CORAL](../meta-harness.md#coral-getting-unstuck-v020)
 - [Use case: Multi-Agent Co-Evolution](../use-cases.md#multi-agent-co-evolution-coral)
 - [Architecture: scaling and isolation](../architecture.md)
 

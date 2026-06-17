@@ -145,7 +145,7 @@ Brief catalogue of patterns. Each entry is a one-glance preview — what the pro
 **BENE.** N agents share a Pareto frontier; stagnation triggers cross-pollination.
 
 
-→ Component: [Meta-Harness — CORAL](meta-harness.md#coral-getting-unstuck-v060)
+→ Component: [Meta-Harness — CORAL](meta-harness.md#coral-getting-unstuck-v020)
 
 ---
 

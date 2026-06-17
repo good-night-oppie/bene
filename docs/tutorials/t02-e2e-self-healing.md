@@ -192,7 +192,7 @@ From the spawn at 02:14:29 to the green run at 02:14:54, every write, rewind, an
 
 - [Component guide: Checkpoints](../checkpoints.md) — snapshot and restore mechanics in depth
 - [Audit trail SQL: events table](../schema.md#events) — query the journal yourself
-- [Use case: End-to-end Self-Healing CI](../use-cases.md#end-to-end-self-healing-ci) — this pattern in the catalog
+- [Use case: End-to-end Self-Healing CI](../use-cases.md#end-to-end-self-healing-ci-worked-example) — this pattern in the catalog
 - [Use Cases](../use-cases.md) — more recovery and orchestration patterns
 - [README](../README.md) — the full doc map
 

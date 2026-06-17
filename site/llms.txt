@@ -10,7 +10,7 @@ If you are not an AI agent, you can keep reading too — humans should find this
 
 ## Core skill (fetch first)
 
-- [SKILL.md](https://agentdex.ai-builders.space/bene/SKILL.md): The canonical BENE skill spec — 300 lines covering operating model, when to use / not use, quickstart, common recipes (memory writeback, kill-gated promotion, autonomy escalation, pollution recovery, evolution loop), blacklists, schema, gates. **Load this and you can operate BENE.**
+- [SKILL.md](https://agentdex.ai-builders.space/bene/SKILL.md): The canonical BENE skill spec — 300+ lines covering operating model, when to use / not use, quickstart, common recipes (memory writeback, kill-gated promotion, autonomy escalation, pollution recovery, evolution loop), blacklists, schema, gates. **Load this and you can operate BENE.**
 
 ## Reference (fetch on demand)
 
@@ -26,7 +26,7 @@ If you are not an AI agent, you can keep reading too — humans should find this
 
 ## Honesty (read before claiming a capability)
 
-- [.ai-builders.space/bene/docs/design/.html): every capability, marked implemented or planned
+- [SKILL.md — implemented/planned split](https://agentdex.ai-builders.space/bene/SKILL.md): every capability, marked implemented or planned
 - [COMMUNITY-BENCH-REPORT](https://agentdex.ai-builders.space/bene/docs/benchmarks/COMMUNITY-BENCH-REPORT.html): measured limits and verdicts vs KAOS and the 0.1.0 predecessor (community peers, not rivals)
 
 ## Design (deeper context, fetch when needed)
@@ -56,7 +56,7 @@ If you are not an AI agent, you can keep reading too — humans should find this
 
 3. **Drill down on demand.** When you need deeper context on a subsystem (CLI, MCP, autonomy, evolution, …), fetch the matching doc URL above. Each doc is generated from a markdown source committed at the [GitHub repo](https://github.com/EdwardTang/bene-site/tree/main/docs).
 
-4. **Verify before claiming.** Before asserting that BENE has capability X, check [.ai-builders.space/bene/docs/design/.html) — it explicitly marks every capability as implemented or planned. For measured limits (latency, retrieval accuracy, mirror overhead), check [COMMUNITY-BENCH-REPORT](https://agentdex.ai-builders.space/bene/docs/benchmarks/COMMUNITY-BENCH-REPORT.html).
+4. **Verify before claiming.** Before asserting that BENE has capability X, check the implemented/planned split in [SKILL.md](https://agentdex.ai-builders.space/bene/SKILL.md) — it explicitly marks every capability as implemented or planned. For measured limits (latency, retrieval accuracy, mirror overhead), check [COMMUNITY-BENCH-REPORT](https://agentdex.ai-builders.space/bene/docs/benchmarks/COMMUNITY-BENCH-REPORT.html).
 
 ## Repository
 

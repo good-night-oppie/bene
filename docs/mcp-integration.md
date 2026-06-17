@@ -13,7 +13,7 @@ On this page:
 
 - [Connect Claude Code](#connect-claude-code)
 - [Run the server directly](#run-the-server-directly)
-- [The cheaper path: the `--json` CLI](#the-cheaper-path-the---json-cli)
+- [The cheaper path: the `--json` CLI](#the-cheaper-path-the-json-cli)
 - [Tool reference](#tool-reference)
 - [Conversations that work today](#conversations-that-work-today)
 - [What the CLI-first path adds](#what-the-cli-first-path-adds)

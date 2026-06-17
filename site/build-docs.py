@@ -169,6 +169,19 @@ def rewrite_links(body: str) -> str:
     return body
 
 
+def zh_reroot(body: str) -> str:
+    # The zh tree renders one level deeper (site/zh/docs/... vs site/docs/...) but
+    # reuses the EN body, whose ../examples and ../assets links assume the shallower
+    # EN depth. Without this, those links resolve to the non-existent
+    # site/zh/examples and site/zh/assets (404 across the whole zh surface). Add one
+    # leading ../ so they climb to the shared site/ root instead.
+    return re.sub(
+        r'((?:href|src)=")((?:\.\./)+)(examples/|assets/)',
+        lambda m: m.group(1) + "../" + m.group(2) + m.group(3),
+        body,
+    )
+
+
 def sidebar(cur_rel: Path, depth: int) -> str:
     pre = "../" * depth
     out = []
@@ -401,7 +414,9 @@ def build() -> None:
         zh_out = OUT.parent / "zh" / "docs"
         zh_dst = zh_out / rel.with_suffix(".html")
         zh_dst.parent.mkdir(parents=True, exist_ok=True)
-        zh_dst.write_text(page(rel, body, title, needs_mermaid, lang="zh"), encoding="utf-8")
+        zh_dst.write_text(
+            page(rel, zh_reroot(body), title, needs_mermaid, lang="zh"), encoding="utf-8"
+        )
 
     # index page
     groups_html = []

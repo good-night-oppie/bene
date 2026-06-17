@@ -8,7 +8,7 @@ counter that evaporates on restart.
 
 This is fixed with three substrate-agnostic moves on an ordinary SQLite/JSONL
 log — **no Temporal, no durable-runtime dependency**. The reference helpers live
-in [`bene/recipes/idempotent_append.py`](../../bene/recipes/idempotent_append.py);
+in `bene/recipes/idempotent_append.py`;
 they take a `sqlite3.Connection`, not a `Bene`, so you copy them into your own
 events layer.
 
@@ -110,6 +110,6 @@ without taking on Temporal.
 
 ## See also
 
-- [`bene/recipes/idempotent_append.py`](../../bene/recipes/idempotent_append.py) — the reference helpers.
-- [`tests/test_atomic_completion_recipe.py`](../../tests/test_atomic_completion_recipe.py) — proves exactly-once + ghost-free under a simulated crash.
+- `bene/recipes/idempotent_append.py` — the reference helpers.
+- `tests/test_atomic_completion_recipe.py` — proves exactly-once + ghost-free under a simulated crash.
 - [Integrating BENE](../integrating-bene.md) — where this sits among the five stages.
