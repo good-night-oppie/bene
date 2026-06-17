@@ -17,6 +17,7 @@
 [![MCP](https://img.shields.io/badge/MCP-server%20ready-C2541B?style=flat-square&labelColor=1A1530)](#mcp-server)
 [![Papers](https://img.shields.io/badge/grounded%20in-16%20AAOP%20papers-E8C49A?style=flat-square&labelColor=1A1530)](#grounded-in-research-the-16-aaop-papers)
 
+[**🌐 Live site &amp; docs**](https://agentdex.ai-builders.space/bene/) ·
 [Quick Start](#quick-start) ·
 [Core Concepts](#core-concepts) ·
 [CLI](#cli-reference) ·
