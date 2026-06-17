@@ -278,7 +278,7 @@ const Hero = () => (
         </div>
       </div>
       <Terminal>
-        <span className="text-bene-muted"># 即将上 PyPI — early access</span>
+        <span className="text-bene-muted"># 从 PyPI 安装</span>
         <br />
         <span className="text-bene-accent">pip</span> install bene
         <br />
@@ -452,7 +452,7 @@ const Proof = () => {
   const [a, setA] = useState(0);
   const tabs = [
     { l: 'Tab 1：装好 + 跑通', c: '第一口 value：不要 API key，也不上云。',
-      r: (<><span className="text-bene-muted"># 即将上 PyPI — early access</span><br/>$ pip install bene<br/><br/><span className="text-bene-muted"># 已经 clone 了仓库？直接 smoke：</span><br/>$ uv run bene init && uv run bene demo --no-ui<br/><span className="text-bene-muted">[trace]</span> initializing harness...<br/><span className="text-bene-accent">[probe]</span> running baseline evaluation...<br/><span className="text-bene-muted">[evolve]</span> generating candidate strategies...<br/><span className="text-bene-muted">[trace]</span> story complete in 0.3s — 12 engrams, 4 experiment runs.</>) },
+      r: (<><span className="text-bene-muted"># 从 PyPI 安装</span><br/>$ pip install bene<br/><br/><span className="text-bene-muted"># 已经 clone 了仓库？直接 smoke：</span><br/>$ uv run bene init && uv run bene demo --no-ui<br/><span className="text-bene-muted">[trace]</span> initializing harness...<br/><span className="text-bene-accent">[probe]</span> running baseline evaluation...<br/><span className="text-bene-muted">[evolve]</span> generating candidate strategies...<br/><span className="text-bene-muted">[trace]</span> story complete in 0.3s — 12 engrams, 4 experiment runs.</>) },
     { l: 'Tab 2：Planner + Executor', c: '两个 agent，共吃一份 bene.db。协同决策只认 intent → vote → decide 这条链路。',
       r: (<><span className="text-bene-accent">from</span> bene <span className="text-bene-accent">import</span> Bene<br/><span className="text-bene-accent">from</span> bene.shared_log <span className="text-bene-accent">import</span> SharedLog<br/><br/>harness = Bene(<span className="text-[#A3E635]">'bene.db'</span>)<br/>log = SharedLog(harness.conn)<br/>planner = harness.spawn(<span className="text-[#A3E635]">'planner'</span>)<br/>executor = harness.spawn(<span className="text-[#A3E635]">'executor'</span>)<br/><br/><span className="text-bene-muted"># intent → vote → decide —— 共享决策只走这一条路</span><br/>i = log.intent(agent_id=planner, action=<span className="text-[#A3E635]">'execute_plan'</span>)<br/>log.vote(agent_id=executor, intent_id=i, approve=<span className="text-bene-accent">True</span>, reason=<span className="text-[#A3E635]">'plan looks safe'</span>)<br/>log.decide(intent_id=i, agent_id=planner)<br/><br/><span className="text-bene-muted"># decision passed: True —— 1 票 approve</span></>) },
     { l: 'Tab 3：grep engram', c: "你 agent 的 memory 就是一张 table。从写入到上线，中间没有厂商 API 插队。",
@@ -920,7 +920,7 @@ const Lore = () => {
       </div>
       <div className="max-w-3xl mx-auto mb-24">
         <Terminal>
-          <span className="text-bene-muted"># 即将上 PyPI — early access</span>
+          <span className="text-bene-muted"># 从 PyPI 安装</span>
           <br />
           pip install bene
           <br />

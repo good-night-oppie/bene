@@ -1,12 +1,15 @@
-"""Fixture tests for PROBE-EXEC-01 install-resolves proximity (exec_probes.py).
+"""Fixture tests for PROBE-EXEC-01 install-resolves (exec_probes.py).
 
-Locks the site/index.html:938 + site/zh/index.html:927 false positive: an
-honest not-yet-published disclosure (`# coming to PyPI — early access`) in the
-SAME <Terminal> block, two source lines above `pip install bene` and split by
-`<br/>`, must EXEMPT the install — while a bare `pip install bene` with no
-disclosure anywhere near it must still BLOCK. Without the de-tagged ±N-line
-window the disclosure was invisible (the guard only saw the single raw line)
-and the hero/footer install was wrongly flagged.
+Covers the exemption matrix for a first-party install command:
+  - PUBLISHED first-party (bene, on PyPI since 2026-06-16) → resolves outright,
+    no disclosure or source spec needed.
+  - unpublished first-party → needs a resolvable source spec OR an honest
+    not-yet-published disclosure within the ±_PROXIMITY de-tagged window (the
+    <br/>/<span> line-split that HTML imposes on a <Terminal> block), else BLOCK.
+
+The disclosure / source-spec / window tests force the unpublished path (PUBLISHED
+emptied via the `unpublished` fixture) so they exercise that logic rather than
+short-circuiting on the published exemption.
 """
 
 from __future__ import annotations
@@ -31,8 +34,17 @@ def probes():
     return mod
 
 
-# The real hero/footer <Terminal> block from site/index.html: disclosure two
-# source lines above the install, split by <br/> (the FP that motivated the fix).
+@pytest.fixture
+def unpublished(probes, monkeypatch):
+    """Force the unpublished-first-party path so the disclosure / source-spec /
+    window logic is exercised — bene is in PUBLISHED by default, which would
+    short-circuit before any of that."""
+    monkeypatch.setattr(probes, "PUBLISHED", frozenset())
+    return probes
+
+
+# The real hero/footer <Terminal> block: disclosure two source lines above the
+# install, split by <br/>.
 DISCLOSED_TERMINAL_EN = """\
         <Terminal>
           <span className="text-bene-muted"># coming to PyPI — early access</span>
@@ -51,7 +63,7 @@ DISCLOSED_TERMINAL_ZH = """\
           uv run bene init
         </Terminal>"""
 
-# Bare install, no disclosure and no source spec anywhere near it → must BLOCK.
+# Bare install, no disclosure / source spec → must BLOCK for an unpublished pkg.
 BARE_INSTALL = """\
         <Terminal>
           pip install bene
@@ -72,29 +84,35 @@ DISCLOSURE_TOO_FAR = "\n".join(
 )
 
 
-def test_disclosed_terminal_block_en_passes(probes):
-    assert probes.scan_install_text("site/index.html", DISCLOSED_TERMINAL_EN) == []
+def test_published_first_party_exempt(probes):
+    # bene is in PUBLISHED (on PyPI since 2026-06-16) → a bare `pip install bene`
+    # resolves outright; no disclosure or source spec required.
+    assert probes.scan_install_text("site/index.html", BARE_INSTALL) == []
 
 
-def test_disclosed_terminal_block_zh_passes(probes):
-    assert probes.scan_install_text("site/zh/index.html", DISCLOSED_TERMINAL_ZH) == []
+def test_disclosed_terminal_block_en_passes(unpublished):
+    assert unpublished.scan_install_text("site/index.html", DISCLOSED_TERMINAL_EN) == []
 
 
-def test_bare_install_blocks(probes):
-    findings = probes.scan_install_text("site/index.html", BARE_INSTALL)
+def test_disclosed_terminal_block_zh_passes(unpublished):
+    assert unpublished.scan_install_text("site/zh/index.html", DISCLOSED_TERMINAL_ZH) == []
+
+
+def test_bare_unpublished_install_blocks(unpublished):
+    findings = unpublished.scan_install_text("site/index.html", BARE_INSTALL)
     assert len(findings) == 1
     assert findings[0].probe == "PROBE-EXEC-01"
     assert findings[0].severity == "BLOCK"
 
 
-def test_source_spec_passes(probes):
-    assert probes.scan_install_text("docs/install.md", SOURCE_SPEC) == []
+def test_source_spec_passes(unpublished):
+    assert unpublished.scan_install_text("docs/install.md", SOURCE_SPEC) == []
 
 
 def test_third_party_ignored(probes):
     assert probes.scan_install_text("docs/install.md", THIRD_PARTY) == []
 
 
-def test_disclosure_beyond_window_blocks(probes):
-    findings = probes.scan_install_text("site/index.html", DISCLOSURE_TOO_FAR)
+def test_disclosure_beyond_window_blocks(unpublished):
+    findings = unpublished.scan_install_text("site/index.html", DISCLOSURE_TOO_FAR)
     assert len(findings) == 1

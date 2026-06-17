@@ -26,7 +26,7 @@ For the *why* behind these design choices, see [case-studies/cs02 — Self-Heali
 ## Prerequisites
 
 - Python repo with GitHub Actions enabled.
-- BENE `>=0.1.0` (not yet on PyPI — `uv sync` from a clone, or vendored).
+- BENE `>=0.1.0` (`pip install bene`, or `uv sync` from a clone).
 - An LLM provider repo secret (e.g. `ANTHROPIC_API_KEY`).
 - CODEOWNERS configured on `.github/workflows/`.
 

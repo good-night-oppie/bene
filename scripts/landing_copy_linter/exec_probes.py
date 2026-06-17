@@ -6,9 +6,10 @@ class — a regex can't know whether a package resolves on its index or whether 
 documented table count matches the real db. Those need EXECUTION. This harness
 is the load-bearing gate: it checks shipped copy against ground truth (a real
 `bene init` db, the real package index) so the recurring class —
-`uv add bene` (bene isn't on PyPI; flagged 2026-06-12, regressed) and
-schema.md's "8 tables / version 1" (real: 22 tables / schema v4) — cannot
-silently ship again.
+an unpublished first-party install command, or schema.md's "8 tables /
+version 1" (real: 22 tables / schema v4) — cannot silently ship again.
+(bene shipped to PyPI 2026-06-16, so `pip install bene` now resolves and is
+exempt via PUBLISHED; the gate still catches any unpublished first-party pkg.)
 
 Scope of THIS file (high-value, deterministic — no network for the install
 check, no snippet sandbox yet):
@@ -42,7 +43,7 @@ EXCLUDE_DIRS = (".venv/", "node_modules/", "__pycache__/", "/dist/", "/build/")
 
 
 # First-party package(s) — read from pyproject so third-party `uv add httpx`
-# never trips. bene is NOT published to PyPI (local-only, ship via the repo).
+# never trips.
 def _first_party() -> set[str]:
     names = set()
     for pp in REPO.glob("pyproject.toml"):
@@ -50,6 +51,12 @@ def _first_party() -> set[str]:
         if m:
             names.add(m.group(1).lower())
     return names or {"bene"}
+
+
+# First-party packages that ARE published on PyPI — a bare `pip install <pkg>`
+# resolves with no source-spec/disclosure needed. bene shipped to PyPI on
+# 2026-06-16 (0.2.x); `pip install bene` / `uv add bene` now resolve.
+PUBLISHED = {"bene"}
 
 
 INSTALL_RE = re.compile(
@@ -115,6 +122,8 @@ def scan_install_text(filename: str, text: str) -> list[Finding]:
         for m in INSTALL_RE.finditer(raw):
             if m.group("pkg").lower() not in fp:
                 continue  # third-party pkg — never our problem
+            if m.group("pkg").lower() in PUBLISHED:
+                continue  # first-party AND published on PyPI — resolves, no disclosure needed
             center = i - 1  # 0-based index of the install line
             lo = max(0, center - _PROXIMITY)
             hi = min(len(lines), center + _PROXIMITY + 1)
@@ -138,9 +147,10 @@ def scan_install_text(filename: str, text: str) -> list[Finding]:
 
 def probe_install_resolves() -> list[Finding]:
     """PROBE-EXEC-01: a first-party install command in shipped copy must resolve.
-    bene is not on PyPI → any `uv add bene` / `pip install bene` without a
-    resolvable source spec (git+/path/--index/vendored) or an honest
-    not-yet-published disclosure in the same code block is a broken hero command."""
+    A published first-party pkg (PUBLISHED, e.g. bene since 2026-06-16) resolves
+    outright; an unpublished one needs a resolvable source spec
+    (git+/path/--index/vendored) or an honest not-yet-published disclosure in the
+    same code block, else it is a broken hero command."""
     findings: list[Finding] = []
     for path in _iter_shipped():
         findings.extend(
