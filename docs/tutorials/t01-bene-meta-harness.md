@@ -1,4 +1,4 @@
-# From 48% to 83%: How BENE v0.6.0 Automates Multi-Agent AI Research
+# From 48% to 83%: How BENE v0.2.0 Automates Multi-Agent AI Research
 
 *A tutorial of Meta-Harness finding the winning prompt strategy — automatically, in 15 iterations, for $0.14*
 
@@ -8,7 +8,7 @@ You've spent three days hand-crafting the perfect prompt for your classifier. Yo
 
 This is the plateau problem — and it's invisible until you're already trapped in it.
 
-BENE v0.6.0 solves it. Here's how.
+BENE v0.2.0 solves it. Here's how.
 
 ---
 
@@ -18,13 +18,13 @@ BENE v0.6.0 solves it. Here's how.
 
 The headline feature is **Meta-Harness**: an automated search loop that finds the best prompt strategy for any LLM task by treating prompt engineering as an optimization problem. Define your task. Give it some data. Run `bene mh search`. Come back to a ranked Pareto frontier of harnesses.
 
-v0.6.0 adds **CORAL** — three tiers of co-evolutionary improvements that make the search dramatically smarter, especially when it gets stuck.
+v0.2.0 adds **CORAL** — three tiers of co-evolutionary improvements that make the search dramatically smarter, especially when it gets stuck.
 
 ---
 
 ## The Research Foundation
 
-Before diving into the demo, it's worth noting what's under the hood. BENE v0.6.0 integrates four peer-reviewed research contributions:
+Before diving into the demo, it's worth noting what's under the hood. BENE v0.2.0 integrates four peer-reviewed research contributions:
 
 - **[Meta-Harness](https://arxiv.org/abs/2603.28052)** (arXiv:2603.28052, Stanford/MIT/KRAFTON) — the search loop itself: evolutionary proposer reads full execution traces and proposes structurally better harnesses
 - **[MemPalace](https://github.com/milla-jovovich/mempalace)** — AAAK compact notation that compresses the proposer's context by 57% with zero quality loss
@@ -231,7 +231,7 @@ ORDER BY iteration;
 
 ---
 
-## What's New in v0.6.0: CORAL Three Tiers
+## What's New in v0.2.0: CORAL Three Tiers
 
 ### Tier 1 — Stagnation Detection + Pivot Prompts
 

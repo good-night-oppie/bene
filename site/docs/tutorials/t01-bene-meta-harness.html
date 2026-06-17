@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>From 48% to 83%: How BENE v0.6.0 Automates Multi-Agent AI Research — BENE docs</title>
-<meta name="description" content="BENE 0.2.0 documentation — From 48% to 83%: How BENE v0.6.0 Automates Multi-Agent AI Research" />
+<title>From 48% to 83%: How BENE v0.2.0 Automates Multi-Agent AI Research — BENE docs</title>
+<meta name="description" content="BENE 0.2.0 documentation — From 48% to 83%: How BENE v0.2.0 Automates Multi-Agent AI Research" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -248,20 +248,20 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../infra/DNS.html">DNS</a></aside>
 <main>
 <div class="crumbs"><a href="../index.html">docs</a> / tutorials/t01-bene-meta-harness.md</div>
-<h1 id="from-48-to-83-how-bene-v060-automates-multi-agent-ai-research">From 48% to 83%: How BENE v0.6.0 Automates Multi-Agent AI Research</h1>
+<h1 id="from-48-to-83-how-bene-v020-automates-multi-agent-ai-research">From 48% to 83%: How BENE v0.2.0 Automates Multi-Agent AI Research</h1>
 <p><em>A tutorial of Meta-Harness finding the winning prompt strategy — automatically, in 15 iterations, for $0.14</em></p>
 <hr />
 <p>You've spent three days hand-crafting the perfect prompt for your classifier. You tried chain-of-thought. Then few-shot examples. Then a "senior engineer" persona. You're at 74% accuracy and stuck. You run another variant. Still 74%. Another. 74%.</p>
 <p>This is the plateau problem — and it's invisible until you're already trapped in it.</p>
-<p>BENE v0.6.0 solves it. Here's how.</p>
+<p>BENE v0.2.0 solves it. Here's how.</p>
 <hr />
 <h2 id="what-is-bene">What Is BENE?</h2>
 <p><a href="https://github.com/good-night-oppie/bene">BENE</a> is a synthetic implementation of 6 state of art LLM Engineering research, local-first multi-agent orchestration framework. Every agent gets an isolated virtual filesystem backed by a single SQLite file. Full audit trail. Checkpoint and restore. Zero cloud dependency.</p>
 <p>The headline feature is <strong>Meta-Harness</strong>: an automated search loop that finds the best prompt strategy for any LLM task by treating prompt engineering as an optimization problem. Define your task. Give it some data. Run <code>bene mh search</code>. Come back to a ranked Pareto frontier of harnesses.</p>
-<p>v0.6.0 adds <strong>CORAL</strong> — three tiers of co-evolutionary improvements that make the search dramatically smarter, especially when it gets stuck.</p>
+<p>v0.2.0 adds <strong>CORAL</strong> — three tiers of co-evolutionary improvements that make the search dramatically smarter, especially when it gets stuck.</p>
 <hr />
 <h2 id="the-research-foundation">The Research Foundation</h2>
-<p>Before diving into the demo, it's worth noting what's under the hood. BENE v0.6.0 integrates four peer-reviewed research contributions:</p>
+<p>Before diving into the demo, it's worth noting what's under the hood. BENE v0.2.0 integrates four peer-reviewed research contributions:</p>
 <ul>
 <li><strong><a href="https://arxiv.org/abs/2603.28052">Meta-Harness</a></strong> (arXiv:2603.28052, Stanford/MIT/KRAFTON) — the search loop itself: evolutionary proposer reads full execution traces and proposes structurally better harnesses</li>
 <li><strong><a href="https://github.com/milla-jovovich/mempalace">MemPalace</a></strong> — AAAK compact notation that compresses the proposer's context by 57% with zero quality loss</li>
@@ -424,7 +424,7 @@ Skills saved           2 reusable patterns → next search starts from here
 </code></pre></div>
 
 <hr />
-<h2 id="whats-new-in-v060-coral-three-tiers">What's New in v0.6.0: CORAL Three Tiers</h2>
+<h2 id="whats-new-in-v020-coral-three-tiers">What's New in v0.2.0: CORAL Three Tiers</h2>
 <h3 id="tier-1-stagnation-detection-pivot-prompts">Tier 1 — Stagnation Detection + Pivot Prompts</h3>
 <p>The search now tracks <code>stagnant_iterations</code>. When it crosses <code>stagnation_threshold</code>, the proposer receives a <code>PIVOT REQUIRED</code> block that lists exhausted approaches and demands structural novelty.</p>
 <h3 id="tier-2-three-tier-memory-attempts-notes-skills">Tier 2 — Three-Tier Memory (attempts / notes / skills)</h3>

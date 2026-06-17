@@ -330,7 +330,7 @@ On resume, bene rebuilds search state out of the archive in the search agent's V
 
 ---
 
-## Any provider can propose (v0.4.1)
+## Any provider can propose (v0.2.0)
 
 Some providers — `claude --print` among them — never emit structured tool calls, which puts `mh_submit_harness` out of their reach. bene compensates without being told to: if a proposer turn ends with zero tool submissions, the reply text is scanned for ```python blocks containing `def run()`, and each valid block enters the pipeline as a candidate, subject to the same full validation.
 
@@ -338,7 +338,7 @@ Text-only or tool-capable, the proposer works either way. There is nothing to co
 
 ---
 
-## Keep the digest small (v0.4.0)
+## Keep the digest small (v0.2.0)
 
 Each round, the proposer must absorb every prior harness, score, and trace. Done naively, that is 5-10 tool calls per iteration — and a provider like `claude --print` replays the full conversation on every call, which is how timeouts happen.
 
@@ -379,7 +379,7 @@ config = SearchConfig(benchmark="text_classify", compaction_level=7)
 
 ---
 
-## Compaction across five domains (v0.4.1)
+## Compaction across five domains (v0.2.0)
 
 The default level (5), tested beyond classification:
 
@@ -395,7 +395,7 @@ At level 10, every domain pays a severe quality penalty as context is aggressive
 
 ---
 
-## CORAL: getting unstuck (v0.6.0)
+## CORAL: getting unstuck (v0.2.0)
 
 
 Left running long enough, any iterative search starts to circle: the proposer settles into a local optimum and keeps shipping variations of the same idea. CORAL ([arXiv:2604.01658](https://arxiv.org/abs/2604.01658)) attacks that plateau on three fronts, and bene implements all three.
@@ -514,7 +514,7 @@ A single 15-iteration code-review search (48%→83%) exercises every front:
 
 ---
 
-## Discoveries that carry forward (v0.4.0)
+## Discoveries that carry forward (v0.2.0)
 
 A finished search no longer takes its lessons to the grave. Winning harnesses get filed under a persistent "bene-knowledge" agent, and the next search on that benchmark loads those discoveries as extra seeds — automatically.
 

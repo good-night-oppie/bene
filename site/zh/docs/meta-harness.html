@@ -519,11 +519,11 @@ bene<span class="w"> </span>mh<span class="w"> </span>status<span class="w"> </s
 
 <p>On resume, bene rebuilds search state out of the archive in the search agent's VFS, finds the last iteration that completed, and proceeds under the original configuration — same benchmark, same candidate count, same objectives.</p>
 <hr />
-<h2 id="any-provider-can-propose-v041">Any provider can propose (v0.4.1)</h2>
+<h2 id="any-provider-can-propose-v020">Any provider can propose (v0.2.0)</h2>
 <p>Some providers — <code>claude --print</code> among them — never emit structured tool calls, which puts <code>mh_submit_harness</code> out of their reach. bene compensates without being told to: if a proposer turn ends with zero tool submissions, the reply text is scanned for <code>``python blocks containing</code>def run()`, and each valid block enters the pipeline as a candidate, subject to the same full validation.</p>
 <p>Text-only or tool-capable, the proposer works either way. There is nothing to configure.</p>
 <hr />
-<h2 id="keep-the-digest-small-v040">Keep the digest small (v0.4.0)</h2>
+<h2 id="keep-the-digest-small-v020">Keep the digest small (v0.2.0)</h2>
 <p>Each round, the proposer must absorb every prior harness, score, and trace. Done naively, that is 5-10 tool calls per iteration — and a provider like <code>claude --print</code> replays the full conversation on every call, which is how timeouts happen.</p>
 <p>So bene pre-assembles a structured <strong>archive digest</strong> built on three strategies, compressing each data type on its own terms:</p>
 <table>
@@ -581,7 +581,7 @@ Level 10 │  184 chars ( 97% saved) │ quality=37.5% │ 3/8 questions answera
 </code></pre></div>
 
 <hr />
-<h2 id="compaction-across-five-domains-v041">Compaction across five domains (v0.4.1)</h2>
+<h2 id="compaction-across-five-domains-v020">Compaction across five domains (v0.2.0)</h2>
 <p>The default level (5), tested beyond classification:</p>
 <table>
 <thead>
@@ -621,7 +621,7 @@ Level 10 │  184 chars ( 97% saved) │ quality=37.5% │ 3/8 questions answera
 </table>
 <p>At level 10, every domain pays a severe quality penalty as context is aggressively compressed, with quality dropping to 25–37.5% (Classification 37.5% / Code Generation 30% / Research &amp; RAG 33.3% / Tool Calling 37.5% / ML Training 25%).</p>
 <hr />
-<h2 id="coral-getting-unstuck-v060">CORAL: getting unstuck (v0.6.0)</h2>
+<h2 id="coral-getting-unstuck-v020">CORAL: getting unstuck (v0.2.0)</h2>
 <p>Left running long enough, any iterative search starts to circle: the proposer settles into a local optimum and keeps shipping variations of the same idea. CORAL (<a href="https://arxiv.org/abs/2604.01658">arXiv:2604.01658</a>) attacks that plateau on three fronts, and bene implements all three.</p>
 <h3 id="front-1-detect-stagnation-force-a-pivot">Front 1 — detect stagnation, force a pivot</h3>
 <p>Once <code>stagnation_threshold</code> consecutive iterations close without a new best (default 3), the next digest arrives carrying a banner:</p>
@@ -733,7 +733,7 @@ bene<span class="w"> </span>mh<span class="w"> </span>knowledge
 </ul>
 <p><strong>$0.14, 12 minutes, 35-point improvement.</strong></p>
 <hr />
-<h2 id="discoveries-that-carry-forward-v040">Discoveries that carry forward (v0.4.0)</h2>
+<h2 id="discoveries-that-carry-forward-v020">Discoveries that carry forward (v0.2.0)</h2>
 <p>A finished search no longer takes its lessons to the grave. Winning harnesses get filed under a persistent "bene-knowledge" agent, and the next search on that benchmark loads those discoveries as extra seeds — automatically.</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>knowledge<span class="w">       </span><span class="c1"># view discoveries by benchmark</span>
 bene<span class="w"> </span>mh<span class="w"> </span>lint<span class="w"> </span>&lt;id&gt;<span class="w">       </span><span class="c1"># health-check a search archive</span>
