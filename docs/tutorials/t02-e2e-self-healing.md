@@ -6,7 +6,6 @@ This tutorial lets you give an agent a risky repair, watch the repair go wrong, 
 
 The loop you will follow: one red test, a plausible fix that turns it into four, a per-agent restore, a root-cause report the agent wrote about itself, and the repair that takes the suite to 47 green. Every transcript comes from the recorded run:
 
-
 *The whole loop in one take: spawn, checkpoint, cascade to 4 failures, restore, root-cause report, correct fix, 47 green.*
 
 ## The trap: a red test that invites a cascade

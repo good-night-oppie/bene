@@ -131,7 +131,6 @@ in 0.3s without disturbing the other agents on the project. Isolation is
 how you let an autonomous agent loose on production-adjacent work
 without writing a postmortem about *the orchestration layer*.
 
-
 ### Compounding is the point
 
 The first time an on-call engineer triages an `iss_storage_unreachable`

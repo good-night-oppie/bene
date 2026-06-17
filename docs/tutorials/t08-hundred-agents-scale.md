@@ -4,7 +4,6 @@ This tutorial shows you how to fan bene out to hundreds of agents at once — on
 
 > **One command spawns 847 isolated agents; 809 succeed, 31 restore themselves cleanly, 0 regressions ship — and the complete audit trail is a 214MB `bene.db` you can `cp`.**
 
-
 *Seventeen batches, 847 agents: 809 succeed, 31 undo themselves, 7 go to humans, 0 regressions reach the codebase — and 2.45M tokens never get sent.*
 
 ---

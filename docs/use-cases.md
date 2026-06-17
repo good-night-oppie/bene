@@ -12,7 +12,6 @@ Brief catalogue of patterns. Each entry is a one-glance preview — what the pro
 
 **BENE.** Four parallel reviewers, each with its own VFS — zero cross-agent reads. Findings aggregate via SQL.
 
-
 → Tutorial: [t03 — Security Swarm](tutorials/t03-security-swarm.md) · Example: `examples/code_review_swarm.py`
 
 ---
@@ -22,7 +21,6 @@ Brief catalogue of patterns. Each entry is a one-glance preview — what the pro
 **Problem.** Implementation, tests, and docs are independent but get written sequentially.
 
 **BENE.** Three agents in parallel, each in its own VFS, with the same source as input.
-
 
 → Example: `examples/parallel_refactor.py` · CLI: `bene parallel -t impl … -t tests … -t docs …`
 
@@ -34,7 +32,6 @@ Brief catalogue of patterns. Each entry is a one-glance preview — what the pro
 
 **BENE.** Checkpoint before the risk. Restore one agent in milliseconds without touching the others.
 
-
 → Tutorial: [t02 — End-to-End Self-Healing](tutorials/t02-e2e-self-healing.md) · Guide: [Checkpoints](checkpoints.md)
 
 ---
@@ -44,7 +41,6 @@ Brief catalogue of patterns. Each entry is a one-glance preview — what the pro
 **Problem.** An agent broke something. Logs say what; nothing says *why* in order.
 
 **BENE.** Every tool call, write, and state change is a SQL row. Reconstruct the sequence in one query.
-
 
 → Reference: [Schema](schema.md) · CLI: `bene logs <agent-id>`, `bene diff`, `bene search`
 
@@ -56,7 +52,6 @@ Brief catalogue of patterns. Each entry is a one-glance preview — what the pro
 
 **BENE.** Query the event journal for error patterns and recent file writes; root cause in seconds.
 
-
 → Tutorial: [t05 — Incident Response](tutorials/t05-incident-response.md)
 
 ---
@@ -66,7 +61,6 @@ Brief catalogue of patterns. Each entry is a one-glance preview — what the pro
 **Problem.** A 2M-row backfill hits unexpected NULLs at row 847k.
 
 **BENE.** Surgical restore of the migration agent alone. Analytics agents on untouched data keep running.
-
 
 → Tutorial: [t04 — Migration Rollback](tutorials/t04-migration-rollback.md)
 
@@ -78,7 +72,6 @@ Brief catalogue of patterns. Each entry is a one-glance preview — what the pro
 
 **BENE.** One agent per attack surface, full isolation, SQL aggregation across all four.
 
-
 → Tutorial: [t03 — Security Swarm](tutorials/t03-security-swarm.md)
 
 ---
@@ -88,7 +81,6 @@ Brief catalogue of patterns. Each entry is a one-glance preview — what the pro
 **Problem.** N hypotheses, one machine, a TSV of results that loses provenance.
 
 **BENE.** N hypothesis agents in parallel; results SQL-queryable across runs.
-
 
 → Tutorial: [t06 — ML Research Lab](tutorials/t06-ml-research-lab.md)
 
@@ -100,7 +92,6 @@ Brief catalogue of patterns. Each entry is a one-glance preview — what the pro
 
 **BENE.** Per-agent checkpoint, surgical restore, root cause from the audit trail, correct fix, all green.
 
-
 → Tutorial: [t02 — End-to-End Self-Healing](tutorials/t02-e2e-self-healing.md)
 
 ---
@@ -110,7 +101,6 @@ Brief catalogue of patterns. Each entry is a one-glance preview — what the pro
 **Problem.** Architecture, optimizer, batch, regularization — four independent dials.
 
 **BENE.** Four agents explore in parallel; winner checkpointed; compendium writes itself.
-
 
 → Tutorial: [t06 — ML Research Lab](tutorials/t06-ml-research-lab.md)
 
@@ -122,7 +112,6 @@ Brief catalogue of patterns. Each entry is a one-glance preview — what the pro
 
 **BENE.** CI gate runs all benchmarks, blocks deploy on threshold breach, triggers Meta-Harness repair.
 
-
 → Tutorial: [t07 — Regression Guard](tutorials/t07-regression-guard.md) · Component: [Meta-Harness](meta-harness.md)
 
 ---
@@ -133,7 +122,6 @@ Brief catalogue of patterns. Each entry is a one-glance preview — what the pro
 
 **BENE.** Meta-Harness proposer learns red-flag checklists from prior attempt traces.
 
-
 → Component: [Meta-Harness — Examples](meta-harness.md#sources-and-worked-examples) · Script: `examples/meta_harness_fraud_detection.py` (`fraud_detection` is not a built-in `-b` value; `-b` takes `text_classify` / `math_rag` / `agentic_coding`)
 
 ---
@@ -143,7 +131,6 @@ Brief catalogue of patterns. Each entry is a one-glance preview — what the pro
 **Problem.** A single search agent plateaus.
 
 **BENE.** N agents share a Pareto frontier; stagnation triggers cross-pollination.
-
 
 → Component: [Meta-Harness — CORAL](meta-harness.md#coral-getting-unstuck-v020)
 
