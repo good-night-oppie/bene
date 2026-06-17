@@ -439,7 +439,6 @@ const Comparison = () => {
             评测数据和限制在下面的 docs 里。这一节只讲怎么接，不做榜单。
           </p>
           <div className="flex gap-4 font-mono text-xs">
-            <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/design/CLAIMS-AUDIT.md" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">CLAIMS-AUDIT.md</a>
             <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/benchmarks/COMMUNITY-BENCH-REPORT.md" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">COMMUNITY-BENCH-REPORT.md</a>
           </div>
         </div>
@@ -650,7 +649,7 @@ const Architecture = () => {
       oneLine: 'strategy 自己跨代变好',
       scene: '同一类 task 你跑了 50 次，每次 prompt / strategy 略有不同。你想跨代搜出 Pareto 最优的几条，而不是每次手调。',
       common: 'AutoML / DSPy compile 跑一遍出 candidate；要么手动复制粘贴上生产，要么直接 replace deploy.py——容易 reward-hack 上线。',
-      mechanism: 'mh_search 生成 candidate → 编码成 genome（把控制信号压成稠密向量）→ Pareto 前沿筛 → 想 promote 时走和普通 prompt 一样的 kill-gate，没有第二条 promote 路径。今天 mh_search → promote 的 bridge 还是手动接（CLAIMS-AUDIT line 36 标 partial）；end-to-end wiring 在 roadmap，没声称在跑。',
+      mechanism: 'mh_search 生成 candidate → 编码成 genome（把控制信号压成稠密向量）→ Pareto 前沿筛 → 想 promote 时走和普通 prompt 一样的 kill-gate，没有第二条 promote 路径。今天 mh_search → promote 的 bridge 还是手动接；end-to-end wiring 在 roadmap，没声称在跑。',
       diagram: (
         <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] lg:text-xs">
           <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">mh_search</span>
@@ -834,7 +833,6 @@ const Limits = () => {
             <span className="text-bene-accent">在 roadmap，还没上线：</span>skill 的 demotion / retirement 策略（outcome-weighted ranking 已作为 opt-in 上线，接进默认检索路径是待办项）、nightly consolidation 的外部 CLI / cron wiring（deterministic planner 已上）、deterministic replay 的消费侧 CLI（journal + manifest 已上）、episode 内 harness 变异、MemGAS entropy routing。完整设计见 <code className="text-bene-text font-mono">docs/design/v0.3-roadmap-spec.md</code>。
           </p>
         </div>
-        <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/design/CLAIMS-AUDIT.md" target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-bene-accent hover:underline whitespace-nowrap shrink-0">CLAIMS-AUDIT.md</a>
       </div>
     </Section>
   );

@@ -450,7 +450,6 @@ const Comparison = () => {
             Receipts and limits are in the docs below.
           </p>
           <div className="flex gap-4 font-mono text-xs">
-            <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/design/CLAIMS-AUDIT.md" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">CLAIMS-AUDIT.md</a>
             <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/benchmarks/COMMUNITY-BENCH-REPORT.md" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">COMMUNITY-BENCH-REPORT.md</a>
           </div>
         </div>
@@ -661,7 +660,7 @@ const Architecture = () => {
       oneLine: 'strategies that get better across generations',
       scene: "You have run the same task class fifty times with slightly different prompts or strategies. You want the Pareto front of the survivors across generations, not another hand-tune.",
       common: 'AutoML or a DSPy compile run produces a candidate; either someone copy-pastes it into production, or it replaces deploy.py directly — straight into a reward-hack on the metric.',
-      mechanism: 'mh_search generates candidates → genome encoding makes the control signals dense → Pareto front filters survivors → promote() routes them through the same kill gate any other promotion uses — every promotion goes through it, no separate path. The mh_search-to-promote bridge is manual today (CLAIMS-AUDIT line 36 marks it partial); end-to-end wiring is on the roadmap and not claimed as shipping.',
+      mechanism: 'mh_search generates candidates → genome encoding makes the control signals dense → Pareto front filters survivors → promote() routes them through the same kill gate any other promotion uses — every promotion goes through it, no separate path. The mh_search-to-promote bridge is manual today; end-to-end wiring is on the roadmap and not claimed as shipping.',
       diagram: (
         <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] lg:text-xs">
           <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">mh_search</span>
@@ -845,7 +844,6 @@ const Limits = () => {
             <span className="text-bene-accent">On the roadmap, not yet shipping:</span> skill demotion / retirement policy (outcome-weighted ranking already ships opt-in; wiring it into the default retrieval path is the open item); the external CLI / cron wiring around nightly consolidation (the deterministic planner already shipped); the consumer-side CLI for deterministic replay (the journal + manifest already shipped); in-episode harness mutation; MemGAS entropy routing. Full spec at <code className="text-bene-text font-mono">docs/design/v0.3-roadmap-spec.md</code>.
           </p>
         </div>
-        <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/design/CLAIMS-AUDIT.md" target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-bene-accent hover:underline whitespace-nowrap shrink-0">CLAIMS-AUDIT.md</a>
       </div>
     </Section>
   );
