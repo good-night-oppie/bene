@@ -21,9 +21,8 @@ def get_benchmark(name: str, **kwargs) -> Benchmark:
         return _registry[name](**kwargs)
     except ImportError as e:
         raise ImportError(
-            f"Benchmark '{name}' requires optional dependencies. "
-            f"Install with: uv pip install bene[benchmarks]\n"
-            f"Original error: {e}"
+            f"Benchmark '{name}' requires an optional dependency that is not installed "
+            f"(see the original error for the missing module). Original error: {e}"
         ) from e
 
 

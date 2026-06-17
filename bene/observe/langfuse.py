@@ -36,7 +36,9 @@ def _make_client(cfg: dict[str, Any]) -> Any:
     try:
         from langfuse import Langfuse
     except Exception as e:  # noqa: BLE001
-        raise RuntimeError(f"langfuse SDK not installed ({e})") from e
+        raise RuntimeError(
+            f'langfuse SDK not installed ({e}). Install it with: pip install "bene[langfuse]"'
+        ) from e
     return Langfuse(
         host=host,
         public_key=cfg.get("public_key") or os.environ.get("LANGFUSE_PUBLIC_KEY", ""),

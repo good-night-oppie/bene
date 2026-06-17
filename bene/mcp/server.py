@@ -25,6 +25,7 @@ from typing import Any
 from mcp.server import Server
 from mcp.types import TextContent, Tool
 
+from bene import __version__
 from bene.core import Bene
 from bene.ccr.runner import ClaudeCodeRunner
 
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 _afs: Bene | None = None
 _ccr: ClaudeCodeRunner | None = None
 
-server = Server("bene")
+server = Server("bene", version=__version__)
 
 
 def init_server(afs: Bene, ccr: ClaudeCodeRunner) -> Server:
