@@ -11,7 +11,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet" />
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<!-- Pinned to babel 7.x on purpose: @babel/standalone 8 defaults @babel/preset-react to the
+     AUTOMATIC JSX runtime, which emits `import { jsx } from "react/jsx-runtime"` into this
+     CLASSIC <script type="text/babel"> — the browser then throws "Cannot use import statement
+     outside a module", the script aborts, and #root never mounts (blank page). 7.29.7 keeps the
+     classic React.createElement transform that uses the React UMD global. Do NOT bump to 8.x
+     without precompiling the JSX. -->
+<script src="https://unpkg.com/@babel/standalone@7.29.7/babel.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config = {
