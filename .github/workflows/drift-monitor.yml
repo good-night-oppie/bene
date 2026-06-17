@@ -1,0 +1,27 @@
+---
+# yamllint disable rule:truthy
+# Stage D companion: weekly drift probe.
+# Posts a rolling summary to GitHub Step Summary; never fails the run.
+
+name: drift-monitor
+
+on:
+  schedule:
+    - cron: "0 12 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    name: ci/drift
+    runs-on: eng-github-runners
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Run drift probe
+        run: bash scripts/ci/drift_monitor.sh | tee "$GITHUB_STEP_SUMMARY"

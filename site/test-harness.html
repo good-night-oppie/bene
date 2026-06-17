@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<!-- render-verify harness (not linked from the site): ?lang=zh&view=docs
+     Seeds localStorage and clicks the view tab inside a same-origin iframe so
+     headless-chromium screenshots can cover all view×lang combos. -->
+<html>
+<head><meta charset="UTF-8" /><style>html,body,iframe{margin:0;padding:0;border:0;width:100%;height:100%}</style></head>
+<body>
+<script>
+  const q = new URLSearchParams(location.search);
+  localStorage.setItem('bene-lang', q.get('lang') || 'en');
+  const view = q.get('view') || 'landing';
+  const f = document.createElement('iframe');
+  f.src = 'index.html';
+  f.onload = () => {
+    if (view === 'docs') {
+      // poll until React mounts the nav, then click the Docs tab (2nd nav button group item)
+      const t = setInterval(() => {
+        const doc = f.contentDocument;
+        const btns = [...doc.querySelectorAll('nav button')];
+        const docsBtn = btns.find(b => /^(Docs|文档)$/.test(b.textContent.trim()));
+        if (docsBtn) { clearInterval(t); docsBtn.click(); document.title = 'HARNESS_READY_DOCS'; }
+      }, 200);
+    } else {
+      document.title = 'HARNESS_READY_LANDING';
+    }
+  };
+  document.body.appendChild(f);
+</script>
+</body>
+</html>

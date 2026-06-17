@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Parallel security review: four agents, one query — BENE docs</title>
+<meta name="description" content="BENE 0.2.0 documentation — Parallel security review: four agents, one query" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+:root { --bg:#F0EEE8; --surface:#EDE9E4; --border:#CFCCC8; --ink:#1F1D1C; --mute:#62666D; --accent:#EE6018; --gold:#B46A35; --term-bg:#0A0908; --term-fg:#EDE9E4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 Geist,ui-sans-serif,system-ui,sans-serif; }
+a { color:var(--gold); text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent); text-underline-offset:3px; }
+a:hover { color:var(--accent); }
+.top { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+.top-in { max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+.brand { font-family:Geist,ui-sans-serif,sans-serif; font-weight:700; letter-spacing:.12em; color:var(--ink); text-decoration:none; }
+.top a.nav { color:var(--mute); text-decoration:none; font-size:14px; }
+.top a.nav:hover { color:var(--accent); }
+.wrap { max-width:1200px; margin:0 auto; padding:24px; display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; }
+aside.sb { position:sticky; top:80px; align-self:start; max-height:calc(100vh - 100px); overflow-y:auto; font-size:13.5px; border-left:1px solid var(--border); padding-left:16px; }
+.sb h4 { margin:18px 0 6px; font:600 11px/1 "Geist Mono",ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+.sb a { display:block; padding:3px 0; color:var(--mute); text-decoration:none; }
+.sb a:hover { color:var(--accent); }
+.sb a.cur { color:var(--ink); font-weight:600; }
+main { min-width:0; max-width:760px; }
+main h1 { font-family:Geist,ui-sans-serif,sans-serif; font-size:2.1rem; line-height:1.2; margin:.2em 0 .5em; }
+main h2 { font-family:Geist,ui-sans-serif,sans-serif; font-size:1.45rem; margin-top:2em; border-bottom:1px solid var(--border); padding-bottom:.35em; }
+main h3 { font-size:1.12rem; margin-top:1.7em; }
+main img { max-width:100%; border:1px solid var(--border); border-radius:8px; }
+main table { border-collapse:collapse; width:100%; font-size:14.5px; display:block; overflow-x:auto; }
+main th, main td { border:1px solid var(--border); padding:8px 12px; text-align:left; vertical-align:top; }
+main th { background:var(--surface); font-weight:600; }
+main blockquote { margin:1em 0; padding:.2em 1.2em; border-left:3px solid var(--accent); color:var(--mute); background:var(--surface); border-radius:0 4px 4px 0; }
+main :not(pre) > code { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:.08em .35em; font:.86em "Geist Mono",ui-monospace,monospace; }
+.codehilite, main pre { background:var(--term-bg); color:var(--term-fg); border-radius:6px; padding:16px 18px; overflow-x:auto; font:13.5px/1.55 "Geist Mono",ui-monospace,monospace; }
+.codehilite pre, pre code { background:none; padding:0; margin:0; border:none; }
+.demo-embed { margin:20px 0 28px; }
+.demo-embed .frame { background:var(--term-bg); border-radius:6px; padding:14px; }
+.demo-embed .dots { display:flex; gap:6px; margin-bottom:10px; }
+.demo-embed .dots i { width:10px; height:10px; border-radius:50%; background:#3a3344; }
+.demo-embed img { border:none; border-radius:6px; display:block; width:100%; }
+.demo-embed p { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:8px 2px 0; }
+.crumbs { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-bottom:8px; }
+.crumbs a { color:var(--mute); }
+.src { font:12.5px "Geist Mono",ui-monospace,monospace; margin-top:48px; padding-top:16px; border-top:1px solid var(--border); color:var(--mute); }
+footer.ft { border-top:1px solid var(--border); margin-top:40px; }
+footer.ft .in { max-width:1200px; margin:0 auto; padding:24px; font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.idx-group h2 { font-family:Geist,ui-sans-serif,sans-serif; border:none; margin-top:1.6em; }
+.idx-group ul { list-style:none; padding:0; margin:.4em 0; }
+.idx-group li { padding:6px 0; border-bottom:1px dashed var(--border); }
+.idx-group .path { font:11.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-left:8px; }
+/* Mobile overrides — kept at the end so source order beats base rules.
+   Earlier this rule sat between base rules and got overridden by a later
+   `aside.sb { position:sticky }`, leaving the sidebar stuck on top of
+   main content on phones. */
+@media (max-width: 860px) {
+  .wrap { grid-template-columns:1fr; gap:24px; padding:16px; }
+  aside.sb { position:static; max-height:none; border-left:none; border-bottom:1px solid var(--border); padding-left:0; padding-bottom:16px; font-size:13px; }
+  .sb h4 { margin:12px 0 4px; }
+  main { max-width:none; }
+  main h1 { font-size:1.6rem; }
+  main h2 { font-size:1.2rem; }
+  main h3 { font-size:1.05rem; }
+  .top-in { padding:0 16px; gap:14px; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #49483e }
+.codehilite { background: #272822; color: #F8F8F2 }
+.codehilite .c { color: #959077 } /* Comment */
+.codehilite .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.codehilite .esc { color: #F8F8F2 } /* Escape */
+.codehilite .g { color: #F8F8F2 } /* Generic */
+.codehilite .k { color: #66D9EF } /* Keyword */
+.codehilite .l { color: #AE81FF } /* Literal */
+.codehilite .n { color: #F8F8F2 } /* Name */
+.codehilite .o { color: #FF4689 } /* Operator */
+.codehilite .x { color: #F8F8F2 } /* Other */
+.codehilite .p { color: #F8F8F2 } /* Punctuation */
+.codehilite .ch { color: #959077 } /* Comment.Hashbang */
+.codehilite .cm { color: #959077 } /* Comment.Multiline */
+.codehilite .cp { color: #959077 } /* Comment.Preproc */
+.codehilite .cpf { color: #959077 } /* Comment.PreprocFile */
+.codehilite .c1 { color: #959077 } /* Comment.Single */
+.codehilite .cs { color: #959077 } /* Comment.Special */
+.codehilite .gd { color: #FF4689 } /* Generic.Deleted */
+.codehilite .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F8F8F2 } /* Generic.Error */
+.codehilite .gh { color: #F8F8F2 } /* Generic.Heading */
+.codehilite .gi { color: #A6E22E } /* Generic.Inserted */
+.codehilite .go { color: #66D9EF } /* Generic.Output */
+.codehilite .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #959077 } /* Generic.Subheading */
+.codehilite .gt { color: #F8F8F2 } /* Generic.Traceback */
+.codehilite .kc { color: #66D9EF } /* Keyword.Constant */
+.codehilite .kd { color: #66D9EF } /* Keyword.Declaration */
+.codehilite .kn { color: #FF4689 } /* Keyword.Namespace */
+.codehilite .kp { color: #66D9EF } /* Keyword.Pseudo */
+.codehilite .kr { color: #66D9EF } /* Keyword.Reserved */
+.codehilite .kt { color: #66D9EF } /* Keyword.Type */
+.codehilite .ld { color: #E6DB74 } /* Literal.Date */
+.codehilite .m { color: #AE81FF } /* Literal.Number */
+.codehilite .s { color: #E6DB74 } /* Literal.String */
+.codehilite .na { color: #A6E22E } /* Name.Attribute */
+.codehilite .nb { color: #F8F8F2 } /* Name.Builtin */
+.codehilite .nc { color: #A6E22E } /* Name.Class */
+.codehilite .no { color: #66D9EF } /* Name.Constant */
+.codehilite .nd { color: #A6E22E } /* Name.Decorator */
+.codehilite .ni { color: #F8F8F2 } /* Name.Entity */
+.codehilite .ne { color: #A6E22E } /* Name.Exception */
+.codehilite .nf { color: #A6E22E } /* Name.Function */
+.codehilite .nl { color: #F8F8F2 } /* Name.Label */
+.codehilite .nn { color: #F8F8F2 } /* Name.Namespace */
+.codehilite .nx { color: #A6E22E } /* Name.Other */
+.codehilite .py { color: #F8F8F2 } /* Name.Property */
+.codehilite .nt { color: #FF4689 } /* Name.Tag */
+.codehilite .nv { color: #F8F8F2 } /* Name.Variable */
+.codehilite .ow { color: #FF4689 } /* Operator.Word */
+.codehilite .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.codehilite .w { color: #F8F8F2 } /* Text.Whitespace */
+.codehilite .mb { color: #AE81FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #AE81FF } /* Literal.Number.Float */
+.codehilite .mh { color: #AE81FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #AE81FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #AE81FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #E6DB74 } /* Literal.String.Affix */
+.codehilite .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.codehilite .sc { color: #E6DB74 } /* Literal.String.Char */
+.codehilite .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #E6DB74 } /* Literal.String.Doc */
+.codehilite .s2 { color: #E6DB74 } /* Literal.String.Double */
+.codehilite .se { color: #AE81FF } /* Literal.String.Escape */
+.codehilite .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.codehilite .si { color: #E6DB74 } /* Literal.String.Interpol */
+.codehilite .sx { color: #E6DB74 } /* Literal.String.Other */
+.codehilite .sr { color: #E6DB74 } /* Literal.String.Regex */
+.codehilite .s1 { color: #E6DB74 } /* Literal.String.Single */
+.codehilite .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.codehilite .bp { color: #F8F8F2 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #A6E22E } /* Name.Function.Magic */
+.codehilite .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.codehilite .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.codehilite .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.codehilite .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.codehilite .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.codehilite { background: var(--term-bg) !important; }
+</style>
+
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <a class="brand" href="../../index.html">BENE</a>
+  <a class="nav" href="../../index.html">Landing</a>
+  <a class="nav" href="../index.html">Docs index</a>
+  <a class="nav" href="../../SKILL.md" target="_blank" rel="noopener noreferrer" title="Hand BENE to your agent in one URL">SKILL.md ↗</a>
+  <button class="nav copy-llms" data-llms-url="../../llms.txt" data-copied-label="✓ copied" data-opened-label="↗ opened" title="Copy the llms.txt site map (an LLM-friendly index pointing at SKILL.md + every doc). Paste it into your agent's context.">Copy llms.txt</button>
+  <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer">GitHub</a>
+  <a class="nav" href="../../zh/docs/tutorials/t03-security-swarm.html" title="切换到中文" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">文</a>
+</div></div>
+
+<script>
+(function() {
+  document.querySelectorAll('button.copy-llms').forEach(function(btn) {
+    var original = btn.textContent;
+    btn.addEventListener('click', function() {
+      var url = btn.getAttribute('data-llms-url');
+      fetch(url, { cache: 'no-cache' })
+        .then(function(r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.text(); })
+        .then(function(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).then(function() {
+              btn.textContent = btn.getAttribute('data-copied-label') || '✓ copied';
+              setTimeout(function() { btn.textContent = original; }, 2200);
+            });
+          }
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        })
+        .catch(function() {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        });
+    });
+  });
+})();
+</script>
+<div class="wrap">
+<aside class="sb"><h4>Start, operate, recover</h4>
+<a href="../README.html">README</a>
+<a href="../architecture.html">architecture</a>
+<a href="../checkpoints.html">checkpoints</a>
+<a href="../cli-reference.html">cli-reference</a>
+<a href="../codegen.html">codegen</a>
+<a href="../dashboard.html">dashboard</a>
+<a href="../deployment.html">deployment</a>
+<a href="../integrating-bene.html">integrating-bene</a>
+<a href="../mcp-integration.html">mcp-integration</a>
+<a href="../memory.html">memory</a>
+<a href="../meta-harness.html">meta-harness</a>
+<a href="../philosophy.html">philosophy</a>
+<a href="../primitive-review-cycle.html">primitive-review-cycle</a>
+<a href="../probe-authoring.html">probe-authoring</a>
+<a href="../schema.html">schema</a>
+<a href="../shared-log.html">shared-log</a>
+<a href="../skills.html">skills</a>
+<a href="../use-cases.html">use-cases</a>
+<h4>Recipes</h4>
+<a href="../recipes/atomic-completion.html">atomic-completion</a>
+<h4>Design and claims</h4>
+<a href="../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
+<a href="../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
+<a href="../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
+<a href="../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
+<h4>Evidence and research</h4>
+<a href="../research/GAP-AUDIT.html">GAP-AUDIT</a>
+<a href="../research/SYNTHESIS.html">SYNTHESIS</a>
+<a href="../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<h4>Benchmarks and gates</h4>
+<a href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
+<a href="../benchmarks/PREREG.html">PREREG</a>
+<h4>Tutorial playbooks</h4>
+<a href="../tutorials/t00-bene-e2e-walkthrough.html">t00-bene-e2e-walkthrough</a>
+<a href="../tutorials/t01-bene-meta-harness.html">t01-bene-meta-harness</a>
+<a href="../tutorials/t02-e2e-self-healing.html">t02-e2e-self-healing</a>
+<a class="cur" href="../tutorials/t03-security-swarm.html">t03-security-swarm</a>
+<a href="../tutorials/t04-migration-rollback.html">t04-migration-rollback</a>
+<a href="../tutorials/t05-incident-response.html">t05-incident-response</a>
+<a href="../tutorials/t06-ml-research-lab.html">t06-ml-research-lab</a>
+<a href="../tutorials/t07-regression-guard.html">t07-regression-guard</a>
+<a href="../tutorials/t08-hundred-agents-scale.html">t08-hundred-agents-scale</a>
+<a href="../tutorials/t10-ci-overnight-bene-swarm.html">t10-ci-overnight-bene-swarm</a>
+<a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
+<h4>Case studies</h4>
+<a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
+<h4>Infrastructure</h4>
+<a href="../infra/DNS.html">DNS</a></aside>
+<main>
+<div class="crumbs"><a href="../index.html">docs</a> / tutorials/t03-security-swarm.md</div>
+<h1 id="parallel-security-review-four-agents-one-query">Parallel security review: four agents, one query</h1>
+<p><em>Security</em></p>
+<p>Point four isolated agents at one pull request — injection, secrets, auth, deserialization — and read back a severity-ranked findings table from a single SQL query. The whole review takes 20 minutes of wall clock where four serial passes take 80.</p>
+<blockquote>
+<p><strong>One scanner per attack surface, zero shared state, every finding in one table.</strong></p>
+</blockquote>
+<p><em>PR-2847 under review: the scanners launch together, and one query collects everything they found.</em></p>
+<h2 id="launch-the-swarm">Launch the swarm</h2>
+<p>Reviewing serially costs you three ways: every switch between threat models drops the previous one on the floor, the fourth pass over the same 400 lines gets less of your attention than the first did, and the first bug you spot recruits you into hunting its lookalikes while orthogonal ones slip past.</p>
+<p>Splitting the review removes all three taxes. One command starts four scanners, each specialized for a single threat model:</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>parallel<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">&quot;spawn sqli-scanner    --from ./pr-2847 --task sqli_audit&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">&quot;spawn secrets-scanner --from ./pr-2847 --task secrets_audit&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">&quot;spawn auth-scanner    --from ./pr-2847 --task auth_audit&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">&quot;spawn deser-scanner   --from ./pr-2847 --task deser_audit&quot;</span>
+
+<span class="c1"># [sqli-scanner]    spawned  vfs_id=sqli-4a1b  status=running</span>
+<span class="c1"># [secrets-scanner] spawned  vfs_id=sec-9c2d   status=running</span>
+<span class="c1"># [auth-scanner]    spawned  vfs_id=auth-3e4f   status=running</span>
+<span class="c1"># [deser-scanner]   spawned  vfs_id=desr-7g8h   status=running</span>
+<span class="c1">#</span>
+<span class="c1"># 4 agents running in parallel</span>
+</code></pre></div>
+
+<p>Every scanner gets a private virtual filesystem (bene's per-agent VFS) holding its own copy of the PR. No agent can read what a sibling wrote — the no-anchoring property is enforced by the database, not by discipline.</p>
+<h2 id="know-when-the-scanners-finish">Know when the scanners finish</h2>
+<p>The agents complete on their own schedules — injection at the 4-minute mark, secrets at 6, auth at 18 — each reporting a finding count as it lands:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sqli-scanner&quot;</span><span class="p">,</span><span class="w">    </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;complete&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;findings_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;secrets-scanner&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;complete&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;findings_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;auth-scanner&quot;</span><span class="p">,</span><span class="w">    </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;complete&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;findings_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deser-scanner&quot;</span><span class="p">,</span><span class="w">   </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;complete&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;findings_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<h2 id="pull-every-finding-with-one-query">Pull every finding with one query</h2>
+<p>Results sit in each agent's own VFS store, but the stores share one database — so a single SELECT, ordered by severity, assembles the entire review:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">agent_name</span><span class="p">,</span><span class="w"> </span><span class="n">severity</span><span class="p">,</span><span class="w"> </span><span class="n">finding_type</span><span class="p">,</span><span class="w"> </span><span class="n">file_path</span><span class="p">,</span><span class="w"> </span><span class="n">line_no</span><span class="p">,</span><span class="w"> </span><span class="n">summary</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">vfs_findings</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">pr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;PR-2847&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span>
+<span class="w">  </span><span class="k">CASE</span><span class="w"> </span><span class="n">severity</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">&#39;CRITICAL&#39;</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">&#39;HIGH&#39;</span><span class="w">     </span><span class="k">THEN</span><span class="w"> </span><span class="mi">2</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">&#39;MEDIUM&#39;</span><span class="w">   </span><span class="k">THEN</span><span class="w"> </span><span class="mi">3</span>
+<span class="w">    </span><span class="k">ELSE</span><span class="w"> </span><span class="mi">4</span>
+<span class="w">  </span><span class="k">END</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>Agent            Severity  Type              File                Line  Summary
+---------------  --------  ----------------  ------------------  ----  ----------------------------------------
+sqli-scanner     CRITICAL  sql_injection     api/search.py       14    f-string interpolation into SQL query
+secrets-scanner  CRITICAL  hardcoded_secret  config/settings.py  47    Production API key in source code
+secrets-scanner  MEDIUM    ssrf              api/webhooks.py     83    Unvalidated URL passed to requests.get()
+auth-scanner     CLEAN     —                 —                   —     No auth bypass vectors found
+deser-scanner    CLEAN     —                 —                   —     No unsafe deserialization found
+</code></pre></div>
+
+<p>2 CRITICAL findings, 1 MEDIUM, and 2 surfaces confirmed clean — assembled without opening any agent's workspace.</p>
+<h2 id="what-each-scanner-caught">What each scanner caught</h2>
+<p><strong>SQL injection — CRITICAL, 4 minutes.</strong> Working across <code>api/users.py</code>, <code>api/search.py</code>, and the database layer, the injection scanner flagged a query built by f-string:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># api/search.py — FINDING: SQL injection via f-string interpolation</span>
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/search&#39;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">search_users</span><span class="p">():</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;q&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="c1"># CRITICAL: direct string interpolation into SQL</span>
+    <span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT * FROM users WHERE name LIKE &#39;%</span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">%&#39;&quot;</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+</code></pre></div>
+
+<p>The fix it proposed binds the value as a parameter instead:</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/search&#39;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">search_users</span><span class="p">():</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;q&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;SELECT * FROM users WHERE name LIKE ?&quot;</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="p">(</span><span class="sa">f</span><span class="s1">&#39;%</span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s1">%&#39;</span><span class="p">,))</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+</code></pre></div>
+
+<p>This agent never learned that a leaked key existed elsewhere in the diff. It held the injection threat model from first file to last, because nothing else was visible to it.</p>
+<p><strong>Leaked key + SSRF — CRITICAL and MEDIUM, 6 minutes.</strong> The secrets scanner surfaced a production API key committed in <code>config/settings.py</code> — CRITICAL, and recoverable from git history forever — then flagged <code>api/webhooks.py</code>, where a user-supplied URL reaches <code>requests.get()</code> without validation (MEDIUM, SSRF).</p>
+<p><strong>Two clean surfaces.</strong> The auth scanner walked session management, JWT handling, and every piece of authentication middleware, coming back empty after 18 minutes. The deserialization scanner audited each <code>pickle.loads()</code>, <code>yaml.load()</code>, and <code>eval()</code> call site and likewise found nothing.</p>
+<h2 id="verify-that-no-agent-saw-another">Verify that no agent saw another</h2>
+<p>The zero-shared-state claim above is checkable, not rhetorical. The event journal records every read; ask it how many crossed an agent boundary:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">shared_events</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="n">a</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">vfs_events</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">id</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">event_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;cross_agent_read&#39;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;sqli-scanner&#39;</span><span class="p">,</span><span class="s1">&#39;secrets-scanner&#39;</span><span class="p">,</span><span class="s1">&#39;auth-scanner&#39;</span><span class="p">,</span><span class="s1">&#39;deser-scanner&#39;</span><span class="p">)</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span>
+
+<span class="c1">-- Result: 0 cross-agent reads for all 4 agents</span>
+</code></pre></div>
+
+<p>Zero, on all four scanners. That number is what turns "no anchoring" from a hope into a property: had the secrets agent watched the injection finding arrive, it could have drifted toward injection lookalikes and sailed straight past the key it was built to catch.</p>
+<h2 id="what-it-costs">What it costs</h2>
+<div class="codehilite"><pre><span></span><code>Approach                   Time               Anchoring Risk
+-------------------------  -----------------  --------------
+Sequential (1 reviewer)    80 min             High
+Sequential (4 reviewers)   20 min wall clock  Medium
+BENE parallel agents       20 min wall clock  None
+</code></pre></div>
+
+<p>The findings come out identical either way. Parallelizing buys a 4× wall-clock win over a single reviewer; the isolation buys an anchoring column that reads "None" by construction rather than by effort.</p>
+<p>Note where the bugs sat: the injection and the key live in different mental categories — exactly where a serial reviewer pays the switching tax — and the SSRF is the kind most likely to vanish behind whichever category was loaded last. All three surfaced in 20 minutes, with an audit trail proving no finding shaped another.</p>
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="../README.html">README</a> — BENE overview and full doc index</li>
+<li><a href="../use-cases.html">Use Cases</a> — more real-world patterns</li>
+<li><a href="../use-cases.html#security-audit-swarm">Use case: Security Audit Swarm</a></li>
+<li><a href="../memory.html">Component guide: Cross-Agent Memory</a></li>
+<li><a href="../architecture.html">Architecture: agent isolation</a></li>
+</ul>
+<hr />
+<p><em>bene is MIT-licensed and local-first: this whole review ran on one machine, and its complete state — agents, events, findings — is a single SQLite file you can copy.</em></p>
+<p><em>GitHub: <a href="https://github.com/good-night-oppie/bene">github.com/good-night-oppie/bene</a></em></p>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/tutorials/t03-security-swarm.md" target="_blank" rel="noopener noreferrer">docs/tutorials/t03-security-swarm.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+</main>
+</div>
+<footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>
+<a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer">Building something on bene? Open a Discussion.</a></div></footer>
+</body>
+</html>

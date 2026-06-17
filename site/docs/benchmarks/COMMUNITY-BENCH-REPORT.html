@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>COMMUNITY-BENCH-REPORT — BENE alongside KAOS/the 0.1.0 predecessor across community benchmarks (pre-registered run, 2026-06-11) — BENE docs</title>
+<meta name="description" content="BENE 0.2.0 documentation — COMMUNITY-BENCH-REPORT — BENE alongside KAOS/the 0.1.0 predecessor across community benchmarks (pre-registered run, 2026-06-11)" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+:root { --bg:#F0EEE8; --surface:#EDE9E4; --border:#CFCCC8; --ink:#1F1D1C; --mute:#62666D; --accent:#EE6018; --gold:#B46A35; --term-bg:#0A0908; --term-fg:#EDE9E4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 Geist,ui-sans-serif,system-ui,sans-serif; }
+a { color:var(--gold); text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent); text-underline-offset:3px; }
+a:hover { color:var(--accent); }
+.top { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+.top-in { max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+.brand { font-family:Geist,ui-sans-serif,sans-serif; font-weight:700; letter-spacing:.12em; color:var(--ink); text-decoration:none; }
+.top a.nav { color:var(--mute); text-decoration:none; font-size:14px; }
+.top a.nav:hover { color:var(--accent); }
+.wrap { max-width:1200px; margin:0 auto; padding:24px; display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; }
+aside.sb { position:sticky; top:80px; align-self:start; max-height:calc(100vh - 100px); overflow-y:auto; font-size:13.5px; border-left:1px solid var(--border); padding-left:16px; }
+.sb h4 { margin:18px 0 6px; font:600 11px/1 "Geist Mono",ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+.sb a { display:block; padding:3px 0; color:var(--mute); text-decoration:none; }
+.sb a:hover { color:var(--accent); }
+.sb a.cur { color:var(--ink); font-weight:600; }
+main { min-width:0; max-width:760px; }
+main h1 { font-family:Geist,ui-sans-serif,sans-serif; font-size:2.1rem; line-height:1.2; margin:.2em 0 .5em; }
+main h2 { font-family:Geist,ui-sans-serif,sans-serif; font-size:1.45rem; margin-top:2em; border-bottom:1px solid var(--border); padding-bottom:.35em; }
+main h3 { font-size:1.12rem; margin-top:1.7em; }
+main img { max-width:100%; border:1px solid var(--border); border-radius:8px; }
+main table { border-collapse:collapse; width:100%; font-size:14.5px; display:block; overflow-x:auto; }
+main th, main td { border:1px solid var(--border); padding:8px 12px; text-align:left; vertical-align:top; }
+main th { background:var(--surface); font-weight:600; }
+main blockquote { margin:1em 0; padding:.2em 1.2em; border-left:3px solid var(--accent); color:var(--mute); background:var(--surface); border-radius:0 4px 4px 0; }
+main :not(pre) > code { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:.08em .35em; font:.86em "Geist Mono",ui-monospace,monospace; }
+.codehilite, main pre { background:var(--term-bg); color:var(--term-fg); border-radius:6px; padding:16px 18px; overflow-x:auto; font:13.5px/1.55 "Geist Mono",ui-monospace,monospace; }
+.codehilite pre, pre code { background:none; padding:0; margin:0; border:none; }
+.demo-embed { margin:20px 0 28px; }
+.demo-embed .frame { background:var(--term-bg); border-radius:6px; padding:14px; }
+.demo-embed .dots { display:flex; gap:6px; margin-bottom:10px; }
+.demo-embed .dots i { width:10px; height:10px; border-radius:50%; background:#3a3344; }
+.demo-embed img { border:none; border-radius:6px; display:block; width:100%; }
+.demo-embed p { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:8px 2px 0; }
+.crumbs { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-bottom:8px; }
+.crumbs a { color:var(--mute); }
+.src { font:12.5px "Geist Mono",ui-monospace,monospace; margin-top:48px; padding-top:16px; border-top:1px solid var(--border); color:var(--mute); }
+footer.ft { border-top:1px solid var(--border); margin-top:40px; }
+footer.ft .in { max-width:1200px; margin:0 auto; padding:24px; font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.idx-group h2 { font-family:Geist,ui-sans-serif,sans-serif; border:none; margin-top:1.6em; }
+.idx-group ul { list-style:none; padding:0; margin:.4em 0; }
+.idx-group li { padding:6px 0; border-bottom:1px dashed var(--border); }
+.idx-group .path { font:11.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-left:8px; }
+/* Mobile overrides — kept at the end so source order beats base rules.
+   Earlier this rule sat between base rules and got overridden by a later
+   `aside.sb { position:sticky }`, leaving the sidebar stuck on top of
+   main content on phones. */
+@media (max-width: 860px) {
+  .wrap { grid-template-columns:1fr; gap:24px; padding:16px; }
+  aside.sb { position:static; max-height:none; border-left:none; border-bottom:1px solid var(--border); padding-left:0; padding-bottom:16px; font-size:13px; }
+  .sb h4 { margin:12px 0 4px; }
+  main { max-width:none; }
+  main h1 { font-size:1.6rem; }
+  main h2 { font-size:1.2rem; }
+  main h3 { font-size:1.05rem; }
+  .top-in { padding:0 16px; gap:14px; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #49483e }
+.codehilite { background: #272822; color: #F8F8F2 }
+.codehilite .c { color: #959077 } /* Comment */
+.codehilite .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.codehilite .esc { color: #F8F8F2 } /* Escape */
+.codehilite .g { color: #F8F8F2 } /* Generic */
+.codehilite .k { color: #66D9EF } /* Keyword */
+.codehilite .l { color: #AE81FF } /* Literal */
+.codehilite .n { color: #F8F8F2 } /* Name */
+.codehilite .o { color: #FF4689 } /* Operator */
+.codehilite .x { color: #F8F8F2 } /* Other */
+.codehilite .p { color: #F8F8F2 } /* Punctuation */
+.codehilite .ch { color: #959077 } /* Comment.Hashbang */
+.codehilite .cm { color: #959077 } /* Comment.Multiline */
+.codehilite .cp { color: #959077 } /* Comment.Preproc */
+.codehilite .cpf { color: #959077 } /* Comment.PreprocFile */
+.codehilite .c1 { color: #959077 } /* Comment.Single */
+.codehilite .cs { color: #959077 } /* Comment.Special */
+.codehilite .gd { color: #FF4689 } /* Generic.Deleted */
+.codehilite .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F8F8F2 } /* Generic.Error */
+.codehilite .gh { color: #F8F8F2 } /* Generic.Heading */
+.codehilite .gi { color: #A6E22E } /* Generic.Inserted */
+.codehilite .go { color: #66D9EF } /* Generic.Output */
+.codehilite .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #959077 } /* Generic.Subheading */
+.codehilite .gt { color: #F8F8F2 } /* Generic.Traceback */
+.codehilite .kc { color: #66D9EF } /* Keyword.Constant */
+.codehilite .kd { color: #66D9EF } /* Keyword.Declaration */
+.codehilite .kn { color: #FF4689 } /* Keyword.Namespace */
+.codehilite .kp { color: #66D9EF } /* Keyword.Pseudo */
+.codehilite .kr { color: #66D9EF } /* Keyword.Reserved */
+.codehilite .kt { color: #66D9EF } /* Keyword.Type */
+.codehilite .ld { color: #E6DB74 } /* Literal.Date */
+.codehilite .m { color: #AE81FF } /* Literal.Number */
+.codehilite .s { color: #E6DB74 } /* Literal.String */
+.codehilite .na { color: #A6E22E } /* Name.Attribute */
+.codehilite .nb { color: #F8F8F2 } /* Name.Builtin */
+.codehilite .nc { color: #A6E22E } /* Name.Class */
+.codehilite .no { color: #66D9EF } /* Name.Constant */
+.codehilite .nd { color: #A6E22E } /* Name.Decorator */
+.codehilite .ni { color: #F8F8F2 } /* Name.Entity */
+.codehilite .ne { color: #A6E22E } /* Name.Exception */
+.codehilite .nf { color: #A6E22E } /* Name.Function */
+.codehilite .nl { color: #F8F8F2 } /* Name.Label */
+.codehilite .nn { color: #F8F8F2 } /* Name.Namespace */
+.codehilite .nx { color: #A6E22E } /* Name.Other */
+.codehilite .py { color: #F8F8F2 } /* Name.Property */
+.codehilite .nt { color: #FF4689 } /* Name.Tag */
+.codehilite .nv { color: #F8F8F2 } /* Name.Variable */
+.codehilite .ow { color: #FF4689 } /* Operator.Word */
+.codehilite .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.codehilite .w { color: #F8F8F2 } /* Text.Whitespace */
+.codehilite .mb { color: #AE81FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #AE81FF } /* Literal.Number.Float */
+.codehilite .mh { color: #AE81FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #AE81FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #AE81FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #E6DB74 } /* Literal.String.Affix */
+.codehilite .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.codehilite .sc { color: #E6DB74 } /* Literal.String.Char */
+.codehilite .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #E6DB74 } /* Literal.String.Doc */
+.codehilite .s2 { color: #E6DB74 } /* Literal.String.Double */
+.codehilite .se { color: #AE81FF } /* Literal.String.Escape */
+.codehilite .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.codehilite .si { color: #E6DB74 } /* Literal.String.Interpol */
+.codehilite .sx { color: #E6DB74 } /* Literal.String.Other */
+.codehilite .sr { color: #E6DB74 } /* Literal.String.Regex */
+.codehilite .s1 { color: #E6DB74 } /* Literal.String.Single */
+.codehilite .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.codehilite .bp { color: #F8F8F2 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #A6E22E } /* Name.Function.Magic */
+.codehilite .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.codehilite .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.codehilite .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.codehilite .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.codehilite .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.codehilite { background: var(--term-bg) !important; }
+</style>
+
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <a class="brand" href="../../index.html">BENE</a>
+  <a class="nav" href="../../index.html">Landing</a>
+  <a class="nav" href="../index.html">Docs index</a>
+  <a class="nav" href="../../SKILL.md" target="_blank" rel="noopener noreferrer" title="Hand BENE to your agent in one URL">SKILL.md ↗</a>
+  <button class="nav copy-llms" data-llms-url="../../llms.txt" data-copied-label="✓ copied" data-opened-label="↗ opened" title="Copy the llms.txt site map (an LLM-friendly index pointing at SKILL.md + every doc). Paste it into your agent's context.">Copy llms.txt</button>
+  <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer">GitHub</a>
+  <a class="nav" href="../../zh/docs/benchmarks/COMMUNITY-BENCH-REPORT.html" title="切换到中文" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">文</a>
+</div></div>
+
+<script>
+(function() {
+  document.querySelectorAll('button.copy-llms').forEach(function(btn) {
+    var original = btn.textContent;
+    btn.addEventListener('click', function() {
+      var url = btn.getAttribute('data-llms-url');
+      fetch(url, { cache: 'no-cache' })
+        .then(function(r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.text(); })
+        .then(function(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).then(function() {
+              btn.textContent = btn.getAttribute('data-copied-label') || '✓ copied';
+              setTimeout(function() { btn.textContent = original; }, 2200);
+            });
+          }
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        })
+        .catch(function() {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        });
+    });
+  });
+})();
+</script>
+<div class="wrap">
+<aside class="sb"><h4>Start, operate, recover</h4>
+<a href="../README.html">README</a>
+<a href="../architecture.html">architecture</a>
+<a href="../checkpoints.html">checkpoints</a>
+<a href="../cli-reference.html">cli-reference</a>
+<a href="../codegen.html">codegen</a>
+<a href="../dashboard.html">dashboard</a>
+<a href="../deployment.html">deployment</a>
+<a href="../integrating-bene.html">integrating-bene</a>
+<a href="../mcp-integration.html">mcp-integration</a>
+<a href="../memory.html">memory</a>
+<a href="../meta-harness.html">meta-harness</a>
+<a href="../philosophy.html">philosophy</a>
+<a href="../primitive-review-cycle.html">primitive-review-cycle</a>
+<a href="../probe-authoring.html">probe-authoring</a>
+<a href="../schema.html">schema</a>
+<a href="../shared-log.html">shared-log</a>
+<a href="../skills.html">skills</a>
+<a href="../use-cases.html">use-cases</a>
+<h4>Recipes</h4>
+<a href="../recipes/atomic-completion.html">atomic-completion</a>
+<h4>Design and claims</h4>
+<a href="../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
+<a href="../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
+<a href="../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
+<a href="../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
+<h4>Evidence and research</h4>
+<a href="../research/GAP-AUDIT.html">GAP-AUDIT</a>
+<a href="../research/SYNTHESIS.html">SYNTHESIS</a>
+<a href="../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<h4>Benchmarks and gates</h4>
+<a class="cur" href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
+<a href="../benchmarks/PREREG.html">PREREG</a>
+<h4>Tutorial playbooks</h4>
+<a href="../tutorials/t00-bene-e2e-walkthrough.html">t00-bene-e2e-walkthrough</a>
+<a href="../tutorials/t01-bene-meta-harness.html">t01-bene-meta-harness</a>
+<a href="../tutorials/t02-e2e-self-healing.html">t02-e2e-self-healing</a>
+<a href="../tutorials/t03-security-swarm.html">t03-security-swarm</a>
+<a href="../tutorials/t04-migration-rollback.html">t04-migration-rollback</a>
+<a href="../tutorials/t05-incident-response.html">t05-incident-response</a>
+<a href="../tutorials/t06-ml-research-lab.html">t06-ml-research-lab</a>
+<a href="../tutorials/t07-regression-guard.html">t07-regression-guard</a>
+<a href="../tutorials/t08-hundred-agents-scale.html">t08-hundred-agents-scale</a>
+<a href="../tutorials/t10-ci-overnight-bene-swarm.html">t10-ci-overnight-bene-swarm</a>
+<a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
+<h4>Case studies</h4>
+<a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
+<h4>Infrastructure</h4>
+<a href="../infra/DNS.html">DNS</a></aside>
+<main>
+<div class="crumbs"><a href="../index.html">docs</a> / benchmarks/COMMUNITY-BENCH-REPORT.md</div>
+<h1 id="community-bench-report-bene-alongside-kaosthe-010-predecessor-across-community-benchmarks-pre-registered-run-2026-06-11">COMMUNITY-BENCH-REPORT — BENE alongside KAOS/the 0.1.0 predecessor across community benchmarks (pre-registered run, 2026-06-11)</h1>
+<blockquote>
+<p><strong>Co-opetition framing (2026-06-14).</strong> This report was originally titled
+RIVAL-BENCH-REPORT and used the word <em>rival</em> throughout. The receipts —
+verdicts, gates, raw commands, deviation numbers — are unchanged. Only the
+framing word is. We are one OSS community; KAOS and the 0.1.0 predecessor
+are peer projects whose tests we ran ourselves against ours, and BENE's
+capability deltas exist in relation to that shared community of work. A few
+phrases (e.g. <code>"BENE supersedes"</code> in §Verdict) appear in quotes because they
+are technical artifacts of the PREREG locked rule and changing the locked
+phrase would invalidate the protocol; the protocol stands. Everywhere else,
+<em>rival</em> → <em>peer</em> / <em>community peer</em>.</p>
+<p><code>docs/benchmarks/PREREG.md</code> is intentionally preserved byte-for-byte as
+registered 2026-06-11 (still uses the word <em>rival</em> in its locked criteria);
+any post-hoc edit there — even a worldview-only word swap — would change
+the file sha256 and could be read as a protocol violation. The community-
+peer convention applies to the report, the gap audit, the design doc, the
+landing, and the skill; PREREG itself is a historical-locked artifact.</p>
+</blockquote>
+<ul>
+<li><strong>Protocol:</strong> <code>docs/benchmarks/PREREG.md</code>, registered 2026-06-11 before any benchmark execution. All gates below were applied as locked; no criterion was edited post-hoc.</li>
+<li><strong>PREREG sha256:</strong> <code>f9179cf814e9a7d713007d7fc4c66f25e25a011f68dc4c6e70cf5c201b5043f8</code></li>
+<li><strong>REJECT counted as success.</strong> Per PREREG principle 3, a LOSS row reported honestly is a successful audit outcome; sugar-coating any row voids the report. Wherever a gate statistic was ambiguous, the least-favorable reading for BENE was used.</li>
+</ul>
+<h2 id="headline">Headline</h2>
+<p><strong>BENE loses 4 rows where peer mechanisms have no shipped BENE equivalent: A1b, A2, A4, A5</strong> (outcome/plasticity-weighted retrieval ranking, learned-ranking delta, critical-step failure localization, continuous-quality outcome signal — all admitted as <em>planned</em> in ). A fifth Section-A loss, <strong>A6, is a loss of an implemented BENE mechanism</strong> (the <code>attach_kernel</code> memory mirror fails the overhead gate). In addition, <strong>two of three Section B rows FAIL</strong> (B1: metaharness eval loop internally zeroes every score on a missing <code>diagnostic_view</code> hook; B3: the bug_triage benchmark package was never migrated from the 0.1.0 predecessor). Only after stating these: BENE records 2 Section-A wins/passes besides parity (A3, A7), 1 Section-A parity (A1), 1 Section-B pass (B2), and 5/5 Section-C wins.</p>
+<p>Tally across all 16 rows: 7 WIN/PASS, 1 PARITY, 2 LOSS, 3 NA-LOSS, 2 FAIL, 1 B-row pass counted within the 7.</p>
+<h2 id="full-results">Full results</h2>
+<p>Numbers below are condensed; verbatim commands and raw per-row records are preserved in the collapsible appendix.</p>
+<table>
+<thead>
+<tr>
+<th>Row</th>
+<th>Task</th>
+<th>BENE</th>
+<th>Peer</th>
+<th>Verdict</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A1</td>
+<td>Realistic retrieval, top-1, 40 skills × 15 NL queries (KAOS dataset verbatim)</td>
+<td>73.3% (11/15), both arms (legacy SkillStore BM25; kernel EngramStore tier-3)</td>
+<td>KAOS bm25 arm 73.3% (11/15); re-run deviation 0%</td>
+<td><strong>PARITY</strong></td>
+<td>Gate (BENE ≥ bm25 arm) technically satisfied at 73.3% ≥ 73.3%, but reported as PARITY, the least-favorable honest verdict. Parity is expected by construction: identical FTS schema; both systems miss the same 4 deployment-convention queries. Apples-to-apples: neither side's outcome counters affect BM25 rank order.</td>
+</tr>
+<tr>
+<td>A1b</td>
+<td>Same dataset vs KAOS plasticity-weighted arm</td>
+<td>73.3% (11/15)</td>
+<td>KAOS weighted arm 86.7% (13/15), break-even ~episode 60</td>
+<td><strong>LOSS</strong></td>
+<td>Pre-registered as "expected — decay/weighting is planned". Gap −13.3pp (−15.4% relative). BENE ships no outcome-weighted ranking; the 2 queries KAOS learns from reward are unreachable for BENE. No retuning attempted; first measurement reported.</td>
+</tr>
+<tr>
+<td>A2</td>
+<td>Neuroplasticity delta (weighted − bm25)</td>
+<td>No mechanism: 0 grep hits for plasticity/weighting; <code>record_outcome</code> counters never feed ranking; </td>
+<td>KAOS +10.0pp absolute / +12.5% relative; re-run 0% deviation</td>
+<td><strong>NA-LOSS</strong></td>
+<td>Counts against BENE. No feedback-sensitive retrieval exists, so no delta is measurable. Caveat on the peer side: KAOS break_even=null and the weighted training curve runs below bm25 throughout training; the +10pp appears only at final measurement.</td>
+</tr>
+<tr>
+<td>A3</td>
+<td>Consolidation at scale, full pass wall-clock @ 1k items, single thread</td>
+<td>TraceDistiller.distill over 1000 trace engrams: p50 178.0 ms, max 191.8 ms (3 passes; seeding excluded per KAOS protocol)</td>
+<td>KAOS dry-run @ N=1000: committed p50 476.0 ms; re-run p50 600.4 ms (governs, +26% &gt; 10% flag)</td>
+<td><strong>WIN</strong></td>
+<td>Gate (&lt; 2× KAOS) passes under least-favorable pairing: BENE worst pass 191.8 ms vs committed 476.0 ms = 0.40×. Comparability caveat: mechanisms differ — KAOS does O(n²) pairwise Jaccard merge-detection + promotion/prune phases; BENE does O(n·patches) hash-keyed exact dedup, strictly less comparison work, and cannot merge near-duplicates. LLM analyst cost excluded on the BENE side by PREREG design.</td>
+</tr>
+<tr>
+<td>A4</td>
+<td>Critical-step localization, 5 planted trajectories, earliest decisive error</td>
+<td>No localizer: 0 grep hits; TraceDistiller's <code>analyst_fn</code> is a caller-supplied callback with no shipped implementation, no step model, no confidence output</td>
+<td>KAOS 5/5 within ±1 step (exact match on all 5), pure heuristic, confidences 0.65–0.90; re-run 0% deviation</td>
+<td><strong>NA-LOSS</strong></td>
+<td>Counts against BENE. KAOS scored 5/5, above the 4/5 cited in PREREG, raising the bar BENE failed. Peer-side caveat: trajectories are synthetic and self-authored; 4/5 ground truths are index 0, so an "always say 0" baseline scores 4/5 — but KAOS also gets the gt=2 case right, and BENE has nothing comparable, so the verdict stands.</td>
+</tr>
+<tr>
+<td>A5</td>
+<td>Quality-score: continuous vs binary outcome signal</td>
+<td>No continuous-quality ranker: <code>record_outcome(success: bool)</code> is binary-only, never influences search; question unposeable in BENE</td>
+<td>KAOS quality beats binary by +4.0pp mean top-1 (85.33% → 89.33%, 5 seeds); re-run 0% deviation</td>
+<td><strong>NA-LOSS</strong></td>
+<td>Counts against BENE. Peer-side caveats: KAOS's own variance hypothesis failed (quality pstdev higher) and is disclosed in their README; the +4.0pp is small-N (5 seeds) but consistent (quality ≥ binary on every seed).</td>
+</tr>
+<tr>
+<td>A6</td>
+<td>Inline-hook overhead: per-write latency added by kernel mirror</td>
+<td>Mirror overhead p50 3.83 ms / p95 5.53 ms (least favorable of two runs; without 3.81 ms p50, with 7.59 ms p50)</td>
+<td>KAOS hook overhead committed: −24.6 µs / −87.0 µs / +962 µs; re-run (governs): +168.9 µs / −15.1 µs / +3.69 ms</td>
+<td><strong>LOSS</strong></td>
+<td>Gate is AND: (1) absolute &lt; 5 ms passes at p50, fails at p95 in run 2 — statistic ambiguous, least-favorable = fail; (2) &lt; 2× KAOS hook overhead fails under every committed reading and the least-favorable re-run reading. Root cause is structural, not noise: <code>EngramStore.append</code> issues its own commit, adding a second WAL fsync (~3.8 ms on this ext4 host) per write; KAOS hooks add ~0.17 ms on the same host.</td>
+</tr>
+<tr>
+<td>A7</td>
+<td>Probe-discipline parity: lock, tamper-refuse, falsification self-test, honest verdict</td>
+<td>23 unit tests pass; live probe in throwaway db demonstrates all 4 properties (lock sha256 match; LockTamperError on spec tamper; unkillable gate → inadmissible/VOID; worse→REJECT, better→ACCEPT, persisted)</td>
+<td>Parity target: KAOS has the same discipline natively (probe.py, verdict.py); no peer rerun required per PREREG</td>
+<td><strong>PASS</strong></td>
+<td>Parity, not superiority. Caveats: a first script run failed on a wrong table name (fixed in the /tmp script only, zero bene/ edits); verdict-count check is supplementary; tamper restore done via sqlite UPDATE of the original spec text.</td>
+</tr>
+<tr>
+<td>B1</td>
+<td>Metaharness text_classify benchmark, mock/offline mode</td>
+<td>37 unit tests pass, but the suite has no full-loop test; live mock loop completes 2/2 iterations and produces a 7-point frontier — yet 100% of per-problem evals internally raise <code>AttributeError: 'TextClassifyBenchmark' object has no attribute 'diagnostic_view'</code>, caught and zeroed; frontier is degenerate all-zero</td>
+<td>the 0.1.0 predecessor HEAD has the byte-identical defect (<code>base.py</code> identical; evaluator diff rename-only)</td>
+<td><strong>FAIL</strong></td>
+<td>Least-favorable interpretation: PREREG's "no exceptions" is violated because every evaluation excepts internally; the "frontier produced" is meaningless. Lenient reading (loop completes, no uncaught exceptions) would PASS. Not a rebrand regression — inherited from the 0.1.0 predecessor; the only benchmark implementing the hooks ([redacted]_bug_triage) was never migrated (see B3). Mandated GitHub issue could not be filed: no git remote configured.</td>
+</tr>
+<tr>
+<td>B2</td>
+<td>Temporal runtime invariants + storage protocol suites</td>
+<td>Default env: 39 passed, 2 skipped (temporalio not importable). With declared <code>--group temporal</code>: 58 passed, 0 skipped, 0 failed</td>
+<td>N/A — machinery-port check, no peer rerun preregistered</td>
+<td><strong>PASS</strong></td>
+<td>"Full pass" is met only after installing the declared temporal dependency group (documented path, no source edits); in the default env two of six named targets skip entirely. 10 UserWarnings (EXTERNAL_WRITE reconciliation TOCTOU), warnings only. Run at repo HEAD 83cb7ce.</td>
+</tr>
+<tr>
+<td>B3</td>
+<td>bug_triage machinery imports + dataset parses</td>
+<td><code>ModuleNotFoundError</code> for both <code>bene.benchmarks.bug_triage.*</code> and <code>bene.benchmarks.[redacted]_bug_triage.*</code>; <code>bene/benchmarks/</code> contains only a namespace <code>__init__.py</code>; zero dataset files anywhere on the BENE side</td>
+<td>the 0.1.0 predecessor-side intact (read-only): imports OK; search_set.jsonl = 121 rows; world_physics.json parses</td>
+<td><strong>FAIL</strong></td>
+<td>The PREREG premise ("dir gitignored but present on disk") is false: the parent dir is gitignored and present, but the package itself was never copied — gitignore most plausibly caused a silent drop during the predecessor→bene migration (untracked files don't follow a git-based port). Unambiguous FAIL: neither imports nor data exist on BENE.</td>
+</tr>
+<tr>
+<td>C1</td>
+<td>Kill-gated promotion (PromotionBlocked without ACCEPT)</td>
+<td>3 promotion tests pass; <code>promote</code> requires an ACCEPT eval engram linked <code>verifies</code>→candidate, records <code>gated_by</code>, else raises</td>
+<td><code>PromotionBlocked</code> = 0 hits in kaos/ and predecessor/; KAOS metaharness selection has zero references to probes/verdicts; the 0.1.0 predecessor has no eval module at all</td>
+<td><strong>WIN</strong></td>
+<td>Precise framing: KAOS <em>has</em> falsifiable probes; what it lacks is verdict-gated promotion — its candidate selection is a Pareto frontier on benchmark scores. The uniqueness claim is the gating, not probes per se.</td>
+</tr>
+<tr>
+<td>C2</td>
+<td>Context-pollution detection → checkpoint recovery (e2e)</td>
+<td>3 tests pass (clean agent not polluted; checkpoint→pollute→detect→recover persisting a pollution engram; no-checkpoint advises respawn)</td>
+<td><code>pollution</code> = 0 hits in both peer codebases; supplementary quarantine/contaminate/evict greps also 0</td>
+<td><strong>WIN</strong></td>
+<td>Both peers have generic checkpoint/restore and KAOS has dream consolidation; what they lack is pollution detection plus the automated detect→recover/advise loop. The win is the detector + recovery policy, not checkpointing.</td>
+</tr>
+<tr>
+<td>C3</td>
+<td>Enforced autonomy ladder (L1 denied L3, denial recorded)</td>
+<td>1 test matched the PREREG <code>-k</code> filter; supplementary: full test_harness_layer.py 19 passed, capabilities denial/autonomy-swap tests 2 passed</td>
+<td><code>autonomy</code> = 0 hits in both peer packages; peer <code>capabilit</code> hits are Linux-kernel capability drops for FUSE — a different concept</td>
+<td><strong>WIN</strong></td>
+<td>Honest deviation disclosed: the PREREG filter matched only 1 test because no test <em>names</em> contain "autonomy"; the L0–L4 coverage lives in differently-named tests, all passing in the full-file run. Peer absence is clean.</td>
+</tr>
+<tr>
+<td>C4</td>
+<td>Computed trust ledger + trust-weighted votes</td>
+<td>12 trust tests + 1 weighted-tally adapter test pass (4-signal composite, ACCEPT-verdict eligibility, weighted vote range, trust engrams)</td>
+<td>Peer <code>trust</code> hits are English prose only; <code>weighted_tally</code> = 0 hits; both peers' votes are boolean + free text, tally is a count</td>
+<td><strong>WIN</strong></td>
+<td>Caveat: KAOS does have a <code>rank='weighted'</code> memory-search mode — an adjacent use of "weighted", but it is search ranking, unrelated to trust ledgers or weighted consensus.</td>
+</tr>
+<tr>
+<td>C5</td>
+<td>Budget-capped context assembly with manifest (never exceeds, randomized)</td>
+<td>1 test passes: 50 randomized rounds × all strategies assert <code>estimated_tokens &lt;= budget</code> every time; manifest lists included and dropped items</td>
+<td>Peer <code>budget</code> hits are exclusively time/cost/history budgets; zero hits for a context token budget</td>
+<td><strong>WIN</strong></td>
+<td>Least-favorable framing disclosed: both peers do ship a <code>ContextCompressor.compress(messages, max_tokens)</code> — but it is best-effort (final trim loop can return over-target output), with no manifest and no never-exceed property test. The win is the enforced invariant + manifest, not compression existing at all.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="verdict-locked-rule-applied-mechanically">Verdict (locked rule applied mechanically)</h2>
+<p>PREREG locked rule: <em>"BENE supersedes" may be claimed </em><em>only</em><em> with: all Section B pass, all Section C pass, and Section A shows no row where BENE's implemented mechanism loses to the peer's equivalent (N/A-planned rows are reported as capability gaps, listed first, never hidden).</em></p>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Result</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>All Section B pass</td>
+<td><strong>NOT MET</strong></td>
+<td>B1 FAIL (every per-problem eval internally excepts and zeroes; degenerate frontier), B3 FAIL (bug_triage package and data absent from BENE). B2 passes.</td>
+</tr>
+<tr>
+<td>All Section C pass</td>
+<td>MET</td>
+<td>C1–C5 all pass at HEAD with command-level peer-absence evidence (none of the peer codebases ship the mechanism).</td>
+</tr>
+<tr>
+<td>No implemented-mechanism loss in Section A</td>
+<td><strong>NOT MET</strong></td>
+<td>A6: the shipped <code>attach_kernel</code> memory mirror loses the overhead gate under every reading of the committed reference and the least-favorable reading of the governing re-run.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Conclusion the rule yields: the phrase "BENE supersedes" may not be used.</strong> Two of the three conjunctive conditions fail independently; either alone is disqualifying.</p>
+<p>Capability gaps (N/A-planned rows, per PREREG principle 4 these count against any superiority claim):</p>
+<ol>
+<li><strong>Outcome/plasticity-weighted retrieval ranking</strong> (A1b, A2) — <code>record_outcome</code> counters never feed search ranking; decay/demotion admitted as planned in </li>
+<li><strong>Critical-step failure localization</strong> (A4) — TraceDistiller is a distillation framework with a caller-supplied analyst; no shipped localizer, no step model, no confidence output.</li>
+<li><strong>Continuous-quality outcome signal</strong> (A5) — binary <code>success: bool</code> only; with no outcome-fed ranker at all, the continuous-vs-binary question cannot even be posed.</li>
+</ol>
+<p>Implemented-mechanism deficits (not capability gaps, but losses/failures of shipped code):</p>
+<ol start="4">
+<li><strong>A6</strong> — mirror write path performs a second WAL commit+fsync per write (~2× per-write latency on this host); structural, not noise.</li>
+<li><strong>B1</strong> — <code>evaluator.py</code> calls <code>diagnostic_view()</code>/<code>region_key()</code> unconditionally; no bundled benchmark implements them; inherited byte-identical from the 0.1.0 predecessor HEAD.</li>
+<li><strong>B3</strong> — the only benchmark that implements the B1 hooks (the bug_triage package) was silently dropped in the migration, most plausibly by the gitignore.</li>
+</ol>
+<p>What can be claimed, supported by this run: parity with KAOS on static BM25 retrieval (A1) and probe discipline (A7); a faster — though mechanistically lighter — consolidation pass (A3); the Temporal/storage port runs (B2); and five mechanisms (verdict-gated promotion, pollution-recovery loop, enforced autonomy ladder, trust-weighted consensus, budget-enforced context assembly) for which command-level evidence shows no peer ships an equivalent (C1–C5). That is a narrower statement than supersession, and it is the strongest one this protocol permits.</p>
+<h2 id="threats-to-validity">Threats to validity</h2>
+<p><strong>Comparability of the A3 win (different consolidation mechanisms).</strong> This is the only Section-A win, and it compares each system's native full pass at the same N, not identical algorithms. KAOS performs O(n²) pairwise Jaccard similarity merge-detection plus promotion and prune/weights phases over 5,000 usage rows; BENE's distill is an O(n·patches) hash-keyed exact-lesson dedup that cannot detect near-duplicate lessons. BENE does strictly less comparison work, so the 0.40× wall-clock ratio partly measures algorithmic ambition, not implementation quality. Additionally, production distill quality depends on an LLM analyst whose cost would dominate and is excluded by PREREG design on the BENE side only. An adversarial reviewer would call A3 apples-to-oranges; we report it as a WIN because the PREREG gate is defined over native passes, but the caveat belongs next to the number.</p>
+<p><strong>Ported dataset mapping (A1/A1b).</strong> KAOS's 40 skills, 15 queries, stopword list, and FTS normalizer were extracted verbatim via AST, but the BENE-side field mappings (two arms) are still mappings; the kernel-arm <code>payload</code> concatenation in particular could plausibly shift FTS behavior on a different query set. The observed parity is partly by construction — BENE's legacy schema is identical to KAOS's — so A1 says little about retrieval quality beyond "same algorithm, same result."</p>
+<p><strong>Single-machine timing variance (A3, A6).</strong> The KAOS A3 re-run deviated +26% from its committed results; the A6 committed reference came from a host with different fsync characteristics (~1 ms vs ~3.9 ms p50 baselines). Per protocol the re-runs govern, and the A3/A6 verdicts are stable under either source, but absolute milliseconds in this report should not be quoted as portable. A6's gate is additionally ill-posed in two ways an adversary would exploit: the gate statistic (p50 vs p95) is unspecified, and two of three committed KAOS overhead deltas are negative, making the "&lt; 2×" threshold degenerate. We resolved both ambiguities against BENE.</p>
+<p><strong>Peer-side bench weaknesses we did not lean on.</strong> A4's trajectories are synthetic and authored by the same repo that built the localizer, and 4/5 ground truths sit at index 0 (a trivial constant baseline scores 4/5). A2's weighted training curve runs below the bm25 curve throughout training with break_even=null. A5's variance-reduction hypothesis failed in KAOS's own results. None of these change any verdict here — BENE has no mechanism in those rows — but they bound how strong the peers' claims themselves are.</p>
+<p><strong>Negative-evidence basis of Section C.</strong> Peer absence is shown by grep absence and source reading, the GAP-AUDIT standard. Absence of a token is not absence of a capability: KAOS's weighted memory search (C4-adjacent), both peers' ContextCompressor (C5-adjacent), and generic checkpointing (C2-adjacent) were each disclosed and distinguished in the row notes, but a motivated reviewer could argue partial functional overlap. The C verdicts rest on the distinguishing property (gating, detection loop, enforcement invariant, trust signals), not on the broader feature category.</p>
+<p><strong>Unversioned measurement scripts.</strong> BENE-side harnesses (<code>/tmp/bene_a1_bench.py</code>, <code>/tmp/bene_a3_consolidation.py</code>, <code>/tmp/bene_a6_mirror_overhead.py</code>, <code>/tmp/b1_live_mock.py</code>, <code>/tmp/a7_live_probe.py</code>) live in /tmp and are not committed; reproduction requires re-deriving them from the appendix commands. Both repos also had pre-existing dirty working trees; every module exercised was verified unmodified at HEAD, and nothing under either peer checkout was written, but a clean-clone re-run would be the stronger artifact.</p>
+<p><strong>Interpretation latitude.</strong> Three verdicts involved judgment calls resolved against BENE: A1 reported as PARITY rather than gate-satisfied WIN; A6's ambiguous gate read as fail; B1's "no exceptions" read strictly (internal caught exceptions count) rather than leniently (loop completes). A reviewer preferring the lenient readings would move B1 to PASS — which would still not rescue the supersession claim, since B3 and A6 stand.</p>
+<h2 id="appendix-verbatim-commands-and-raw-records">Appendix — verbatim commands and raw records</h2>
+<details>
+<summary>Section A commands (A1/A1b, A2, A3, A4, A5, A6, A7)</summary>
+
+**A1 / A1b — BENE:**
+
+<div class="codehilite"><pre><span></span><code>cd /home/admin/gh/bene-main &amp;&amp; uv run python /tmp/bene_a1_bench.py
+</code></pre></div>
+
+
+Throwaway db `/tmp/bene_a1_bench.db`; raw per-query JSON at `/tmp/bene_a1_results.json`. Dataset (40 skills + 15 queries + stopword list + `_fts_safe` OR-normalizer) extracted verbatim via AST from `/home/admin/gh/kaos/demo_realistic_retrieval_bench/run.py`. Field mapping arm1 (identical to KAOS bench's own seeding): name=name, description=desc, template=f"Apply {name} to the task", tags=["benchmark","realistic"], source_agent_id=seed agent. Mapping arm2: title=name, payload=description+"\n"+template body, provenance={system:benchmark, agent_id:seed}.
+
+**A1 / A1b — KAOS:**
+
+<div class="codehilite"><pre><span></span><code>rm -rf /tmp/kaos_bench_copy &amp;&amp; cp -r /home/admin/gh/kaos/demo_realistic_retrieval_bench /tmp/kaos_bench_copy &amp;&amp; rm -f /tmp/kaos_bench_copy/results.* &amp;&amp; cd /home/admin/gh/kaos &amp;&amp; uv run python /tmp/kaos_bench_copy/run.py
+</code></pre></div>
+
+
+Exit 0, <1 min. Committed bm25 final_accuracy 0.7333, weighted 0.8667; re-run deviation 0% including identical per-query pattern; curves [63,67,63,65] (bm25) and [60,70,70,70] (weighted). Both repos had pre-existing dirty trees; every module exercised is unmodified at HEAD; nothing under /home/admin/gh/kaos was written.
+
+**A2 — BENE absence:**
+
+<div class="codehilite"><pre><span></span><code>grep -rniE &#39;plasticity|usage_multiplier|wilson|localiz|quality.*signal&#39; /home/admin/gh/bene-main/bene/kernel/ /home/admin/gh/bene-main/bene/skills.py   # 0 hits
+</code></pre></div>
+
+
+`bene/skills.py` search() ranks by pure FTS5 BM25 (ORDER BY rank, line 234); `record_outcome()` increments counters that never feed ranking. )`) — manual sorting, not search-time ranking; least-favorable interpretation reported.
+
+**A2 — KAOS:**
+
+<div class="codehilite"><pre><span></span><code>cp -r /home/admin/gh/kaos/demo_neuroplasticity_bench /tmp/bench_neuro &amp;&amp; cd /tmp/bench_neuro &amp;&amp; rm -f results.* *.db &amp;&amp; PYTHONPATH=/home/admin/gh/kaos /home/admin/gh/kaos/.venv/bin/python run.py
+</code></pre></div>
+
+
+absolute_gain_pp=10.0, relative_gain_pct=12.5; 2 s wall; 0% deviation from committed `/home/admin/gh/kaos/demo_neuroplasticity_bench/results.json`. KAOS break_even_episode=null; weighted training curve below bm25 throughout (0.4→0.6 vs 0.6→0.7).
+
+**A3 — BENE:**
+
+<div class="codehilite"><pre><span></span><code>cd /home/admin/gh/bene-main &amp;&amp; uv run python /tmp/bene_a3_consolidation.py
+</code></pre></div>
+
+
+1000 trace engrams, single thread, throwaway /tmp db: p50 177.96 ms, max 191.76 ms, min 170.63 ms over 3 passes; seeding 4.6 s excluded per KAOS protocol. Traces seeded with KAOS bench's exact VOCAB/DOMAINS lists, 50% failures; analyst_fn = cheap deterministic per-vocab-token patch extractor; 3 consolidated skill engrams per pass.
+
+**A3 — KAOS:**
+
+<div class="codehilite"><pre><span></span><code>cp -r /home/admin/gh/kaos/demo_consolidation_scale_bench /tmp/kaos_consol_bench_a3   # copy patched only: SCALES=[1000], sys.path pinned to /home/admin/gh/kaos
+cd /home/admin/gh/kaos &amp;&amp; uv run python /tmp/kaos_consol_bench_a3/run.py
+</code></pre></div>
+
+
+run_consolidation(dry_run=True) @ N=1000: committed p50 475.97 ms / max 482.49 ms; re-run p50 600.43 ms / max 602.25 ms (3 repeats, seed 5.1 s). Re-run deviates +26% (>10%) → re-run governs per protocol; verdict identical under either.
+
+**A4 — BENE absence:**
+
+<div class="codehilite"><pre><span></span><code>grep -rniE &#39;localiz&#39; /home/admin/gh/bene-main/bene/   # 0 hits
+grep -rn &#39;analyst_fn|TraceDistiller&#39; bene/ tests/      # only analysts are test lambdas in tests/kernel/test_evolve.py
+</code></pre></div>
+
+
+`bene/kernel/evolve/distill.py` (99 lines): `AnalystFn = Callable[[str, bool], list[Patch]]`, caller-supplied; evidence chain is a free-text field; no step model, no trace-index, no earliest-decisive-error scoring, no confidence output.
+
+**A4 — KAOS:**
+
+<div class="codehilite"><pre><span></span><code>cp -r /home/admin/gh/kaos/demo_critical_step_bench /tmp/bench_critstep &amp;&amp; cd /tmp/bench_critstep &amp;&amp; rm -f results.* *.db &amp;&amp; PYTHONPATH=/home/admin/gh/kaos /home/admin/gh/kaos/.venv/bin/python run.py
+</code></pre></div>
+
+
+hits=5/5 (gate ≥4/5), exact match on all 5, confidences 0.65–0.90, 1 s wall, 0% deviation from committed results.json. Mechanism: `kaos.dream.phases.localize.localize()`.
+
+**A5 — BENE absence:**
+
+<div class="codehilite"><pre><span></span><code>grep -rniE &#39;wilson|quality.*signal|usage_multiplier&#39; /home/admin/gh/bene-main/bene/kernel/ /home/admin/gh/bene-main/bene/skills.py   # 0 hits
+</code></pre></div>
+
+
+`record_outcome(skill_id, success: bool)` is binary-only; no quality parameter, no Wilson estimator; counters never influence search anyway.
+
+**A5 — KAOS:**
+
+<div class="codehilite"><pre><span></span><code>cp -r /home/admin/gh/kaos/demo_quality_score_bench /tmp/bench_quality &amp;&amp; cd /tmp/bench_quality &amp;&amp; rm -f results.* *.db &amp;&amp; PYTHONPATH=/home/admin/gh/kaos /home/admin/gh/kaos/.venv/bin/python run.py
+</code></pre></div>
+
+
+accuracy_delta_pp=4.0 (binary 85.33% pstdev 0.0267 → quality 89.33% pstdev 0.0327; 5 seeds 42–46, 120 episodes), variance_reduction=−0.006 (their variance hypothesis failed); 13 s wall, 0% deviation from committed results.json. Bench reuses demo_realistic_retrieval_bench's library via PYTHONPATH; dependency committed and unmodified.
+
+**A6 — BENE:**
+
+<div class="codehilite"><pre><span></span><code>cd /home/admin/gh/bene-main &amp;&amp; uv run python /tmp/bene_a6_mirror_overhead.py   # executed twice; least favorable values reported
+</code></pre></div>
+
+
+1000 writes per mode, fresh /tmp dbs, time.perf_counter, single thread. Without kernel p50 3.81 ms / p95 7.88 ms; with attach_kernel mirror p50 7.59 ms / p95 13.48 ms; overhead p50 3.83 ms, p95 5.53 ms (run1: 3.833/4.140; run2: 3.785/5.533).
+
+**A6 — KAOS:**
+
+<div class="codehilite"><pre><span></span><code>cp -r /home/admin/gh/kaos/demo_plasticity_overhead_bench /tmp/kaos_overhead_bench_a6   # copy patched only: sys.path pinned to /home/admin/gh/kaos
+cd /home/admin/gh/kaos &amp;&amp; uv run python /tmp/kaos_overhead_bench_a6/run.py
+</code></pre></div>
+
+
+Committed deltas (auto ON − OFF, p50/op): record_outcome −24.6 µs, memory_search −87.0 µs, agent_complete +962.0 µs. Re-run on this host: +168.9 µs, −15.1 µs, +3.69 ms (KAOS's own bench printed agent_complete OVER BUDGET here). Re-run governs (>10% deviation; committed numbers from a slower-fsync host). LOSS under either source. No KAOS files modified; no bene/ source edits; all runs from /tmp copies.
+
+**A7 — BENE:**
+
+<div class="codehilite"><pre><span></span><code>cd /home/admin/gh/bene-main &amp;&amp; uv run python -m pytest tests/kernel/test_eval.py tests/kernel/test_hardening.py -q   # 23 passed in 7.85s
+uv run python /tmp/a7_live_probe.py   # throwaway db /tmp/a7-live-probe.db, exit 0
+</code></pre></div>
+
+
+P1 lock: relative gate (quality delta ≥0.05, relative_to_baseline=true) registered, stored lock_sha256=1030d2242ac613a4... == sha256(stored spec) == lock_hash(in-memory gates), status=admissible. P2 tamper: `UPDATE probe_registry SET gate_spec=<0.05→−9.0>` then run() raised LockTamperError. P3 falsification self-test: unkillable gate (threshold −999) → inadmissible, run() verdict=VOID. P4 honest verdict: original spec restored via UPDATE; run(worse +0.02)=REJECT, run(better +0.10)=ACCEPT, 2 verdicts persisted in experiment_runs (per `bene/kernel/eval/verdict.py:69`; first script attempt wrongly queried a `probe_verdicts` table — /tmp script fixed, zero bene/ edits). Peer parity target: `kaos/eval/harness/probe.py`, `kaos/eval/harness/verdict.py` (ACCEPT/REJECT/VOID); no peer rerun required per PREREG.
+
+</details>
+
+<details>
+<summary>Section B commands (B1, B2, B3)</summary>
+
+**B1 — BENE:**
+
+<div class="codehilite"><pre><span></span><code>cd /home/admin/gh/bene-main &amp;&amp; uv run python -m pytest tests/test_metaharness.py -q -p no:cacheprovider   # 37 passed in 0.11s
+uv run python /tmp/b1_live_mock.py
+uv run --project /home/admin/gh/bene-main python /tmp/b1_diag.py
+</code></pre></div>
+
+
+Live mock: MockRouter.route returns ```python harness blocks; MockClient.chat backs the injected llm(); TextClassifyBenchmark synthetic dataset search_size=8; db /tmp/bene_b1_mock.db. Output: iterations_completed=2/2, harnesses_evaluated=7 (3 seeds + 2×2 proposed), frontier=7 points, proposer route() called 2×, exit 0, no uncaught exceptions. Diagnosis: 100% of per-problem evals raise `AttributeError: 'TextClassifyBenchmark' object has no attribute 'diagnostic_view'`, caught at `bene/metaharness/evaluator.py:152`; every score zeroed; frontier degenerate. Root cause: `bene/metaharness/evaluator.py:89-90` calls `benchmark.diagnostic_view()`/`region_key()` unconditionally; `bene/metaharness/benchmarks/base.py` defines neither; no bundled benchmark (text_classify/math_rag/agentic_coding/arc_agi3) implements them.
+
+**B1 — the 0.1.0 predecessor comparison:**
+
+<div class="codehilite"><pre><span></span><code>diff $PREDECESSOR_SRC/predecessor/metaharness/benchmarks/base.py /home/admin/gh/bene-main/bene/metaharness/benchmarks/base.py   # identical
+grep -rn &#39;def diagnostic_view&#39;   # only predecessor/predecessor/benchmarks/[redacted]_bug_triage/v2_benchmark.py and test-local _DiagnosticBenchmark in both repos&#39; tests
+</code></pre></div>
+
+
+evaluator.py diff is rename-only (Predecessor01→Bene, DARTRouter→TierRouter). Mandated `gh issue create` could not be filed: `git remote -v` empty in bene-main.
+
+**B2 — BENE:**
+
+<div class="codehilite"><pre><span></span><code>cd /home/admin/gh/bene-main &amp;&amp; uv run python -m pytest tests/test_runtime_invariants.py tests/storage/ tests/temporal/ tests/test_runtime_core.py tests/test_runtime_handle.py tests/test_temporal_runtime.py -q -p no:cacheprovider
+# 39 passed, 2 skipped (module-level: could not import &#39;temporalio&#39;), 10 warnings in 2.79s
+uv run --group temporal python -m pytest &lt;same 6 targets&gt; -q -p no:cacheprovider
+# 58 passed, 0 skipped, 0 failed, 10 warnings in 13.81s
+</code></pre></div>
+
+
+temporalio/asyncpg extras declared in `pyproject.toml [dependency-groups].temporal`. Warnings: EXTERNAL_WRITE with reconciliation_strategy=None (TOCTOU on activity retry). Repo HEAD 83cb7ce, no source modifications.
+
+**B3 — BENE:**
+
+<div class="codehilite"><pre><span></span><code>cd /home/admin/gh/bene-main &amp;&amp; uv run python -c &quot;import bene.benchmarks.bug_triage.benchmark, bene.benchmarks.bug_triage.game_master&quot;
+# ModuleNotFoundError: No module named &#39;bene.benchmarks.bug_triage&#39;  (exit 1)
+# adjusted name bene.benchmarks.[redacted]_bug_triage.* → same error
+</code></pre></div>
+
+
+`ls bene/benchmarks/` shows only a namespace `__init__.py` + `__pycache__`; `find` over bene-main and the sibling /home/admin/gh/bene checkout (src/bene empty) finds no triage package; zero dataset files. Parent `bene/benchmarks/` gitignored (.gitignore:20).
+
+**B3 — the 0.1.0 predecessor (read-only):**
+
+<div class="codehilite"><pre><span></span><code>cd /tmp &amp;&amp; PYTHONDONTWRITEBYTECODE=1 uv run --project $PREDECESSOR_SRC python -B -c &quot;import predecessor.benchmarks.[redacted]_bug_triage.benchmark, predecessor.benchmarks.[redacted]_bug_triage.game_master&quot;
+# &#39;the 0.1.0 predecessor imports OK&#39;
+</code></pre></div>
+
+
+data/search_set.jsonl = 121 JSONL rows (keys: expected/id/input/provenance); data/world_physics.json = dict of 6 keys. No files created under $PREDECESSOR_SRC or /home/admin/gh/kaos.
+
+</details>
+
+<details>
+<summary>Section C commands (C1–C5)</summary>
+
+**C1:**
+
+<div class="codehilite"><pre><span></span><code>uv run python -m pytest tests/kernel/test_evolve.py -k promotion -q   # 3 passed, 15 deselected in 1.14s
+grep -rEn &#39;PromotionBlocked&#39; kaos/ predecessor/                               # 0 hits
+grep &#39;promot&#39; /home/admin/gh/kaos/kaos/metaharness/search.py           # 0 matches
+grep -rE &#39;from kaos.eval|Verdict|REJECT|ACCEPT&#39; kaos/metaharness/*.py  # 0 hits; same for predecessor/metaharness/*.py
+ls predecessor/eval                                                           # No such file or directory
+</code></pre></div>
+
+
+Mechanism: `bene/kernel/evolve/gepa.py:40` PromotionBlocked; gate logic gepa.py:193-211. KAOS frontier: search.py `_compute_frontier`, lines 93–244.
+
+**C2:**
+
+<div class="codehilite"><pre><span></span><code>uv run python -m pytest tests/kernel/test_memory_os.py -k &quot;pollut or recover&quot; -q   # 3 passed, 18 deselected in 1.14s
+grep -rEn &#39;pollution&#39; kaos/ predecessor/                                                  # 0 hits
+grep -rEn &#39;quarantine|contaminat|evict|decay&#39; kaos/memory.py predecessor/memory.py kaos/dream/   # 0 hits
+</code></pre></div>
+
+
+
+**C3:**
+
+<div class="codehilite"><pre><span></span><code>uv run python -m pytest tests/kernel/test_harness_layer.py -k &quot;denied or autonomy&quot; -q   # 1 passed, 18 deselected in 0.41s
+uv run python -m pytest tests/kernel/test_harness_layer.py -q                            # 19 passed in 6.44s (supplementary)
+uv run python -m pytest tests/kernel/test_capabilities.py -k &quot;denied or autonomy&quot; -q     # 2 passed (supplementary)
+grep -rEn &#39;autonomy&#39; /home/admin/gh/kaos/kaos/ $PREDECESSOR_SRC/predecessor/                  # 0 hits in both
+</code></pre></div>
+
+
+Peer `capabilit` hits only in isolation.py (lines 122–128): Linux-kernel capability drop for FUSE. BENE machinery: `bene/kernel/capabilities.py` + `bene/kernel/harness/autonomy.py`.
+
+**C4:**
+
+<div class="codehilite"><pre><span></span><code>uv run python -m pytest tests/kernel/test_trust.py -q                  # 12 passed in 4.27s
+uv run python -m pytest tests/kernel/test_adapters.py -k weighted -q   # 1 passed, 10 deselected
+grep -rn &#39;weighted_tally&#39; kaos/ predecessor/                                  # 0 hits
+grep &#39;weight&#39; kaos/shared_log.py predecessor/predecessor/shared_log.py               # 0 hits
+</code></pre></div>
+
+
+Peer `trust` hits: kaos/eval/__init__.py:5 'trustworthy', kaos/eval/harness/types.py:74 'untrustworthy', predecessor/.../run_lab.py:371 '# trusted, in-process' — prose only. Peer vote(): boolean approve + free text (kaos/shared_log.py:252, predecessor/predecessor/shared_log.py:178). Adjacent: kaos/memory.py:140-199 rank='weighted' search mode (bm25 × retrieval-frequency × recency) — search ranking, not trust.
+
+**C5:**
+
+<div class="codehilite"><pre><span></span><code>uv run python -m pytest tests/kernel/test_memory_os.py -k budget -q   # 1 passed, 20 deselected in 0.05s
+grep -rn &#39;budget&#39; kaos/ predecessor/   # hits exclusively time/cost budgets: arc_agi3.py time_budget (76,123,240,397,423), predecessor run_lab.py/run_overnight.py spend budget, predecessor/temporal/workflow.py:228 history_budget, cli 30-min rollback budget
+</code></pre></div>
+
+
+Adjacent peer mechanism: router/context.py `ContextCompressor.compress(messages, max_tokens)` (kaos line 64, predecessor line 62) — best-effort, final trim loop stops at len(compressed)<=4 regardless of remaining size; no manifest, no never-exceed property test.
+
+</details>
+
+<hr />
+<p><em>Report generated 2026-06-11 against PREREG sha256 <code>f9179cf814e9a7d713007d7fc4c66f25e25a011f68dc4c6e70cf5c201b5043f8</code>. Verdicts assigned under least-favorable-to-BENE readings throughout; per PREREG principle 3, the LOSS/NA-LOSS/FAIL rows above are reported as successful audit outcomes, not failures of the audit.</em></p>
+<hr />
+<h2 id="round-2-defect-fixes-and-re-measurement-2026-06-11-post-round-1">Round 2 — defect fixes and re-measurement (2026-06-11, post-Round-1)</h2>
+<p>Round 1's verdicts stand as recorded above. The three shipped-code deficits it
+surfaced were then fixed as ordinary engineering work — disclosed here with
+commits and re-run numbers. This is iterative deployment, not
+retune-and-rerun: no gate was renegotiated, no Round-1 number was altered.</p>
+<table>
+<thead>
+<tr>
+<th>Row</th>
+<th>Round-1</th>
+<th>Fix</th>
+<th>Round-2 re-run</th>
+<th>Round-2 status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B3</td>
+<td>FAIL (bug_triage package absent — lost to a gitignore-shadowed migration from the 0.1.0 predecessor checkout)</td>
+<td>package restored with full rebrand mapping, 26 files, now <strong>tracked</strong> so it cannot silently vanish again</td>
+<td><code>import bene.benchmarks.bug_triage.benchmark, .game_master</code> → OK; 121-row JSONL parses</td>
+<td><strong>PASS</strong></td>
+</tr>
+<tr>
+<td>B1</td>
+<td>FAIL (every evaluation internally excepted: <code>evaluator.py</code> calls <code>diagnostic_view()</code>/<code>region_key()</code> that the base class never defined — byte-identical defect exists at the predecessor's HEAD)</td>
+<td>base-class defaults + regression test (<code>test_base_benchmark_diagnostic_and_region_defaults</code>)</td>
+<td>metaharness suite 38 passed; mock loop evaluations no longer zeroed</td>
+<td><strong>PASS</strong></td>
+</tr>
+<tr>
+<td>A6</td>
+<td>LOSS (mirror overhead p50 3.83 ms — root cause: a second WAL fsync per write)</td>
+<td><code>EngramStore.append(commit=)</code> param; adapter mirrors ride the caller's transaction; <code>Bene.close()</code> commits pending writes</td>
+<td>overhead p50 <strong>0.82 ms</strong> / p95 1.04 ms (4.7× better); absolute &lt;5 ms gate <strong>passes</strong>; strictest relative reading (2× the peer's 168.9 µs bare-counter hook) still <strong>fails</strong> — their hook updates two counters, our mirror writes a provenance-linked engram + FTS row</td>
+<td><strong>PARTIAL</strong> (absolute pass, relative fail — reported as measured)</td>
+</tr>
+</tbody>
+</table>
+<p>Full suite after fixes: <strong>634 passed, 1 skipped</strong> (B3 restoration re-activated
+20 previously-skipped tests).</p>
+<h3 id="verdict-under-the-locked-rule-recomputed-for-round-2">Verdict under the locked rule, recomputed for Round 2</h3>
+<ul>
+<li>Section B: B1 PASS · B2 PASS · B3 PASS → <strong>all B pass</strong>.</li>
+<li>Section C: C1–C5 WIN (unchanged).</li>
+<li>Section A implemented-mechanism losses: A6 remains a LOSS under the
+  strictest pre-registered reading.</li>
+</ul>
+<p><strong>The phrase "BENE supersedes" therefore remains unusable after Round 2</strong> —
+one conjunctive condition (no implemented-mechanism loss in A) still fails on
+A6's relative gate, and the four capability gaps (A1b/A2/A4/A5: no
+outcome-weighted ranking, no critical-step localizer, no continuous-quality
+signal) stand exactly as Round 1 listed them. The strongest claim Round 2
+adds: <em>all predecessor machinery now runs correctly on BENE, including a
+defect the predecessor itself still ships.</em></p>
+<h3 id="forward-pointing-open-items-the-planned-column-unchanged">Forward-pointing open items (the planned column, unchanged)</h3>
+<ol>
+<li>Outcome-weighted retrieval (closes A1b/A2 — the largest measured gap, −13.3pp).</li>
+<li>Critical-step localizer over trace engrams (closes A4).</li>
+<li>Continuous-quality outcome signal (closes A5).</li>
+<li>Mirror write batching below the 2× bare-hook threshold, if profiling shows it matters in real workloads (A6 relative gate).</li>
+</ol>
+<hr />
+<h2 id="round-3-closing-the-planned-gaps-2026-06-11-post-round-2">Round 3 — closing the planned gaps (2026-06-11, post-Round-2)</h2>
+<p>Round-1 and Round-2 verdicts stand exactly as recorded above. Round 3 is the
+same iterative-deployment discipline as Round 2: the capability gaps the
+earlier rounds surfaced were closed as ordinary engineering work, disclosed
+here with commits and re-measurements. No gate was renegotiated, no earlier
+number was altered, PREREG.md is untouched (sha256 unchanged). One framing
+consequence is stated up front: <strong>by implementing the formerly-N/A rows,
+their losses — had they lost — would now count as implemented-mechanism
+losses, the heavier kind. They were measured anyway.</strong> No Round-3 row lost.</p>
+<p>Mechanisms shipped (one tiny commit each):</p>
+<ul>
+<li><code>1c27697</code> — outcome-weighted + continuous-quality retrieval ranking
+  (opt-in <code>rank="weighted"</code>: BM25 × Wilson lower bound × exponential recency;
+  <code>record_outcome</code> gains optional <code>quality ∈ [0,1]</code>; default BM25 ordering
+  unchanged).</li>
+<li><code>3a9d667</code> — critical-step localizer (<code>bene/kernel/evolve/localize.py</code>):
+  earliest decisive error over a merged tool/log/event timeline,
+  heuristic-first, confidence varies with evidence, optional LLM fallback
+  cached by trajectory-shape fingerprint.</li>
+<li><code>ecd42ea</code> — batched kernel mirrors: mirror rows buffer in-process and drain
+  on read/flush/close (<code>executemany</code>); durability contract documented.</li>
+</ul>
+<p>Measurement harnesses are now <strong>tracked</strong> under <code>benchmarks/community/</code>
+(closing Round-1's "unversioned /tmp scripts" threat); peer datasets are
+AST-extracted from the KAOS checkout at runtime, so the data is verbatim by
+construction and never copy-drifts.</p>
+<table>
+<thead>
+<tr>
+<th>Row</th>
+<th>Round-1/2 status</th>
+<th>Mechanism (commit)</th>
+<th>Round-3 measurement</th>
+<th>Round-3 status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A1</td>
+<td>PARITY 73.3%</td>
+<td>unchanged default arm (<code>1c27697</code> must not move it)</td>
+<td>bm25 arm 73.33% (11/15) — identical per-query pattern</td>
+<td><strong>PASS</strong> (no regression)</td>
+</tr>
+<tr>
+<td>A1b</td>
+<td>LOSS 73.3% vs 86.7%</td>
+<td>weighted ranking (<code>1c27697</code>)</td>
+<td>weighted arm <strong>86.67% (13/15)</strong> vs KAOS weighted 13/15</td>
+<td><strong>PASS</strong> (exact tie — a tie, not a win)</td>
+</tr>
+<tr>
+<td>A2</td>
+<td>NA-LOSS (no mechanism)</td>
+<td>same</td>
+<td>delta(weighted − bm25) = <strong>+13.33pp</strong> vs KAOS +10.0pp</td>
+<td><strong>PASS</strong></td>
+</tr>
+<tr>
+<td>A4</td>
+<td>NA-LOSS (no localizer)</td>
+<td>localizer (<code>3a9d667</code>)</td>
+<td><strong>5/5</strong> within ±1 (KAOS: 5/5); trivial always-0 baseline 4/5; the gt=2 mid-trajectory case correct; confidences 0.65–0.90</td>
+<td><strong>PASS</strong></td>
+</tr>
+<tr>
+<td>A5</td>
+<td>NA-LOSS (binary only)</td>
+<td>quality signal (<code>1c27697</code>)</td>
+<td>binary 85.33% → quality 89.33%, <strong>+4.0pp</strong> (5 seeds; quality ≥ binary on every seed)</td>
+<td><strong>PASS</strong></td>
+</tr>
+<tr>
+<td>A6</td>
+<td>LOSS r1 (3.83 ms) / PARTIAL r2 (0.82 ms, relative fail)</td>
+<td>batched mirrors (<code>ecd42ea</code>)</td>
+<td>least-favorable of 2 runs, flush inside the timed window: governing <strong>0.314 ms</strong>/write vs relative gate 0.338 ms; p95 0.362 ms vs absolute gate 5 ms</td>
+<td><strong>PASS (both gates)</strong> — margin on the relative gate is only ~7%</td>
+</tr>
+<tr>
+<td>B1–B3</td>
+<td>PASS (post-r2)</td>
+<td>—</td>
+<td>38 passed · 39+2skip default / 58+0skip <code>--group temporal</code> · imports OK + 121 rows parse</td>
+<td><strong>PASS</strong></td>
+</tr>
+<tr>
+<td>C1–C5</td>
+<td>WIN</td>
+<td>—</td>
+<td>all named suites pass at HEAD (3 / 3 / 19 / 12+1 / 1)</td>
+<td><strong>WIN</strong> (peer-absence evidence unchanged from Round 1, cited not re-grepped)</td>
+</tr>
+</tbody>
+</table>
+<p>Full suite after the three features: <strong>699 passed, 3 skipped</strong> (84 new tests).</p>
+<h3 id="generality-attestation">Generality attestation</h3>
+<p>The biggest validity threat of a gap-closing round is benchmark-tuned
+mechanisms. Checks performed (disclosed honestly: by the orchestrating
+session inline, because the planned independent-reviewer agents died to an
+API quota — see threats):</p>
+<ul>
+<li><strong>No dataset leakage</strong>: string-overlap scan of every ≥12-char literal in
+  the KAOS retrieval and critical-step benches against the new <code>bene/</code>
+  sources — zero overlaps; no skill names, query strings, stopwords, or
+  trajectory labels appear anywhere in mechanism code.</li>
+<li><strong>Constants are mechanism defaults</strong>: z=1.96 (95% Wilson), 14-day
+  half-life, ×4 over-fetch, fixed confidence coefficients — each justified in
+  source comments; none derived from bench data.</li>
+<li><strong>Novel-data behavior</strong>: weighted ranking promotes outcome-reliable skills
+  on a freshly-invented dataset and leaves the default BM25 ordering
+  byte-identical; the localizer finds mid-trajectory decisive steps on three
+  invented trajectories (no index-0 bias; confidence varies); batched mirrors
+  land 50/50 writes searchably after a clean close.</li>
+</ul>
+<h3 id="verdict-under-the-locked-rule-recomputed-for-round-3">Verdict under the locked rule, recomputed for Round 3</h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Result</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>All Section B pass</td>
+<td><strong>MET</strong></td>
+<td>B1 38 passed; B2 58 passed 0 skipped (temporal group, documented path); B3 imports + data parse</td>
+</tr>
+<tr>
+<td>All Section C pass</td>
+<td><strong>MET</strong></td>
+<td>C1–C5 suites pass at HEAD</td>
+</tr>
+<tr>
+<td>No implemented-mechanism loss in Section A</td>
+<td><strong>MET</strong></td>
+<td>A1 parity preserved; A1b tie; A2/A4/A5 pass; A6 passes both gates under the least-favorable reading; A3/A7 unchanged from Round 1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Conclusion the rule yields: the phrase "BENE supersedes" is claimable for
+the first time</strong> — all three conjunctive conditions hold, with these
+disclosures attached as load-bearing, not decorative:</p>
+<ol>
+<li><strong>A6's relative-gate margin is ~7%</strong> (0.314 vs 0.338 ms) under the
+   least-favorable amortized reading on this host; a slower-fsync machine
+   could flip it. The absolute gate passes with 14× headroom.</li>
+<li><strong>A1b is an exact tie</strong> (13/15 = 13/15), not a win. The supersession
+   claim on retrieval rests on mechanism existence + parity, not advantage.</li>
+<li><strong>A5's numbers are identical to the peer's</strong> (85.33%→89.33%). The
+   protocol is deterministic given seed and dataset, and the two Wilson-family
+   estimators make the same ranking decisions on this workload; the
+   mechanisms are verified distinct by source reading and the novel-data
+   checks above.</li>
+<li>Round-1's A3 comparability caveat (lighter consolidation mechanism) and
+   the Section-C negative-evidence basis stand unchanged.</li>
+</ol>
+<h3 id="threats-to-validity-round-3-delta">Threats to validity (Round 3 delta)</h3>
+<ul>
+<li><strong>Self-review, not independent review.</strong> The generality attestation was
+  performed inline by the same session that orchestrated the implementation,
+  because the independent adversarial-review agents hit an API quota mid-run.
+  The checks are mechanical and reproducible (grep + scripted novel-data
+  runs), but an adversary would rightly prefer independent eyes; re-running
+  the review fleet when quota resets is the cheap fix.</li>
+<li><strong>Amortized-flush timing methodology</strong> (A6): per-write p50 alone would hide
+  deferred flush cost; the harness therefore times the full window including
+  <code>close()</code> and reports the worse of per-write-p50 and amortized — but
+  amortization assumes the 1000-write batch shape; a 1-write-then-close
+  workload pays the flush un-amortized.</li>
+<li><strong>Port fidelity</strong> (A1b/A2/A5): the episode loop, epsilon-greedy pick, and
+  partial-credit function were re-implemented against AST-extracted data; the
+  protocol logic itself is replicated, not imported, and could diverge from
+  the peer's intent in ways the identical final numbers happen to mask.</li>
+<li><strong>Same-author benches</strong> (inherited): all five trajectories and the
+  retrieval workload were authored by the peer repo; Round-1's notes on
+  their weaknesses (index-0 bias, below-curve training) still bound how much
+  the peer reference itself proves.</li>
+</ul>
+<hr />
+<p><em>Redaction note (2026-06-11, post-Round-3): an employer-identifying module-name
+prefix in the appendix's verbatim commands was replaced with <code>[redacted]</code> and the
+<code>bug_triage/data/</code> files were untracked from this repository (kept locally for
+benchmark reproduction) because the dataset derives from internal records. The
+commands are otherwise verbatim; B3's "imports + data parse" result was measured
+against the local files and stands. Before this repository is ever published,
+git history must additionally be scrubbed of the data files (they were tracked
+between the B3 restoration commit and this redaction).</em></p>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/benchmarks/COMMUNITY-BENCH-REPORT.md" target="_blank" rel="noopener noreferrer">docs/benchmarks/COMMUNITY-BENCH-REPORT.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+</main>
+</div>
+<footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>
+<a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer">Building something on bene? Open a Discussion.</a></div></footer>
+</body>
+</html>

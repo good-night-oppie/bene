@@ -1,0 +1,27 @@
+// markdownlint-cli2 config — applies to all *.md files in the repo.
+// Disable rules that conflict with our prose-doc style:
+//   MD013 — line-length: prose flows; 80-col is for code, not narrative.
+//   MD036 — no-emphasis-as-heading: we use *italic subtitle* under titles.
+//   MD041 — first-line-h1: tutorials use a leading title that already is h1,
+//           but some entry pages start with prose; opt out.
+//   MD033 — no-inline-html: we sometimes use <details>/<summary>.
+//   MD024 — no-duplicate-headings: identical "## Related" sections recur.
+//   MD028 — no-blanks-blockquote: we use stacked `>` tips with blanks.
+//   MD060 — table-column-style: GFM tables; cosmetic.
+{
+  "config": {
+    "MD013": false,
+    "MD036": false,
+    "MD041": false,
+    "MD033": false,
+    "MD024": false,
+    "MD028": false,
+    "MD060": false
+  },
+  "ignores": [
+    "node_modules",
+    ".venv",
+    ".worktrees",
+    ".orchestra"
+  ]
+}

@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Skill Library — BENE docs</title>
+<meta name="description" content="BENE 0.2.0 documentation — Skill Library" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+:root { --bg:#F0EEE8; --surface:#EDE9E4; --border:#CFCCC8; --ink:#1F1D1C; --mute:#62666D; --accent:#EE6018; --gold:#B46A35; --term-bg:#0A0908; --term-fg:#EDE9E4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 Geist,ui-sans-serif,system-ui,sans-serif; }
+a { color:var(--gold); text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent); text-underline-offset:3px; }
+a:hover { color:var(--accent); }
+.top { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+.top-in { max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+.brand { font-family:Geist,ui-sans-serif,sans-serif; font-weight:700; letter-spacing:.12em; color:var(--ink); text-decoration:none; }
+.top a.nav { color:var(--mute); text-decoration:none; font-size:14px; }
+.top a.nav:hover { color:var(--accent); }
+.wrap { max-width:1200px; margin:0 auto; padding:24px; display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; }
+aside.sb { position:sticky; top:80px; align-self:start; max-height:calc(100vh - 100px); overflow-y:auto; font-size:13.5px; border-left:1px solid var(--border); padding-left:16px; }
+.sb h4 { margin:18px 0 6px; font:600 11px/1 "Geist Mono",ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+.sb a { display:block; padding:3px 0; color:var(--mute); text-decoration:none; }
+.sb a:hover { color:var(--accent); }
+.sb a.cur { color:var(--ink); font-weight:600; }
+main { min-width:0; max-width:760px; }
+main h1 { font-family:Geist,ui-sans-serif,sans-serif; font-size:2.1rem; line-height:1.2; margin:.2em 0 .5em; }
+main h2 { font-family:Geist,ui-sans-serif,sans-serif; font-size:1.45rem; margin-top:2em; border-bottom:1px solid var(--border); padding-bottom:.35em; }
+main h3 { font-size:1.12rem; margin-top:1.7em; }
+main img { max-width:100%; border:1px solid var(--border); border-radius:8px; }
+main table { border-collapse:collapse; width:100%; font-size:14.5px; display:block; overflow-x:auto; }
+main th, main td { border:1px solid var(--border); padding:8px 12px; text-align:left; vertical-align:top; }
+main th { background:var(--surface); font-weight:600; }
+main blockquote { margin:1em 0; padding:.2em 1.2em; border-left:3px solid var(--accent); color:var(--mute); background:var(--surface); border-radius:0 4px 4px 0; }
+main :not(pre) > code { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:.08em .35em; font:.86em "Geist Mono",ui-monospace,monospace; }
+.codehilite, main pre { background:var(--term-bg); color:var(--term-fg); border-radius:6px; padding:16px 18px; overflow-x:auto; font:13.5px/1.55 "Geist Mono",ui-monospace,monospace; }
+.codehilite pre, pre code { background:none; padding:0; margin:0; border:none; }
+.demo-embed { margin:20px 0 28px; }
+.demo-embed .frame { background:var(--term-bg); border-radius:6px; padding:14px; }
+.demo-embed .dots { display:flex; gap:6px; margin-bottom:10px; }
+.demo-embed .dots i { width:10px; height:10px; border-radius:50%; background:#3a3344; }
+.demo-embed img { border:none; border-radius:6px; display:block; width:100%; }
+.demo-embed p { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:8px 2px 0; }
+.crumbs { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-bottom:8px; }
+.crumbs a { color:var(--mute); }
+.src { font:12.5px "Geist Mono",ui-monospace,monospace; margin-top:48px; padding-top:16px; border-top:1px solid var(--border); color:var(--mute); }
+footer.ft { border-top:1px solid var(--border); margin-top:40px; }
+footer.ft .in { max-width:1200px; margin:0 auto; padding:24px; font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.idx-group h2 { font-family:Geist,ui-sans-serif,sans-serif; border:none; margin-top:1.6em; }
+.idx-group ul { list-style:none; padding:0; margin:.4em 0; }
+.idx-group li { padding:6px 0; border-bottom:1px dashed var(--border); }
+.idx-group .path { font:11.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-left:8px; }
+/* Mobile overrides — kept at the end so source order beats base rules.
+   Earlier this rule sat between base rules and got overridden by a later
+   `aside.sb { position:sticky }`, leaving the sidebar stuck on top of
+   main content on phones. */
+@media (max-width: 860px) {
+  .wrap { grid-template-columns:1fr; gap:24px; padding:16px; }
+  aside.sb { position:static; max-height:none; border-left:none; border-bottom:1px solid var(--border); padding-left:0; padding-bottom:16px; font-size:13px; }
+  .sb h4 { margin:12px 0 4px; }
+  main { max-width:none; }
+  main h1 { font-size:1.6rem; }
+  main h2 { font-size:1.2rem; }
+  main h3 { font-size:1.05rem; }
+  .top-in { padding:0 16px; gap:14px; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #49483e }
+.codehilite { background: #272822; color: #F8F8F2 }
+.codehilite .c { color: #959077 } /* Comment */
+.codehilite .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.codehilite .esc { color: #F8F8F2 } /* Escape */
+.codehilite .g { color: #F8F8F2 } /* Generic */
+.codehilite .k { color: #66D9EF } /* Keyword */
+.codehilite .l { color: #AE81FF } /* Literal */
+.codehilite .n { color: #F8F8F2 } /* Name */
+.codehilite .o { color: #FF4689 } /* Operator */
+.codehilite .x { color: #F8F8F2 } /* Other */
+.codehilite .p { color: #F8F8F2 } /* Punctuation */
+.codehilite .ch { color: #959077 } /* Comment.Hashbang */
+.codehilite .cm { color: #959077 } /* Comment.Multiline */
+.codehilite .cp { color: #959077 } /* Comment.Preproc */
+.codehilite .cpf { color: #959077 } /* Comment.PreprocFile */
+.codehilite .c1 { color: #959077 } /* Comment.Single */
+.codehilite .cs { color: #959077 } /* Comment.Special */
+.codehilite .gd { color: #FF4689 } /* Generic.Deleted */
+.codehilite .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F8F8F2 } /* Generic.Error */
+.codehilite .gh { color: #F8F8F2 } /* Generic.Heading */
+.codehilite .gi { color: #A6E22E } /* Generic.Inserted */
+.codehilite .go { color: #66D9EF } /* Generic.Output */
+.codehilite .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #959077 } /* Generic.Subheading */
+.codehilite .gt { color: #F8F8F2 } /* Generic.Traceback */
+.codehilite .kc { color: #66D9EF } /* Keyword.Constant */
+.codehilite .kd { color: #66D9EF } /* Keyword.Declaration */
+.codehilite .kn { color: #FF4689 } /* Keyword.Namespace */
+.codehilite .kp { color: #66D9EF } /* Keyword.Pseudo */
+.codehilite .kr { color: #66D9EF } /* Keyword.Reserved */
+.codehilite .kt { color: #66D9EF } /* Keyword.Type */
+.codehilite .ld { color: #E6DB74 } /* Literal.Date */
+.codehilite .m { color: #AE81FF } /* Literal.Number */
+.codehilite .s { color: #E6DB74 } /* Literal.String */
+.codehilite .na { color: #A6E22E } /* Name.Attribute */
+.codehilite .nb { color: #F8F8F2 } /* Name.Builtin */
+.codehilite .nc { color: #A6E22E } /* Name.Class */
+.codehilite .no { color: #66D9EF } /* Name.Constant */
+.codehilite .nd { color: #A6E22E } /* Name.Decorator */
+.codehilite .ni { color: #F8F8F2 } /* Name.Entity */
+.codehilite .ne { color: #A6E22E } /* Name.Exception */
+.codehilite .nf { color: #A6E22E } /* Name.Function */
+.codehilite .nl { color: #F8F8F2 } /* Name.Label */
+.codehilite .nn { color: #F8F8F2 } /* Name.Namespace */
+.codehilite .nx { color: #A6E22E } /* Name.Other */
+.codehilite .py { color: #F8F8F2 } /* Name.Property */
+.codehilite .nt { color: #FF4689 } /* Name.Tag */
+.codehilite .nv { color: #F8F8F2 } /* Name.Variable */
+.codehilite .ow { color: #FF4689 } /* Operator.Word */
+.codehilite .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.codehilite .w { color: #F8F8F2 } /* Text.Whitespace */
+.codehilite .mb { color: #AE81FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #AE81FF } /* Literal.Number.Float */
+.codehilite .mh { color: #AE81FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #AE81FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #AE81FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #E6DB74 } /* Literal.String.Affix */
+.codehilite .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.codehilite .sc { color: #E6DB74 } /* Literal.String.Char */
+.codehilite .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #E6DB74 } /* Literal.String.Doc */
+.codehilite .s2 { color: #E6DB74 } /* Literal.String.Double */
+.codehilite .se { color: #AE81FF } /* Literal.String.Escape */
+.codehilite .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.codehilite .si { color: #E6DB74 } /* Literal.String.Interpol */
+.codehilite .sx { color: #E6DB74 } /* Literal.String.Other */
+.codehilite .sr { color: #E6DB74 } /* Literal.String.Regex */
+.codehilite .s1 { color: #E6DB74 } /* Literal.String.Single */
+.codehilite .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.codehilite .bp { color: #F8F8F2 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #A6E22E } /* Name.Function.Magic */
+.codehilite .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.codehilite .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.codehilite .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.codehilite .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.codehilite .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.codehilite { background: var(--term-bg) !important; }
+</style>
+
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <a class="brand" href="../index.html">BENE</a>
+  <a class="nav" href="../index.html">Landing</a>
+  <a class="nav" href="index.html">Docs index</a>
+  <a class="nav" href="../SKILL.md" target="_blank" rel="noopener noreferrer" title="Hand BENE to your agent in one URL">SKILL.md ↗</a>
+  <button class="nav copy-llms" data-llms-url="../llms.txt" data-copied-label="✓ copied" data-opened-label="↗ opened" title="Copy the llms.txt site map (an LLM-friendly index pointing at SKILL.md + every doc). Paste it into your agent's context.">Copy llms.txt</button>
+  <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer">GitHub</a>
+  <a class="nav" href="../zh/docs/skills.html" title="切换到中文" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">文</a>
+</div></div>
+
+<script>
+(function() {
+  document.querySelectorAll('button.copy-llms').forEach(function(btn) {
+    var original = btn.textContent;
+    btn.addEventListener('click', function() {
+      var url = btn.getAttribute('data-llms-url');
+      fetch(url, { cache: 'no-cache' })
+        .then(function(r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.text(); })
+        .then(function(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).then(function() {
+              btn.textContent = btn.getAttribute('data-copied-label') || '✓ copied';
+              setTimeout(function() { btn.textContent = original; }, 2200);
+            });
+          }
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        })
+        .catch(function() {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        });
+    });
+  });
+})();
+</script>
+<div class="wrap">
+<aside class="sb"><h4>Start, operate, recover</h4>
+<a href="README.html">README</a>
+<a href="architecture.html">architecture</a>
+<a href="checkpoints.html">checkpoints</a>
+<a href="cli-reference.html">cli-reference</a>
+<a href="codegen.html">codegen</a>
+<a href="dashboard.html">dashboard</a>
+<a href="deployment.html">deployment</a>
+<a href="integrating-bene.html">integrating-bene</a>
+<a href="mcp-integration.html">mcp-integration</a>
+<a href="memory.html">memory</a>
+<a href="meta-harness.html">meta-harness</a>
+<a href="philosophy.html">philosophy</a>
+<a href="primitive-review-cycle.html">primitive-review-cycle</a>
+<a href="probe-authoring.html">probe-authoring</a>
+<a href="schema.html">schema</a>
+<a href="shared-log.html">shared-log</a>
+<a class="cur" href="skills.html">skills</a>
+<a href="use-cases.html">use-cases</a>
+<h4>Recipes</h4>
+<a href="recipes/atomic-completion.html">atomic-completion</a>
+<h4>Design and claims</h4>
+<a href="design/BENE2-DESIGN.html">BENE2-DESIGN</a>
+<a href="design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
+<a href="design/KERNEL-SPEC.html">KERNEL-SPEC</a>
+<a href="design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
+<h4>Evidence and research</h4>
+<a href="research/GAP-AUDIT.html">GAP-AUDIT</a>
+<a href="research/SYNTHESIS.html">SYNTHESIS</a>
+<a href="research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<h4>Benchmarks and gates</h4>
+<a href="benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
+<a href="benchmarks/PREREG.html">PREREG</a>
+<h4>Tutorial playbooks</h4>
+<a href="tutorials/t00-bene-e2e-walkthrough.html">t00-bene-e2e-walkthrough</a>
+<a href="tutorials/t01-bene-meta-harness.html">t01-bene-meta-harness</a>
+<a href="tutorials/t02-e2e-self-healing.html">t02-e2e-self-healing</a>
+<a href="tutorials/t03-security-swarm.html">t03-security-swarm</a>
+<a href="tutorials/t04-migration-rollback.html">t04-migration-rollback</a>
+<a href="tutorials/t05-incident-response.html">t05-incident-response</a>
+<a href="tutorials/t06-ml-research-lab.html">t06-ml-research-lab</a>
+<a href="tutorials/t07-regression-guard.html">t07-regression-guard</a>
+<a href="tutorials/t08-hundred-agents-scale.html">t08-hundred-agents-scale</a>
+<a href="tutorials/t10-ci-overnight-bene-swarm.html">t10-ci-overnight-bene-swarm</a>
+<a href="tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
+<h4>Case studies</h4>
+<a href="case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
+<h4>Infrastructure</h4>
+<a href="infra/DNS.html">DNS</a></aside>
+<main>
+<div class="crumbs"><a href="index.html">docs</a> / skills.md</div>
+<h1 id="skill-library">Skill Library</h1>
+<p>When one agent in your project works out a dependable procedure, every agent after it can find that procedure, fill in the parameters, and run it — instead of re-deriving it from zero.</p>
+<blockquote>
+<p><strong>The point in one line:</strong> a skill is a prompt template with <code>{param}</code> holes that any project agent can locate by full-text search, render with its own values, and grade after use.</p>
+</blockquote>
+<p>Everything stays on your machine. The whole library is a pair of SQLite tables (<code>agent_skills</code> plus its full-text index) inside the same database file as the rest of your project state — copy the file and the skills travel with it.</p>
+<h2 id="how-agents-use-it">How agents use it</h2>
+<p>Memory records what happened; a skill records how to do it again. Without the library, a hard-won approach to text classification, async debugging, or API response shaping evaporates when its session ends. With it, the working loop is:</p>
+<ol>
+<li><strong>Search first.</strong> Before a task begins, an agent runs <code>skill_search "task description"</code> (or <code>bene skills search</code>) to check whether the problem has already been cracked.</li>
+<li><strong>Render.</strong> <code>skill_apply</code> fills the template's <code>{param}</code> placeholders with values for the task at hand.</li>
+<li><strong>Work, then grade.</strong> Afterwards the agent reports success or failure via <code>skill_outcome</code>; the <code>use_count</code> and <code>success_count</code> counters turn repeated use into visible reliability.</li>
+<li><strong>Contribute back.</strong> When an agent lands on a fresh pattern worth keeping, it stores the template with <code>skill_save</code> (or <code>bene skills save</code>).</li>
+</ol>
+<h2 id="run-it-from-the-shell">Run it from the shell</h2>
+<p>The <code>bene skills</code> subcommands cover most of the lifecycle — save, find, list, render, delete. (Grading isn't a shell verb: record outcomes via the <code>skill_outcome</code> MCP tool or Python <code>SkillStore.record_outcome</code>. Also: <code>skills save --agent &lt;id&gt;</code> / <code>source_agent_id</code> must reference an already-spawned agent — pass an unknown id and the FK rejects it — or omit it for a library-level skill.)</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Save a skill</span>
+bene<span class="w"> </span>skills<span class="w"> </span>save<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--name<span class="w"> </span>ensemble_classifier<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--description<span class="w"> </span><span class="s2">&quot;Improve classification accuracy with ensemble voting&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--template<span class="w"> </span><span class="s2">&quot;Use {n_models} models with {voting} voting on {task}.&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--tags<span class="w"> </span>classification,ensemble
+
+<span class="c1"># Search before starting work</span>
+bene<span class="w"> </span>skills<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;classification accuracy&quot;</span>
+bene<span class="w"> </span>skills<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;async error handling&quot;</span><span class="w"> </span>--tag<span class="w"> </span>python
+
+<span class="c1"># List all skills — sorted by most used</span>
+bene<span class="w"> </span>skills<span class="w"> </span>ls<span class="w"> </span>--order<span class="w"> </span>use_count
+
+<span class="c1"># Render a skill with parameters</span>
+bene<span class="w"> </span>skills<span class="w"> </span>apply<span class="w"> </span><span class="m">3</span><span class="w"> </span>-p<span class="w"> </span><span class="nv">n_models</span><span class="o">=</span><span class="m">3</span><span class="w"> </span>-p<span class="w"> </span><span class="nv">voting</span><span class="o">=</span>majority<span class="w"> </span>-p<span class="w"> </span><span class="nv">task</span><span class="o">=</span><span class="s2">&quot;sentiment&quot;</span>
+
+<span class="c1"># Delete</span>
+bene<span class="w"> </span>skills<span class="w"> </span>delete<span class="w"> </span><span class="m">3</span>
+</code></pre></div>
+
+<h2 id="get-sharper-search-results">Get sharper search results</h2>
+<p>Search runs on SQLite FTS5 with porter stemming, and four fields feed the index:</p>
+<ul>
+<li><code>name</code> — the snake_case identifier</li>
+<li><code>description</code> — purpose, plus the situations it fits</li>
+<li><code>tags</code> — the JSON array, tokenized like ordinary text</li>
+<li><code>template</code> — the prompt body itself, placeholder names included</li>
+</ul>
+<p>Hits come back ranked by BM25 (lexical). Add <code>--rank weighted</code> to reorder by outcome reliability — BM25 × a Wilson-lower-bound success rate × recency decay, using the outcomes recorded through <code>skill_outcome</code> — so skills that keep working rise above lexically-similar ones that keep failing. Anything FTS5 accepts as a query works here:</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>skills<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;ensemble accuracy&quot;</span><span class="w">        </span><span class="c1"># stemmed phrase</span>
+bene<span class="w"> </span>skills<span class="w"> </span>search<span class="w"> </span><span class="s1">&#39;&quot;gradient clipping&quot;&#39;</span><span class="w">      </span><span class="c1"># exact phrase</span>
+bene<span class="w"> </span>skills<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;classification NOT naive&quot;</span><span class="w"> </span><span class="c1"># negation</span>
+bene<span class="w"> </span>skills<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;classif*&quot;</span><span class="w">                 </span><span class="c1"># prefix wildcard</span>
+</code></pre></div>
+
+<h2 id="call-it-from-python">Call it from Python</h2>
+<p>In-process, <code>SkillStore</code> exposes the same operations:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bene</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bene.skills</span><span class="w"> </span><span class="kn">import</span> <span class="n">SkillStore</span>
+
+<span class="n">bene</span>  <span class="o">=</span> <span class="n">Bene</span><span class="p">(</span><span class="s2">&quot;project.db&quot;</span><span class="p">)</span>
+<span class="n">sk</span>    <span class="o">=</span> <span class="n">SkillStore</span><span class="p">(</span><span class="n">bene</span><span class="o">.</span><span class="n">conn</span><span class="p">)</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">bene</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="s2">&quot;classifier-dev&quot;</span><span class="p">)</span>   <span class="c1"># source_agent_id is a FK → must be a real spawned agent</span>
+
+<span class="c1"># Save a skill after discovering a reliable pattern</span>
+<span class="n">sid</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">save</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ensemble_classifier&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Improve classification accuracy with ensemble voting&quot;</span><span class="p">,</span>
+    <span class="n">template</span><span class="o">=</span><span class="p">(</span>
+        <span class="s2">&quot;Implement a </span><span class="si">{n_models}</span><span class="s2">-model ensemble for </span><span class="si">{task}</span><span class="s2">. &quot;</span>
+        <span class="s2">&quot;Use </span><span class="si">{voting}</span><span class="s2"> voting. Tune the decision threshold to </span><span class="si">{threshold}</span><span class="s2">.&quot;</span>
+    <span class="p">),</span>
+    <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;classification&quot;</span><span class="p">,</span> <span class="s2">&quot;ensemble&quot;</span><span class="p">,</span> <span class="s2">&quot;accuracy&quot;</span><span class="p">],</span>
+    <span class="n">source_agent_id</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Search before starting a similar task</span>
+<span class="n">hits</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;classification accuracy&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">params</span><span class="p">())</span>  <span class="c1"># → [&#39;n_models&#39;, &#39;task&#39;, &#39;voting&#39;, &#39;threshold&#39;]</span>
+
+<span class="c1"># Render the skill with parameters</span>
+<span class="n">skill</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">sid</span><span class="p">)</span>
+<span class="n">prompt</span> <span class="o">=</span> <span class="n">skill</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+    <span class="n">n_models</span><span class="o">=</span><span class="s2">&quot;3&quot;</span><span class="p">,</span>
+    <span class="n">task</span><span class="o">=</span><span class="s2">&quot;sentiment analysis&quot;</span><span class="p">,</span>
+    <span class="n">voting</span><span class="o">=</span><span class="s2">&quot;majority&quot;</span><span class="p">,</span>
+    <span class="n">threshold</span><span class="o">=</span><span class="s2">&quot;0.5&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Track outcomes so reliability accumulates</span>
+<span class="n">sk</span><span class="o">.</span><span class="n">record_outcome</span><span class="p">(</span><span class="n">sid</span><span class="p">,</span> <span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># List skills — order by reliability</span>
+<span class="n">reliable</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">list</span><span class="p">(</span><span class="n">order_by</span><span class="o">=</span><span class="s2">&quot;success_count&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h2 id="wire-it-into-claude-code-or-cursor">Wire it into Claude Code or Cursor</h2>
+<p>Five MCP tools expose the library to agents running under either harness:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>skill_save</code></td>
+<td>Save a new skill with name, description, template, and tags</td>
+</tr>
+<tr>
+<td><code>skill_search</code></td>
+<td>BM25 full-text search across all skills</td>
+</tr>
+<tr>
+<td><code>skill_apply</code></td>
+<td>Render a skill template with parameters</td>
+</tr>
+<tr>
+<td><code>skill_list</code></td>
+<td>List skills with optional tag/agent/sort filters</td>
+</tr>
+<tr>
+<td><code>skill_outcome</code></td>
+<td>Record success or failure for a used skill</td>
+</tr>
+</tbody>
+</table>
+<h3 id="a-worked-session">A worked session</h3>
+<div class="codehilite"><pre><span></span><code># Before starting a refactoring task:
+skill_search(&quot;refactoring async python&quot;)
+
+# → finds skill #7: &quot;async_refactor&quot;
+# → template: &quot;Refactor {module} to use {pattern}. Key steps: {steps}&quot;
+
+skill_apply(skill_id=7, params={
+    &quot;module&quot;: &quot;auth.py&quot;,
+    &quot;pattern&quot;: &quot;async/await&quot;,
+    &quot;steps&quot;: &quot;1. replace callbacks, 2. add error boundaries, 3. update tests&quot;
+})
+
+# After completing the task:
+skill_outcome(skill_id=7, success=True)
+</code></pre></div>
+
+<h2 id="skill-or-memory-entry">Skill or memory entry?</h2>
+<p>Both stores are project-wide and FTS5-searchable; what differs is the kind of knowledge each holds.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Memory</th>
+<th>Skill</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>What it stores</strong></td>
+<td>Facts, observations, results</td>
+<td>Procedures, strategies, templates</td>
+</tr>
+<tr>
+<td><strong>Example</strong></td>
+<td>"Accuracy improved to 87% with ensemble voting"</td>
+<td>"To improve accuracy: try {n} models with {voting} voting"</td>
+</tr>
+<tr>
+<td><strong>When to use</strong></td>
+<td>After an agent finishes work</td>
+<td>When an agent discovers a reusable pattern</td>
+</tr>
+<tr>
+<td><strong>Retrieval</strong></td>
+<td>FTS5 search by content</td>
+<td>FTS5 search by name, description, tags, template</td>
+</tr>
+<tr>
+<td><strong>Table</strong></td>
+<td><code>memory</code></td>
+<td><code>agent_skills</code></td>
+</tr>
+</tbody>
+</table>
+<p>Put it in <strong>memory</strong> when the value is the fact itself — "model achieved 87% on dataset X" is worth recording even though there is nothing to re-run. Findings, errors, and measured results belong there.</p>
+<p>Put it in a <strong>skill</strong> when the value is the procedure — a strategy the next agent should apply as a fill-in-the-blanks template rather than reconstruct from scratch.</p>
+<h2 id="whats-actually-stored">What's actually stored</h2>
+<p>Two tables: <code>agent_skills</code> holds the rows, <code>agent_skills_fts</code> indexes them.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">agent_skills</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">skill_id</span><span class="w">        </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="n">AUTOINCREMENT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">name</span><span class="w">            </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">description</span><span class="w">     </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="k">template</span><span class="w">        </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">          </span><span class="c1">-- {param} placeholders</span>
+<span class="w">    </span><span class="n">tags</span><span class="w">            </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">,</span><span class="w">  </span><span class="c1">-- JSON array</span>
+<span class="w">    </span><span class="n">source_agent_id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">agents</span><span class="p">(</span><span class="n">agent_id</span><span class="p">),</span><span class="w">  </span><span class="c1">-- FK; a real spawned agent, or omit for library-level skills</span>
+<span class="w">    </span><span class="n">use_count</span><span class="w">       </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">    </span><span class="n">success_count</span><span class="w">   </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span>
+<span class="p">);</span>
+
+<span class="c1">-- FTS5 external-content index over name, description, tags, template</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">VIRTUAL</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">agent_skills_fts</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">fts5</span><span class="p">(</span>
+<span class="w">    </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">description</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">,</span><span class="w"> </span><span class="k">template</span><span class="p">,</span>
+<span class="w">    </span><span class="n">content</span><span class="o">=</span><span class="s1">&#39;agent_skills&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">content_rowid</span><span class="o">=</span><span class="s1">&#39;skill_id&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">tokenize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;porter unicode61&#39;</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<h2 id="where-the-design-comes-from">Where the design comes from</h2>
+<p>The library implements the <em>skills</em> axis of the externalization framework described in:</p>
+<blockquote>
+<p>"Externalization in LLM Agents: A Unified Review of Memory, Skills, Protocols and Harness Engineering"
+Zhou, Chai, Chen, et al. (2026)
+<a href="https://arxiv.org/abs/2604.08224">arXiv:2604.08224</a></p>
+</blockquote>
+<p>That review names four externalization axes, and BENE ships a component on each one:</p>
+<table>
+<thead>
+<tr>
+<th>Axis</th>
+<th>BENE component</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Memory</td>
+<td><code>MemoryStore</code> — FTS5 cross-agent episodic memory</td>
+</tr>
+<tr>
+<td><strong>Skills</strong></td>
+<td><strong><code>SkillStore</code> — FTS5 cross-agent procedural templates</strong></td>
+</tr>
+<tr>
+<td>Protocols</td>
+<td><code>SharedLog</code> — LogAct intent/vote/decide</td>
+</tr>
+<tr>
+<td>Harness</td>
+<td><code>MetaHarnessSearch</code> — evolutionary strategy optimization</td>
+</tr>
+</tbody>
+</table>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/skills.md" target="_blank" rel="noopener noreferrer">docs/skills.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+</main>
+</div>
+<footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>
+<a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer">Building something on bene? Open a Discussion.</a></div></footer>
+</body>
+</html>

@@ -1,0 +1,84 @@
+# yamllint disable rule:truthy
+# Stage E: post-merge ratchet of .coverage-floor on push to main.
+#
+# Contract (.factory/specs/bene-cicd-redesign-tiered.md):
+#   - measure coverage on green main HEAD
+#   - bump .coverage-floor by at most MAX_BUMP=5 percentage points per push
+#   - cap at CEILING=98
+#   - never lower the floor (regression detection lives in Gate-1/2)
+#   - skip if commit message contains [skip-ratchet] or [skip ci]
+
+name: push-main
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ratchet-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ratchet:
+    name: ci/ratchet-coverage
+    if: >-
+      ${{ !contains(github.event.head_commit.message, '[skip-ratchet]')
+       && !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: eng-github-runners
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.7"
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install dev dependencies
+        run: uv sync --dev --group temporal
+
+      - name: Measure coverage
+        run: |
+          uv run pytest -q \
+            --cov=bene --cov-report=xml --cov-report=term \
+            tests/
+
+      - name: Ratchet floor
+        id: ratchet
+        run: |
+          before="$(cat .coverage-floor)"
+          bash scripts/ci/ratchet_coverage.sh | tee ratchet.out
+          after="$(cat .coverage-floor)"
+          echo "before=$before" >> "$GITHUB_OUTPUT"
+          echo "after=$after"   >> "$GITHUB_OUTPUT"
+          echo "changed=$([[ "$before" != "$after" ]] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push if changed
+        if: steps.ratchet.outputs.changed == 'yes'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name  "bene-ratchet[bot]"
+          git config user.email "bene-ratchet@users.noreply.github.com"
+          git add .coverage-floor
+          before="${{ steps.ratchet.outputs.before }}"
+          after="${{ steps.ratchet.outputs.after }}"
+          git commit -m "ci: ratchet coverage floor ${before} -> ${after} [skip ci]"
+          git push origin HEAD:main
+
+      - name: Summary
+        run: |
+          {
+            echo "### Coverage ratchet"
+            echo ""
+            echo "- before: \`${{ steps.ratchet.outputs.before }}\`"
+            echo "- after:  \`${{ steps.ratchet.outputs.after }}\`"
+            echo "- changed: \`${{ steps.ratchet.outputs.changed }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

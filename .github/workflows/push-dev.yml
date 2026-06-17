@@ -1,0 +1,24 @@
+# yamllint disable rule:truthy
+# Entry point: push to dev -> strict-gate snapshot (advisory dashboard signal).
+#
+# This is dev's quality heartbeat between feature merges. It is NOT a
+# branch protection check; it informs the nightly-promote bot whether
+# dev is currently safe to roll into main.
+
+name: push-dev
+
+on:
+  push:
+    branches: [dev]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: push-dev-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  strict-snapshot:
+    uses: ./.github/workflows/reusable-strict-gate.yml
+    secrets: inherit

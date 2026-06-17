@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>From 48% to 83%: How BENE v0.6.0 Automates Multi-Agent AI Research — BENE docs</title>
+<meta name="description" content="BENE 0.2.0 documentation — From 48% to 83%: How BENE v0.6.0 Automates Multi-Agent AI Research" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+:root { --bg:#F0EEE8; --surface:#EDE9E4; --border:#CFCCC8; --ink:#1F1D1C; --mute:#62666D; --accent:#EE6018; --gold:#B46A35; --term-bg:#0A0908; --term-fg:#EDE9E4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 Geist,ui-sans-serif,system-ui,sans-serif; }
+a { color:var(--gold); text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent); text-underline-offset:3px; }
+a:hover { color:var(--accent); }
+.top { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+.top-in { max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+.brand { font-family:Geist,ui-sans-serif,sans-serif; font-weight:700; letter-spacing:.12em; color:var(--ink); text-decoration:none; }
+.top a.nav { color:var(--mute); text-decoration:none; font-size:14px; }
+.top a.nav:hover { color:var(--accent); }
+.wrap { max-width:1200px; margin:0 auto; padding:24px; display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; }
+aside.sb { position:sticky; top:80px; align-self:start; max-height:calc(100vh - 100px); overflow-y:auto; font-size:13.5px; border-left:1px solid var(--border); padding-left:16px; }
+.sb h4 { margin:18px 0 6px; font:600 11px/1 "Geist Mono",ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+.sb a { display:block; padding:3px 0; color:var(--mute); text-decoration:none; }
+.sb a:hover { color:var(--accent); }
+.sb a.cur { color:var(--ink); font-weight:600; }
+main { min-width:0; max-width:760px; }
+main h1 { font-family:Geist,ui-sans-serif,sans-serif; font-size:2.1rem; line-height:1.2; margin:.2em 0 .5em; }
+main h2 { font-family:Geist,ui-sans-serif,sans-serif; font-size:1.45rem; margin-top:2em; border-bottom:1px solid var(--border); padding-bottom:.35em; }
+main h3 { font-size:1.12rem; margin-top:1.7em; }
+main img { max-width:100%; border:1px solid var(--border); border-radius:8px; }
+main table { border-collapse:collapse; width:100%; font-size:14.5px; display:block; overflow-x:auto; }
+main th, main td { border:1px solid var(--border); padding:8px 12px; text-align:left; vertical-align:top; }
+main th { background:var(--surface); font-weight:600; }
+main blockquote { margin:1em 0; padding:.2em 1.2em; border-left:3px solid var(--accent); color:var(--mute); background:var(--surface); border-radius:0 4px 4px 0; }
+main :not(pre) > code { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:.08em .35em; font:.86em "Geist Mono",ui-monospace,monospace; }
+.codehilite, main pre { background:var(--term-bg); color:var(--term-fg); border-radius:6px; padding:16px 18px; overflow-x:auto; font:13.5px/1.55 "Geist Mono",ui-monospace,monospace; }
+.codehilite pre, pre code { background:none; padding:0; margin:0; border:none; }
+.demo-embed { margin:20px 0 28px; }
+.demo-embed .frame { background:var(--term-bg); border-radius:6px; padding:14px; }
+.demo-embed .dots { display:flex; gap:6px; margin-bottom:10px; }
+.demo-embed .dots i { width:10px; height:10px; border-radius:50%; background:#3a3344; }
+.demo-embed img { border:none; border-radius:6px; display:block; width:100%; }
+.demo-embed p { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:8px 2px 0; }
+.crumbs { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-bottom:8px; }
+.crumbs a { color:var(--mute); }
+.src { font:12.5px "Geist Mono",ui-monospace,monospace; margin-top:48px; padding-top:16px; border-top:1px solid var(--border); color:var(--mute); }
+footer.ft { border-top:1px solid var(--border); margin-top:40px; }
+footer.ft .in { max-width:1200px; margin:0 auto; padding:24px; font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.idx-group h2 { font-family:Geist,ui-sans-serif,sans-serif; border:none; margin-top:1.6em; }
+.idx-group ul { list-style:none; padding:0; margin:.4em 0; }
+.idx-group li { padding:6px 0; border-bottom:1px dashed var(--border); }
+.idx-group .path { font:11.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-left:8px; }
+/* Mobile overrides — kept at the end so source order beats base rules.
+   Earlier this rule sat between base rules and got overridden by a later
+   `aside.sb { position:sticky }`, leaving the sidebar stuck on top of
+   main content on phones. */
+@media (max-width: 860px) {
+  .wrap { grid-template-columns:1fr; gap:24px; padding:16px; }
+  aside.sb { position:static; max-height:none; border-left:none; border-bottom:1px solid var(--border); padding-left:0; padding-bottom:16px; font-size:13px; }
+  .sb h4 { margin:12px 0 4px; }
+  main { max-width:none; }
+  main h1 { font-size:1.6rem; }
+  main h2 { font-size:1.2rem; }
+  main h3 { font-size:1.05rem; }
+  .top-in { padding:0 16px; gap:14px; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #49483e }
+.codehilite { background: #272822; color: #F8F8F2 }
+.codehilite .c { color: #959077 } /* Comment */
+.codehilite .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.codehilite .esc { color: #F8F8F2 } /* Escape */
+.codehilite .g { color: #F8F8F2 } /* Generic */
+.codehilite .k { color: #66D9EF } /* Keyword */
+.codehilite .l { color: #AE81FF } /* Literal */
+.codehilite .n { color: #F8F8F2 } /* Name */
+.codehilite .o { color: #FF4689 } /* Operator */
+.codehilite .x { color: #F8F8F2 } /* Other */
+.codehilite .p { color: #F8F8F2 } /* Punctuation */
+.codehilite .ch { color: #959077 } /* Comment.Hashbang */
+.codehilite .cm { color: #959077 } /* Comment.Multiline */
+.codehilite .cp { color: #959077 } /* Comment.Preproc */
+.codehilite .cpf { color: #959077 } /* Comment.PreprocFile */
+.codehilite .c1 { color: #959077 } /* Comment.Single */
+.codehilite .cs { color: #959077 } /* Comment.Special */
+.codehilite .gd { color: #FF4689 } /* Generic.Deleted */
+.codehilite .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F8F8F2 } /* Generic.Error */
+.codehilite .gh { color: #F8F8F2 } /* Generic.Heading */
+.codehilite .gi { color: #A6E22E } /* Generic.Inserted */
+.codehilite .go { color: #66D9EF } /* Generic.Output */
+.codehilite .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #959077 } /* Generic.Subheading */
+.codehilite .gt { color: #F8F8F2 } /* Generic.Traceback */
+.codehilite .kc { color: #66D9EF } /* Keyword.Constant */
+.codehilite .kd { color: #66D9EF } /* Keyword.Declaration */
+.codehilite .kn { color: #FF4689 } /* Keyword.Namespace */
+.codehilite .kp { color: #66D9EF } /* Keyword.Pseudo */
+.codehilite .kr { color: #66D9EF } /* Keyword.Reserved */
+.codehilite .kt { color: #66D9EF } /* Keyword.Type */
+.codehilite .ld { color: #E6DB74 } /* Literal.Date */
+.codehilite .m { color: #AE81FF } /* Literal.Number */
+.codehilite .s { color: #E6DB74 } /* Literal.String */
+.codehilite .na { color: #A6E22E } /* Name.Attribute */
+.codehilite .nb { color: #F8F8F2 } /* Name.Builtin */
+.codehilite .nc { color: #A6E22E } /* Name.Class */
+.codehilite .no { color: #66D9EF } /* Name.Constant */
+.codehilite .nd { color: #A6E22E } /* Name.Decorator */
+.codehilite .ni { color: #F8F8F2 } /* Name.Entity */
+.codehilite .ne { color: #A6E22E } /* Name.Exception */
+.codehilite .nf { color: #A6E22E } /* Name.Function */
+.codehilite .nl { color: #F8F8F2 } /* Name.Label */
+.codehilite .nn { color: #F8F8F2 } /* Name.Namespace */
+.codehilite .nx { color: #A6E22E } /* Name.Other */
+.codehilite .py { color: #F8F8F2 } /* Name.Property */
+.codehilite .nt { color: #FF4689 } /* Name.Tag */
+.codehilite .nv { color: #F8F8F2 } /* Name.Variable */
+.codehilite .ow { color: #FF4689 } /* Operator.Word */
+.codehilite .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.codehilite .w { color: #F8F8F2 } /* Text.Whitespace */
+.codehilite .mb { color: #AE81FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #AE81FF } /* Literal.Number.Float */
+.codehilite .mh { color: #AE81FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #AE81FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #AE81FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #E6DB74 } /* Literal.String.Affix */
+.codehilite .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.codehilite .sc { color: #E6DB74 } /* Literal.String.Char */
+.codehilite .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #E6DB74 } /* Literal.String.Doc */
+.codehilite .s2 { color: #E6DB74 } /* Literal.String.Double */
+.codehilite .se { color: #AE81FF } /* Literal.String.Escape */
+.codehilite .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.codehilite .si { color: #E6DB74 } /* Literal.String.Interpol */
+.codehilite .sx { color: #E6DB74 } /* Literal.String.Other */
+.codehilite .sr { color: #E6DB74 } /* Literal.String.Regex */
+.codehilite .s1 { color: #E6DB74 } /* Literal.String.Single */
+.codehilite .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.codehilite .bp { color: #F8F8F2 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #A6E22E } /* Name.Function.Magic */
+.codehilite .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.codehilite .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.codehilite .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.codehilite .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.codehilite .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.codehilite { background: var(--term-bg) !important; }
+</style>
+
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <a class="brand" href="../../index.html">BENE</a>
+  <a class="nav" href="../../index.html">Landing</a>
+  <a class="nav" href="../index.html">Docs index</a>
+  <a class="nav" href="../../SKILL.md" target="_blank" rel="noopener noreferrer" title="Hand BENE to your agent in one URL">SKILL.md ↗</a>
+  <button class="nav copy-llms" data-llms-url="../../llms.txt" data-copied-label="✓ copied" data-opened-label="↗ opened" title="Copy the llms.txt site map (an LLM-friendly index pointing at SKILL.md + every doc). Paste it into your agent's context.">Copy llms.txt</button>
+  <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer">GitHub</a>
+  <a class="nav" href="../../zh/docs/tutorials/t01-bene-meta-harness.html" title="切换到中文" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">文</a>
+</div></div>
+
+<script>
+(function() {
+  document.querySelectorAll('button.copy-llms').forEach(function(btn) {
+    var original = btn.textContent;
+    btn.addEventListener('click', function() {
+      var url = btn.getAttribute('data-llms-url');
+      fetch(url, { cache: 'no-cache' })
+        .then(function(r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.text(); })
+        .then(function(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).then(function() {
+              btn.textContent = btn.getAttribute('data-copied-label') || '✓ copied';
+              setTimeout(function() { btn.textContent = original; }, 2200);
+            });
+          }
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        })
+        .catch(function() {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        });
+    });
+  });
+})();
+</script>
+<div class="wrap">
+<aside class="sb"><h4>Start, operate, recover</h4>
+<a href="../README.html">README</a>
+<a href="../architecture.html">architecture</a>
+<a href="../checkpoints.html">checkpoints</a>
+<a href="../cli-reference.html">cli-reference</a>
+<a href="../codegen.html">codegen</a>
+<a href="../dashboard.html">dashboard</a>
+<a href="../deployment.html">deployment</a>
+<a href="../integrating-bene.html">integrating-bene</a>
+<a href="../mcp-integration.html">mcp-integration</a>
+<a href="../memory.html">memory</a>
+<a href="../meta-harness.html">meta-harness</a>
+<a href="../philosophy.html">philosophy</a>
+<a href="../primitive-review-cycle.html">primitive-review-cycle</a>
+<a href="../probe-authoring.html">probe-authoring</a>
+<a href="../schema.html">schema</a>
+<a href="../shared-log.html">shared-log</a>
+<a href="../skills.html">skills</a>
+<a href="../use-cases.html">use-cases</a>
+<h4>Recipes</h4>
+<a href="../recipes/atomic-completion.html">atomic-completion</a>
+<h4>Design and claims</h4>
+<a href="../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
+<a href="../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
+<a href="../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
+<a href="../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
+<h4>Evidence and research</h4>
+<a href="../research/GAP-AUDIT.html">GAP-AUDIT</a>
+<a href="../research/SYNTHESIS.html">SYNTHESIS</a>
+<a href="../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<h4>Benchmarks and gates</h4>
+<a href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
+<a href="../benchmarks/PREREG.html">PREREG</a>
+<h4>Tutorial playbooks</h4>
+<a href="../tutorials/t00-bene-e2e-walkthrough.html">t00-bene-e2e-walkthrough</a>
+<a class="cur" href="../tutorials/t01-bene-meta-harness.html">t01-bene-meta-harness</a>
+<a href="../tutorials/t02-e2e-self-healing.html">t02-e2e-self-healing</a>
+<a href="../tutorials/t03-security-swarm.html">t03-security-swarm</a>
+<a href="../tutorials/t04-migration-rollback.html">t04-migration-rollback</a>
+<a href="../tutorials/t05-incident-response.html">t05-incident-response</a>
+<a href="../tutorials/t06-ml-research-lab.html">t06-ml-research-lab</a>
+<a href="../tutorials/t07-regression-guard.html">t07-regression-guard</a>
+<a href="../tutorials/t08-hundred-agents-scale.html">t08-hundred-agents-scale</a>
+<a href="../tutorials/t10-ci-overnight-bene-swarm.html">t10-ci-overnight-bene-swarm</a>
+<a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
+<h4>Case studies</h4>
+<a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
+<h4>Infrastructure</h4>
+<a href="../infra/DNS.html">DNS</a></aside>
+<main>
+<div class="crumbs"><a href="../index.html">docs</a> / tutorials/t01-bene-meta-harness.md</div>
+<h1 id="from-48-to-83-how-bene-v060-automates-multi-agent-ai-research">From 48% to 83%: How BENE v0.6.0 Automates Multi-Agent AI Research</h1>
+<p><em>A tutorial of Meta-Harness finding the winning prompt strategy — automatically, in 15 iterations, for $0.14</em></p>
+<hr />
+<p>You've spent three days hand-crafting the perfect prompt for your classifier. You tried chain-of-thought. Then few-shot examples. Then a "senior engineer" persona. You're at 74% accuracy and stuck. You run another variant. Still 74%. Another. 74%.</p>
+<p>This is the plateau problem — and it's invisible until you're already trapped in it.</p>
+<p>BENE v0.6.0 solves it. Here's how.</p>
+<hr />
+<h2 id="what-is-bene">What Is BENE?</h2>
+<p><a href="https://github.com/good-night-oppie/bene">BENE</a> is a synthetic implementation of 6 state of art LLM Engineering research, local-first multi-agent orchestration framework. Every agent gets an isolated virtual filesystem backed by a single SQLite file. Full audit trail. Checkpoint and restore. Zero cloud dependency.</p>
+<p>The headline feature is <strong>Meta-Harness</strong>: an automated search loop that finds the best prompt strategy for any LLM task by treating prompt engineering as an optimization problem. Define your task. Give it some data. Run <code>bene mh search</code>. Come back to a ranked Pareto frontier of harnesses.</p>
+<p>v0.6.0 adds <strong>CORAL</strong> — three tiers of co-evolutionary improvements that make the search dramatically smarter, especially when it gets stuck.</p>
+<hr />
+<h2 id="the-research-foundation">The Research Foundation</h2>
+<p>Before diving into the demo, it's worth noting what's under the hood. BENE v0.6.0 integrates four peer-reviewed research contributions:</p>
+<ul>
+<li><strong><a href="https://arxiv.org/abs/2603.28052">Meta-Harness</a></strong> (arXiv:2603.28052, Stanford/MIT/KRAFTON) — the search loop itself: evolutionary proposer reads full execution traces and proposes structurally better harnesses</li>
+<li><strong><a href="https://github.com/milla-jovovich/mempalace">MemPalace</a></strong> — AAAK compact notation that compresses the proposer's context by 57% with zero quality loss</li>
+<li><strong><a href="https://arxiv.org/abs/2604.01658">CORAL</a></strong> (arXiv:2604.01658) — stagnation detection, heartbeat reflection, and multi-agent co-evolution achieving 3–10× higher improvement rates</li>
+<li><strong><a href="https://arxiv.org/abs/2604.01687">EvoSkills</a></strong> (arXiv:2604.01687) — Surrogate Verifier: informationally isolated failure diagnostics</li>
+</ul>
+<p>This isn't a thin wrapper around a model API. It's a ground-up implementation of the most effective multi-agent search techniques from 2025–2026, running entirely locally.</p>
+<hr />
+<h2 id="the-demo-code-review-severity-classification">The Demo: Code Review Severity Classification</h2>
+<p><strong>Task:</strong> Classify a GitHub PR review comment into one of four severity levels:</p>
+<ul>
+<li><code>BLOCKER</code> — must fix before merge (security bug, data corruption, broken logic)</li>
+<li><code>IMPORTANT</code> — should fix soon (performance issue, bad pattern)</li>
+<li><code>STYLE</code> — nice to have (naming, formatting)</li>
+<li><code>PRAISE</code> — positive feedback</li>
+</ul>
+<p><strong>Dataset:</strong> 200 labeled PR review comments. Baseline zero-shot accuracy: <strong>48%</strong>.</p>
+<hr />
+<h2 id="step-1-define-the-benchmark">Step 1: Define the Benchmark</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># benchmarks/code_review.py</span>
+<span class="n">LABELS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;BLOCKER&quot;</span><span class="p">,</span> <span class="s2">&quot;IMPORTANT&quot;</span><span class="p">,</span> <span class="s2">&quot;STYLE&quot;</span><span class="p">,</span> <span class="s2">&quot;PRAISE&quot;</span><span class="p">]</span>
+
+<span class="n">EXAMPLES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">&quot;comment&quot;</span><span class="p">:</span> <span class="s2">&quot;SQL query is vulnerable to injection — must fix before merge&quot;</span><span class="p">,</span>
+     <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;BLOCKER&quot;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;comment&quot;</span><span class="p">:</span> <span class="s2">&quot;This N+1 query will cause issues at scale&quot;</span><span class="p">,</span>
+     <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;IMPORTANT&quot;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;comment&quot;</span><span class="p">:</span> <span class="s2">&quot;Variable name `x` is not descriptive&quot;</span><span class="p">,</span>
+     <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;STYLE&quot;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;comment&quot;</span><span class="p">:</span> <span class="s2">&quot;Nice use of early returns here, much cleaner!&quot;</span><span class="p">,</span>
+     <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;PRAISE&quot;</span><span class="p">},</span>
+    <span class="c1"># ... 196 more examples</span>
+<span class="p">]</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="n">harness_fn</span><span class="p">,</span> <span class="n">examples</span><span class="o">=</span><span class="n">EXAMPLES</span><span class="p">):</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="p">[</span><span class="n">harness_fn</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="s2">&quot;comment&quot;</span><span class="p">])</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">]</span>
+    <span class="n">correct</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span> <span class="o">==</span> <span class="n">e</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">examples</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;accuracy&quot;</span><span class="p">:</span> <span class="n">correct</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">examples</span><span class="p">),</span> <span class="s2">&quot;n_correct&quot;</span><span class="p">:</span> <span class="n">correct</span><span class="p">}</span>
+</code></pre></div>
+
+<p>That's the full benchmark contract. BENE needs a callable that takes input and returns a score dict.</p>
+<hr />
+<h2 id="step-2-initialize-and-launch">Step 2: Initialize and Launch</h2>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>init
+<span class="c1"># ✓  Initialized bene.db</span>
+<span class="c1"># ✓  Schema v4 applied</span>
+<span class="c1"># ✓  Knowledge agent spawned [bene-knowledge]</span>
+
+bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>code_review<span class="w"> </span>-n<span class="w"> </span><span class="m">15</span><span class="w"> </span>-k<span class="w"> </span><span class="m">3</span><span class="w"> </span>--background
+<span class="c1"># ✓  Benchmark loaded: code_review  (200 examples, 4 labels)</span>
+<span class="c1"># ✓  Search agent spawned [01JMHSRCH-code-review]</span>
+<span class="c1"># ✓  Worker process started  PID 14832</span>
+</code></pre></div>
+
+<p><strong>bene.yaml</strong> configures the CORAL parameters:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude_code</span><span class="w">        </span><span class="c1"># uses your CC subscription, zero API cost</span>
+<span class="nt">model</span><span class="p">:</span><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">claude-sonnet-4-6</span>
+<span class="nt">compaction_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span><span class="w">          </span><span class="c1"># 57% context savings, 100% quality</span>
+<span class="nt">stagnation_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span><span class="w">      </span><span class="c1"># CORAL pivot after 4 non-improving iters</span>
+<span class="nt">consolidation_every</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6</span><span class="w">       </span><span class="c1"># CORAL skills heartbeat</span>
+</code></pre></div>
+
+<hr />
+<h2 id="step-3-seed-evaluation">Step 3: Seed Evaluation</h2>
+<div class="codehilite"><pre><span></span><code>[seed 1/3]  zero_shot         acc=0.48  cost=12.4   96/200 ✓
+[seed 2/3]  few_shot_2        acc=0.54  cost=18.7  108/200 ✓
+[seed 3/3]  cot_basic         acc=0.61  cost=24.1  122/200 ✓
+
+Seed evaluation complete.  Initial frontier: 3 points
+Best seed: cot_basic (acc=0.61)  —  Search begins from here
+</code></pre></div>
+
+<p>The basic chain-of-thought approach already beats zero-shot by 13 points. The proposer now has three execution traces to learn from.</p>
+<hr />
+<h2 id="step-4-the-search-loop">Step 4: The Search Loop</h2>
+<div class="codehilite"><pre><span></span><code>[iter 1/15]  role_engineer        acc=0.67  +0.06 ↑  IMPROVED
+[iter 2/15]  role_engineer_v2     acc=0.71  +0.04 ↑  IMPROVED
+[iter 3/15]  rubric_detailed      acc=0.69  ─  regression vs best
+[iter 4/15]  few_shot_balanced    acc=0.74  +0.03 ↑  IMPROVED
+[iter 5/15]  few_shot_4x          acc=0.73  ─  marginally worse
+[iter 6/15]  chain_contrast       acc=0.74  ─  matches best, no improvement
+[iter 7/15]  few_shot_role_merge  acc=0.74  ─  stagnant_iters=4
+</code></pre></div>
+
+<p>Four iterations at 74%. This is the plateau.</p>
+<hr />
+<h2 id="step-5-coral-pivot">Step 5: CORAL Pivot</h2>
+<p>When <code>stagnant_iters</code> reaches the threshold (4), BENE injects a <code>PIVOT REQUIRED</code> block into the next digest:</p>
+<div class="codehilite"><pre><span></span><code>╔══════════════════════════════════════════════════════════════════╗
+║  PIVOT REQUIRED  —  stagnant=4  best=0.74                        ║
+║                                                                  ║
+║  Exhausted approaches:                                           ║
+║    • Role-playing (engineer/reviewer) — ceiling at 0.74          ║
+║    • Few-shot examples — 1-4 per class, diminishing returns       ║
+║    • CoT with contrast — matched best but did not improve         ║
+║                                                                  ║
+║  Required: propose an orthogonal direction.  Ideas:              ║
+║    • Two-step classification (blocker? → if not, style or praise?)║
+║    • Structured attribute extraction before classifying           ║
+║    • Confidence calibration + abstain on ambiguous cases          ║
+╚══════════════════════════════════════════════════════════════════╝
+</code></pre></div>
+
+<p>The proposer cannot submit another role-playing variant. It must change the fundamental approach.</p>
+<hr />
+<h2 id="step-6-the-breakthrough">Step 6: The Breakthrough</h2>
+<div class="codehilite"><pre><span></span><code>[iter 8/15]  two_step_chain        acc=0.78  +0.04 ↑  IMPROVED  (pivot worked)
+[iter 9/15]  attr_extract          acc=0.79  +0.01 ↑  IMPROVED
+[iter 10/15]  two_step_attr_merged  acc=0.83  +0.04 ↑  IMPROVED  ← New best
+</code></pre></div>
+
+<p>At iteration 10, the CORAL consolidation heartbeat fires:</p>
+<div class="codehilite"><pre><span></span><code>⟳ CORAL Consolidation heartbeat  (every 6 iters)
+  Distilling reusable skills from 10 iterations...
+  Skill written: two_step_decomposition
+  Skill written: attr_grounding
+</code></pre></div>
+
+<p>The merged harness — combining two-step decomposition with attribute extraction — hits <strong>83%</strong>. That's a 35-point improvement from the 48% baseline.</p>
+<hr />
+<h2 id="the-winning-harness">The Winning Harness</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">SYSTEM_PROMPT</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;You are a senior software engineer reviewing a PR.</span>
+<span class="s1">Classify the review comment using a two-step process:</span>
+
+<span class="s1">STEP 1 — Extract attributes:</span>
+<span class="s1">  impact:       high | medium | low</span>
+<span class="s1">  scope:        blocks-merge | should-fix | nice-to-have | positive</span>
+<span class="s1">  correctness:  yes (bug/security/logic error) | no</span>
+
+<span class="s1">STEP 2 — Apply classification rules:</span>
+<span class="s1">  If correctness=yes AND impact=high  →  BLOCKER</span>
+<span class="s1">  If correctness=yes AND impact&lt;high  →  IMPORTANT</span>
+<span class="s1">  If scope=nice-to-have               →  STYLE</span>
+<span class="s1">  If scope=positive                   →  PRAISE</span>
+<span class="s1">  Default ambiguous to IMPORTANT.&#39;&#39;&#39;</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">harness</span><span class="p">(</span><span class="n">comment</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">llm</span><span class="p">(</span><span class="n">SYSTEM_PROMPT</span><span class="p">,</span> <span class="n">comment</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">extract_label</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">valid</span><span class="o">=</span><span class="n">LABELS</span><span class="p">)</span>
+</code></pre></div>
+
+<p>No embeddings. No retrieval. No fine-tuning. Just a structurally better prompt — the kind of thing an expert prompt engineer might eventually land on after days of iteration. Meta-Harness found it in 15 automated steps.</p>
+<hr />
+<h2 id="the-full-picture">The Full Picture</h2>
+<div class="codehilite"><pre><span></span><code>Baseline (zero-shot)   48% accuracy
+After Meta-Harness     83% accuracy (+35 points)
+Iterations used        15
+Search time            ~12 minutes
+API cost               ~$0.14
+Key insight            two-step decomposition breaks BLOCKER/IMPORTANT confusion
+Skills saved           2 reusable patterns → next search starts from here
+</code></pre></div>
+
+<p><img alt="Knowledge compounding — each search seeds the next; skills and traces accumulate across runs" src="knowledge-compound.png" onerror="this.style.display='none'" /></p>
+<p>The audit trail is fully queryable:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">iteration</span><span class="p">,</span><span class="w"> </span><span class="n">harness_id</span><span class="p">,</span><span class="w"> </span><span class="n">scores</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;accuracy&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">acc</span><span class="p">,</span><span class="w"> </span><span class="n">status</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">mh_attempts</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">benchmark</span><span class="o">=</span><span class="s1">&#39;code_review&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">iteration</span><span class="p">;</span>
+</code></pre></div>
+
+<hr />
+<h2 id="whats-new-in-v060-coral-three-tiers">What's New in v0.6.0: CORAL Three Tiers</h2>
+<h3 id="tier-1-stagnation-detection-pivot-prompts">Tier 1 — Stagnation Detection + Pivot Prompts</h3>
+<p>The search now tracks <code>stagnant_iterations</code>. When it crosses <code>stagnation_threshold</code>, the proposer receives a <code>PIVOT REQUIRED</code> block that lists exhausted approaches and demands structural novelty.</p>
+<h3 id="tier-2-three-tier-memory-attempts-notes-skills">Tier 2 — Three-Tier Memory (attempts / notes / skills)</h3>
+<ul>
+<li><strong><code>/attempts/</code></strong> — compact <code>{id, scores, status}</code> summaries of every eval</li>
+<li><strong><code>/notes/</code></strong> — optional iteration observations</li>
+<li><strong><code>/skills/</code></strong> — reusable patterns persisted to the knowledge agent across searches</li>
+</ul>
+<h3 id="tier-3-concurrent-multi-agent-co-evolution">Tier 3 — Concurrent Multi-Agent Co-Evolution</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Launch 3 agents exploring the same benchmark from different angles</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">mh_spawn_coevolution</span><span class="p">(</span><span class="n">benchmark</span><span class="o">=</span><span class="s2">&quot;code_review&quot;</span><span class="p">,</span> <span class="n">n_agents</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="c1"># Each agent runs independently, auto-syncing every 2 iterations</span>
+<span class="n">mh_hub_sync</span><span class="p">(</span><span class="n">agent_0_id</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Results from the paper: <strong>3-10× higher improvement rates</strong> vs single-agent search. 36% of successful attempts build directly on another agent's discoveries.</p>
+<hr />
+<h2 id="getting-started">Getting Started</h2>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/good-night-oppie/bene.git
+<span class="nb">cd</span><span class="w"> </span>bene
+uv<span class="w"> </span>sync
+uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>init
+uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>text_classify<span class="w"> </span>-n<span class="w"> </span><span class="m">10</span>
+</code></pre></div>
+
+<p>For the collaborative mode (Claude Code drives the search directly from your IDE via MCP):</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;bene&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uv&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;run&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;bene&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;mcp&quot;</span><span class="p">],</span>
+<span class="w">      </span><span class="nt">&quot;cwd&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/path/to/bene&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>Then from Claude Code: <em>"Use the bene MCP tools to run a meta-harness search on my sentiment benchmark and propose 5 iterations."</em></p>
+<p>No API key. No extra cost. Oppie CC subscription is the inference engine.</p>
+<hr />
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="../README.html">README</a> — BENE overview and full doc index</li>
+<li><a href="../use-cases.html">Use Cases</a> — more real-world patterns</li>
+<li><a href="../meta-harness.html">Component guide: Meta-Harness</a> — full search-loop reference + CORAL tier breakdown</li>
+<li><a href="t00-bene-e2e-walkthrough.html">Tutorial: t00 — End-to-End Walkthrough</a> — start here if Meta-Harness is your first step into BENE</li>
+</ul>
+<hr />
+<p><em>BENE can runs entirely locally. No data leaves your machine.</em></p>
+<p><em>Research credits: <a href="https://arxiv.org/abs/2603.28052">Meta-Harness</a> · <a href="https://github.com/milla-jovovich/mempalace">MemPalace</a> · <a href="https://arxiv.org/abs/2604.01658">CORAL</a> · <a href="https://arxiv.org/abs/2604.01687">EvoSkills</a> · <a href="https://github.com/karpathy/autoresearch">Karpathy's autoresearch</a></em></p>
+<p><em>GitHub: <a href="https://github.com/good-night-oppie/bene">github.com/good-night-oppie/bene</a></em></p>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/tutorials/t01-bene-meta-harness.md" target="_blank" rel="noopener noreferrer">docs/tutorials/t01-bene-meta-harness.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+</main>
+</div>
+<footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>
+<a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer">Building something on bene? Open a Discussion.</a></div></footer>
+</body>
+</html>

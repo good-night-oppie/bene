@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BENE Design Philosophy — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — BENE Design Philosophy" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+:root { --bg:#F0EEE8; --surface:#EDE9E4; --border:#CFCCC8; --ink:#1F1D1C; --mute:#62666D; --accent:#EE6018; --gold:#B46A35; --term-bg:#0A0908; --term-fg:#EDE9E4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 Geist,ui-sans-serif,system-ui,sans-serif; }
+a { color:var(--gold); text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent); text-underline-offset:3px; }
+a:hover { color:var(--accent); }
+.top { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+.top-in { max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+.brand { font-family:Geist,ui-sans-serif,sans-serif; font-weight:700; letter-spacing:.12em; color:var(--ink); text-decoration:none; }
+.top a.nav { color:var(--mute); text-decoration:none; font-size:14px; }
+.top a.nav:hover { color:var(--accent); }
+.wrap { max-width:1200px; margin:0 auto; padding:24px; display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; }
+aside.sb { position:sticky; top:80px; align-self:start; max-height:calc(100vh - 100px); overflow-y:auto; font-size:13.5px; border-left:1px solid var(--border); padding-left:16px; }
+.sb h4 { margin:18px 0 6px; font:600 11px/1 "Geist Mono",ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+.sb a { display:block; padding:3px 0; color:var(--mute); text-decoration:none; }
+.sb a:hover { color:var(--accent); }
+.sb a.cur { color:var(--ink); font-weight:600; }
+main { min-width:0; max-width:760px; }
+main h1 { font-family:Geist,ui-sans-serif,sans-serif; font-size:2.1rem; line-height:1.2; margin:.2em 0 .5em; }
+main h2 { font-family:Geist,ui-sans-serif,sans-serif; font-size:1.45rem; margin-top:2em; border-bottom:1px solid var(--border); padding-bottom:.35em; }
+main h3 { font-size:1.12rem; margin-top:1.7em; }
+main img { max-width:100%; border:1px solid var(--border); border-radius:8px; }
+main table { border-collapse:collapse; width:100%; font-size:14.5px; display:block; overflow-x:auto; }
+main th, main td { border:1px solid var(--border); padding:8px 12px; text-align:left; vertical-align:top; }
+main th { background:var(--surface); font-weight:600; }
+main blockquote { margin:1em 0; padding:.2em 1.2em; border-left:3px solid var(--accent); color:var(--mute); background:var(--surface); border-radius:0 4px 4px 0; }
+main :not(pre) > code { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:.08em .35em; font:.86em "Geist Mono",ui-monospace,monospace; }
+.codehilite, main pre { background:var(--term-bg); color:var(--term-fg); border-radius:6px; padding:16px 18px; overflow-x:auto; font:13.5px/1.55 "Geist Mono",ui-monospace,monospace; }
+.codehilite pre, pre code { background:none; padding:0; margin:0; border:none; }
+.demo-embed { margin:20px 0 28px; }
+.demo-embed .frame { background:var(--term-bg); border-radius:6px; padding:14px; }
+.demo-embed .dots { display:flex; gap:6px; margin-bottom:10px; }
+.demo-embed .dots i { width:10px; height:10px; border-radius:50%; background:#3a3344; }
+.demo-embed img { border:none; border-radius:6px; display:block; width:100%; }
+.demo-embed p { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:8px 2px 0; }
+.crumbs { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-bottom:8px; }
+.crumbs a { color:var(--mute); }
+.src { font:12.5px "Geist Mono",ui-monospace,monospace; margin-top:48px; padding-top:16px; border-top:1px solid var(--border); color:var(--mute); }
+footer.ft { border-top:1px solid var(--border); margin-top:40px; }
+footer.ft .in { max-width:1200px; margin:0 auto; padding:24px; font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.idx-group h2 { font-family:Geist,ui-sans-serif,sans-serif; border:none; margin-top:1.6em; }
+.idx-group ul { list-style:none; padding:0; margin:.4em 0; }
+.idx-group li { padding:6px 0; border-bottom:1px dashed var(--border); }
+.idx-group .path { font:11.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-left:8px; }
+/* Mobile overrides — kept at the end so source order beats base rules.
+   Earlier this rule sat between base rules and got overridden by a later
+   `aside.sb { position:sticky }`, leaving the sidebar stuck on top of
+   main content on phones. */
+@media (max-width: 860px) {
+  .wrap { grid-template-columns:1fr; gap:24px; padding:16px; }
+  aside.sb { position:static; max-height:none; border-left:none; border-bottom:1px solid var(--border); padding-left:0; padding-bottom:16px; font-size:13px; }
+  .sb h4 { margin:12px 0 4px; }
+  main { max-width:none; }
+  main h1 { font-size:1.6rem; }
+  main h2 { font-size:1.2rem; }
+  main h3 { font-size:1.05rem; }
+  .top-in { padding:0 16px; gap:14px; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #49483e }
+.codehilite { background: #272822; color: #F8F8F2 }
+.codehilite .c { color: #959077 } /* Comment */
+.codehilite .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.codehilite .esc { color: #F8F8F2 } /* Escape */
+.codehilite .g { color: #F8F8F2 } /* Generic */
+.codehilite .k { color: #66D9EF } /* Keyword */
+.codehilite .l { color: #AE81FF } /* Literal */
+.codehilite .n { color: #F8F8F2 } /* Name */
+.codehilite .o { color: #FF4689 } /* Operator */
+.codehilite .x { color: #F8F8F2 } /* Other */
+.codehilite .p { color: #F8F8F2 } /* Punctuation */
+.codehilite .ch { color: #959077 } /* Comment.Hashbang */
+.codehilite .cm { color: #959077 } /* Comment.Multiline */
+.codehilite .cp { color: #959077 } /* Comment.Preproc */
+.codehilite .cpf { color: #959077 } /* Comment.PreprocFile */
+.codehilite .c1 { color: #959077 } /* Comment.Single */
+.codehilite .cs { color: #959077 } /* Comment.Special */
+.codehilite .gd { color: #FF4689 } /* Generic.Deleted */
+.codehilite .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F8F8F2 } /* Generic.Error */
+.codehilite .gh { color: #F8F8F2 } /* Generic.Heading */
+.codehilite .gi { color: #A6E22E } /* Generic.Inserted */
+.codehilite .go { color: #66D9EF } /* Generic.Output */
+.codehilite .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #959077 } /* Generic.Subheading */
+.codehilite .gt { color: #F8F8F2 } /* Generic.Traceback */
+.codehilite .kc { color: #66D9EF } /* Keyword.Constant */
+.codehilite .kd { color: #66D9EF } /* Keyword.Declaration */
+.codehilite .kn { color: #FF4689 } /* Keyword.Namespace */
+.codehilite .kp { color: #66D9EF } /* Keyword.Pseudo */
+.codehilite .kr { color: #66D9EF } /* Keyword.Reserved */
+.codehilite .kt { color: #66D9EF } /* Keyword.Type */
+.codehilite .ld { color: #E6DB74 } /* Literal.Date */
+.codehilite .m { color: #AE81FF } /* Literal.Number */
+.codehilite .s { color: #E6DB74 } /* Literal.String */
+.codehilite .na { color: #A6E22E } /* Name.Attribute */
+.codehilite .nb { color: #F8F8F2 } /* Name.Builtin */
+.codehilite .nc { color: #A6E22E } /* Name.Class */
+.codehilite .no { color: #66D9EF } /* Name.Constant */
+.codehilite .nd { color: #A6E22E } /* Name.Decorator */
+.codehilite .ni { color: #F8F8F2 } /* Name.Entity */
+.codehilite .ne { color: #A6E22E } /* Name.Exception */
+.codehilite .nf { color: #A6E22E } /* Name.Function */
+.codehilite .nl { color: #F8F8F2 } /* Name.Label */
+.codehilite .nn { color: #F8F8F2 } /* Name.Namespace */
+.codehilite .nx { color: #A6E22E } /* Name.Other */
+.codehilite .py { color: #F8F8F2 } /* Name.Property */
+.codehilite .nt { color: #FF4689 } /* Name.Tag */
+.codehilite .nv { color: #F8F8F2 } /* Name.Variable */
+.codehilite .ow { color: #FF4689 } /* Operator.Word */
+.codehilite .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.codehilite .w { color: #F8F8F2 } /* Text.Whitespace */
+.codehilite .mb { color: #AE81FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #AE81FF } /* Literal.Number.Float */
+.codehilite .mh { color: #AE81FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #AE81FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #AE81FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #E6DB74 } /* Literal.String.Affix */
+.codehilite .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.codehilite .sc { color: #E6DB74 } /* Literal.String.Char */
+.codehilite .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #E6DB74 } /* Literal.String.Doc */
+.codehilite .s2 { color: #E6DB74 } /* Literal.String.Double */
+.codehilite .se { color: #AE81FF } /* Literal.String.Escape */
+.codehilite .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.codehilite .si { color: #E6DB74 } /* Literal.String.Interpol */
+.codehilite .sx { color: #E6DB74 } /* Literal.String.Other */
+.codehilite .sr { color: #E6DB74 } /* Literal.String.Regex */
+.codehilite .s1 { color: #E6DB74 } /* Literal.String.Single */
+.codehilite .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.codehilite .bp { color: #F8F8F2 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #A6E22E } /* Name.Function.Magic */
+.codehilite .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.codehilite .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.codehilite .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.codehilite .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.codehilite .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.codehilite { background: var(--term-bg) !important; }
+</style>
+
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <a class="brand" href="../../index.html">BENE</a>
+  <a class="nav" href="../../index.html">Landing</a>
+  <a class="nav" href="index.html">文档索引</a>
+  <a class="nav" href="../../SKILL.md" target="_blank" rel="noopener noreferrer" title="把 BENE 交给你的 agent，一个 URL">SKILL.md ↗</a>
+  <button class="nav copy-llms" data-llms-url="../../llms.txt" data-copied-label="✓ 已复制" data-opened-label="↗ 已打开" title="把 llms.txt 索引拷到剪贴板 — 粘贴进你 agent 的 context">复制 llms.txt</button>
+  <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer">GitHub</a>
+  <a class="nav" href="../../docs/philosophy.html" title="Switch to English" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">EN</a>
+</div></div>
+<div class="zh-banner" style="background:rgba(238,96,24,.07);border-bottom:1px solid rgba(238,96,24,.2);padding:12px 24px;font-size:13px;line-height:1.5;color:rgb(var(--muted))"><strong style="color:rgb(var(--text))">本页中文版正在按照 4-book methodology 翻译（Mom Test / Pressfield / Zinsser / Dicks）—— 不放 AI 翻译稿。</strong> 下方是英文原文，点上方 <a href="../../docs/philosophy.html" style="color:rgb(var(--accent));text-decoration:underline">EN</a> 直接到英文页面， 或在 <a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer" style="color:rgb(var(--accent));text-decoration:underline">Discussions</a> 里贡献翻译。</div>
+<script>
+(function() {
+  document.querySelectorAll('button.copy-llms').forEach(function(btn) {
+    var original = btn.textContent;
+    btn.addEventListener('click', function() {
+      var url = btn.getAttribute('data-llms-url');
+      fetch(url, { cache: 'no-cache' })
+        .then(function(r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.text(); })
+        .then(function(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).then(function() {
+              btn.textContent = btn.getAttribute('data-copied-label') || '✓ copied';
+              setTimeout(function() { btn.textContent = original; }, 2200);
+            });
+          }
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        })
+        .catch(function() {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        });
+    });
+  });
+})();
+</script>
+<div class="wrap">
+<aside class="sb"><h4>Start, operate, recover</h4>
+<a href="README.html">README</a>
+<a href="architecture.html">architecture</a>
+<a href="checkpoints.html">checkpoints</a>
+<a href="cli-reference.html">cli-reference</a>
+<a href="codegen.html">codegen</a>
+<a href="dashboard.html">dashboard</a>
+<a href="deployment.html">deployment</a>
+<a href="integrating-bene.html">integrating-bene</a>
+<a href="mcp-integration.html">mcp-integration</a>
+<a href="memory.html">memory</a>
+<a href="meta-harness.html">meta-harness</a>
+<a class="cur" href="philosophy.html">philosophy</a>
+<a href="primitive-review-cycle.html">primitive-review-cycle</a>
+<a href="schema.html">schema</a>
+<a href="shared-log.html">shared-log</a>
+<a href="skills.html">skills</a>
+<a href="use-cases.html">use-cases</a>
+<h4>Design and claims</h4>
+<a href="design/BENE2-DESIGN.html">BENE2-DESIGN</a>
+<a href="design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
+<a href="design/KERNEL-SPEC.html">KERNEL-SPEC</a>
+<a href="design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
+<h4>Evidence and research</h4>
+<a href="research/GAP-AUDIT.html">GAP-AUDIT</a>
+<a href="research/SYNTHESIS.html">SYNTHESIS</a>
+<a href="research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<h4>Benchmarks and gates</h4>
+<a href="benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
+<a href="benchmarks/PREREG.html">PREREG</a>
+<h4>Tutorial playbooks</h4>
+<a href="tutorials/t00-bene-e2e-walkthrough.html">t00-bene-e2e-walkthrough</a>
+<a href="tutorials/t01-bene-meta-harness.html">t01-bene-meta-harness</a>
+<a href="tutorials/t02-e2e-self-healing.html">t02-e2e-self-healing</a>
+<a href="tutorials/t03-security-swarm.html">t03-security-swarm</a>
+<a href="tutorials/t04-migration-rollback.html">t04-migration-rollback</a>
+<a href="tutorials/t05-incident-response.html">t05-incident-response</a>
+<a href="tutorials/t06-ml-research-lab.html">t06-ml-research-lab</a>
+<a href="tutorials/t07-regression-guard.html">t07-regression-guard</a>
+<a href="tutorials/t08-hundred-agents-scale.html">t08-hundred-agents-scale</a>
+<a href="tutorials/t10-ci-overnight-bene-swarm.html">t10-ci-overnight-bene-swarm</a>
+<a href="tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
+<h4>Case studies</h4>
+<a href="case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
+<h4>Infrastructure</h4>
+<a href="infra/DNS.html">DNS</a></aside>
+<main>
+<div class="crumbs"><a href="index.html">docs</a> / philosophy.md</div>
+<h1 id="bene-design-philosophy">BENE Design Philosophy</h1>
+<h2 id="what-bene-is">What BENE is</h2>
+<p><strong>BENE</strong> = <strong>B</strong>reeding-program · <strong>E</strong>volutionary · <strong>N</strong>exus · <strong>E</strong>ngrams — a Bene Gesserit harness.</p>
+<ul>
+<li><strong>B</strong>reeding-program — the evolutionary meta-harness search: a patient,
+  multi-generation selection toward a better harness, the way the Sisterhood
+  bred across millennia toward the Kwisatz Haderach.</li>
+<li><strong>E</strong>volutionary — harness strategies that compound across generations,
+  winners persisting forward instead of being re-derived cold.</li>
+<li><strong>N</strong>exus — the single auditable SQLite database that joins every agent.
+  One nexus, one source of truth.</li>
+<li><strong>E</strong>ngrams — searchable execution <strong>traces</strong>: the corpus for trace-based
+  RAG, BENE's version of a Reverend Mother's <em>Other Memory</em>. The next agent
+  never starts cold; it inherits the ancestral record.</li>
+</ul>
+<p>It is the orchestration substrate we use at Oppie to run agents against
+real triage, on-call, and SDLC workloads. Every agent gets an isolated
+SQLite-backed virtual filesystem, an append-only event journal, and a
+checkpoint timeline. Around that core sits a meta-harness that <em>evolves</em>
+the strategies agents use to do their jobs.</p>
+<p>BENE is not a model. It is not a framework that tries to abstract over
+LLM providers in clever ways. It is the harness layer that turns
+nondeterministic LLM calls into auditable, comparable, reproducible
+operational work.</p>
+<hr />
+<h2 id="why-a-harness-at-all">Why a harness at all?</h2>
+<blockquote>
+<p>兽物的意识无法超越眼前所见，更不会意识到其猎物或将灭绝……它们，只会
+毁灭，不会创造……兽类的快感局于感官，止于认知……而人，则需框架逻辑，
+来理解世界……主动选择专注的意识，来搭建思维的框架……体内细胞和神经
+最深处的意识，驱动着行为……万物，无永恒，忠于意识，生于本能。</p>
+</blockquote>
+<p>A beast's awareness cannot exceed what is directly in front of it. It
+reacts to the prey, the threat, the immediate stimulus — and it only
+destroys; it does not create. A human needs <em>framework and logic</em> to
+understand the world: a deliberately chosen, focused consciousness that
+builds the scaffolding of thought before acting.</p>
+<p>A raw LLM is the beast. It is extraordinary at reacting to what is in the
+context window right now, and left to itself it will happily react its way
+into a destroyed working tree, a mass-restore, a confident wrong answer.
+It has no Other Memory, no nexus, no inner eye on its own path.</p>
+<p>BENE is the framework that lets the agent <em>build</em> instead of merely react.
+The four letters are not decoration — they are the four convictions made
+into structure. The <strong>B</strong>reeding-program and the <strong>E</strong>volutionary loop are
+how the harness gets better over time instead of the model. The <strong>N</strong>exus
+is the single database that makes every action auditable and containable.
+The <strong>E</strong>ngrams — the traces — are the memory that turns each turn into
+something the next agent can stand on. Together they are the difference
+between an LLM that only reacts and an agent that can create.</p>
+<hr />
+<h2 id="the-two-convictions">The two convictions</h2>
+<h3 id="1-trace-based-rag-beats-prompt-based-rag-for-triage">1. Trace-based RAG beats prompt-based RAG for triage</h3>
+<p>A triage agent's most valuable retrieval target is not "the documentation"
+or "the codebase". It is <strong>what an earlier agent already tried, and what
+happened next</strong>. BENE makes the trace itself the primary corpus:</p>
+<ul>
+<li>Every tool call, every result, every state transition lands in the
+  event journal.</li>
+<li>Every output that mattered is content-addressed in the blob store.</li>
+<li>Every decision is reachable by SQL query, by full-text search, and by
+  agent-scoped read.</li>
+</ul>
+<p>The next agent doesn't start cold. It opens a file in its own VFS that
+already contains the triage history, the failure pattern grouping, the
+prior fix attempts, and the rollback markers. <strong>Retrieval over execution
+traces</strong> is the differentiator.</p>
+<h3 id="2-harnesses-should-evolve-models-should-not">2. Harnesses should evolve; models should not</h3>
+<p>We do not fine-tune the LLM for each new triage shape. We evolve the
+harness around it: the prompt template, the tool ordering, the retrieval
+strategy, the verifier. The meta-harness is a small evolutionary loop
+that proposes harness variants, runs them on a benchmark, and keeps the
+winners on a Pareto frontier.</p>
+<p>This is cheap (no GPUs), reversible (every harness is a code blob with a
+hash), auditable (every iteration is in the event journal), and
+compounding (winning patterns persist into the project skill library and
+seed future searches).</p>
+<hr />
+<h2 id="what-gets-composed">What gets composed</h2>
+<p>BENE is built from solutions that already work. We did not invent these.
+We integrated them and made them compose:</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Source</th>
+<th>What it solves at Oppie</th>
+<th>BENE guide</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cross-agent FTS5 memory</td>
+<td>claude-mem (Alex Newman)</td>
+<td>Triage agents repeating past mistakes across sessions</td>
+<td><a href="memory.html">memory.md</a></td>
+</tr>
+<tr>
+<td>Cross-agent skill library</td>
+<td>Zhou et al. 2026 (arXiv:2604.08224)</td>
+<td>Agents reinventing the same dashboard query, the same dedup heuristic, the same rollback recipe</td>
+<td><a href="skills.html">skills.md</a></td>
+</tr>
+<tr>
+<td>Shared log + voting coordination</td>
+<td>LogAct (arXiv:2604.07988)</td>
+<td>Risky changes (kill agent, mass-restore checkpoint) need consensus and an audit trail</td>
+<td><a href="shared-log.html">shared-log.md</a></td>
+</tr>
+<tr>
+<td>Compact context notation (AAAK)</td>
+<td>MemPalace</td>
+<td>Context bloat eating accuracy and budget on long-running searches</td>
+<td><a href="meta-harness.html">meta-harness.md</a></td>
+</tr>
+<tr>
+<td>Stagnation + co-evolution</td>
+<td>CORAL (arXiv:2604.01658)</td>
+<td>The proposer plateauing on one harness shape</td>
+<td><a href="meta-harness.html#coral-getting-unstuck-v060">meta-harness.md#coral-getting-unstuck-v060</a></td>
+</tr>
+<tr>
+<td>Failure diagnosis (verifier)</td>
+<td>EvoSkills (arXiv:2604.01687)</td>
+<td>Opaque failures giving the next iteration nothing actionable</td>
+<td><a href="meta-harness.html">meta-harness.md</a></td>
+</tr>
+<tr>
+<td>Automated optimization</td>
+<td>Meta-Harness (arXiv:2603.28052)</td>
+<td>Manual prompt engineering that doesn't compound across releases</td>
+<td><a href="meta-harness.html">meta-harness.md</a> and <a href="tutorials/t01-bene-meta-harness.html">tutorials/t01</a></td>
+</tr>
+</tbody>
+</table>
+<p>The VFS engine, checkpoint timeline, event journal, and isolation tiers
+are original Oppie work. They are the substrate that makes everything
+above composable in one process and one database.</p>
+<hr />
+<h2 id="operating-principles">Operating principles</h2>
+<h3 id="trust-comes-from-the-audit-trail-not-from-confidence">Trust comes from the audit trail, not from confidence</h3>
+<p>A triage agent that says "the bug is in module X" and a triage agent that
+says "the bug is in module X <strong>and here's the SQL query that found 847
+matching <code>ConnectionPoolError</code> events between 14:32 and 14:51</strong>" are not
+the same agent. BENE is biased toward making the second statement easy
+to produce. The event journal is queryable. Token counts, tool calls,
+and timing are first-class columns.</p>
+<h3 id="containment-is-non-negotiable">Containment is non-negotiable</h3>
+<p>Every agent runs in its own VFS. Two parallel triage agents auditing the
+same PR cannot stomp each other. A wrong-fix can be checkpoint-restored
+in 0.3s without disturbing the other agents on the project. Isolation is
+how you let an autonomous agent loose on production-adjacent work
+without writing a postmortem about <em>the orchestration layer</em>.</p>
+<h3 id="compounding-is-the-point">Compounding is the point</h3>
+<p>The first time an on-call engineer triages an <code>iss_storage_unreachable</code>
+event with BENE, they are doing investigation. The second time, BENE
+already has a saved skill, a prior trace, and a verifier diagnosis from
+last week. By the fifth time, the harness has evolved and the agent gets
+the right answer in two tool calls. None of this is automatic — it's
+what you get when the substrate makes save-once-reuse-everywhere cheap
+and the meta-harness rewards what works.</p>
+<h3 id="reject-what-you-cant-reproduce">Reject what you can't reproduce</h3>
+<p>Every release of BENE is shipped with the harness it ships, the
+benchmark it was scored on, the seed runs that produced it, and the
+event-journal contents to reconstruct any decision. If you can't replay
+it, it didn't happen.</p>
+<hr />
+<h2 id="what-we-dont-do">What we don't do</h2>
+<ul>
+<li><strong>We don't reinvent solved problems.</strong> If a paper or open-source
+  project already solves it, we integrate and credit.</li>
+<li><strong>We don't add features without an operator who needs one.</strong> Every
+  capability traces back to a triage, on-call, or SDLC workload that
+  benefited.</li>
+<li><strong>We don't hide origins.</strong> Integrations carry a citation in code,
+  docs, and the changelog. Read the papers.</li>
+<li><strong>We don't build abstractions we can't maintain.</strong> A capability that
+  breaks composability is not worth shipping.</li>
+</ul>
+<hr />
+<h2 id="whats-open">What's open</h2>
+<p>We are actively looking for prior art on:</p>
+<ul>
+<li>Sub-agent rollback granularity finer than full-VFS restore.</li>
+<li>Cross-agent trust models richer than binary approve/reject voting.</li>
+<li>Adaptive context budgets driven by task criticality (page-vs-page
+  asymmetry).</li>
+<li>Lifecycle policies — when to retire an agent, when to clone, when to
+  promote a singleton.</li>
+</ul>
+<p>If you've read something relevant, send it through the issue tracker.
+Same integration criteria above apply. Credit will be given.</p>
+<hr />
+<h2 id="contributing">Contributing</h2>
+<p>BENE is built for Oppie AI Triage and beyond. The most useful contributions are:</p>
+<ol>
+<li>A research integration you've read and want to land.</li>
+<li>A bug report with a reproduction case from real operational use.</li>
+<li>A benchmark result — capability working, or not working, on a real
+   triage or SDLC task.</li>
+</ol>
+<p>For Oppie-internal contributions, the active backlog is in the
+<code>bene</code> repo's epic tracker and the engineering-services Jira
+queue.</p>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/philosophy.md" target="_blank" rel="noopener noreferrer">docs/philosophy.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+</main>
+</div>
+<footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>
+<a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer">Building something on bene? Open a Discussion.</a></div></footer>
+</body>
+</html>

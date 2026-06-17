@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BENE — multi-agent harness with hash-locked kill gates</title>
+<meta name="description" content="Drop BENE into your CrewAI or LangGraph run. Every promotion clears a hash-locked gate before it ships. Open bene.db with sqlite3 and grep what the last agent learned." />
+<link rel="icon" type="image/svg+xml" href="assets/bene-logo.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        bene: {
+          bg: 'rgb(var(--bg) / <alpha-value>)',
+          surface: 'rgb(var(--surface) / <alpha-value>)',
+          accent: 'rgb(var(--accent) / <alpha-value>)',
+          text: 'rgb(var(--text) / <alpha-value>)',
+          dim: 'rgb(var(--dim) / <alpha-value>)',
+          med: 'rgb(var(--med) / <alpha-value>)',
+          muted: 'rgb(var(--muted) / <alpha-value>)',
+        },
+      },
+      fontFamily: {
+        sans: ['Geist', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['Geist', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"Geist Mono"', 'ui-monospace', 'monospace'],
+      },
+    },
+  },
+}
+</script>
+<style>
+:root, :root[data-theme="light"] {
+  --bg: 240 238 232;    /* #F0EEE8 warm cream (factory.ai signature) */
+  --surface: 237 233 228;/* #EDE9E4 sunken card */
+  --accent: 238 96 24;  /* #EE6018 burnt orange */
+  --text: 31 29 28;     /* #1F1D1C warm ink */
+  --dim: 207 204 200;   /* #CFCCC8 divider */
+  --med: 200 194 186;   /* #C8C2BA mid */
+  --muted: 98 102 109;  /* #62666D */
+  --term: 10 9 8;       /* #0A0908 terminal stays dark */
+}
+:root[data-theme="dark"] {
+  --bg: 10 9 8;         /* #0A0908 warm near-black */
+  --surface: 31 29 28;  /* #1F1D1C */
+  --accent: 239 111 46; /* #EF6F2E brighter on dark */
+  --text: 237 233 228;  /* #EDE9E4 */
+  --dim: 61 58 57;      /* #3D3A39 */
+  --med: 46 44 43;      /* #2E2C2B */
+  --muted: 164 157 154; /* #A49D9A */
+  --term: 5 5 5;
+}
+body { background: rgb(var(--bg)); color: rgb(var(--text)); font-family:'Geist',ui-sans-serif,system-ui,sans-serif; transition: background-color .15s, color .15s; font-feature-settings: 'ss01' 1, 'cv11' 1; text-wrap: pretty; -webkit-font-smoothing: antialiased; }
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background: rgb(var(--surface)); }
+::-webkit-scrollbar-thumb { background: rgb(var(--med)); border-radius:2px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--accent)); }
+.hide-scrollbar::-webkit-scrollbar { display:none; }
+.hide-scrollbar { scrollbar-width:none; }
+/* inverted sections (Contract / Recipes / Limits) — light cream → warm ink rhythm */
+.section-inverted { background: #1F1D1C; color: #EDE9E4; }
+.section-inverted .text-bene-text { color: #EDE9E4; }
+.section-inverted .text-bene-muted { color: #A49D9A; }
+.section-inverted .border-bene-dim { border-color: #3D3A39; }
+.section-inverted .bg-bene-surface { background-color: #2E2C2B; }
+.section-inverted code { color: #EDE9E4; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect } = React;
+
+// ─── Factory-grammar helpers ────────────────────────────────────────
+// Section gains an optional `inverted` flag — when true, the section paints
+// warm-ink (#1F1D1C) on cream — same light↔dark rhythm factory.ai uses
+// between segments. Borders are now soft (rgb(var(--dim))) not stark.
+const Section = ({ id, children, className = '', inverted = false }) => (
+  <section id={id} className={`py-16 md:py-20 lg:py-28 xl:py-32 ${inverted ? 'section-inverted' : ''} ${className}`}>
+    <div className="max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12">{children}</div>
+  </section>
+);
+
+// Factory kicker: <num> · <rule> · <UPPERCASE TRACKED LABEL>
+// 11px Geist Mono, 0.18em tracking — the signature micro-typography of the
+// reference design. Orange num + cream/ink rule + muted label.
+const Kicker = ({ number, title }) => (
+  <div className="flex items-center gap-4 mb-12">
+    <span className="font-mono text-bene-accent text-[11px] tracking-[0.15em]">{number}</span>
+    <div className="h-px bg-bene-dim flex-1" />
+    <span className="font-mono text-bene-muted text-[11px] tracking-[0.18em] uppercase">{title}</span>
+  </div>
+);
+
+// Card: flat, crisp, factory-grade — small radius (6px), 1px soft divider,
+// no glow shadow. Inner padding 28px (closer to 32 than 24 for breathing room).
+const Card = ({ children, className = '' }) => (
+  <div className={`bg-bene-surface border border-bene-dim p-7 rounded-md ${className}`}>{children}</div>
+);
+
+const Terminal = ({ children, caption, copyText }) => {
+  const [copied, setCopied] = React.useState(false);
+  const onCopy = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(copyText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch (e) { /* swallow */ }
+  };
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="bg-[rgb(var(--term))] border border-bene-dim rounded-sm overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-bene-dim bg-bene-surface">
+          <div className="flex gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-bene-med" />
+            <div className="w-2.5 h-2.5 rounded-full bg-bene-med" />
+            <div className="w-2.5 h-2.5 rounded-full bg-bene-med" />
+          </div>
+          {copyText && (
+            <button onClick={onCopy} className="font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors"
+              title="Copy install command to clipboard">
+              {copied ? '✓ copied' : 'copy install ↗'}
+            </button>
+          )}
+        </div>
+        <div className="p-5 overflow-x-auto">
+          <pre className="font-mono text-[13px] text-bene-text leading-relaxed"><code>{children}</code></pre>
+        </div>
+      </div>
+      {caption && <p className="font-mono text-xs text-bene-muted">{caption}</p>}
+    </div>
+  );
+};
+
+const Pill = ({ children }) => (
+  <div className="border border-bene-dim rounded-full px-4 py-2 font-mono text-xs text-bene-muted flex items-center gap-3 w-fit">
+    <div className="w-1.5 h-1.5 rounded-full bg-bene-accent" />
+    {children}
+  </div>
+);
+
+// ─── Gap demo (a recorded terminal showing how BENE addresses one gap) ─
+// Source .tape sits in site/demos/tapes/gap-N-*.tape; the GIF is recorded
+// against bene-main HEAD with no edits.
+const GapDemo = ({ gif, caption }) => (
+  <div className="mt-5 bg-[rgb(var(--term))] border border-bene-dim rounded-sm overflow-hidden">
+    <div className="flex items-center px-3 py-2 border-b border-bene-dim bg-bene-surface">
+      <div className="flex gap-1.5">
+        <div className="w-2 h-2 rounded-full bg-bene-med" />
+        <div className="w-2 h-2 rounded-full bg-bene-med" />
+        <div className="w-2 h-2 rounded-full bg-bene-med" />
+      </div>
+    </div>
+    <img src={`assets/demos/${gif}`} alt={caption} loading="lazy"
+      onError={(e) => { e.currentTarget.closest('.demo-embed')?.remove?.(); }}
+      className="w-full block" />
+    <p className="px-3 py-2 font-mono text-[11px] text-bene-muted leading-snug border-t border-bene-dim">{caption}</p>
+  </div>
+);
+
+// ─── Nav ────────────────────────────────────────────────────────────
+const Nav = ({ theme, setTheme }) => {
+  const links = [
+    { id: 'gap', label: '01 Gap' },
+    { id: 'contract', label: '02 Contract' },
+    { id: 'comparison', label: '03 Integrates' },
+    { id: 'proof', label: '04 Proof' },
+    { id: 'recipes', label: '05 Recipes' },
+    { id: 'architecture', label: '06 Arch' },
+    { id: 'limits', label: '07 Limits' },
+    { id: 'lore', label: '08 Lore' },
+  ];
+  const scrollTo = (id) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+  return (
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-bene-bg/90 backdrop-blur-md border-b border-bene-dim">
+      <div className="max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12 h-14 flex items-center justify-between">
+        <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <svg viewBox="0 0 320 200" className="text-bene-accent h-5 w-auto" fill="currentColor" fillRule="evenodd" aria-label="BENE">
+            <path d="M 38 26 H 112 Q 160 26 160 64 Q 160 100 112 100 H 38 Z M 58 42 H 112 Q 140 42 140 64 Q 140 84 112 84 H 58 Z M 38 100 H 112 Q 160 100 160 136 Q 160 174 112 174 H 38 Z M 58 116 H 112 Q 140 116 140 136 Q 140 158 112 158 H 58 Z"/>
+            <path transform="translate(320,0) scale(-1,1)" d="M 38 26 H 112 Q 160 26 160 64 Q 160 100 112 100 H 38 Z M 58 42 H 112 Q 140 42 140 64 Q 140 84 112 84 H 58 Z M 38 100 H 112 Q 160 100 160 136 Q 160 174 112 174 H 38 Z M 58 116 H 112 Q 140 116 140 136 Q 140 158 112 158 H 58 Z"/>
+          </svg>
+          <span className="font-display font-bold tracking-widest text-sm">BENE</span>
+        </div>
+        <div className="flex items-center gap-3 md:gap-6">
+          <div className="hidden md:flex items-center gap-6">
+            {links.map(l => (
+              <button key={l.id} onClick={() => scrollTo(l.id)} className="font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors">{l.label}</button>
+            ))}
+          </div>
+          <a href="docs/index.html" className="font-mono text-xs text-bene-accent hover:bg-bene-accent/10 transition-colors border border-bene-accent rounded-sm px-3 py-1">Docs ↗</a>
+          <a href="SKILL.md" target="_blank" rel="noopener noreferrer" className="hidden sm:inline font-mono text-xs text-bene-text hover:text-bene-accent transition-colors" title="Paste this to make it a BENE expert (raw markdown)">SKILL.md</a>
+          <a href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" className="hidden sm:inline font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors">GitHub</a>
+          <a href="zh/" className="font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors border border-bene-dim rounded-sm px-2 py-1" title="切换到中文">文</a>
+          <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors border border-bene-dim rounded-sm px-2 py-1"
+            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}>
+            {theme === 'dark' ? '◐ light' : '◑ dark'}
+          </button>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+// ─── Copy-llms.txt button ───────────────────────────────────────────
+// Fetches /bene/llms.txt, copies to the clipboard, flashes a confirmation.
+// Falls back to opening the file in a new tab if clipboard API is blocked.
+const CopyLlmsTxtButton = ({ className = '', label = 'Copy llms.txt' } = {}) => {
+  const [state, setState] = React.useState('idle');
+  const onClick = async () => {
+    try {
+      const r = await fetch('llms.txt', { cache: 'no-cache' });
+      if (!r.ok) throw new Error('fetch failed: ' + r.status);
+      const text = await r.text();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        setState('copied');
+        setTimeout(() => setState('idle'), 2200);
+      } else {
+        window.open('llms.txt', '_blank', 'noopener,noreferrer');
+        setState('opened');
+        setTimeout(() => setState('idle'), 2200);
+      }
+    } catch (e) {
+      window.open('llms.txt', '_blank', 'noopener,noreferrer');
+      setState('opened');
+      setTimeout(() => setState('idle'), 2200);
+    }
+  };
+  const flash =
+    state === 'copied' ? '✓ copied — Paste this' :
+    state === 'opened' ? '↗ opened in new tab' :
+    label;
+  return (
+    <button onClick={onClick}
+      title="Copy the llms.txt site map (an LLM-friendly index pointing at SKILL.md + every doc). Paste it into the harness's context."
+      className={`font-mono text-xs text-bene-text hover:bg-bene-text/10 transition-colors border border-bene-text rounded-sm px-3 py-2 whitespace-nowrap ${className}`}>
+      {flash}
+    </button>
+  );
+};
+
+// ─── 00 · Hero ──────────────────────────────────────────────────────
+const Hero = () => (
+  <section className="pt-20 md:pt-24 lg:pt-32 xl:pt-40 pb-16 md:pb-24">
+    <div className="max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12 w-full">
+      <div className="flex items-center gap-3 mb-8 font-mono text-[11px] tracking-[0.15em] uppercase text-bene-muted">
+        <span className="w-1.5 h-1.5 rounded-full bg-bene-accent" />
+        <span>v0.2.0</span>
+        <span className="text-bene-dim">·</span>
+        <span>local-first multi-agent harness</span>
+        <span className="text-bene-dim">·</span>
+        <span>SQLite</span>
+      </div>
+      <h1 className="font-display text-[clamp(48px,8.5vw,128px)] font-semibold tracking-[-0.025em] leading-[1.02] mb-6 lg:mb-8 max-w-5xl xl:max-w-6xl">
+        Your eval scored your last prompt.<br />
+        <span className="text-bene-muted">It still shipped.</span>
+      </h1>
+      <p className="text-xl md:text-2xl lg:text-3xl xl:text-4xl text-bene-muted max-w-3xl lg:max-w-4xl xl:max-w-5xl leading-snug mb-12 lg:mb-16">
+        For builders who ran LangGraph or CrewAI in prod and learned that scoring an eval is not the same as blocking a bad ship.
+      </p>
+      <div className="grid md:grid-cols-2 gap-12 items-start mb-16">
+        <div>
+          <p className="text-lg leading-relaxed mb-6">
+            03:00 the next night, the on-call walks into <code className="text-bene-text">bene.db</code> with sqlite3 and finds the engram of every retry the harness tried — and the locked probe that let the bad prompt through.{' '}
+            <span className="text-bene-text font-medium">No vendor portal. No dashboard you're waiting on.</span>
+          </p>
+          <p className="text-sm text-bene-muted leading-relaxed font-mono">
+            That gate is what the next ship has to clear: <code className="text-bene-text">promote()</code> raises <code className="text-bene-text">PromotionBlocked</code> until a sha256-locked probe says ACCEPT, and CI halts on the exception. An agent can breed a better strategy with <code className="text-bene-text">bene mh search</code> — but it hits the same locked gate, no second path. Win or lose, the attempt lands in <code className="text-bene-text">bene.db</code> as the next run's input.
+          </p>
+        </div>
+        <div className="flex flex-col gap-3">
+          <Pill>30 seconds with the repo: init, smoke, grep the harness's memory</Pill>
+          <Pill>one bene.db, no cloud, no keys</Pill>
+          <Pill>works inside Claude Code, Cursor, Aider</Pill>
+        </div>
+      </div>
+      <Terminal>
+        <span className="text-bene-muted"># coming to PyPI — early access</span>
+        <br />
+        <span className="text-bene-accent">pip</span> install bene
+        <br />
+        <br />
+        <span className="text-bene-muted"># have the repo? smoke it (≈1s — 12 engrams, 4 experiment runs):</span>
+        <br />
+        <span className="text-bene-accent">uv</span> run bene init && <span className="text-bene-accent">uv</span> run bene demo --no-ui
+        <br />
+        <br />
+        sqlite3 /tmp/bene-demo-*/story.db <span className="text-[#A3E635]">"SELECT tier, kind, substr(title,1,60) FROM engrams ORDER BY created_at DESC LIMIT 5;"</span>
+      </Terminal>
+      <div className="mt-8 pt-6 border-t border-bene-dim flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
+        <p className="text-xs text-bene-muted leading-snug">
+          Or Run BENE in one URL — fetch the skill, fetch the index, the harness runs BENE itself.
+        </p>
+        <div className="flex flex-wrap gap-2 shrink-0">
+          <a href="SKILL.md" target="_blank" rel="noopener noreferrer"
+             className="font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors border border-bene-dim rounded-sm px-3 py-1.5 whitespace-nowrap">
+            /bene/SKILL.md ↗
+          </a>
+          <CopyLlmsTxtButton className="text-bene-muted border-bene-dim hover:text-bene-accent !py-1.5" label="Copy llms.txt" />
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
+// ─── 01 · The Gap ───────────────────────────────────────────────────
+const TheGap = () => (
+  <Section id="gap">
+    <Kicker number="01" title="The Gap" />
+    <h2 className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold mb-6 lg:mb-8">
+      Production gaps the research moved past.<br />
+      <span className="text-bene-muted">Your stack closes some — BENE closes them in one auditable file.</span>
+    </h2>
+    <p className="font-mono text-xs text-bene-muted mb-8">The 4 clips below are real bene-main HEAD runs — no output edits.</p>
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-16">
+      <Card className="md:col-span-12 h-full">
+        <h3 className="font-mono text-bene-accent mb-4">Gap 1. Eval scoring ≠ promotion gating</h3>
+        <p className="text-bene-muted leading-relaxed">
+          A new prompt or strategy passes an offline eval. That score does not, by itself, refuse to ship a regression — somewhere in your pipeline a human or a deploy script makes the final call. BENE turns the gate into code: <code className="text-bene-text">promote()</code> raises <code className="text-bene-text">PromotionBlocked</code> unless a sha256-locked probe says ACCEPT, so CI halts on the exception.
+        </p>
+        <GapDemo gif="gap-1-killgate.gif" caption="bene init && bene demo seeds a probe; experiments ls shows the verdict 'story-probe -> ACCEPT' — itself an engram, re-readable months later." />
+      </Card>
+      <Card className="md:col-span-6 h-full">
+        <h3 className="font-mono text-bene-accent mb-4">Gap 2. Cross-agent memory with provenance</h3>
+        <p className="text-bene-muted leading-relaxed">
+          Conversation history and single-agent memory blocks are common; what’s rare is typed, provenance-linked engrams on a 5-tier ladder that another agent can grep months later and trust. Every BENE run lands each turn as that kind of engram by default.
+        </p>
+        <GapDemo gif="gap-2-engram.gif" caption="bene query on the demo db shows the tier distribution: trace, episodic, strategic — each with title + provenance." />
+      </Card>
+      <Card className="md:col-span-6 h-full">
+        <h3 className="font-mono text-bene-accent mb-4">Gap 3. Autonomy as a computed signal</h3>
+        <p className="text-bene-muted leading-relaxed">
+          Most autonomy flags live in a config file — easy to set, easy to forget. BENE folds four signals into a [0,1] trust score, and L4 grants require <code className="text-bene-text">granted_by='human:&lt;name&gt;'</code> or the API raises. The escalation path can be observed.
+        </p>
+        <GapDemo gif="gap-3-trust.gif" caption="bene trust <agent> returns 4 signals + composite. each value derives from the audit trail, not a config flag." />
+      </Card>
+      <Card className="md:col-span-12 h-full">
+        <h3 className="font-mono text-bene-accent mb-4">Gap 4. A local file as the source of truth</h3>
+        <p className="text-bene-muted leading-relaxed">
+          When an incident review at 03:00 needs the exact prompt that shipped, you want a file on your disk — not a dashboard you’re waiting on. BENE’s <code className="text-bene-text">bene.db</code> is that file: cp it, rsync it, diff it, open it with sqlite3.
+        </p>
+        <GapDemo gif="gap-4-sqlite.gif" caption="ls -la $DEMO_DB + a 4-line python script reads engrams directly. no client library, no portal." />
+      </Card>
+    </div>
+    <p className="font-mono text-sm text-bene-text border-l-2 border-bene-accent pl-4">
+      Four gaps, closed in one file you can cp, rsync, and diff.
+    </p>
+  </Section>
+);
+
+// ─── 02 · The Contract ──────────────────────────────────────────────
+const Contract = () => {
+  const inv = [
+    { n: '1', t: 'Your agents do not share state by accident', d: 'Every agent owns a SQLite-backed virtual filesystem you can diff and restore. Cross-agent reads are explicit; cross-agent decisions ride SharedLog (intent → vote → decide). Isolation is structural — no ACL maintenance.' },
+    { n: '2', t: 'The next agent walks in and greps what the last one learned', d: 'Every run leaves typed engrams on a 5-tier ladder by default (opt out per run): trace 0, episodic 1, semantic 2, procedural 3, strategic 4. Promotion never mutates sources. Provenance is mandatory.' },
+    { n: '3', t: 'A bad prompt cannot ship by passing eval alone', d: "Anything that evolves passes a sha256-locked falsifiable probe before promotion. Tamper the spec, the probe refuses. A gate that can't kill the baseline registers as VOID. Verdicts are themselves engrams, re-readable months later." },
+    { n: '4', t: 'L4 grants come from a named human only', d: "Four signals fold into a [0,1] composite. L4 grants require granted_by='human:<name>' or the API raises. No self-promotion, and no flag bypasses the human grant." },
+  ];
+  return (
+    <Section id="contract" inverted>
+      <Kicker number="02" title="The Contract — Four Invariants" />
+      <h2 className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold mb-6 lg:mb-8">Invariants the harness will not bend on</h2>
+      <p className="text-lg lg:text-xl xl:text-2xl text-bene-muted max-w-3xl lg:max-w-4xl xl:max-w-5xl leading-relaxed mb-16">
+        These four hold for every agent, every run, every promotion candidate, every L4 grant — before any feature sits on top.
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+        {inv.map((i) => (
+          <Card key={i.n} className="h-full flex flex-col">
+            <div className="flex items-center gap-4 mb-4">
+              <span className="font-mono text-bene-dim text-4xl leading-none">{i.n}</span>
+              <h3 className="font-mono text-bene-text">{i.t}</h3>
+            </div>
+            <p className="text-bene-muted leading-relaxed flex-1">{i.d}</p>
+          </Card>
+        ))}
+      </div>
+      <p className="font-mono text-sm text-bene-text border-l-2 border-bene-accent pl-4">
+        Same gate whether a human writes the strategy or an agent breeds one with <code className="text-bene-text">bene mh search</code> — clear the sha256-locked probe or <code className="text-bene-text">promote()</code> raises, and every attempt lands in <code className="text-bene-text">bene.db</code> as the next run's input. Everything else — VFS, MCP, dashboard — is wiring around those four.
+      </p>
+    </Section>
+  );
+};
+
+// ─── 03 · Plays well with your toolbox ──────────────────────────────
+const Comparison = () => {
+  const recipes = [
+    { n: 'LangGraph',     r: 'Wrap node outputs as engrams; gate promote() on the candidate prompt before the next graph run.' },
+    { n: 'CrewAI',        r: 'crew.kickoff() → engram batch; promote new role configs only when their probe ACCEPTs.' },
+    { n: 'AutoGen',       r: 'on_message hook → engram; SharedLog for cross-agent decisions; probe gates conversational hand-off.' },
+    { n: 'smolagents',    r: 'Thin loop unchanged; engrams + probe live underneath, no changes to the harness body.' },
+    { n: 'DSPy',          r: 'Register DSPy.compile output as a candidate; 5-line probe against your metric; promote() replaces deploy.py.' },
+    { n: 'Letta',         r: 'Mirror Letta memory blocks as tier-2 engrams; cross-agent reuse goes through the probe + gate.' },
+  ];
+  const adds = [
+    "A prompt can't ship just because its eval score went up",
+    'Grep what the last agent learned and why it shipped',
+    "Two agents can't share state by accident — isolation lives in the per-agent VFS, not in ACL configs",
+    'Cross-agent decisions follow one auditable path; you can replay who voted what',
+    'Run `bene trust <agent>` and 4 signals come back from the audit trail — no YAML flag flips them',
+    'Strategies can evolve; only the ones that pass the gate reach production',
+    'Open bene.db with sqlite3 — cp, rsync, diff all just work',
+  ];
+  return (
+    <Section id="comparison">
+      <Kicker number="03" title="Plays well with your toolbox" />
+      <h2 className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold mb-6 lg:mb-8">Keep your crew. BENE records every run underneath.</h2>
+      <p className="text-lg lg:text-xl xl:text-2xl text-bene-muted max-w-3xl lg:max-w-4xl xl:max-w-5xl leading-relaxed mb-12">
+        You already run LangGraph, CrewAI, or whatever else turned out to fit your team. Keep it. BENE goes under that orchestration layer — same graph, same crew, same providers — and writes the engrams + gates + trust signal next to your run.
+      </p>
+      <div className="border border-bene-dim bg-bene-surface p-6 mb-16">
+        <h3 className="font-mono text-bene-accent text-sm mb-4">What BENE adds underneath</h3>
+        <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 font-mono text-sm text-bene-text">
+          {adds.map((a, i) => (
+            <li key={i} className="flex gap-3"><span className="text-bene-accent">+</span>{a}</li>
+          ))}
+        </ul>
+      </div>
+      <h3 className="font-mono text-bene-accent text-sm mb-6 tracking-widest uppercase">Integration patterns — you wire these yourself (no separate adapter package)</h3>
+      <div className="border border-bene-dim bg-bene-surface mb-16">
+        {recipes.map((r, i) => (
+          <div key={r.n} className={'flex flex-col md:flex-row md:items-center gap-2 md:gap-6 p-4 ' + (i < recipes.length - 1 ? 'border-b border-bene-dim' : '')}>
+            <div className="font-mono text-sm text-bene-accent md:w-32 shrink-0">{r.n}</div>
+            <div className="text-sm text-bene-text leading-relaxed">{r.r}</div>
+          </div>
+        ))}
+      </div>
+      <div className="space-y-6">
+        <p className="font-mono text-sm text-bene-text border-l-2 border-bene-accent pl-4">
+          Bring your own framework. Bring your own provider. BENE writes the engrams, gates, and trust signal underneath; you ship through one bene.db.
+        </p>
+        <p className="text-sm text-bene-muted max-w-3xl leading-relaxed">
+          The harness loop is turnkey — engrams and the event journal are on by default, no wiring. The gate, memory consolidation, skills, and evolution are patterns you assemble yourself — real parts, but not chained together for you. The honest map is in <a href="docs/integrating-bene.html" className="text-bene-accent hover:underline">Integrating BENE</a>.
+        </p>
+        <div className="pt-8 border-t border-bene-dim flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <p className="text-xs text-bene-muted max-w-2xl">
+            Receipts and limits are in the docs below.
+          </p>
+          <div className="flex gap-4 font-mono text-xs">
+            the design documentation
+            <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/benchmarks/COMMUNITY-BENCH-REPORT.md" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">COMMUNITY-BENCH-REPORT.md</a>
+          </div>
+        </div>
+      </div>
+    </Section>
+  );
+};
+
+// ─── 04 · Proof (tabs) ──────────────────────────────────────────────
+const Proof = () => {
+  const [a, setA] = useState(0);
+  const tabs = [
+    { l: 'Tab 1: Install + smoke', c: 'Runs with zero keys, zero cloud.',
+      r: (<><span className="text-bene-muted"># coming to PyPI — early access</span><br/>$ pip install bene<br/><br/><span className="text-bene-muted"># have the repo? smoke it:</span><br/>$ uv run bene init && uv run bene demo --no-ui<br/><span className="text-bene-muted">[trace]</span> initializing harness...<br/><span className="text-bene-accent">[probe]</span> running baseline evaluation...<br/><span className="text-bene-muted">[evolve]</span> generating candidate strategies...<br/><span className="text-bene-muted">[trace]</span> story complete in 0.3s — 12 engrams, 4 experiment runs.</>) },
+    { l: 'Tab 2: Planner + Executor', c: 'Two agents, one bene.db. Intent → vote → decide is the only path between shared decisions.',
+      r: (<><span className="text-bene-accent">from</span> bene <span className="text-bene-accent">import</span> Bene<br/><span className="text-bene-accent">from</span> bene.shared_log <span className="text-bene-accent">import</span> SharedLog<br/><br/>harness = Bene(<span className="text-[#A3E635]">'bene.db'</span>)<br/>log = SharedLog(harness.conn)<br/>planner = harness.spawn(<span className="text-[#A3E635]">'planner'</span>)<br/>executor = harness.spawn(<span className="text-[#A3E635]">'executor'</span>)<br/><br/><span className="text-bene-muted"># Intent → Vote → Decide — the only path between shared decisions</span><br/>i = log.intent(agent_id=planner, action=<span className="text-[#A3E635]">'execute_plan'</span>)<br/>log.vote(agent_id=executor, intent_id=i, approve=<span className="text-bene-accent">True</span>, reason=<span className="text-[#A3E635]">'plan looks safe'</span>)<br/>log.decide(intent_id=i, agent_id=planner)<br/><br/><span className="text-bene-muted"># decision passed: True — 1 approve</span></>) },
+    { l: 'Tab 3: Grep the engrams', c: "Open the demo's story.db with sqlite3, SELECT FROM engrams — no vendor API between you and what shipped.",
+      r: (<>$ sqlite3 /tmp/bene-demo-*/story.db <span className="text-[#A3E635]">"SELECT tier, kind, substr(title,1,46) FROM engrams ORDER BY created_at DESC LIMIT 5;"</span><br/><br/>0|trust|denial:evolve.promote<br/>0|eval|verdict:story-probe:ACCEPT<br/>0|eval|probe-lock:story-probe<br/>4|strategic|genome:01KV8RS1QPE6E488WKWCCY4N5N<br/>4|strategic|genome:01KV8RS1QPFVQDSERJ7RHAGNEH</>) },
+    { l: 'Tab 4: Probe ACCEPT vs REJECT', c: "Tamper the spec, LockTamperError. A gate that can't kill the baseline registers VOID, not ACCEPT.",
+      r: (<><span className="text-bene-accent">def</span> <span className="text-[#60A5FA]">test_candidate</span>(eval_run):<br/>&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-bene-accent">if</span> eval_run.quality &lt; <span className="text-[#FBBF24]">0.70</span>:<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-bene-accent">raise</span> PromotionBlocked(<span className="text-[#A3E635]">'Quality regression'</span>)<br/><br/><span className="text-bene-muted"># Run 1: quality=0.71</span><br/><span className="text-[#A3E635]">ACCEPT</span>: Candidate promoted to tier 4.<br/><br/><span className="text-bene-muted"># Run 2: quality=0.62</span><br/><span className="text-bene-accent">PromotionBlocked</span>: Quality regression. Promotion aborted.</>) },
+  ];
+  return (
+    <Section id="proof">
+      <Kicker number="04" title="30-second proof" />
+      <h2 className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold mb-6 lg:mb-8">Install, smoke, grep, gate</h2>
+      <p className="text-lg lg:text-xl xl:text-2xl text-bene-muted max-w-3xl lg:max-w-4xl xl:max-w-5xl leading-relaxed mb-16">
+        Four tabs. Tab 1 installs and runs. Tab 2 spawns planner + executor over SharedLog. Tab 3 opens the demo's story.db with sqlite3 and SELECTs the engrams Tab 1 wrote. Tab 4 fires a probe and watches it block a bad promotion.
+      </p>
+      <div className="border border-bene-dim bg-bene-surface mb-8">
+        <div className="flex overflow-x-auto border-b border-bene-dim hide-scrollbar">
+          {tabs.map((t, i) => (
+            <button key={i} onClick={() => setA(i)} className={`px-6 py-4 font-mono text-xs whitespace-nowrap transition-colors border-b-2 ${a === i ? 'border-bene-accent text-bene-text' : 'border-transparent text-bene-muted hover:text-bene-text hover:bg-bene-dim/20'}`}>{t.l}</button>
+          ))}
+        </div>
+        <div className="p-6">
+          <Terminal caption={tabs[a].c}>{tabs[a].r}</Terminal>
+        </div>
+      </div>
+      <p className="font-mono text-sm text-bene-text border-l-2 border-bene-accent pl-4">
+        Run <code className="text-bene-accent">uv run bene dashboard</code>. The same .db drives a live TUI with no extra instrumentation.
+      </p>
+    </Section>
+  );
+};
+
+// ─── 05 · Recipes ───────────────────────────────────────────────────
+const Recipes = () => {
+  const rs = [
+    { id: 'R1', t: 'Recover from a bad turn', m: 'bene.checkpoints', who: 'you', flow: ['agent run', 'checkpoint("green")', 'diff → restore'], d: 'Litany loop.', c: 'bene checkpoint <agent> --label green; bene diff ...; bene restore ...', v: 'bene --json checkpoints <agent> | jq length  →  ≥ 1' },
+    { id: 'R2', t: 'Coordinate two agents', m: 'bene.shared_log', who: 'agent ↔ agent', flow: ['planner.intent', 'SharedLog.vote', 'executor.decide'], d: '2-agent pattern for tasks over 3 steps.', c: '# See Tab 2 in Proof section', v: 'bene log tail --n 5  →  intent, vote, decide all present' },
+    { id: 'R3', t: 'Gate the next promote', m: 'bene.kernel.eval', who: 'you + CI', flow: ['Probe(...).register()', 'promote()', 'ACCEPT / REJECT / VOID'], d: "Five lines that define BENE's promotion contract.", c: 'Probe(name, [gate], fn).register(store, conn, baseline=base)', v: 'bene experiments show <run> | grep -E "ACCEPT|REJECT|VOID"  →  the verdict' },
+    { id: 'R4', t: 'Compound memory across runs', m: 'bene.kernel.memory', who: 'you → agents', flow: ['legacy store', 'attach_kernel', 'memory.search hit'], d: 'Mirror legacy stores into engrams; consolidate; adaptive retrieval.', c: 'attach_kernel(harness, memory=legacy_store)', v: 'bene memory search "<task hint>"  →  hits from prior sessions' },
+    { id: 'R5', t: 'Keep context inside budget', m: 'bene.kernel.memory.ContextOS', who: 'agent runtime', flow: ['ContextOS()', 'assemble(budget_tokens)', 'never overshoots'], d: 'Budgeted assembly, pollution detector.', c: 'packed = ContextOS().assemble(items, budget_tokens=8192)', v: 'packed.manifest["estimated_tokens"] <= 8192  →  True' },
+    { id: 'R6', t: 'Escalate autonomy by probe', m: 'bene.kernel.trust + .harness', who: 'agent climbs · human signs L4', flow: ['4 signals', 'composite ∈ [0,1]', 'human signs L4'], d: 'Grants escalate by passing probes, not editing YAML.', c: "agent.grant_level(4, granted_by='human:alice')", v: 'bene trust <agent>  →  composite ∈ [0,1]' },
+    { id: 'R7', t: 'Breed a better strategy', m: 'bene.kernel.evolve', who: 'agent / CI', flow: ['mh search', 'genome (Pareto)', 'gated promote'], d: 'Breed strategies; bridge is manual today, end-to-end wiring on roadmap.', c: 'bene mh search --benchmark <name>', v: 'bene mh frontier <search_agent_id> | jq .' },
+    { id: 'R8', t: 'Plug BENE into the harness', m: 'bene.mcp', who: 'you, once', flow: ['bene serve --transport stdio', 'MCP server', 'claude mcp ls'], d: 'One line in Claude Code, Cursor, Aider.', c: 'bene serve --transport stdio', v: 'claude mcp ls  →  bene listed' },
+  ];
+  return (
+    <Section id="recipes" inverted>
+      <Kicker number="05" title="Recipes" />
+      <h2 className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold mb-6 lg:mb-8">Eight recipes — the methodology in verbs</h2>
+      <p className="text-lg lg:text-xl xl:text-2xl text-bene-muted max-w-3xl lg:max-w-4xl xl:max-w-5xl leading-relaxed mb-16">
+        If you can name your task, one of these eight is it. Each recipe ends in a verify command you can paste and watch pass.
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+        {rs.map(r => (
+          <Card key={r.id} className="h-full flex flex-col p-6">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="bg-bene-dim text-bene-text font-mono text-xs px-2 py-1 rounded-sm">{r.id}</span>
+              <h3 className="font-mono text-bene-text text-sm">{r.t}</h3>
+              <span className="ml-auto font-mono text-[10px] text-bene-muted whitespace-nowrap shrink-0">{r.who}</span>
+            </div>
+            <p className="font-mono text-[11px] text-bene-accent mb-4 tracking-tight">{r.m}</p>
+            <div className="font-mono text-[10px] flex items-center gap-1.5 mb-4 text-bene-muted overflow-x-auto whitespace-nowrap">
+              <span className="border border-bene-dim px-2 py-0.5 rounded-sm">{r.flow[0]}</span>
+              <span className="text-bene-accent">→</span>
+              <span className="border border-bene-accent text-bene-text px-2 py-0.5 rounded-sm">{r.flow[1]}</span>
+              <span className="text-bene-accent">→</span>
+              <span className="border border-bene-dim px-2 py-0.5 rounded-sm">{r.flow[2]}</span>
+            </div>
+            <p className="text-sm text-bene-muted mb-6 flex-1">{r.d}</p>
+            <div className="space-y-3">
+              <div className="bg-[rgb(var(--term))] border border-bene-dim p-3 rounded-sm">
+                <code className="font-mono text-xs text-bene-muted">{r.c}</code>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-bene-accent font-mono text-xs mt-0.5">verify:</span>
+                <code className="font-mono text-xs text-bene-text break-all">{r.v}</code>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+      <p className="font-mono text-sm text-bene-text border-l-2 border-bene-accent pl-4">
+        Eight verbs, eight verify commands — the one that matches your task is the one to run.
+      </p>
+    </Section>
+  );
+};
+
+// ─── 06 · Architecture ──────────────────────────────────────────────
+const Architecture = () => {
+  const subsystems = [
+    {
+      key: 'engram',
+      name: 'Engram ladder',
+      oneLine: 'five-tier typed execution memory',
+      scene: "An agent stalled mid-run; you replay and want to know what it learned the first time and why it ended up here.",
+      common: "Open the LLM provider's trace UI, scroll chain-of-thought logs, copy the decisive lines into Notion. Often missing, often untyped, often overwritten by the next batch of data.",
+      mechanism: 'By default every run drops a tier-0 trace engram per turn (opt out with emit_engrams=False or kernel.emit_engrams: false); consolidation lifts them up five tiers: tier 0 raw trace, tier 1 one-episode summary, tier 2 cross-episode abstraction, tier 3 reusable procedure, tier 4 candidate strategy. A promotion between tiers must pass a probe; the new conclusion lands in a new row, the original is never mutated.',
+      diagram: (
+        <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] lg:text-xs">
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">tier 0 trace</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">tier 1 episodic</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">tier 2 semantic</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">tier 3 procedural</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-accent text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">tier 4 strategic</span>
+        </div>
+      ),
+      verify: 'bene query "SELECT tier, kind, substr(title,1,60) FROM engrams ORDER BY created_at DESC LIMIT 5"',
+    },
+    {
+      key: 'probe',
+      name: 'Probe + kill gate',
+      oneLine: 'the gate before promotion',
+      scene: 'A new prompt passes eval with a 2-point lift over baseline. You do not want to push it and then discover it regresses on some case nobody covered.',
+      common: 'A reminder in CI to "ask someone to review prompt changes" or a GitHub Action that compares eval scores. Both are cultural conventions constraints.',
+      mechanism: 'Probe(name, [gate], fn).register(...) seals the spec under sha256. promote(candidate) runs the candidate through the probe; the verdict is ACCEPT, REJECT, or VOID (the probe is inadmissible — a gate that cannot kill its own baseline; REJECT means the candidate failed an admissible gate). No ACCEPT means PromotionBlocked is raised and CI halts on the exception. Try to evolve the spec to flip the verdict? The sha256 will not match and the probe refuses to run (LockTamperError). The verdict itself lands as an engram, re-readable months later.',
+      diagram: (
+        <div className="font-mono text-[11px] lg:text-xs space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">Probe(...).register()</span>
+            <span className="text-bene-accent">→</span>
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">promote(candidate)</span>
+            <span className="text-bene-accent">→</span>
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">sha256 spec compare</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pl-4">
+            <span className="text-bene-muted">verdict →</span>
+            <span className="border border-bene-accent text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">ACCEPT</span>
+            <span className="text-bene-muted">/</span>
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">REJECT</span>
+            <span className="text-bene-muted">/</span>
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">VOID</span>
+          </div>
+        </div>
+      ),
+      verify: 'bene experiments show <run> | grep -E "ACCEPT|REJECT|VOID"',
+    },
+    {
+      key: 'context',
+      name: 'Context OS',
+      oneLine: 'context that neither overflows nor silently truncates',
+      scene: "An agent loop has run 30 steps; the context window keeps growing. At step 31 your system instruction is silently truncated by the model — you do not see it happen, you just see the output get dumb.",
+      common: 'Estimate tokens, write a "stay under N tokens" rule, or hope it never overflows. When something breaks, print the prompt and dig.',
+      mechanism: 'Every item bound for the LLM goes through ContextOS first. A pollution detector runs three signals against incoming items; over budget, lowest-priority items are dropped at assemble time — never silently truncated by the model. The output is a budget-capped manifest that records what made it in and what was cut, queryable after the fact.',
+      diagram: (
+        <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] lg:text-xs">
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">incoming items</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">assemble + pollution detect</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-accent text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">budget-capped manifest</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">LLM</span>
+        </div>
+      ),
+      verify: 'ContextOS().assemble(items, budget_tokens=8192).manifest["estimated_tokens"] <= 8192',
+    },
+    {
+      key: 'autonomy',
+      name: 'Autonomy ladder + trust ledger',
+      oneLine: 'Run `bene trust <agent>`; four signals fold into a [0,1] composite',
+      scene: 'An agent has run three weeks without an error and the team wants it to own a class of decisions outright. Question: by what evidence is that the right call?',
+      common: "Set autonomy_level: 3 in a YAML, or the lead approves it from gut. When something breaks, dig commit messages to find out who signed off.",
+      mechanism: 'Four signals are computed from the audit trail: verification_coverage (probe pass rate), audit (review hit rate), checkpoint (rollback frequency), outcome (task success rate). They fold into a [0,1] composite that places the harness on L0 / L1 / L2 / L3. The composite is advisory — every level change is an explicit grant, never automatic. L4 (the top tier) is a hard contract: granted_by="human:<name>" or the API raises. No config flag bypasses that human requirement.',
+      diagram: (
+        <div className="font-mono text-[11px] lg:text-xs space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">verification</span>
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">audit</span>
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">checkpoint</span>
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">outcome</span>
+            <span className="text-bene-accent">→ folded into →</span>
+            <span className="border border-bene-accent text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">composite ∈ [0,1]</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pl-4">
+            <span className="text-bene-accent">→</span>
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">L0 / L1 / L2 / L3</span>
+            <span className="text-bene-muted">advisory — grants are explicit</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pl-4">
+            <span className="text-bene-accent">→</span>
+            <span className="border border-bene-accent text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">L4</span>
+            <span className="text-bene-muted">requires granted_by="human:&lt;name&gt;"</span>
+          </div>
+        </div>
+      ),
+      verify: 'bene trust <agent>',
+    },
+    {
+      key: 'breeding',
+      name: 'Breeding program',
+      oneLine: 'strategies that get better across generations',
+      scene: "You have run the same task class fifty times with slightly different prompts or strategies. You want the Pareto front of the survivors across generations, not another hand-tune.",
+      common: 'AutoML or a DSPy compile run produces a candidate; either someone copy-pastes it into production, or it replaces deploy.py directly — straight into a reward-hack on the metric.',
+      mechanism: 'mh_search generates candidates → genome encoding makes the control signals dense → Pareto front filters survivors → promote() routes them through the same kill gate any other promotion uses — every promotion goes through it, no separate path. The mh_search-to-promote bridge is manual today (); end-to-end wiring is on the roadmap and not claimed as shipping.',
+      diagram: (
+        <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] lg:text-xs">
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">mh_search</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">genome (mutation + Pareto)</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-accent text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">must pass kill-gate</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">tier-4 engram</span>
+        </div>
+      ),
+      verify: 'bene mh frontier <search_agent_id> | jq .',
+    },
+  ];
+  const modules = [
+    { p:'core.py', r:'Bene harness entrypoint' },
+    { p:'kernel/engrams.py', r:'Typed memory ladder' },
+    { p:'kernel/eval/', r:'Probes & kill gates' },
+    { p:'kernel/evolve/', r:'Mutation & selection' },
+    { p:'kernel/memory/', r:'VFS & SharedLog' },
+    { p:'kernel/harness/', r:'Trust & autonomy' },
+    { p:'kernel/adapters.py', r:'Provider interfaces' },
+    { p:'metaharness/search.py', r:'Breeding search' },
+    { p:'mcp/server.py', r:'MCP transport' },
+    { p:'cli/main.py', r:'CLI entrypoint' },
+  ];
+  return (
+    <Section id="architecture">
+      <Kicker number="06" title="Architecture" />
+      <h2 className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold mb-6 lg:mb-8">3 a.m. and prod broke. Where do you find the receipts?</h2>
+      <p className="text-lg lg:text-xl xl:text-2xl text-bene-muted max-w-3xl lg:max-w-4xl xl:max-w-5xl leading-relaxed mb-12 lg:mb-16">
+        Whatever's on top — LangGraph, CrewAI, your own loop — is fine. When something breaks in production, most stacks leave you with an LLM provider dashboard, CloudWatch logs, a few hand-copied traces — none of which sit in git, and none of which <code className="text-bene-text font-mono">cp</code>, <code className="text-bene-text font-mono">rsync</code>, or <code className="text-bene-text font-mono">diff</code> can touch. BENE writes the receipts, the kill gate, and the trust signal <span className="text-bene-text">into code and onto a single SQLite file</span>: open it with sqlite3, or run <code className="text-bene-text font-mono">bene failure localize &lt;agent&gt;</code> to blame the earliest decisive step — on a real run, by default. No portal.
+      </p>
+
+      {/* dual-path loop: human static Harness + agent dynamic Meta-Harness → bene.db → next run */}
+      <div className="border border-bene-dim bg-bene-surface p-6 lg:p-8 rounded-md mb-8 font-mono text-[11px] lg:text-xs">
+        <div className="text-bene-muted text-[10px] lg:text-xs uppercase tracking-widest mb-4 text-center">Two ways in, one file out</div>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">human</span>
+            <span className="text-bene-accent">— Probe(...).register() / promote() →</span>
+            <span className="border border-bene-accent text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">the kill gate</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">agent (MCP)</span>
+            <span className="text-bene-accent">— bene mh search →</span>
+            <span className="border border-bene-accent text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">the same kill gate</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pl-4">
+            <span className="text-bene-accent">→ ACCEPT / REJECT →</span>
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">bene.db</span>
+            <span className="text-bene-accent">→ next run's input</span>
+          </div>
+        </div>
+        <p className="text-bene-muted mt-4 leading-relaxed normal-case">
+          You set the boundary in code (the static Harness); an agent evolves strategy against it (the Meta-Harness). Both hit the same sha256-locked gate — no separate promotion path. Win or lose, the attempt lands in <code className="text-bene-text">bene.db</code> and feeds the next run.
+        </p>
+      </div>
+
+      {/* 3-layer diagram */}
+      <div className="border border-bene-dim bg-bene-surface p-6 lg:p-8 rounded-md mb-16 lg:mb-20">
+        <div className="border border-bene-dim p-4 rounded-md font-mono text-xs lg:text-sm text-center">
+          <div className="text-bene-muted text-[10px] lg:text-xs uppercase tracking-widest mb-1">Top</div>
+          <div className="text-bene-text">whatever orchestration you're already running</div>
+          <div className="text-bene-muted text-[11px] lg:text-xs mt-1">LangGraph · CrewAI · DSPy · smolagents · AutoGen · Letta · your own loop</div>
+        </div>
+        <div className="flex justify-center my-3 text-bene-accent font-mono text-base">↓ writes / reads</div>
+        <div className="border-2 border-bene-accent p-4 lg:p-6 rounded-md bg-[rgb(var(--bg))]">
+          <div className="text-center mb-3 font-mono text-xs lg:text-sm uppercase tracking-widest text-bene-accent">Middle — BENE writes these 5 things into code</div>
+          <ul className="space-y-1 font-mono text-[11px] lg:text-xs text-bene-text">
+            <li>· what happened at every step <span className="text-bene-muted">(engram ladder)</span></li>
+            <li>· which gate every promotion had to clear <span className="text-bene-muted">(probe + kill gate)</span></li>
+            <li>· how the context window gets pulled back when it drifts <span className="text-bene-muted">(Context OS)</span></li>
+            <li>· how the trust score was computed <span className="text-bene-muted">(autonomy + trust)</span></li>
+            <li>· how a strategy can evolve itself <span className="text-bene-muted">(breeding)</span></li>
+          </ul>
+        </div>
+        <div className="flex justify-center my-3 text-bene-accent font-mono text-base">↓ everything lands in</div>
+        <div className="border border-bene-dim p-4 rounded-md font-mono text-xs lg:text-sm text-center">
+          <div className="text-bene-muted text-[10px] lg:text-xs uppercase tracking-widest mb-1">Bottom</div>
+          <div className="text-bene-text">bene.db</div>
+          <div className="text-bene-muted text-[11px] lg:text-xs mt-1">one SQLite file · sqlite3 / cp / rsync / diff just work</div>
+        </div>
+      </div>
+
+      <h3 className="font-mono text-bene-accent text-sm lg:text-base mb-8 lg:mb-10 tracking-widest uppercase">Inside the 5 — scene, mechanism, how to verify</h3>
+
+      <div className="space-y-12 lg:space-y-16 mb-16">
+        {subsystems.map((sub) => (
+          <div key={sub.key} className="border-l-2 border-bene-accent pl-6 lg:pl-8">
+            <div className="flex flex-col md:flex-row md:items-baseline md:gap-4 mb-4">
+              <h4 className="font-mono text-bene-text text-base lg:text-lg">{sub.name}</h4>
+              <span className="font-mono text-xs lg:text-sm text-bene-muted">{sub.oneLine}</span>
+            </div>
+
+            <div className="mb-4">
+              <div className="font-mono text-bene-accent text-[10px] lg:text-xs uppercase tracking-widest mb-1">Scene</div>
+              <p className="text-sm lg:text-base text-bene-muted leading-relaxed">{sub.scene}</p>
+            </div>
+
+            <div className="mb-4">
+              <div className="font-mono text-bene-accent text-[10px] lg:text-xs uppercase tracking-widest mb-1">How most stacks handle it</div>
+              <p className="text-sm lg:text-base text-bene-muted leading-relaxed">{sub.common}</p>
+            </div>
+
+            <div className="mb-4">
+              <div className="font-mono text-bene-accent text-[10px] lg:text-xs uppercase tracking-widest mb-1">How BENE does it</div>
+              <p className="text-sm lg:text-base text-bene-muted leading-relaxed">{sub.mechanism}</p>
+            </div>
+
+            <div className="bg-bene-surface border border-bene-dim p-4 lg:p-5 rounded-md mb-4 overflow-x-auto">
+              {sub.diagram}
+            </div>
+
+            <div className="font-mono text-xs lg:text-sm">
+              <span className="text-bene-accent uppercase tracking-widest mr-2">Verify</span>
+              <code className="text-bene-text break-all">{sub.verify}</code>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-8 lg:gap-12 mb-12 lg:mb-16">
+        <div className="border border-bene-dim bg-bene-surface p-5 lg:p-6 rounded-md">
+          <h3 className="font-mono text-bene-accent text-sm mb-4 uppercase tracking-widest">Platform constraints</h3>
+          <ul className="space-y-3 font-mono text-xs lg:text-sm text-bene-muted">
+            <li className="flex gap-2"><span className="text-bene-dim shrink-0">·</span>Package <code className="text-bene-text">bene</code>, class <code className="text-bene-text">Bene</code>, config <code className="text-bene-text">bene.yaml</code>, db <code className="text-bene-text">bene.db</code></li>
+            <li className="flex gap-2"><span className="text-bene-dim shrink-0">·</span>Env: <code className="text-bene-text">BENE_DB</code>, <code className="text-bene-text">BENE_CONFIG</code></li>
+            <li className="flex gap-2"><span className="text-bene-dim shrink-0">·</span>Global <code className="text-bene-text">--json</code>, auto-on when stdout is piped</li>
+            <li className="flex gap-2"><span className="text-bene-dim shrink-0">·</span>Providers: claude_code, agent_sdk, anthropic, openai-compatible, local (raw httpx)</li>
+            <li className="flex gap-2 text-bene-accent"><span className="shrink-0">·</span>NEVER litellm. NEVER the openai SDK. Both banned in the repo.</li>
+          </ul>
+        </div>
+        <div className="border border-bene-dim bg-bene-surface p-5 lg:p-6 rounded-md">
+          <h3 className="font-mono text-bene-accent text-sm mb-4 uppercase tracking-widest">Where the code lives</h3>
+          <div className="font-mono text-xs lg:text-sm">
+            {modules.map((m,i) => (
+              <div key={i} className="flex border-b border-bene-dim last:border-0 py-2">
+                <div className="w-2/5 text-bene-text">{m.p}</div>
+                <div className="w-3/5 text-bene-muted">{m.r}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <p className="text-sm lg:text-base text-bene-muted leading-relaxed">
+        Three entrypoints, same bene.db underneath: Python <code className="text-bene-text font-mono">from bene import Bene</code>, CLI <code className="text-bene-text font-mono">bene --json ls | jq</code>, MCP <code className="text-bene-text font-mono">bene serve --transport stdio</code>.
+      </p>
+    </Section>
+  );
+};
+
+// ─── 07 · Honest Limits ─────────────────────────────────────────────
+const Limits = () => {
+  const ls = [
+    { t: 'Single-shot one-file edits', d: "A plain agent is faster. BENE's spawn + checkpoint + engram overhead doesn't pay off below roughly 3 agents or 3 steps." },
+    { t: 'Hard OS sandboxing', d: 'Per-agent VFS gives logical isolation — reach for Docker, Firecracker, or E2B when the code is untrusted.' },
+    { t: 'Realtime sub-100ms loops', d: 'CLI spawn + uv overhead per call is the floor; SQLite write fsync sets the throughput. Batch yes. Realtime serving no.' },
+    { t: 'Vector-search workloads', d: 'Retrieval is lexical FTS5 + association links. No embeddings. Default retrieval ranking is static BM25; outcome-weighted ranking ships opt-in (bene skills search --rank weighted, +13.33pp on the COMMUNITY-BENCH A2 row) but is not the default and does not feed auto-retrieval (−13.3pp on A1b vs KAOS). Wiring it into the default path is planned.' },
+  ];
+  return (
+    <Section id="limits" inverted>
+      <Kicker number="07" title="When NOT to use BENE" />
+      <h2 className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold mb-6 lg:mb-8">When to reach for something else</h2>
+      <p className="text-lg lg:text-xl xl:text-2xl text-bene-muted max-w-3xl lg:max-w-4xl xl:max-w-5xl leading-relaxed mb-16">
+        Four task shapes that fall outside BENE's design — the lighter tool is the right call here.
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+        {ls.map((l,i) => (
+          <Card key={i} className="h-full">
+            <h3 className="font-mono text-bene-accent mb-4">{l.t}</h3>
+            <p className="text-bene-muted leading-relaxed">{l.d}</p>
+          </Card>
+        ))}
+      </div>
+      <div className="border border-bene-dim bg-bene-surface p-6 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+        <div>
+          <h4 className="font-mono text-sm text-bene-text mb-2">Implemented vs planned discipline</h4>
+          <p className="text-sm text-bene-muted max-w-3xl leading-relaxed">
+            <span className="text-bene-accent">On the roadmap, not yet shipping:</span> skill demotion / retirement policy (outcome-weighted ranking already ships opt-in; wiring it into the default retrieval path is the open item); the external CLI / cron wiring around nightly consolidation (the deterministic planner already shipped); the consumer-side CLI for deterministic replay (the journal + manifest already shipped); in-episode harness mutation; MemGAS entropy routing. Full spec at <code className="text-bene-text font-mono">docs/design/v0.3-roadmap-spec.md</code>.
+          </p>
+        </div>
+        the design documentation
+      </div>
+    </Section>
+  );
+};
+
+// ─── Beat badges (original Patagon-style geometric marks) ───────────
+const Badge = ({ kind }) => {
+  const c = 'currentColor';
+  const stroke = { fill: 'none', stroke: c, strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' };
+  const fill = { fill: c, stroke: 'none' };
+  const wrap = (children) => (
+    <svg viewBox="0 0 64 64" width="40" height="40" aria-hidden="true" className="text-bene-accent shrink-0">{children}</svg>
+  );
+  if (kind === 'other-memory') return wrap(<>
+    <path {...stroke} d="M 22 32 A 10 10 0 0 1 42 32" />
+    <path {...stroke} d="M 14 32 A 18 18 0 0 1 50 32" />
+    <path {...stroke} d="M 6 32 A 26 26 0 0 1 58 32" />
+    <circle {...fill} cx="32" cy="46" r="3" />
+  </>);
+  if (kind === 'missionaria') return wrap(<>
+    <path {...fill} d="M 32 44 C 26 34, 26 28, 32 24 C 38 28, 38 34, 32 44 Z" />
+    <path {...stroke} d="M 32 16 L 32 6" />
+    <path {...stroke} d="M 24 20 L 14 12" />
+    <path {...stroke} d="M 40 20 L 50 12" />
+    <path {...stroke} d="M 18 30 L 8 26" />
+    <path {...stroke} d="M 46 30 L 56 26" />
+  </>);
+  if (kind === 'breeding') return wrap(<>
+    <g {...{...stroke, strokeWidth: 1.5}}>
+      <path d="M 32 54 L 20 38 M 32 54 L 44 38" />
+      <path d="M 20 38 L 14 22 M 20 38 L 26 22" />
+      <path d="M 44 38 L 38 22 M 44 38 L 50 22" />
+      <path d="M 14 22 L 11 8 M 14 22 L 17 8" />
+      <path d="M 26 22 L 23 8 M 26 22 L 29 8" />
+      <path d="M 38 22 L 35 8 M 38 22 L 41 8" />
+      <path d="M 50 22 L 47 8 M 50 22 L 53 8" />
+    </g>
+    <circle {...fill} cx="32" cy="54" r="2.5" />
+  </>);
+  if (kind === 'litany') return wrap(<>
+    <path {...stroke} d="M 8 32 L 28 32" />
+    <path {...stroke} d="M 36 24 L 36 32 L 56 32" />
+  </>);
+  if (kind === 'gom-jabbar') return wrap(<>
+    <path {...stroke} d="M 32 18 L 32 56" />
+    <path {...stroke} d="M 16 40 L 48 40" />
+    <circle {...fill} cx="32" cy="12" r="2.5" />
+  </>);
+  return null;
+};
+
+// ─── 08 · Lore + Community ──────────────────────────────────────────
+const Lore = () => {
+  const m = [
+    { badge:'other-memory', l:'Other Memory', v:['bene memory search','bene retrieve'] },
+    { badge:'missionaria',  l:'Missionaria Protectiva', v:['bene skills save','bene skills apply'] },
+    { badge:'breeding',     l:'The Breeding Program', v:['bene mh search','genome_from_candidate','promote()'] },
+    { badge:'litany',       l:'The Litany Against Fear', v:['bene checkpoint','bene diff','bene restore'] },
+    { badge:'gom-jabbar',   l:'Gom jabbar (beasts only destroy)', v:['The harness thesis: a framework that lets the harness build, not just react.'] },
+  ];
+  return (
+    <Section id="lore" className="pb-32">
+      <Kicker number="08" title="Why the name · How to join" />
+      <h2 className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold mb-6 lg:mb-8">Why we call it BENE</h2>
+      <div className="grid md:grid-cols-2 gap-16 mb-24">
+        <div className="border border-bene-dim bg-bene-surface">
+          {m.map((it, i) => (
+            <div key={i} className="flex flex-col sm:flex-row border-b border-bene-dim last:border-0 p-4 gap-4 sm:gap-0 items-start">
+              <div className="sm:w-1/2 flex items-center gap-3">
+                <Badge kind={it.badge} />
+                <div className="font-sans text-sm text-bene-text font-medium">{it.l}</div>
+              </div>
+              <div className="sm:w-1/2 flex flex-wrap gap-2">
+                {it.v.map((vb, j) => (
+                  <code key={j} className="font-mono text-xs text-bene-muted bg-[rgb(var(--term))] px-1.5 py-0.5 rounded-sm border border-bene-dim">{vb}</code>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="space-y-6 text-sm text-bene-muted italic leading-relaxed border-l border-bene-dim pl-6">
+          <p>"I must not fear. Fear is the mind-killer. Fear is the little-death that brings total obliteration. I will face my fear. I will permit it to pass over me and through me. And when it has gone past I will turn the inner eye to see its path. Where the fear has gone there will be nothing. Only I will remain."</p>
+          <p className="font-sans">"我需心无所惧。恐惧是思想的屠者，恐惧是渐噬的湮灭。我将直面心之所惧，任它穿略，内观所及。恐惧所经之处，一片虚无。唯我将立。"</p>
+        </div>
+      </div>
+      <div className="max-w-3xl mx-auto mb-24">
+        <Terminal>
+          <span className="text-bene-muted"># coming to PyPI — early access</span>
+          <br />
+          pip install bene
+          <br />
+          <span className="text-bene-muted"># have the repo? init, smoke, watch it live:</span>
+          <br />
+          uv run bene init && uv run bene demo --no-ui && uv run bene dashboard
+          <br />
+          <br />
+          <span className="text-bene-muted"># MCP-capable agents:</span>
+          <br />
+          uv run bene serve --transport stdio
+        </Terminal>
+      </div>
+      <div className="border-t border-bene-dim pt-16 grid md:grid-cols-2 gap-12">
+        <div>
+          <h3 className="font-mono text-bene-text mb-4">Building on bene?</h3>
+          <p className="text-sm text-bene-muted mb-6">Open a Discussion on the repo. We read every one.</p>
+          <div className="flex flex-wrap gap-4 font-mono text-xs">
+            <a href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">GitHub</a>
+            <a href="https://github.com/EdwardTang/bene-site/blob/main/AGENTS.md" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">AGENTS.md</a>
+            <a href="https://github.com/EdwardTang/bene-site/blob/main/SKILL.md" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">SKILL.md</a>
+            <a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">Discussions</a>
+          </div>
+        </div>
+        <div>
+          <h3 className="font-mono text-bene-text mb-4">AI policy</h3>
+          <p className="text-sm text-bene-muted font-mono mb-6">
+            AI agents: <code className="text-bene-text">gh issue create --label ai-reported</code> with priority P0 / P1 / P2. AI-reported bugs are welcome.
+          </p>
+        </div>
+      </div>
+      <div className="mt-24 text-center">
+        <p className="font-mono text-sm text-bene-text border border-bene-accent bg-bene-accent/10 py-6 px-8 inline-block max-w-2xl leading-relaxed">
+          Run the demo. Read the verify output. If it exits 0, you have a multi-agent harness with a falsifiable kill gate and a trust ladder on your laptop.
+        </p>
+      </div>
+    </Section>
+  );
+};
+
+// ─── App ────────────────────────────────────────────────────────────
+function App() {
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem('bene-theme') || 'light'; } catch (e) { return 'light'; }
+  });
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem('bene-theme', theme); } catch (e) {}
+  }, [theme]);
+  return (
+    <div className="min-h-screen w-full bg-bene-bg text-bene-text font-sans selection:bg-bene-accent/30 selection:text-bene-accent overflow-x-hidden">
+      <Nav theme={theme} setTheme={setTheme} />
+      <main>
+        <Hero />
+        <TheGap />
+        <Contract />
+        <Comparison />
+        <Proof />
+        <Recipes />
+        <Architecture />
+        <Limits />
+        <Lore />
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

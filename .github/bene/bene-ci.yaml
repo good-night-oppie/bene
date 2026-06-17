@@ -1,0 +1,41 @@
+# BENE runner config — CI-only.
+#
+# SECURITY:
+#   * Lives under .github/bene/ so it inherits CODEOWNERS / branch
+#     protection and is NOT writable by ordinary PR contributors or by
+#     swarms running on untrusted PRs.
+#   * NOT under .github/workflows/ on purpose — anything there is
+#     auto-discovered and run by GitHub Actions.
+#   * Only references secrets via *_env indirection; never embed values.
+#   * scripts/ci/{review,refactor}_swarm.py refuse to load a BENE_CONFIG
+#     that does not live under .github/bene/ when running in CI.
+#   * Do not add file: paths that escape the workspace.
+database:
+  path: ./bene-review.db
+  wal_mode: true
+  compression: zstd
+
+models:
+  claude-sonnet:
+    provider: anthropic
+    model_id: claude-sonnet-4-20250514
+    api_key_env: ANTHROPIC_API_KEY
+    max_context: 200000
+    timeout: 600
+    use_for: [trivial, moderate, complex, critical, code_completion, code_generation, planning]
+
+router:
+  type: tier
+  fallback_model: claude-sonnet
+  context_compression: true
+  max_retries: 1
+
+ccr:
+  max_iterations: 20
+  checkpoint_interval: 10
+  timeout_seconds: 900
+  max_parallel_agents: 4
+
+logging:
+  level: INFO
+  file: ./bene-ci.log

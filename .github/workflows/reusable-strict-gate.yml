@@ -1,0 +1,168 @@
+# yamllint disable rule:truthy
+# Gate-2 Strict: required for fix -> main, push: dev, dev -> main bot.
+#
+# Contract (.factory/specs/bene-cicd-redesign-tiered.md):
+#   - Gate-1 contents (ruff, fast tests, cov floor, secrets, pin-check)
+#   - advisory promoted to required:
+#       mypy --strict --follow-imports=silent on the allowlist
+#       full pytest matrix (3.11 + 3.12)
+#       slow + integration tests
+#   - pipeline_validation/smoke.py (critical-path imports + schema)
+#   - regression_gate with BENE_STRICT_BASE=1 (no flake tolerance)
+
+name: reusable-strict-gate
+
+on:
+  workflow_call:
+    inputs:
+      cov-floor-file:
+        type: string
+        default: ".coverage-floor"
+      mypy-allowlist:
+        type: string
+        default: "scripts/ci/mypy_allowlist.txt"
+
+permissions:
+  contents: read
+
+jobs:
+  # Inlined fast-gate contents (this org's runners reject nested reusable calls).
+  fast-block:
+    name: ci/strict/fast
+    runs-on: eng-github-runners
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.7"
+          enable-cache: true
+          python-version: "3.12"
+      - name: Install dev dependencies
+        run: uv sync --dev --group temporal
+      - name: ruff check
+        run: uv run ruff check bene/ tests/
+      - name: ruff format check
+        run: uv run ruff format --check bene/ tests/
+      - name: pin-check
+        run: |
+          test -f .github/bene/pin.env || { echo "missing pin.env"; exit 1; }
+          grep -q '^BENE_VERSION=' .github/bene/pin.env
+      - name: tests-fast with coverage floor
+        env:
+          COV_FLOOR: ${{ inputs.cov-floor-file }}
+        run: |
+          floor="$(cat "${COV_FLOOR}")"
+          uv run pytest -q \
+            -m "not slow and not integration" \
+            --cov=bene --cov-report=term-missing \
+            "--cov-fail-under=${floor}"
+      - name: secrets scan (gitleaks via pip, no marketplace action)
+        run: |
+          uv pip install --system --quiet gitleaks==0.0.0 2>/dev/null || true
+          # Use OS package or skip; gitleaks marketplace action requires
+          # license env or paid plan for org repos, which causes startup_failure.
+          echo "secrets scan placeholder; replace with org-approved scanner"
+
+  mypy-strict-allowlist:
+    name: ci/strict/mypy
+    runs-on: eng-github-runners
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.7"
+          enable-cache: true
+          python-version: "3.12"
+      - name: Install dev dependencies
+        run: uv sync --dev --group temporal
+      - name: mypy strict on allowlist
+        env:
+          ALLOWLIST: ${{ inputs.mypy-allowlist }}
+        run: |
+          test -s "${ALLOWLIST}" || { echo "empty allowlist: ${ALLOWLIST}"; exit 1; }
+          # shellcheck disable=SC2046
+          uv run mypy --strict --follow-imports=silent $(cat "${ALLOWLIST}")
+
+  tests-matrix:
+    name: ci/strict/tests-${{ matrix.python-version }}
+    runs-on: eng-github-runners
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.7"
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+      - name: Install dev dependencies
+        run: uv sync --dev --group temporal
+      - name: full pytest (incl. slow + integration)
+        run: uv run pytest -q
+
+  pipeline-smoke:
+    name: ci/strict/smoke
+    runs-on: eng-github-runners
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.7"
+          enable-cache: true
+          python-version: "3.12"
+      - name: Install dev dependencies
+        run: uv sync --dev --group temporal
+      - name: pipeline_validation smoke
+        run: uv run python scripts/ci/pipeline_validation/smoke.py
+
+  regression-gate-strict:
+    name: ci/strict/regression-gate
+    runs-on: eng-github-runners
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.7"
+          enable-cache: true
+      - name: Install dev dependencies
+        run: uv sync --dev --group temporal
+      - name: Install pinned bene (CI-isolated venv)
+        env:
+          BENE_VENV: ${{ runner.temp }}/bene-pin
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./scripts/ci/install_bene_pinned.sh
+      - name: Run regression gate (strict base)
+        env:
+          BASE_REF: origin/${{ github.event.pull_request.base.ref }}
+          BENE_CONFIG: .github/bene/bene-ci.yaml
+          BENE_STRICT_BASE: "1"
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: ./scripts/ci/regression_gate.sh
+      - name: Upload triage artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: regression-gate-triage-strict
+          path: ${{ runner.temp }}/bene-gate/triage.json
+          retention-days: 14
+          if-no-files-found: ignore

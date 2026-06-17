@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BENE · Factory-grammar exploration (Hero only)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Geist + Geist Mono via Google Fonts (free, same family as factory.ai) -->
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── factory.ai-shaped tokens, applied to BENE content ───────── */
+:root {
+  /* warm cream system (factory.ai signature, NOT the cold #fafafa SaaS default) */
+  --bg:           #F0EEE8;
+  --surface:      #EDE9E4;
+  --surface-2:    #E8E4DD;
+  --divider:      #CFCCC8;
+  --divider-soft: #E8E4DD;
+
+  /* burnt orange — primary brand (factory uses #EF6F2E; BENE keeps own accent identity at slightly deeper #EE6018 to avoid being mistaken) */
+  --accent:       #EE6018;
+  --accent-hover: #D9520E;
+  --accent-soft:  #FAE6D9;   /* burnt orange @ ~10% tint for surfaces */
+
+  /* warm ink (not pure black) */
+  --ink:          #1F1D1C;
+  --ink-2:        #3D3A39;
+  --ink-3:        #62666D;
+  --ink-muted:    #A49D9A;
+
+  /* terminal/dark surfaces stay dark in BOTH themes (factory does this) */
+  --terminal-bg:  #0A0908;
+  --terminal-ink: #EDE9E4;
+  --terminal-dim: #62666D;
+
+  /* crisp radius scale (factory caps at 12px, NOT 24px tailwind default) */
+  --r-xs: 2px;
+  --r-sm: 3px;
+  --r-md: 4px;
+  --r-lg: 6px;
+  --r-xl: 8px;
+  --r-2xl: 10px;
+  --r-3xl: 12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+  font-feature-settings: 'ss01' 1, 'ss02' 1;  /* Geist alternate forms */
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-wrap: pretty;
+}
+code, pre { font-family: 'Geist Mono', ui-monospace, 'JetBrains Mono', SFMono-Regular, monospace; }
+
+/* ── Nav ─────────────────────────────────────────────────────── */
+nav.top {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(240, 238, 232, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--divider-soft);
+}
+nav.top .inner {
+  max-width: 1280px; margin: 0 auto;
+  padding: 0 32px; height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+nav.top .brand {
+  display: flex; align-items: center; gap: 12px;
+  font-weight: 700; letter-spacing: 0.04em; font-size: 14px;
+}
+nav.top .brand svg { color: var(--accent); }
+nav.top .links {
+  display: flex; align-items: center; gap: 24px;
+  font-family: 'Geist Mono', monospace; font-size: 11.5px;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--ink-3);
+}
+nav.top .links a { color: inherit; text-decoration: none; }
+nav.top .links a:hover { color: var(--ink); }
+nav.top .cta {
+  font-family: 'Geist Mono', monospace; font-size: 11.5px;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  padding: 6px 12px; border-radius: var(--r-md);
+  background: var(--accent); color: white;
+  border: 1px solid var(--accent);
+  text-decoration: none;
+}
+nav.top .cta:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+/* ── Hero ────────────────────────────────────────────────────── */
+section.hero {
+  max-width: 1280px; margin: 0 auto;
+  padding: 96px 32px 64px;
+}
+
+/* meta strip — uppercase, mono, divider — factory-style */
+.hero .meta {
+  display: flex; align-items: center; gap: 12px;
+  font-family: 'Geist Mono', monospace; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.15em;
+  color: var(--ink-3); margin-bottom: 32px;
+}
+.hero .meta .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.hero .meta .sep { color: var(--ink-muted); }
+
+/* H1 — Geist 600, large, controlled wrap */
+.hero h1 {
+  font-size: clamp(48px, 7vw, 92px);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  font-weight: 600;
+  margin-bottom: 24px;
+  max-width: 1100px;
+}
+.hero h1 .muted { color: var(--ink-muted); }
+
+.hero .forwho {
+  font-size: clamp(18px, 2vw, 22px);
+  line-height: 1.45;
+  color: var(--ink-2);
+  max-width: 760px;
+  margin-bottom: 56px;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 48px;
+  align-items: start;
+  margin-bottom: 48px;
+}
+@media (max-width: 900px) {
+  .hero-grid { grid-template-columns: 1fr; gap: 32px; }
+}
+
+.hero .scene {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.hero .scene code {
+  background: var(--surface-2);
+  padding: 2px 6px;
+  border-radius: var(--r-sm);
+  font-size: 0.9em;
+  color: var(--ink);
+}
+.hero .scene .emphasis {
+  color: var(--ink);
+  font-weight: 500;
+}
+.hero .scene + .scene { margin-top: 16px; font-family: 'Geist Mono', monospace; font-size: 14px; color: var(--ink-3); }
+
+/* pills column */
+.pills { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.pill {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 7px 14px;
+  border: 1px solid var(--divider);
+  border-radius: 999px;   /* one place full-pill is OK: pills are an exception */
+  font-family: 'Geist Mono', monospace; font-size: 12px;
+  color: var(--ink-2); background: var(--surface);
+}
+.pill .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+
+/* terminal — dark in any theme (factory.ai signature pattern) */
+.terminal {
+  background: var(--terminal-bg);
+  border: 1px solid var(--terminal-bg);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+.terminal .chrome {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #15110F;
+  padding: 10px 14px;
+  border-bottom: 1px solid #2A2422;
+}
+.terminal .lights { display: flex; gap: 6px; }
+.terminal .lights span { width: 10px; height: 10px; border-radius: 50%; }
+.terminal .lights span:nth-child(1) { background: #FF5F57; }
+.terminal .lights span:nth-child(2) { background: #FEBC2E; }
+.terminal .lights span:nth-child(3) { background: #28C940; }
+.terminal .copy-btn {
+  font-family: 'Geist Mono', monospace; font-size: 11px;
+  color: var(--terminal-dim); background: transparent;
+  border: 1px solid #2A2422; border-radius: var(--r-sm);
+  padding: 4px 10px; cursor: pointer;
+  text-transform: lowercase; letter-spacing: 0.05em;
+}
+.terminal .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+.terminal pre {
+  padding: 22px;
+  font-size: 13.5px; line-height: 1.65;
+  color: var(--terminal-ink);
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+.terminal pre .cmd { color: var(--accent); }
+.terminal pre .dim { color: var(--terminal-dim); }
+.terminal pre .str { color: #9BD679; }
+
+/* secondary CTA row — the agents-as-users path */
+.agent-cta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 32px; align-items: center;
+  padding-top: 24px;
+  border-top: 1px solid var(--divider-soft);
+}
+@media (max-width: 720px) {
+  .agent-cta { grid-template-columns: 1fr; gap: 16px; }
+}
+.agent-cta p {
+  font-size: 14px;
+  color: var(--ink-3);
+  line-height: 1.55;
+}
+.agent-cta p .em {
+  color: var(--ink);
+  font-weight: 500;
+}
+.agent-cta .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.agent-cta .btn {
+  font-family: 'Geist Mono', monospace; font-size: 12px;
+  padding: 8px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--divider);
+  background: var(--bg);
+  color: var(--ink-2);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.agent-cta .btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.agent-cta .btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.agent-cta .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Section divider — kicker strip ──────────────────────────── */
+section.canvas {
+  background: var(--bg);
+  border-top: 1px solid var(--divider-soft);
+  padding: 96px 0;
+}
+section.canvas.inverted {
+  background: var(--ink);
+  color: var(--surface);
+  border-top: 1px solid var(--ink);
+}
+section.canvas .inner {
+  max-width: 1280px; margin: 0 auto;
+  padding: 0 32px;
+}
+
+.kicker {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 48px;
+  font-family: 'Geist Mono', monospace; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.18em;
+}
+.kicker .num { color: var(--accent); }
+.kicker .rule { flex: 1; height: 1px; background: var(--divider); }
+section.canvas.inverted .kicker .rule { background: #3D3A39; }
+.kicker .label { color: var(--ink-3); }
+section.canvas.inverted .kicker .label { color: var(--ink-muted); }
+
+section.canvas h2 {
+  font-size: clamp(32px, 4.5vw, 56px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+  margin-bottom: 24px;
+  max-width: 840px;
+}
+section.canvas h2 .muted { color: var(--ink-muted); }
+section.canvas.inverted h2 .muted { color: #62666D; }
+
+section.canvas .lede {
+  font-size: 17px; line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 640px;
+  margin-bottom: 64px;
+}
+section.canvas.inverted .lede { color: #BAB5AD; }
+
+/* ── Gap cards (4 cards, factory-grammar — flat, crisp, no glow) ─── */
+.gap-grid {
+  display: grid; gap: 16px;
+  grid-template-columns: repeat(12, 1fr);
+}
+.gap-card {
+  background: var(--surface);
+  border: 1px solid var(--divider-soft);
+  border-radius: var(--r-xl);
+  padding: 28px;
+  display: flex; flex-direction: column;
+  min-height: 220px;
+}
+.gap-card.wide { grid-column: span 12; }
+.gap-card.half { grid-column: span 6; }
+@media (max-width: 800px) {
+  .gap-card.wide, .gap-card.half { grid-column: span 12; }
+}
+.gap-card .tag {
+  font-family: 'Geist Mono', monospace; font-size: 10.5px;
+  text-transform: uppercase; letter-spacing: 0.15em;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.gap-card h3 {
+  font-size: 22px; line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 12px;
+  color: var(--ink);
+}
+.gap-card p {
+  font-size: 14.5px; line-height: 1.6;
+  color: var(--ink-2);
+  flex: 1;
+}
+.gap-card p code {
+  background: var(--surface-2);
+  padding: 1px 5px;
+  border-radius: var(--r-sm);
+  font-size: 0.9em; color: var(--ink);
+}
+.gap-card .demo-stub {
+  margin-top: 20px;
+  border: 1px dashed var(--divider);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  font-family: 'Geist Mono', monospace; font-size: 11px;
+  color: var(--ink-3);
+  background: rgba(255, 255, 255, 0.35);
+}
+.gap-card .demo-stub .label {
+  display: inline-flex; align-items: center; gap: 6px;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  font-size: 9.5px; color: var(--accent);
+  margin-bottom: 6px;
+}
+.gap-card .demo-stub .label::before {
+  content: ''; width: 4px; height: 4px; border-radius: 50%;
+  background: var(--accent);
+}
+
+/* ── Contract section (dark inverted, 4 invariants list) ─────── */
+.contract-list {
+  display: grid; gap: 0;
+  border-top: 1px solid #3D3A39;
+}
+.contract-row {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 32px;
+  padding: 32px 0;
+  border-bottom: 1px solid #3D3A39;
+  align-items: baseline;
+}
+@media (max-width: 800px) {
+  .contract-row { grid-template-columns: 60px 1fr; gap: 16px; }
+  .contract-row .body { grid-column: span 2; }
+}
+.contract-row .n {
+  font-family: 'Geist Mono', monospace; font-size: 13px;
+  color: var(--accent);
+  text-transform: uppercase; letter-spacing: 0.12em;
+}
+.contract-row .what {
+  font-size: 19px; line-height: 1.35;
+  font-weight: 500;
+  color: var(--surface);
+  letter-spacing: -0.01em;
+}
+.contract-row .body {
+  font-size: 14.5px; line-height: 1.6;
+  color: #BAB5AD;
+}
+.contract-row .body code {
+  background: #2E2C2B; padding: 1px 5px;
+  border-radius: var(--r-sm); color: var(--surface);
+}
+.contract-tagline {
+  margin-top: 48px;
+  font-family: 'Geist Mono', monospace; font-size: 13px;
+  color: var(--accent);
+  text-transform: uppercase; letter-spacing: 0.15em;
+}
+
+/* ── footer caption — explainer for this exploration ─────────── */
+.explainer {
+  max-width: 1280px; margin: 80px auto 64px;
+  padding: 32px;
+  background: var(--surface);
+  border: 1px solid var(--divider-soft);
+  border-radius: var(--r-xl);
+  display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 32px;
+}
+@media (max-width: 900px) {
+  .explainer { grid-template-columns: 1fr; }
+}
+.explainer h3 {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em;
+  color: var(--ink-3); margin-bottom: 12px;
+}
+.explainer p { font-size: 14px; line-height: 1.6; color: var(--ink-2); margin-bottom: 12px; }
+.explainer dl { font-family: 'Geist Mono', monospace; font-size: 12px; line-height: 1.8; }
+.explainer dl div { display: grid; grid-template-columns: 90px 1fr; gap: 12px; padding: 4px 0; border-bottom: 1px dashed var(--divider-soft); }
+.explainer dt { color: var(--ink-3); }
+.explainer dd { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="inner">
+    <div class="brand">
+      <!-- BENE twin-B monogram (kept from current) — sized to nav line height -->
+      <svg viewBox="0 0 320 200" width="28" height="auto" fill="currentColor" fillRule="evenodd" aria-label="BENE">
+        <path d="M 38 26 H 112 Q 160 26 160 64 Q 160 100 112 100 H 38 Z M 58 42 H 112 Q 140 42 140 64 Q 140 84 112 84 H 58 Z M 38 100 H 112 Q 160 100 160 136 Q 160 174 112 174 H 38 Z M 58 116 H 112 Q 140 116 140 136 Q 140 158 112 158 H 58 Z"/>
+        <path transform="translate(320,0) scale(-1,1)" d="M 38 26 H 112 Q 160 26 160 64 Q 160 100 112 100 H 38 Z M 58 42 H 112 Q 140 42 140 64 Q 140 84 112 84 H 58 Z M 38 100 H 112 Q 160 100 160 136 Q 160 174 112 174 H 38 Z M 58 116 H 112 Q 140 116 140 136 Q 140 158 112 158 H 58 Z"/>
+      </svg>
+      <span>BENE</span>
+    </div>
+    <div class="links">
+      <a href="#gap">01 · Gap</a>
+      <a href="#contract">02 · Contract</a>
+      <a href="#proof">03 · Proof</a>
+      <a href="#arch">04 · Arch</a>
+      <a href="#" class="cta">Docs ↗</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="meta">
+    <span class="dot"></span>
+    <span>v0.2.0</span>
+    <span class="sep">·</span>
+    <span>local-first multi-agent harness</span>
+    <span class="sep">·</span>
+    <span>SQLite</span>
+  </div>
+
+  <h1>
+    eval gave the last prompt a high score.<br>
+    <span class="muted">It still drove production into the ditch.</span>
+  </h1>
+
+  <p class="forwho">
+    For engineers who've run LangGraph, CrewAI, or AutoGen in production
+    and learned firsthand that <em>passing an eval</em> and <em>blocking a bad ship</em>
+    are different problems.
+  </p>
+
+  <div class="hero-grid">
+    <div>
+      <p class="scene">
+        The night after the incident, on-call opens <code>bene.db</code> with
+        sqlite3 and walks every retry the agent tried —
+        plus the locked probe that let the bad prompt through.
+        <span class="emphasis">No vendor portal. No dashboard you're waiting on.</span>
+      </p>
+      <p class="scene">
+        That gate is what the next ship has to clear. <code>promote()</code> raises
+        <code>PromotionBlocked</code> until a sha256-locked probe says ACCEPT —
+        and CI halts on the exception.
+      </p>
+    </div>
+    <div class="pills">
+      <div class="pill"><span class="dot"></span>30s: install, smoke, grep your agent's memory</div>
+      <div class="pill"><span class="dot"></span>one bene.db, no cloud, no keys</div>
+      <div class="pill"><span class="dot"></span>fits inside Claude Code · Cursor · Aider</div>
+    </div>
+  </div>
+
+  <!-- Terminal: dark surface in any theme (factory.ai pattern) -->
+  <div class="terminal">
+    <div class="chrome">
+      <div class="lights"><span></span><span></span><span></span></div>
+      <button class="copy-btn" id="copyInstall">copy install ↗</button>
+    </div>
+    <pre><span class="cmd">uv</span> add bene && <span class="cmd">uv</span> run bene init && <span class="cmd">uv</span> run bene demo --no-ui
+<span class="dim"># story complete in &lt;1s — 12 engrams, 4 experiment runs.</span>
+
+sqlite3 bene.db <span class="str">"SELECT tier, kind, substr(title,1,60) FROM engrams ORDER BY ts DESC LIMIT 5;"</span></pre>
+  </div>
+
+  <div class="agent-cta">
+    <p>
+      <span class="em">Hand BENE to your agent in one URL.</span>
+      Your agent fetches the full skill — gates, blacklists, recipes, schema —
+      and runs BENE itself instead of you babysitting it.
+    </p>
+    <div class="buttons">
+      <a class="btn primary" href="#">/bene/SKILL.md ↗</a>
+      <a class="btn" href="#">copy llms.txt</a>
+    </div>
+  </div>
+</section>
+
+<!-- ════ Section 01 · The Gap (4 cards, light cream) ════ -->
+<section class="canvas" id="gap">
+  <div class="inner">
+    <div class="kicker">
+      <span class="num">01</span>
+      <span class="rule"></span>
+      <span class="label">The Gap</span>
+    </div>
+    <h2>
+      Four production gaps the research moved past.<br>
+      <span class="muted">Most agent stacks haven't picked them up yet.</span>
+    </h2>
+
+    <div class="gap-grid">
+      <div class="gap-card wide">
+        <div class="tag">Gap 1</div>
+        <h3>Eval scoring ≠ promotion gating</h3>
+        <p>
+          A new prompt or strategy passes an offline eval. That score does not, by itself, refuse to
+          ship a regression — somewhere in your pipeline a human or a deploy script makes the final call.
+          BENE turns the gate into code: <code>promote()</code> raises
+          <code>PromotionBlocked</code> unless a sha256-locked probe says ACCEPT, so CI halts on the exception.
+        </p>
+        <div class="demo-stub">
+          <div class="label">demo · gap-1-killgate</div>
+          <code>$ bene experiments ls --db $DEMO_DB | grep probe</code><br>
+          <code>&nbsp;&nbsp;→ story-probe -&gt; ACCEPT</code>
+        </div>
+      </div>
+
+      <div class="gap-card half">
+        <div class="tag">Gap 2</div>
+        <h3>Cross-agent memory with provenance</h3>
+        <p>
+          Conversation history and single-agent memory blocks are common; what's rare is
+          typed, provenance-linked engrams on a 5-tier ladder that another agent can grep
+          months later and trust. BENE writes every turn as that kind of engram by default.
+        </p>
+        <div class="demo-stub">
+          <div class="label">demo · gap-2-engram</div>
+          <code>tier  kind        n</code><br>
+          <code>0     trace       3</code><br>
+          <code>1     episodic    1</code><br>
+          <code>4     strategic   5</code>
+        </div>
+      </div>
+
+      <div class="gap-card half">
+        <div class="tag">Gap 3</div>
+        <h3>Autonomy as a computed signal</h3>
+        <p>
+          Most autonomy flags live in a config file — easy to set, easy to forget. BENE folds
+          four signals into a [0,1] trust score, and L4 grants require
+          <code>granted_by='human:&lt;name&gt;'</code> or the API raises. The escalation path is
+          observable, not declarative.
+        </p>
+        <div class="demo-stub">
+          <div class="label">demo · gap-3-trust</div>
+          <code>verification_coverage   1.00</code><br>
+          <code>audit_completeness      1.00</code><br>
+          <code>checkpoint_discipline   1.00</code><br>
+          <code>composite               1.00</code>
+        </div>
+      </div>
+
+      <div class="gap-card wide">
+        <div class="tag">Gap 4</div>
+        <h3>A local file as the source of truth</h3>
+        <p>
+          When an incident review at 03:00 needs the exact prompt that shipped, you want a file
+          on your disk — not a dashboard you're waiting on. BENE's <code>bene.db</code> is that file:
+          cp it, rsync it, diff it, open it with sqlite3.
+        </p>
+        <div class="demo-stub">
+          <div class="label">demo · gap-4-sqlite</div>
+          <code>$ ls -lh /tmp/bene-demo-yta17sgq/story.db</code><br>
+          <code>&nbsp;&nbsp;-rw-r--r-- 332K bene.db</code><br>
+          <code>$ python3 -c "import sqlite3; ..." → 3 rows</code>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ Section 02 · Contract (dark inverted, 4 invariants list) ════ -->
+<section class="canvas inverted" id="contract">
+  <div class="inner">
+    <div class="kicker">
+      <span class="num">02</span>
+      <span class="rule"></span>
+      <span class="label">Contract — Four Invariants</span>
+    </div>
+    <h2>Four invariants the harness will not bend on</h2>
+    <p class="lede">
+      Before any feature, BENE commits to four things — for every agent, every run,
+      every promotion candidate, every L4 grant.
+    </p>
+
+    <div class="contract-list">
+      <div class="contract-row">
+        <div class="n">01</div>
+        <div class="what">Your agents do not share state by accident</div>
+        <div class="body">
+          Every agent owns a SQLite-backed virtual filesystem you can diff and restore.
+          Cross-agent reads are explicit; cross-agent decisions ride SharedLog
+          (<code>intent → vote → decide</code>). Isolation is structural — no ACL maintenance.
+        </div>
+      </div>
+      <div class="contract-row">
+        <div class="n">02</div>
+        <div class="what">The next agent walks in and greps what the last one learned</div>
+        <div class="body">
+          Every run leaves typed engrams on a 5-tier ladder: trace 0, episodic 1,
+          semantic 2, procedural 3, strategic 4. Promotion never mutates sources.
+          Provenance is mandatory.
+        </div>
+      </div>
+      <div class="contract-row">
+        <div class="n">03</div>
+        <div class="what">A bad prompt cannot ship by passing eval alone</div>
+        <div class="body">
+          Anything that evolves passes a sha256-locked falsifiable probe before promotion.
+          Tamper the spec, the probe refuses. A gate that can't kill the baseline registers
+          as <code>VOID</code>. Verdicts are themselves engrams, re-readable months later.
+        </div>
+      </div>
+      <div class="contract-row">
+        <div class="n">04</div>
+        <div class="what">L4 is the only level a human grants by name</div>
+        <div class="body">
+          Four signals fold into a [0,1] composite. L4 grants require
+          <code>granted_by='human:&lt;name&gt;'</code> or the API raises.
+          No self-promotion. No YAML knob for it.
+        </div>
+      </div>
+    </div>
+
+    <div class="contract-tagline">The rest is plumbing.</div>
+  </div>
+</section>
+
+<!-- ── explainer panel (only visible in this exploration HTML) ── -->
+<div class="explainer">
+  <div>
+    <h3>This exploration applies factory.ai grammar to 3 BENE sections</h3>
+    <p>
+      Same Hero / Gap / Contract copy you have today (Pressfield/Mom-Test 校过的 voice
+      keeps its sharp scene-staking) — but rendered through factory.ai's visual DNA.
+      The voice is BENE's competitive moat; the visual upgrade pulls BENE out of the
+      "warm-light SaaS" generic pool into the same
+      <em>warm-technical · crisp · editorial</em> register Factory occupies.
+    </p>
+    <p>
+      Three new patterns visible across the sections: (1) the cream-on-cream Gap cards
+      with mono burnt-orange tags + dashed demo stubs replacing the current dark Cards;
+      (2) the inverted dark Contract section as section-rhythm contrast (light cream →
+      warm ink → light cream) — factory.ai uses light↔dark alternation as page tempo;
+      (3) all micro-typography is now mono uppercase tracked — the same signature
+      that gives factory.ai its "editorial-tech" feel vs typical Tailwind SaaS.
+    </p>
+    <p style="font-size: 13px; color: var(--ink-3);">
+      VHS demo placement (currently 4 GIFs under each Gap card) will fit cleanly into
+      the new demo-stub slot — replace the dashed-border code block with the actual
+      &lt;GapDemo&gt; component output. Total 8-section landing has 6 more sections to translate.
+    </p>
+  </div>
+  <div>
+    <h3>Token swap log</h3>
+    <dl>
+      <div><dt>display font</dt><dd>Inter → Geist 600</dd></div>
+      <div><dt>mono font</dt><dd>JetBrains Mono → Geist Mono</dd></div>
+      <div><dt>bg</dt><dd>#FAFAFA → #F0EEE8</dd></div>
+      <div><dt>accent</dt><dd>#FF5C24 → #EE6018</dd></div>
+      <div><dt>ink</dt><dd>#0A0A0A → #1F1D1C</dd></div>
+      <div><dt>card r</dt><dd>16px → 8px</dd></div>
+      <div><dt>button r</dt><dd>4px → 4px <em>(kept)</em></dd></div>
+      <div><dt>meta label</dt><dd>none → mono uppercase tracked</dd></div>
+      <div><dt>H1 size</dt><dd>5rem → clamp(48,7vw,92)</dd></div>
+      <div><dt>H1 weight</dt><dd>600 → 600 <em>(kept)</em></dd></div>
+      <div><dt>H1 tracking</dt><dd>-0.01em → -0.025em</dd></div>
+    </dl>
+  </div>
+</div>
+
+<script>
+document.getElementById('copyInstall').addEventListener('click', async (e) => {
+  try {
+    await navigator.clipboard.writeText('# coming to PyPI — early access. have the repo? uv run bene init && uv run bene demo --no-ui');
+    e.target.textContent = '✓ copied';
+    setTimeout(() => { e.target.textContent = 'copy install ↗'; }, 2000);
+  } catch { e.target.textContent = '✗ blocked'; }
+});
+</script>
+</body>
+</html>

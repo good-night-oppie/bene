@@ -1,0 +1,24 @@
+# yamllint disable rule:truthy
+# Entry point: fix/* -> main strict lane.
+#
+# Branch contract (.factory/specs/bene-cicd-redesign-tiered.md):
+#   - fix/* PRs target main; ci/strict is required (all advisory promoted).
+#   - Bug fixes go straight to main; cherry-pick-back bot replays them on dev.
+
+name: pr-fix
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-fix-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  strict-gate:
+    uses: ./.github/workflows/reusable-strict-gate.yml
+    secrets: inherit

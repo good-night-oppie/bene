@@ -1,0 +1,49 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.venv/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.log
+.env
+.factory/
+.claude/
+# local junk
+.git.corrupt-20260611/
+*.db
+*.db-shm
+*.db-wal
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.playwright-mcp/
+.specstory/
+.serena/
+.coverage*
+
+# employer-derived benchmark data: keep local, never publish (NDA)
+bene/benchmarks/bug_triage/data/
+.design/factory-ai-brand/homepage.html
+.design/factory-ai-brand/docs-homepage.html
+.design/factory-ai-brand/style-*.css
+
+# personal documents must never enter the site deploy tree
+# (2026-06-15: Documents/ with separation agreement + benefit guides
+# was sitting untracked in site/assets/, one cp -r away from a public
+# Koyeb leak; moved to ~/_attic/. Defensive .gitignore so it can't
+# silently re-track on future syncs.)
+site/assets/Documents/
+site/**/*.bak
+
+# A2A coordination store (live endpoint runtime db)
+a2a-coord.db*

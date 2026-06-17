@@ -1,0 +1,76 @@
+# yamllint disable rule:truthy
+# nightly-promote: open a dev -> main PR on workdays 6pm PT.
+#
+# Oppie Spinnaker parallel: Manual Judgement / quiesce. The PR is opened
+# automatically only if dev is currently green (latest push-dev run on
+# dev's HEAD succeeded). The merge itself REQUIRES human approve.
+#
+# Plan: .factory/specs/bene-cicd-redesign-tiered.md (Stage C-4)
+
+name: nightly-promote
+
+on:
+  schedule:
+    # 18:00 PT = 02:00 UTC (PST) / 01:00 UTC (PDT). Use 02:00 UTC; if PT is
+    # PDT then this fires at 19:00 PT instead, which is still off-peak.
+    - cron: "0 2 * * 2-6"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: nightly-promote
+  cancel-in-progress: false
+
+jobs:
+  open-promote-pr:
+    name: open dev -> main promotion PR
+    runs-on: eng-github-runners
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - name: Verify dev is currently green
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          dev_sha="$(git rev-parse origin/dev)"
+          status="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${dev_sha}/check-runs" \
+            --jq '[.check_runs[] | select(.name | startswith("ci/strict")) | .conclusion] | unique')"
+          echo "dev ci/strict conclusions: ${status}"
+          case "${status}" in
+            '["success"]') echo "dev is green; proceeding" ;;
+            *) echo "::error title=dev not green::abort promotion (${status})"; exit 1 ;;
+          esac
+      - name: Skip if a promotion PR is already open
+        id: skip
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          existing="$(gh pr list --base main --head dev --state open --json number --jq 'length')"
+          if [ "${existing}" != "0" ]; then
+            echo "::notice title=Existing promotion PR open::skipping"
+            echo "skip=true" >> "${GITHUB_OUTPUT}"
+          fi
+      - name: Open dev -> main PR (manual judgement required)
+        if: steps.skip.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          today="$(date -u +%Y-%m-%d)"
+          body_file="$(mktemp)"
+          {
+            echo "Automated promotion PR. dev is green."
+            echo
+            echo "This PR requires human approve (Manual Judgement / quiesce)."
+            echo "SLA: 24h. Escalate to @good-night-oppie/bene-maintainers if untouched."
+          } > "${body_file}"
+          gh pr create \
+            --base main \
+            --head dev \
+            --title "chore(release): nightly dev->main ${today}" \
+            --body-file "${body_file}"

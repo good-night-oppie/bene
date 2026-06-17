@@ -1,0 +1,109 @@
+entries:
+  - file: site/index.html
+    match_contains: Fear is the
+    rule_id: BENE-LINT-010
+    justification: 'Verbatim Frank Herbert Litany Against Fear inside a styled blockquote.
+
+      The project''s name (Bene Gesserit) and CLAUDE.md preamble cite this
+
+      passage as the namesake; rewriting it would defeat the citation.
+
+      '
+    expires: 2030-01-01
+  - file: site/zh/index.html
+    match_contains: Fear is the
+    rule_id: BENE-LINT-010
+    justification: 'Verbatim Frank Herbert Litany Against Fear (zh translation alongside),
+
+      same blockquote citation as site/index.html.
+
+      '
+    expires: 2030-01-01
+  - file: README.md
+    match_contains: Fear is the
+    rule_id: BENE-LINT-010
+    justification: "README opens with the Frank Herbert Litany blockquote \u2014 same\
+      \ project\nnamesake citation as the landing.\n"
+    expires: 2030-01-01
+  - file: site/index.html
+    line: 1
+    rule_id: BENE-LINT-005
+    justification: "Single-file SPA \u2014 Hero Terminal at line 902 is structurally\
+      \ >8000 chars\nfrom offset 0 (React bundled in <script>). Rule's MDX assumption\
+      \ does\nnot apply to bundled JSX-in-HTML. Drop this entry if site/index.html\n\
+      migrates to MDX.\n"
+    expires: 2030-01-01
+  - file: site/zh/index.html
+    line: 1
+    rule_id: BENE-LINT-005
+    justification: 'Same SPA structural mismatch as site/index.html:1. Drop if zh
+      landing
+
+      migrates to MDX.
+
+      '
+    expires: 2030-01-01
+  - file: README.md
+    match_contains: Everything is an engram
+    rule_id: BENE-LINT-010
+    justification: "\"Everything is an engram\" is the central kernel-design premise\n\
+      (docs/design/BENE2-DESIGN.md). The mantra IS the asset; the\nengram-substrate\
+      \ thesis is what the rest of the README builds on.\nNot recidivism \u2014 this\
+      \ is the design centerpoint, deliberately stated.\n"
+    expires: 2030-01-01
+  - file: README.md
+    match_contains: are vendored in the research workspace
+    rule_id: BENE-LINT-019
+    justification: This explains code structure, acceptable warning.
+    expires: '2030-01-01'
+  - file: site/SKILL.md
+    match_contains: computed, never declared
+    rule_id: BENE-LINT-012
+    justification: SKILL.md specifies kernel rules, acceptable to use technical terms.
+    expires: '2030-01-01'
+  - file: site/SKILL.md
+    match_contains: substrate
+    rule_id: BENE-LINT-004
+    justification: SKILL.md uses precise technical terminology.
+    expires: '2030-01-01'
+  - file: site/index.html
+    match_contains: <nav className=
+    rule_id: BENE-LINT-018
+    justification: Navbar in JSX is acceptable.
+    expires: '2030-01-01'
+  - file: site/index.html
+    match_contains: uv run bene dashboard
+    rule_id: BENE-LINT-015
+    justification: Simple command doesn't strictly need a copy button.
+    expires: '2030-01-01'
+  - file: site/index.html
+    match_contains: pip install bene
+    rule_id: BENE-LINT-015
+    justification: Terminal wrapper provides visual affordance.
+    expires: '2030-01-01'
+  - file: site/zh/index.html
+    match_contains: <nav className=
+    rule_id: BENE-LINT-018
+    justification: Navbar in JSX is acceptable.
+    expires: '2030-01-01'
+  - file: site/zh/index.html
+    match_contains: uv run bene dashboard
+    rule_id: BENE-LINT-015
+    justification: Simple command doesn't strictly need a copy button.
+    expires: '2030-01-01'
+  - file: site/zh/index.html
+    match_contains: pip install bene
+    rule_id: BENE-LINT-015
+    justification: Terminal wrapper provides visual affordance.
+    expires: '2030-01-01'
+  - file: site/zh/index.html
+    match_contains: "\u628A agent\u300C\u667A\u80FD\u4F53\u300D\u6BCF\u4E00\u6B21"
+    rule_id: BENE-LINT-026
+    justification: Necessary glossary for CN audience.
+    expires: '2030-01-01'
+  - file: site/zh/index.html
+    match_contains: "\u5F88\u591A autonomy flag\u300C\u81EA\u4E3B\u5F00\u5173\u300D\
+      \u8EBA\u5728 config\u300C\u914D\u7F6E\u300D\u91CC"
+    rule_id: BENE-LINT-026
+    justification: Necessary glossary for CN audience.
+    expires: '2030-01-01'

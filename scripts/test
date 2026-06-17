@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# testpaths = ["tests"] is configured in pyproject.toml
+set -euo pipefail
+uv run pytest --tb=short -q "$@"

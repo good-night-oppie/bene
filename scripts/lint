@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+uv run ruff check bene/ tests/
+uv run ruff format --check bene/ tests/
+uv run python scripts/landing_copy_linter.py
+# Executable accuracy gate (install resolves / doc hard-numbers match the real db).
+# cmd_check prints VERDICT but doesn't sys.exit on REJECT, so enforce it here.
+uv run python scripts/landing_copy_linter/accuracy_gate.py check | tee /tmp/bene-accuracy-gate.out
+grep -q 'VERDICT=ACCEPT' /tmp/bene-accuracy-gate.out || { echo 'accuracy gate REJECTED — fix the findings above'; exit 1; }

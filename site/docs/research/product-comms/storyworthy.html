@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Storyworthy: Engage, Teach, Persuade, and Change Your Life through the Power of Storytelling — Matthew Dicks — BENE docs</title>
+<meta name="description" content="BENE 0.2.0 documentation — Storyworthy: Engage, Teach, Persuade, and Change Your Life through the Power of Storytelling — Matthew Dicks" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+:root { --bg:#F0EEE8; --surface:#EDE9E4; --border:#CFCCC8; --ink:#1F1D1C; --mute:#62666D; --accent:#EE6018; --gold:#B46A35; --term-bg:#0A0908; --term-fg:#EDE9E4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 Geist,ui-sans-serif,system-ui,sans-serif; }
+a { color:var(--gold); text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent); text-underline-offset:3px; }
+a:hover { color:var(--accent); }
+.top { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+.top-in { max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+.brand { font-family:Geist,ui-sans-serif,sans-serif; font-weight:700; letter-spacing:.12em; color:var(--ink); text-decoration:none; }
+.top a.nav { color:var(--mute); text-decoration:none; font-size:14px; }
+.top a.nav:hover { color:var(--accent); }
+.wrap { max-width:1200px; margin:0 auto; padding:24px; display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; }
+aside.sb { position:sticky; top:80px; align-self:start; max-height:calc(100vh - 100px); overflow-y:auto; font-size:13.5px; border-left:1px solid var(--border); padding-left:16px; }
+.sb h4 { margin:18px 0 6px; font:600 11px/1 "Geist Mono",ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+.sb a { display:block; padding:3px 0; color:var(--mute); text-decoration:none; }
+.sb a:hover { color:var(--accent); }
+.sb a.cur { color:var(--ink); font-weight:600; }
+main { min-width:0; max-width:760px; }
+main h1 { font-family:Geist,ui-sans-serif,sans-serif; font-size:2.1rem; line-height:1.2; margin:.2em 0 .5em; }
+main h2 { font-family:Geist,ui-sans-serif,sans-serif; font-size:1.45rem; margin-top:2em; border-bottom:1px solid var(--border); padding-bottom:.35em; }
+main h3 { font-size:1.12rem; margin-top:1.7em; }
+main img { max-width:100%; border:1px solid var(--border); border-radius:8px; }
+main table { border-collapse:collapse; width:100%; font-size:14.5px; display:block; overflow-x:auto; }
+main th, main td { border:1px solid var(--border); padding:8px 12px; text-align:left; vertical-align:top; }
+main th { background:var(--surface); font-weight:600; }
+main blockquote { margin:1em 0; padding:.2em 1.2em; border-left:3px solid var(--accent); color:var(--mute); background:var(--surface); border-radius:0 4px 4px 0; }
+main :not(pre) > code { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:.08em .35em; font:.86em "Geist Mono",ui-monospace,monospace; }
+.codehilite, main pre { background:var(--term-bg); color:var(--term-fg); border-radius:6px; padding:16px 18px; overflow-x:auto; font:13.5px/1.55 "Geist Mono",ui-monospace,monospace; }
+.codehilite pre, pre code { background:none; padding:0; margin:0; border:none; }
+.demo-embed { margin:20px 0 28px; }
+.demo-embed .frame { background:var(--term-bg); border-radius:6px; padding:14px; }
+.demo-embed .dots { display:flex; gap:6px; margin-bottom:10px; }
+.demo-embed .dots i { width:10px; height:10px; border-radius:50%; background:#3a3344; }
+.demo-embed img { border:none; border-radius:6px; display:block; width:100%; }
+.demo-embed p { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:8px 2px 0; }
+.crumbs { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-bottom:8px; }
+.crumbs a { color:var(--mute); }
+.src { font:12.5px "Geist Mono",ui-monospace,monospace; margin-top:48px; padding-top:16px; border-top:1px solid var(--border); color:var(--mute); }
+footer.ft { border-top:1px solid var(--border); margin-top:40px; }
+footer.ft .in { max-width:1200px; margin:0 auto; padding:24px; font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.idx-group h2 { font-family:Geist,ui-sans-serif,sans-serif; border:none; margin-top:1.6em; }
+.idx-group ul { list-style:none; padding:0; margin:.4em 0; }
+.idx-group li { padding:6px 0; border-bottom:1px dashed var(--border); }
+.idx-group .path { font:11.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-left:8px; }
+/* Mobile overrides — kept at the end so source order beats base rules.
+   Earlier this rule sat between base rules and got overridden by a later
+   `aside.sb { position:sticky }`, leaving the sidebar stuck on top of
+   main content on phones. */
+@media (max-width: 860px) {
+  .wrap { grid-template-columns:1fr; gap:24px; padding:16px; }
+  aside.sb { position:static; max-height:none; border-left:none; border-bottom:1px solid var(--border); padding-left:0; padding-bottom:16px; font-size:13px; }
+  .sb h4 { margin:12px 0 4px; }
+  main { max-width:none; }
+  main h1 { font-size:1.6rem; }
+  main h2 { font-size:1.2rem; }
+  main h3 { font-size:1.05rem; }
+  .top-in { padding:0 16px; gap:14px; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #49483e }
+.codehilite { background: #272822; color: #F8F8F2 }
+.codehilite .c { color: #959077 } /* Comment */
+.codehilite .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.codehilite .esc { color: #F8F8F2 } /* Escape */
+.codehilite .g { color: #F8F8F2 } /* Generic */
+.codehilite .k { color: #66D9EF } /* Keyword */
+.codehilite .l { color: #AE81FF } /* Literal */
+.codehilite .n { color: #F8F8F2 } /* Name */
+.codehilite .o { color: #FF4689 } /* Operator */
+.codehilite .x { color: #F8F8F2 } /* Other */
+.codehilite .p { color: #F8F8F2 } /* Punctuation */
+.codehilite .ch { color: #959077 } /* Comment.Hashbang */
+.codehilite .cm { color: #959077 } /* Comment.Multiline */
+.codehilite .cp { color: #959077 } /* Comment.Preproc */
+.codehilite .cpf { color: #959077 } /* Comment.PreprocFile */
+.codehilite .c1 { color: #959077 } /* Comment.Single */
+.codehilite .cs { color: #959077 } /* Comment.Special */
+.codehilite .gd { color: #FF4689 } /* Generic.Deleted */
+.codehilite .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F8F8F2 } /* Generic.Error */
+.codehilite .gh { color: #F8F8F2 } /* Generic.Heading */
+.codehilite .gi { color: #A6E22E } /* Generic.Inserted */
+.codehilite .go { color: #66D9EF } /* Generic.Output */
+.codehilite .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #959077 } /* Generic.Subheading */
+.codehilite .gt { color: #F8F8F2 } /* Generic.Traceback */
+.codehilite .kc { color: #66D9EF } /* Keyword.Constant */
+.codehilite .kd { color: #66D9EF } /* Keyword.Declaration */
+.codehilite .kn { color: #FF4689 } /* Keyword.Namespace */
+.codehilite .kp { color: #66D9EF } /* Keyword.Pseudo */
+.codehilite .kr { color: #66D9EF } /* Keyword.Reserved */
+.codehilite .kt { color: #66D9EF } /* Keyword.Type */
+.codehilite .ld { color: #E6DB74 } /* Literal.Date */
+.codehilite .m { color: #AE81FF } /* Literal.Number */
+.codehilite .s { color: #E6DB74 } /* Literal.String */
+.codehilite .na { color: #A6E22E } /* Name.Attribute */
+.codehilite .nb { color: #F8F8F2 } /* Name.Builtin */
+.codehilite .nc { color: #A6E22E } /* Name.Class */
+.codehilite .no { color: #66D9EF } /* Name.Constant */
+.codehilite .nd { color: #A6E22E } /* Name.Decorator */
+.codehilite .ni { color: #F8F8F2 } /* Name.Entity */
+.codehilite .ne { color: #A6E22E } /* Name.Exception */
+.codehilite .nf { color: #A6E22E } /* Name.Function */
+.codehilite .nl { color: #F8F8F2 } /* Name.Label */
+.codehilite .nn { color: #F8F8F2 } /* Name.Namespace */
+.codehilite .nx { color: #A6E22E } /* Name.Other */
+.codehilite .py { color: #F8F8F2 } /* Name.Property */
+.codehilite .nt { color: #FF4689 } /* Name.Tag */
+.codehilite .nv { color: #F8F8F2 } /* Name.Variable */
+.codehilite .ow { color: #FF4689 } /* Operator.Word */
+.codehilite .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.codehilite .w { color: #F8F8F2 } /* Text.Whitespace */
+.codehilite .mb { color: #AE81FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #AE81FF } /* Literal.Number.Float */
+.codehilite .mh { color: #AE81FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #AE81FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #AE81FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #E6DB74 } /* Literal.String.Affix */
+.codehilite .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.codehilite .sc { color: #E6DB74 } /* Literal.String.Char */
+.codehilite .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #E6DB74 } /* Literal.String.Doc */
+.codehilite .s2 { color: #E6DB74 } /* Literal.String.Double */
+.codehilite .se { color: #AE81FF } /* Literal.String.Escape */
+.codehilite .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.codehilite .si { color: #E6DB74 } /* Literal.String.Interpol */
+.codehilite .sx { color: #E6DB74 } /* Literal.String.Other */
+.codehilite .sr { color: #E6DB74 } /* Literal.String.Regex */
+.codehilite .s1 { color: #E6DB74 } /* Literal.String.Single */
+.codehilite .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.codehilite .bp { color: #F8F8F2 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #A6E22E } /* Name.Function.Magic */
+.codehilite .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.codehilite .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.codehilite .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.codehilite .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.codehilite .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.codehilite { background: var(--term-bg) !important; }
+</style>
+
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <a class="brand" href="../../../index.html">BENE</a>
+  <a class="nav" href="../../../index.html">Landing</a>
+  <a class="nav" href="../../index.html">Docs index</a>
+  <a class="nav" href="../../../SKILL.md" target="_blank" rel="noopener noreferrer" title="Hand BENE to your agent in one URL">SKILL.md ↗</a>
+  <button class="nav copy-llms" data-llms-url="../../../llms.txt" data-copied-label="✓ copied" data-opened-label="↗ opened" title="Copy the llms.txt site map (an LLM-friendly index pointing at SKILL.md + every doc). Paste it into your agent's context.">Copy llms.txt</button>
+  <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer">GitHub</a>
+  <a class="nav" href="../../../zh/docs/research/product-comms/storyworthy.html" title="切换到中文" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">文</a>
+</div></div>
+
+<script>
+(function() {
+  document.querySelectorAll('button.copy-llms').forEach(function(btn) {
+    var original = btn.textContent;
+    btn.addEventListener('click', function() {
+      var url = btn.getAttribute('data-llms-url');
+      fetch(url, { cache: 'no-cache' })
+        .then(function(r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.text(); })
+        .then(function(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).then(function() {
+              btn.textContent = btn.getAttribute('data-copied-label') || '✓ copied';
+              setTimeout(function() { btn.textContent = original; }, 2200);
+            });
+          }
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        })
+        .catch(function() {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        });
+    });
+  });
+})();
+</script>
+<div class="wrap">
+<aside class="sb"><h4>Start, operate, recover</h4>
+<a href="../../README.html">README</a>
+<a href="../../architecture.html">architecture</a>
+<a href="../../checkpoints.html">checkpoints</a>
+<a href="../../cli-reference.html">cli-reference</a>
+<a href="../../codegen.html">codegen</a>
+<a href="../../dashboard.html">dashboard</a>
+<a href="../../deployment.html">deployment</a>
+<a href="../../integrating-bene.html">integrating-bene</a>
+<a href="../../mcp-integration.html">mcp-integration</a>
+<a href="../../memory.html">memory</a>
+<a href="../../meta-harness.html">meta-harness</a>
+<a href="../../philosophy.html">philosophy</a>
+<a href="../../primitive-review-cycle.html">primitive-review-cycle</a>
+<a href="../../probe-authoring.html">probe-authoring</a>
+<a href="../../schema.html">schema</a>
+<a href="../../shared-log.html">shared-log</a>
+<a href="../../skills.html">skills</a>
+<a href="../../use-cases.html">use-cases</a>
+<h4>Recipes</h4>
+<a href="../../recipes/atomic-completion.html">atomic-completion</a>
+<h4>Design and claims</h4>
+<a href="../../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
+<a href="../../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
+<a href="../../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
+<a href="../../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
+<h4>Evidence and research</h4>
+<a href="../../research/GAP-AUDIT.html">GAP-AUDIT</a>
+<a href="../../research/SYNTHESIS.html">SYNTHESIS</a>
+<a href="../../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<h4>Benchmarks and gates</h4>
+<a href="../../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
+<a href="../../benchmarks/PREREG.html">PREREG</a>
+<h4>Tutorial playbooks</h4>
+<a href="../../tutorials/t00-bene-e2e-walkthrough.html">t00-bene-e2e-walkthrough</a>
+<a href="../../tutorials/t01-bene-meta-harness.html">t01-bene-meta-harness</a>
+<a href="../../tutorials/t02-e2e-self-healing.html">t02-e2e-self-healing</a>
+<a href="../../tutorials/t03-security-swarm.html">t03-security-swarm</a>
+<a href="../../tutorials/t04-migration-rollback.html">t04-migration-rollback</a>
+<a href="../../tutorials/t05-incident-response.html">t05-incident-response</a>
+<a href="../../tutorials/t06-ml-research-lab.html">t06-ml-research-lab</a>
+<a href="../../tutorials/t07-regression-guard.html">t07-regression-guard</a>
+<a href="../../tutorials/t08-hundred-agents-scale.html">t08-hundred-agents-scale</a>
+<a href="../../tutorials/t10-ci-overnight-bene-swarm.html">t10-ci-overnight-bene-swarm</a>
+<a href="../../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
+<h4>Case studies</h4>
+<a href="../../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
+<h4>Infrastructure</h4>
+<a href="../../infra/DNS.html">DNS</a></aside>
+<main>
+<div class="crumbs"><a href="../../index.html">docs</a> / research/product-comms/storyworthy.md</div>
+<h1 id="storyworthy-engage-teach-persuade-and-change-your-life-through-the-power-of-storytelling-matthew-dicks">Storyworthy: Engage, Teach, Persuade, and Change Your Life through the Power of Storytelling — Matthew Dicks</h1>
+<blockquote>
+<p><strong>用途</strong>: BENE landing zh rewrite v2 evidence base (post user-rejection 2026-06-13).
+<strong>Lenny bucket</strong>: "I want to improve my communication skills"
+<strong>Slug</strong>: <code>storyworthy</code> · <strong>KAOS key</strong>: <code>research/product-comms/storyworthy</code>
+<strong>Distilled by</strong>: workflow <code>wf_3585b934-c3c</code>, parallel subagent with structured schema + web-cited sources.</p>
+</blockquote>
+<h2 id="thesis">Thesis</h2>
+<p>Dicks 的核心论断只有一句：一个故事 = 一个人在一个瞬间发生的一次改变（the five-second moment）。没有这个 moment，你手上的就只是 anecdote，不是 story。他给出的可执行机器是：先找到那个让心动了一下的五秒钟；把它放到故事最末；故事开头必须是这个改变的反面（the opposite of the end），这样才有 arc。句与句之间用 but / therefore 串，不能用 and——因为 and 不表示改变。开场 30 秒之内必须放一头 elephant：观众能看见的、巨大的、明确的 stakes，让他们知道为什么要听下去。每一个 moment 都要 anchor 在一个具体的物理房间里，让观众在脑中放电影；用现在时把他们拽进去。最重要的是反 anecdote 原则：你不需要撞穿挡风玻璃、不需要被枪指着头——一个 big story 想被人听懂，反而要靠里面那一个最小的、最普通的、最可关联的瞬间。observed 大事，relate 小事——这是 "I am you" 的 common ground。</p>
+<h2 id="reader-brain-moves">Reader brain moves</h2>
+<p>作者引导读者思路的具体动作。每条带概念名 + 怎么做 + 书里的具体例子。</p>
+<h3 id="1-open-with-the-opposite-of-your-ending-arc-primer">1. Open with the opposite of your ending (arc primer)</h3>
+<p><strong>怎么做</strong>: Dicks 反复教：先想清楚故事的结尾——那个改变发生的五秒——然后从它的反面开场。让读者一进门看到的是「之前的我」，结尾才能感到「现在的我」不一样了。这是制造 arc 的机械手段，不是修辞。</p>
+<p><strong>书里的具体例子</strong>: Dicks 在 Storyworthy 中明确写："Simply put, the beginning of the story should be the opposite of the end. Find the opposite of your transformation, revelation, or realization, and this is where your story should start." 他在 Lenny's Newsletter 播客上也复述这条：start every story at the end，意思是先锁定 ending 再倒推 opening。</p>
+<h3 id="2-plant-the-elephant-in-the-first-30-seconds-stakes-anchor">2. Plant the elephant in the first 30 seconds (stakes anchor)</h3>
+<p><strong>怎么做</strong>: 他不让作者慢慢「设定背景」。开场必须有一个所有人都看得见的巨大问题/欲望/危险——the elephant——告诉读者「为什么我要听下去」。elephant 可以变色（开头是爆胎，结尾是孤独），但不能没有。</p>
+<p><strong>书里的具体例子</strong>: Dicks 给的 elephant 例句被各种 Storyworthy 笔记转引："My mother was a great woman but I hated her."——一句话同时给出 stakes 和方向。Ribbonfarm 的 Venkatesh Rao 总结他的方法时也把 "every plot point anchored to specific physical locations and times" 列为同一层的硬约束。</p>
+<h3 id="3-connect-with-but-therefore-never-with-and">3. Connect with but / therefore, never with and</h3>
+<p><strong>怎么做</strong>: Dicks 借用 South Park 创作者也独立发现过的同一规律：用 and 串联的句子让故事没有方向，没有改变；用 but 表示「方向被打断了」，用 therefore 表示「所以下一步必须是这个」。读者大脑里因此持续感受到「事情在变」，即使事件本身是线性的。</p>
+<p><strong>书里的具体例子</strong>: 他在书中原话（被多个笔记站点引用）："AND stories have neither direction nor unique moments. BUT and THEREFORE, on the other hand, are used to denote change." Ribbonfarm 把这条列为他与 South Park 的 "buts and therefores" 不约而同。</p>
+<h3 id="4-find-the-small-relatable-moment-inside-the-big-story-i-am-you">4. Find the small relatable moment inside the big story (I am you)</h3>
+<p><strong>怎么做</strong>: Dicks 反复警告：big story 反而难讲，因为没人能 relate 撞车、坐牢、生死。要在 big story 里挖出那个最小的、谁都经历过的瞬间——让读者觉得「这就是我」。共情来自微小，不来自震撼。</p>
+<p><strong>书里的具体例子</strong>: Storyworthy 笔记转引他的原话大意："You need not spend time in jail or crash through a windshield or have a gun jammed against the side of your head to tell a great story. The simplest stories about the smallest moments in our lives are often the most compelling." 他自己的例子：在 "This is Going to Suck" 里他真的死在路边，但那不是故事的焦点——观众记住的是另一段最日常的瞬间。</p>
+<h3 id="5-anchor-every-beat-to-a-physical-room-in-present-tense-cinema-of-the-mind">5. Anchor every beat to a physical room, in present tense (cinema of the mind)</h3>
+<p><strong>怎么做</strong>: 他要求每一个时刻都要给读者一个具体的物理位置，让对方能在脑里放电影；用现在时态把读者拽进当下。抽象不行、概念不行——必须是「我现在站在哪里、我看到什么」。</p>
+<p><strong>书里的具体例子</strong>: Storyworthy 多份笔记摘录的原则："Always provide a physical location for every moment of your story. Your goal is always to create a cinematic experience in the minds of your listeners." 以及 "Use present tense to transport the audience into the story."</p>
+<h2 id="copyable-patterns-agent-5">Copyable patterns — 可被 agent 抄走的 5 个句式</h2>
+<p>每个 pattern 都附带把当前 BENE landing 一条具体 offender 句子改写过的样例。</p>
+<h3 id="pattern-1-opposite-of-ending-opening">Pattern 1: Opposite-of-ending opening (反面开场)</h3>
+<p><strong>句式模板</strong>: [读者结尾的状态——已经被救/已经能验/已经睡得着] 的反面 = [当下他正在经历的具体崩塌]。先写崩塌，再写产品出场。</p>
+<p><strong>应用到 BENE landing</strong>:</p>
+<blockquote>
+<p>把 hero.tagline「每个 agent 一份隔离 VFS，每一步进 checkpoint，每条声明都能本地重跑。」改写为：「凌晨两点，agent 把 replicas 改到 0，生产挂了，你 git stash 一把发现栈是空的——那一刻你想要的，是能回到上一步。BENE 让上一步还在原地。」</p>
+</blockquote>
+<h3 id="pattern-2-elephant-in-the-first-sentence-30-stakes">Pattern 2: Elephant in the first sentence (开场 30 秒立 stakes)</h3>
+<p><strong>句式模板</strong>: [一句话讲明读者怕什么 / 损失什么 / 想要什么]，然后 but / therefore 接产品的位置。不要先讲产品是什么。</p>
+<p><strong>应用到 BENE landing</strong>:</p>
+<blockquote>
+<p>把 builders.title「把 Context Engineering 落到一份 SQLite 文件里。」改写为：「agent 跑到第 30 turn 就忘了第 3 turn 的教训——这是 context 在第 30 turn 漏的水。BENE 让那个 turn 的 scratchpad、lessons-learned、skill，下一个 agent 进门就拿得到。」</p>
+</blockquote>
+<h3 id="pattern-3-but-therefore-chain-instead-of-and-list">Pattern 3: But / Therefore chain instead of And-list (用转折串句, 禁列表化)</h3>
+<p><strong>句式模板</strong>: [X 看起来已经够了]，但 [X 在 Y 场景下崩了]，所以 [产品在这一刻做了 Z]。禁止用「、」或者「，」并列三个 feature。</p>
+<p><strong>应用到 BENE landing</strong>:</p>
+<blockquote>
+<p>把 builders.body 中「scratchpad、lessons-learned、跨 session 的持久记忆——这三个之前各自塞在 prompt、临时文件、文档里。」改写为：「你以为把 lessons-learned 塞进 prompt 就够了，但下一个 session 的 agent 看不到那个 prompt；你以为写进临时文件就够了，但 agent 不知道该读哪一份；所以这三件事必须落在同一个地方，下一个 agent 进门就能 grep 到。」</p>
+</blockquote>
+<h3 id="pattern-4-small-relatable-moment-inside-the-big-claim-i-am-you">Pattern 4: Small relatable moment inside the big claim (I am you)</h3>
+<p><strong>句式模板</strong>: [宏大声明] 不要单独站着。在它旁边放一个 [读者上周真的遇到过的、最普通的 30 秒]，让他点头：对，这就是我。</p>
+<p><strong>应用到 BENE landing</strong>:</p>
+<blockquote>
+<p>把 watch.title「这页上的每条声明，在你笔记本上一分钟内就能验。」改写为：「你上次试一个新工具，光填 API key 就花了 12 分钟，最后发现还要登录 dashboard——这一页不让你经历那个。一条命令，0 个 key，30 秒内你已经看到 kill-gate 拒掉一次越权动作。」</p>
+</blockquote>
+<h3 id="pattern-5-anchor-to-a-physical-room-in-present-tense">Pattern 5: Anchor to a physical room in present tense (具体房间 + 现在时)</h3>
+<p><strong>句式模板</strong>: [读者正坐在哪里 / 屏幕上正显示什么 / 他手指正在按什么]，[在这个房间里产品做了什么]。禁止抽象动词「支持」「提供」「赋能」。</p>
+<p><strong>应用到 BENE landing</strong>:</p>
+<blockquote>
+<p>把 hero.trustLine「一个 agent = 一份 SQLite 文件。<code>cp</code> 备份它，<code>sqlite3</code> 直接读它，不需要任何 API key，不上云。」改写为：「你打开终端，看到 ~/bene.db 这一个文件。<code>cp bene.db bene.bak</code> 就是这一次的备份；<code>sqlite3 bene.db '.schema'</code> 当场打印出 agent 这一 turn 写了什么。没有 dashboard、没有 key、没有外网请求。」</p>
+</blockquote>
+<h2 id="anti-patterns-3">Anti-patterns — 作者明确反对的 3 个模式</h2>
+<p>每个 anti-pattern 引一句当前 BENE landing 的 verbatim 文案做对照，并给出改写。</p>
+<h3 id="anti-pattern-1-x-y-anecdote-as-definition-moment-of-change">Anti-pattern 1: X = Y 等号定义句 (anecdote-as-definition, 无 moment of change)</h3>
+<p><strong>作者为什么反对</strong>: Dicks 的核心判据：没有一个具体瞬间的「改变」就不是 story，是 anecdote。「一个 agent = 一份 SQLite 文件」这种等号句把一整套体验压扁成定义，没有人、没有房间、没有 stakes、没有 before/after。读者大脑里没有任何东西在动。Ribbonfarm 总结他的方法：没有 5-second soul、没有 contrasting before state，就不构成 story。</p>
+<p><strong>BENE landing 现在的违规句 (verbatim)</strong>:</p>
+<blockquote>
+<p>一个 agent = 一份 SQLite 文件。<code>cp</code> 备份它，<code>sqlite3</code> 直接读它，不需要任何 API key，不上云。</p>
+</blockquote>
+<p><strong>用这本书的纪律改写</strong>:</p>
+<blockquote>
+<p>agent 把生产改炸了。你坐在终端前。你不点开浏览器、不去任何 dashboard——你输 <code>cp bene.db bene.bak</code>，再 <code>bene restore</code>。三秒之后，replicas 又是 3。整个过程都在这一个 .db 文件里发生，没离开过你的笔记本。</p>
+</blockquote>
+<h3 id="anti-pattern-2-and-list-buttherefore">Anti-pattern 2: And-list 并列三件事 (无 but/therefore, 无方向)</h3>
+<p><strong>作者为什么反对</strong>: Dicks 明确写："AND stories have neither direction nor unique moments. BUT and THEREFORE, on the other hand, are used to denote change." 用「、」并列 scratchpad / lessons-learned / 跨 session 记忆，本质上是 and-list，读者大脑读完没有任何「方向被改变了」的感觉，只剩 feature 罗列。</p>
+<p><strong>BENE landing 现在的违规句 (verbatim)</strong>:</p>
+<blockquote>
+<p>scratchpad、lessons-learned、跨 session 的持久记忆——这三个之前各自塞在 prompt、临时文件、文档里。</p>
+</blockquote>
+<p><strong>用这本书的纪律改写</strong>:</p>
+<blockquote>
+<p>你把 lessons-learned 塞进 prompt——但下一个 session 的 agent 看不见它；你改写进临时文件——但 agent 不知道哪份才是最新；所以这三件事必须落在同一份 .db 里，下一个 agent 一开机就 grep 得到。</p>
+</blockquote>
+<h3 id="anti-pattern-3-big-claim-elephant">Anti-pattern 3: Big claim 没 elephant 没小瞬间 (抽象大话不可关联)</h3>
+<p><strong>作者为什么反对</strong>: Dicks 反复警告：big story 反而难讲，因为不可 relate。「在你笔记本上一分钟内就能验」是大话，但读者大脑里没有一个具体的房间、没有一只 elephant、没有一个他上周经历过的 30 秒能挂上去。按他的标准，这种句子只是 announcement，不是 story；他会要求你 anchor 到一个具体的小瞬间——「上次你试一个新工具光填 API key 就花了 12 分钟」——让读者点头说「I am you」。</p>
+<p><strong>BENE landing 现在的违规句 (verbatim)</strong>:</p>
+<blockquote>
+<p>这页上的每条声明，在你笔记本上一分钟内就能验。</p>
+</blockquote>
+<p><strong>用这本书的纪律改写</strong>:</p>
+<blockquote>
+<p>你上次试一个新工具，光填 API key 花了 12 分钟，最后还得登 dashboard——这一页不让你再经历一次。在你打开它之后 60 秒内，你已经亲眼看到 kill-gate 在终端里拒掉一次越权动作，数值就印在屏幕上。</p>
+</blockquote>
+<h2 id="sources-cited">Sources cited</h2>
+<ul>
+<li><strong>[blog_summary]</strong> https://www.ribbonfarm.com/2021/06/24/storytelling-matthew-dicks/ — Backs the rejection of 'and'-linked scenes, the requirement of a 5-second soul + contrasting before-state, anchoring every plot point to a physical location/time, and Dicks's first-person purist stance.</li>
+<li><strong>[blog_summary]</strong> https://bagerbach.com/books/storyworthy/ — Backs the five-second moment, Homework for Life mechanic, beginning-is-opposite-of-end rule, and 'small moments are most compelling' / I-am-you common-ground principle.</li>
+<li><strong>[blog_summary]</strong> https://www.tosummarise.com/book-summary-storyworthy-by-matthew-dicks/ — Backs the Elephant rule (within first 30 seconds, signals stakes/direction, can change color), Backpacks/Breadcrumbs/Hourglasses suspense devices, present-tense cinema-of-the-mind anchoring, and the small-moment-inside-big-story doctrine.</li>
+<li><strong>[podcast]</strong> https://www.lennysnewsletter.com/p/how-to-tell-better-stories-matthew — Backs 'start every story at the end', stakes/surprise/suspense/humor as the four engagement levers, and Homework for Life as a daily practice (Lenny's Podcast interview with Matthew Dicks).</li>
+<li><strong>[goodreads]</strong> https://www.goodreads.com/work/quotes/59440320 — Verbatim quote: 'Simply put, the beginning of the story should be the opposite of the end...' and 'Seek out the moments when you felt your heart move...' and the present-tense immediacy quote.</li>
+<li><strong>[blog_summary]</strong> https://medium.com/@nimisha-pandit/storyworthy-by-matthew-dicks-notes-fd072c4e420c — Backs the But/Therefore vs And rule verbatim and the Elephant rule as a stakes-setting opener with the 'My mother was a great woman but I hated her' example.</li>
+</ul>
+<hr />
+<p><em>Distilled with no hallucinated quotes — every specific claim is either backed by a cited URL or described abstractly. If you find a quote that's wrong, check sources_cited first; the workflow ran with explicit "do not invent" instructions.</em></p>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/research/product-comms/storyworthy.md" target="_blank" rel="noopener noreferrer">docs/research/product-comms/storyworthy.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+</main>
+</div>
+<footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>
+<a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer">Building something on bene? Open a Discussion.</a></div></footer>
+</body>
+</html>

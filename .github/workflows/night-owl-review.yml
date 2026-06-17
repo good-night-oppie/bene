@@ -1,0 +1,95 @@
+# yamllint disable rule:truthy
+# night_owl_review: scheduled fresh-eyes lint pass on stacked feature branches.
+# Runs scripts/night_owl_review.py with --no-overrides so any reject-pattern
+# violations hidden behind in-file ai-lint-override markers are re-surfaced
+# for review. Advisory: does not block merge by default.
+
+name: night-owl-review
+
+on:
+  push:
+    branches:
+      - 'fix-stack/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'bene/**/*.py'
+      - 'tests/**/*.py'
+      - 'scripts/**/*.py'
+      - '.factory/hooks/pattern_guard.py'
+      - 'scripts/night_owl_review.py'
+      - '.github/workflows/night-owl-review.yml'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: night-owl-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Resolve diff range
+        id: range
+        run: |
+          if [ -n "${{ github.base_ref }}" ]; then
+            echo "range=origin/${{ github.base_ref }}..HEAD" >> "$GITHUB_OUTPUT"
+          else
+            echo "range=origin/main..HEAD" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fetch base
+        run: git fetch origin main --depth=200
+
+      - name: Honour-overrides review (informational)
+        run: |
+          python3 scripts/night_owl_review.py \
+            --diff "${{ steps.range.outputs.range }}" \
+            || echo "::warning::night_owl found violations even with overrides honored"
+
+      - name: Fresh-eyes review (--no-overrides)
+        id: fresh
+        run: |
+          python3 scripts/night_owl_review.py \
+            --diff "${{ steps.range.outputs.range }}" \
+            --no-overrides \
+            --json > night_owl_findings.jsonl || true
+          count=$(wc -l < night_owl_findings.jsonl || echo 0)
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+
+      - name: Upload findings
+        if: steps.fresh.outputs.count != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: night-owl-findings
+          path: night_owl_findings.jsonl
+
+      - name: Summary
+        run: |
+          echo "## night_owl_review" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Fresh-eyes findings: ${{ steps.fresh.outputs.count }}" \
+            >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.fresh.outputs.count }}" != "0" ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "<details><summary>Findings (first 50)</summary>" \
+              >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            head -n 50 night_owl_findings.jsonl >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo '</details>' >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" role="img" aria-label="BENE">
+  <title>BENE — twin Bene Gesserit B monogram</title>
+  <g fill="#C68A4A" fill-rule="evenodd">
+    <path d="M 38 26 H 112 Q 160 26 160 64 Q 160 100 112 100 H 38 Z M 58 42 H 112 Q 140 42 140 64 Q 140 84 112 84 H 58 Z M 38 100 H 112 Q 160 100 160 136 Q 160 174 112 174 H 38 Z M 58 116 H 112 Q 140 116 140 136 Q 140 158 112 158 H 58 Z"/>
+    <path transform="translate(320,0) scale(-1,1)" d="M 38 26 H 112 Q 160 26 160 64 Q 160 100 112 100 H 38 Z M 58 42 H 112 Q 140 42 140 64 Q 140 84 112 84 H 58 Z M 38 100 H 112 Q 160 100 160 136 Q 160 174 112 174 H 38 Z M 58 116 H 112 Q 140 116 140 136 Q 140 158 112 158 H 58 Z"/>
+  </g>
+</svg>

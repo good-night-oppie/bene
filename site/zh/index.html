@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BENE — 带 hash-locked kill gate 的多智能体 harness</title>
+<meta name="description" content="把 BENE 放进你已经在跑的 CrewAI 或 LangGraph。每次 promote 上线前过一道 hash-locked gate。凌晨 3 点用 sqlite3 打开 bene.db，grep 上一个 agent 学到了什么。" />
+<link rel="icon" type="image/svg+xml" href="assets/bene-logo.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        bene: {
+          bg: 'rgb(var(--bg) / <alpha-value>)',
+          surface: 'rgb(var(--surface) / <alpha-value>)',
+          accent: 'rgb(var(--accent) / <alpha-value>)',
+          text: 'rgb(var(--text) / <alpha-value>)',
+          dim: 'rgb(var(--dim) / <alpha-value>)',
+          med: 'rgb(var(--med) / <alpha-value>)',
+          muted: 'rgb(var(--muted) / <alpha-value>)',
+        },
+      },
+      fontFamily: {
+        sans: ['Geist', '"Noto Sans SC"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['Geist', '"Noto Sans SC"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"Geist Mono"', 'ui-monospace', 'monospace'],
+      },
+    },
+  },
+}
+</script>
+<style>
+:root, :root[data-theme="light"] {
+  --bg: 240 238 232;
+  --surface: 237 233 228;
+  --accent: 238 96 24;
+  --text: 31 29 28;
+  --dim: 207 204 200;
+  --med: 200 194 186;
+  --muted: 98 102 109;
+  --term: 10 9 8;
+}
+:root[data-theme="dark"] {
+  --bg: 10 9 8;
+  --surface: 31 29 28;
+  --accent: 239 111 46;
+  --text: 237 233 228;
+  --dim: 61 58 57;
+  --med: 46 44 43;
+  --muted: 164 157 154;
+  --term: 5 5 5;
+}
+body { background: rgb(var(--bg)); color: rgb(var(--text)); font-family:'Geist','Noto Sans SC',ui-sans-serif,system-ui,sans-serif; transition: background-color .15s, color .15s; font-feature-settings: 'ss01' 1, 'cv11' 1; text-wrap: pretty; -webkit-font-smoothing: antialiased; }
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background: rgb(var(--surface)); }
+::-webkit-scrollbar-thumb { background: rgb(var(--med)); border-radius:2px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--accent)); }
+.hide-scrollbar::-webkit-scrollbar { display:none; }
+.hide-scrollbar { scrollbar-width:none; }
+.section-inverted { background: #1F1D1C; color: #EDE9E4; }
+.section-inverted .text-bene-text { color: #EDE9E4; }
+.section-inverted .text-bene-muted { color: #A49D9A; }
+.section-inverted .border-bene-dim { border-color: #3D3A39; }
+.section-inverted .bg-bene-surface { background-color: #2E2C2B; }
+.section-inverted code { color: #EDE9E4; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect } = React;
+
+const Section = ({ id, children, className = '', inverted = false }) => (
+  <section id={id} className={`py-16 md:py-20 lg:py-28 xl:py-32 ${inverted ? 'section-inverted' : ''} ${className}`}>
+    <div className="max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12">{children}</div>
+  </section>
+);
+
+const Kicker = ({ number, title }) => (
+  <div className="flex items-center gap-4 mb-12">
+    <span className="font-mono text-bene-accent text-[11px] tracking-[0.15em]">{number}</span>
+    <div className="h-px bg-bene-dim flex-1" />
+    <span className="font-mono text-bene-muted text-[11px] tracking-[0.18em] uppercase">{title}</span>
+  </div>
+);
+
+const Card = ({ children, className = '' }) => (
+  <div className={`bg-bene-surface border border-bene-dim p-7 rounded-md ${className}`}>{children}</div>
+);
+
+const Terminal = ({ children, caption, copyText }) => {
+  const [copied, setCopied] = React.useState(false);
+  const onCopy = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(copyText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch (e) { /* swallow */ }
+  };
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="bg-[rgb(var(--term))] border border-bene-dim rounded-sm overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-bene-dim bg-bene-surface">
+          <div className="flex gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-bene-med" />
+            <div className="w-2.5 h-2.5 rounded-full bg-bene-med" />
+            <div className="w-2.5 h-2.5 rounded-full bg-bene-med" />
+          </div>
+          {copyText && (
+            <button onClick={onCopy} className="font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors"
+              title="把安装命令拷到剪贴板">
+              {copied ? '✓ 已复制' : '复制命令 ↗'}
+            </button>
+          )}
+        </div>
+        <div className="p-5 overflow-x-auto">
+          <pre className="font-mono text-[13px] text-bene-text leading-relaxed"><code>{children}</code></pre>
+        </div>
+      </div>
+      {caption && <p className="font-mono text-xs text-bene-muted">{caption}</p>}
+    </div>
+  );
+};
+
+const Pill = ({ children }) => (
+  <div className="border border-bene-dim rounded-full px-4 py-2 font-mono text-xs text-bene-muted flex items-center gap-3 w-fit">
+    <div className="w-1.5 h-1.5 rounded-full bg-bene-accent" />
+    {children}
+  </div>
+);
+
+// ─── 卡点 demo (录屏 — 展示 BENE 怎么解决每个 gap) ─────────────────
+// 录屏源 site/demos/tapes/gap-N-*.tape；GIF 是对 bene-main HEAD 实跑的，没改过输出
+const GapDemo = ({ gif, caption }) => (
+  <div className="mt-5 bg-[rgb(var(--term))] border border-bene-dim rounded-sm overflow-hidden">
+    <div className="flex items-center px-3 py-2 border-b border-bene-dim bg-bene-surface">
+      <div className="flex gap-1.5">
+        <div className="w-2 h-2 rounded-full bg-bene-med" />
+        <div className="w-2 h-2 rounded-full bg-bene-med" />
+        <div className="w-2 h-2 rounded-full bg-bene-med" />
+      </div>
+    </div>
+    <img src={`../assets/demos/${gif}`} alt={caption} loading="lazy"
+      onError={(e) => { e.currentTarget.closest('.demo-embed')?.remove?.(); }}
+      className="w-full block" />
+    <p className="px-3 py-2 font-mono text-[11px] text-bene-muted leading-snug border-t border-bene-dim">{caption}</p>
+  </div>
+);
+
+// ─── Nav ────────────────────────────────────────────────────────────
+const Nav = ({ theme, setTheme }) => {
+  const links = [
+    { id: 'gap', label: '01 Gap' },
+    { id: 'contract', label: '02 Contract' },
+    { id: 'comparison', label: '03 Integrates' },
+    { id: 'proof', label: '04 Proof' },
+    { id: 'recipes', label: '05 Recipes' },
+    { id: 'architecture', label: '06 Arch' },
+    { id: 'limits', label: '07 Limits' },
+    { id: 'lore', label: '08 Lore' },
+  ];
+  const scrollTo = (id) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+  return (
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-bene-bg/90 backdrop-blur-md border-b border-bene-dim">
+      <div className="max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12 h-14 flex items-center justify-between">
+        <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <svg viewBox="0 0 320 200" className="text-bene-accent h-5 w-auto" fill="currentColor" fillRule="evenodd" aria-label="BENE">
+            <path d="M 38 26 H 112 Q 160 26 160 64 Q 160 100 112 100 H 38 Z M 58 42 H 112 Q 140 42 140 64 Q 140 84 112 84 H 58 Z M 38 100 H 112 Q 160 100 160 136 Q 160 174 112 174 H 38 Z M 58 116 H 112 Q 140 116 140 136 Q 140 158 112 158 H 58 Z"/>
+            <path transform="translate(320,0) scale(-1,1)" d="M 38 26 H 112 Q 160 26 160 64 Q 160 100 112 100 H 38 Z M 58 42 H 112 Q 140 42 140 64 Q 140 84 112 84 H 58 Z M 38 100 H 112 Q 160 100 160 136 Q 160 174 112 174 H 38 Z M 58 116 H 112 Q 140 116 140 136 Q 140 158 112 158 H 58 Z"/>
+          </svg>
+          <span className="font-display font-bold tracking-widest text-sm">BENE</span>
+        </div>
+        <div className="flex items-center gap-3 md:gap-6">
+          <div className="hidden md:flex items-center gap-6">
+            {links.map(l => (
+              <button key={l.id} onClick={() => scrollTo(l.id)} className="font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors">{l.label}</button>
+            ))}
+          </div>
+          <a href="docs/index.html" className="font-mono text-xs text-bene-accent hover:bg-bene-accent/10 transition-colors border border-bene-accent rounded-sm px-3 py-1">文档 ↗</a>
+          <a href="../SKILL.md" target="_blank" rel="noopener noreferrer" className="hidden sm:inline font-mono text-xs text-bene-text hover:text-bene-accent transition-colors" title="把这份扔给你的 agent，让它直接懂 BENE（raw markdown）">SKILL.md</a>
+          <a href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" className="hidden sm:inline font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors">GitHub</a>
+          <a href="../" className="font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors border border-bene-dim rounded-sm px-2 py-1" title="Switch to English">EN</a>
+          <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors border border-bene-dim rounded-sm px-2 py-1"
+            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}>
+            {theme === 'dark' ? '◐ light' : '◑ dark'}
+          </button>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+// ─── Copy-llms.txt button ───────────────────────────────────────────
+// Fetches /bene/llms.txt, copies to the clipboard, flashes a confirmation.
+// Falls back to opening the file in a new tab if clipboard API is blocked.
+const CopyLlmsTxtButton = ({ className = '', label = 'Copy llms.txt' } = {}) => {
+  const [state, setState] = React.useState('idle');
+  const onClick = async () => {
+    try {
+      const r = await fetch('../llms.txt', { cache: 'no-cache' });
+      if (!r.ok) throw new Error('fetch failed: ' + r.status);
+      const text = await r.text();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        setState('copied');
+        setTimeout(() => setState('idle'), 2200);
+      } else {
+        window.open('../llms.txt', '_blank', 'noopener,noreferrer');
+        setState('opened');
+        setTimeout(() => setState('idle'), 2200);
+      }
+    } catch (e) {
+      window.open('llms.txt', '_blank', 'noopener,noreferrer');
+      setState('opened');
+      setTimeout(() => setState('idle'), 2200);
+    }
+  };
+  const flash =
+    state === 'copied' ? '✓ 已复制 — 粘进你的 agent' :
+    state === 'opened' ? '↗ 已在新标签打开' :
+    label;
+  return (
+    <button onClick={onClick}
+      title="复制 llms.txt 站点地图（指向 SKILL.md + 全部文档的 LLM 友好索引），粘到你 agent 的 context 里"
+      className={`font-mono text-xs text-bene-text hover:bg-bene-text/10 transition-colors border border-bene-text rounded-sm px-3 py-2 whitespace-nowrap ${className}`}>
+      {flash}
+    </button>
+  );
+};
+
+// ─── 00 · Hero ──────────────────────────────────────────────────────
+const Hero = () => (
+  <section className="pt-20 md:pt-24 lg:pt-32 xl:pt-40 pb-16 md:pb-24">
+    <div className="max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12 w-full">
+      <div className="flex items-center gap-3 mb-8 font-mono text-[11px] tracking-[0.15em] uppercase text-bene-muted">
+        <span className="w-1.5 h-1.5 rounded-full bg-bene-accent" />
+        <span>v0.2.0</span>
+        <span className="text-bene-dim">·</span>
+        <span>local-first 多智能体 harness</span>
+        <span className="text-bene-dim">·</span>
+        <span>SQLite</span>
+      </div>
+      <h1 className="font-display text-[clamp(44px,8vw,120px)] font-semibold tracking-[-0.025em] leading-[1.05] mb-6 lg:mb-8 max-w-5xl xl:max-w-6xl">
+        eval「评测」给上一个 prompt 打了高分。<br />
+        <span className="text-bene-muted">它还是把线上带沟里了。</span>
+      </h1>
+      <p className="text-xl md:text-2xl lg:text-3xl xl:text-4xl text-bene-muted max-w-3xl lg:max-w-4xl xl:max-w-5xl leading-snug mb-12 lg:mb-16">
+        写给已经在线上跑过 LangGraph、CrewAI、AutoGen 的工程师：你们最清楚，eval 跑通是一回事，真拦住一次上线翻车，完全是另一回事。
+      </p>
+      <div className="grid md:grid-cols-2 gap-12 items-start mb-16">
+        <div>
+          <p className="text-lg leading-relaxed mb-6">
+            事故后第二天凌晨 3 点，oncall 用 sqlite3 打开 <code className="text-bene-text">bene.db</code>，把 agent「智能体」每一次 retry「重试」留下的 engram「记忆轨迹」翻了一遍。那道放过烂 prompt 的 locked probe「锁定探针」还在，连它当时怎么判的都能查。{' '}
+            <span className="text-bene-text font-medium">不用进厂商门户，也不用盯着还在转圈的仪表盘。</span>
+          </p>
+          <p className="text-sm text-bene-muted leading-relaxed font-mono">
+            下一次上线，先过这道 gate「关卡」。<code className="text-bene-text">promote()</code> 拿不到 sha256-locked probe 的 ACCEPT「通过结论」，就直接抛 <code className="text-bene-text">PromotionBlocked</code>；CI 撞上这个 exception「异常」，流程当场停住。agent 想更好，可以用 <code className="text-bene-text">bene mh search</code> 自己繁育新 strategy——但照样得撞这道锁，没有第二条路。这一把不管赢还是输，都落进 <code className="text-bene-text">bene.db</code>，成为下一轮的输入。
+          </p>
+        </div>
+        <div className="flex flex-col gap-3">
+          <Pill>拿到仓库后 30 秒：init、跑通、grep 出 agent 的记忆</Pill>
+          <Pill>一份 bene.db，不上云、不要 API key</Pill>
+          <Pill>能塞进 Claude Code / Cursor / Aider</Pill>
+        </div>
+      </div>
+      <Terminal>
+        <span className="text-bene-muted"># 即将上 PyPI — early access</span>
+        <br />
+        <span className="text-bene-accent">pip</span> install bene
+        <br />
+        <br />
+        <span className="text-bene-muted"># 已经 clone 了仓库？直接 smoke（≈1s — 12 个 engram、4 次 experiment run）：</span>
+        <br />
+        <span className="text-bene-accent">uv</span> run bene init && <span className="text-bene-accent">uv</span> run bene demo --no-ui
+        <br />
+        <br />
+        sqlite3 /tmp/bene-demo-*/story.db <span className="text-[#A3E635]">"SELECT tier, kind, substr(title,1,60) FROM engrams ORDER BY created_at DESC LIMIT 5;"</span>
+      </Terminal>
+      <div className="mt-8 pt-6 border-t border-bene-dim flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
+        <p className="text-xs text-bene-muted leading-snug">
+          或者把 BENE 交给你的 agent — 一个 URL，agent 自己抓 skill 和 index，自己跑 BENE。
+        </p>
+        <div className="flex flex-wrap gap-2 shrink-0">
+          <a href="../SKILL.md" target="_blank" rel="noopener noreferrer"
+             className="font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors border border-bene-dim rounded-sm px-3 py-1.5 whitespace-nowrap">
+            /bene/SKILL.md ↗
+          </a>
+          <CopyLlmsTxtButton className="text-bene-muted border-bene-dim hover:text-bene-accent !py-1.5" label="复制 llms.txt" />
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
+// ─── 01 · The Gap ───────────────────────────────────────────────────
+const TheGap = () => (
+  <Section id="gap">
+    <Kicker number="01" title="四个卡点" />
+    <h2 className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold mb-6 lg:mb-8">
+      论文里早翻过去的四个线上卡点。<br />
+      <span className="text-bene-muted">你现在那套能接住一部分——BENE 把它们收进同一份可审计的文件。</span>
+    </h2>
+    <p className="font-mono text-xs text-bene-muted mb-8">下面 4 段录屏都是对 bene-main HEAD 实跑出来的；输出没改过一个字。</p>
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-16">
+      <Card className="md:col-span-12 h-full">
+        <h3 className="font-mono text-bene-accent mb-4">卡点 1：eval 跑过了，线上不一定扛得住</h3>
+        <p className="text-bene-muted leading-relaxed">
+          新 prompt 过了 offline eval，分数只说明它在题库里好看。线上会不会 regress，最后还得看 pipeline 里那个人，或者那段 deploy 脚本。BENE 把这一步写死在代码里：<code className="text-bene-text">promote()</code> 没拿到 sha256-locked probe 的 ACCEPT 就抛 <code className="text-bene-text">PromotionBlocked</code>，CI 看到 exception 直接停。
+        </p>
+        <GapDemo gif="gap-1-killgate.gif" caption="bene init && bene demo 种下 probe；experiments ls 看到 'story-probe -> ACCEPT' 这一行——verdict 本身就是 engram，三个月后还能再读。" />
+      </Card>
+      <Card className="md:col-span-6 h-full">
+        <h3 className="font-mono text-bene-accent mb-4">卡点 2：跨 agent 的记忆，得带 provenance「溯源」</h3>
+        <p className="text-bene-muted leading-relaxed">
+          对话历史、单个 agent 的 memory block「记忆块」现在都不稀奇。真正少见的是 engram：有类型、有 provenance 链路，还分 5 tier「层级」。三个月后换一个 agent grep「检索」进来，仍然知道这段东西从哪来、凭什么信。BENE 每次 run 默认就把每轮交互写成这种 engram。
+        </p>
+        <GapDemo gif="gap-2-engram.gif" caption="bene query 直接打开 demo db：tier 分布 + 每个 tier 的样例 title。trace / episodic / strategic 都在，provenance 强制入库。" />
+      </Card>
+      <Card className="md:col-span-6 h-full">
+        <h3 className="font-mono text-bene-accent mb-4">卡点 3：autonomy「自主等级」不能靠 YAML 一行放飞</h3>
+        <p className="text-bene-muted leading-relaxed">
+          很多 autonomy flag「自主开关」躺在 config「配置」里，打开很快，忘掉更快。BENE 把四个 signal「信号」合成 [0,1] 的 trust score「信任分」；想拿 L4，必须写 <code className="text-bene-text">granted_by='human:&lt;name&gt;'</code>，少一个字 API「接口」就抛错。提权这条链路能查、能审——不是 YAML 改一行就算数。
+        </p>
+        <GapDemo gif="gap-3-trust.gif" caption="bene trust <agent> 当场吐出 4 个 signal + composite。每一个值都从 audit trail 里算出来，不是 config 里写死的。" />
+      </Card>
+      <Card className="md:col-span-12 h-full">
+        <h3 className="font-mono text-bene-accent mb-4">卡点 4：source of truth「事实来源」最好就是磁盘上一个文件</h3>
+        <p className="text-bene-muted leading-relaxed">
+          凌晨 3 点出了 incident「事故」，你想查当时到底上线了哪个 prompt。你要的是磁盘上一个能打开的文件，不是一个还在转圈的仪表盘。BENE 的 <code className="text-bene-text">bene.db</code> 就是这个文件：cp、rsync、diff、sqlite3 直接打开，都行。
+        </p>
+        <GapDemo gif="gap-4-sqlite.gif" caption="ls -la 看到一个真实的文件 + 4 行 python 直接 SELECT engrams。不需要 client library，不需要门户。" />
+      </Card>
+    </div>
+    <p className="font-mono text-sm text-bene-text border-l-2 border-bene-accent pl-4">
+      四个生产可用的能力，落在磁盘上，跟你已经在跑的那一套能拼起来。
+    </p>
+  </Section>
+);
+
+// ─── 02 · The Contract ──────────────────────────────────────────────
+const Contract = () => {
+  const inv = [
+    { n: '1', t: 'agent 之间，不会莫名其妙串了状态', d: '每个 agent 自带一份 SQLite-backed 的 VFS「虚拟文件系统」，能 diff、能 restore。跨 agent 想读数据，先显式声明；跨 agent 想拍板，必须走 SharedLog「共享日志」的 intent → vote → decide。隔离写在结构里——不靠运维半夜补 ACL。' },
+    { n: '2', t: '下一个 agent 进场，grep 一把就知道上一个学到了啥', d: '默认每次 run 都落 5 tier 的带类型 engram（想关可以按 run 关掉）：trace 0、episodic 1、semantic 2、procedural 3、strategic 4。promote 只写新结论，不动源数据。provenance 强制入库，少一个字段都过不了。' },
+    { n: '3', t: '烂 prompt 别想着跑过 eval 就溜上线', d: "任何想 evolve 的东西，先过一道 sha256-locked probe。spec 一动，直接拒。连 baseline 都打不穿的 gate，只配注册成 VOID，没资格拿 ACCEPT。verdict 也会写成 engram，三个月后翻出来，还能复盘当时为啥放行。" },
+    { n: '4', t: 'L4 这一档，只能由人按名字签发', d: "四个 signal 合成 [0,1] 区间的 composite「合成分」。想拿 L4，granted_by 必须写 human:<name>，不然 API 当场抛错。没有自动晋升——任何配置都绕不过这个 human 签名。" },
+  ];
+  return (
+    <Section id="contract" inverted>
+      <Kicker number="02" title="底线 — 四条不变量" />
+      <h2 className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold mb-6 lg:mb-8">harness 绝不让步的四条底线</h2>
+      <p className="text-lg lg:text-xl xl:text-2xl text-bene-muted max-w-3xl lg:max-w-4xl xl:max-w-5xl leading-relaxed mb-16">
+        在加任何新 feature 之前，BENE 先把底盘焊死：每个 agent、每次 run、每个想 promote 的 candidate、每次 L4 签发，都吃同一套约束。先定边界，再谈加速。
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+        {inv.map((i) => (
+          <Card key={i.n} className="h-full flex flex-col">
+            <div className="flex items-center gap-4 mb-4">
+              <span className="font-mono text-bene-dim text-4xl leading-none">{i.n}</span>
+              <h3 className="font-mono text-bene-text">{i.t}</h3>
+            </div>
+            <p className="text-bene-muted leading-relaxed flex-1">{i.d}</p>
+          </Card>
+        ))}
+      </div>
+      <p className="font-mono text-sm text-bene-text border-l-2 border-bene-accent pl-4">
+        人写 strategy，或者 agent 用 <code className="text-bene-text">bene mh search</code> 自己繁育，撞的都是同一道 gate——过不了 sha256-locked probe，<code className="text-bene-text">promote()</code> 就抛错；每一次尝试，赢的输的，都落进 <code className="text-bene-text">bene.db</code>，成为下一轮的输入。接下来就只剩下接入数据了。
+      </p>
+    </Section>
+  );
+};
+
+// ─── 03 · Plays well with your toolbox ──────────────────────────────
+const Comparison = () => {
+  const recipes = [
+    { n: 'LangGraph',     r: '把 node 的输出顺手包成 engram；下一次 graph 跑起来之前，candidate prompt 必过 promote() 这道闸。' },
+    { n: 'CrewAI',        r: 'crew.kickoff() → 一批 engram；新的 role config 只在 probe ACCEPT 之后才允许 promote。' },
+    { n: 'AutoGen',       r: 'on_message hook → engram；跨 agent 的决策走 SharedLog；probe 守住 conversational hand-off「对话交接」。' },
+    { n: 'smolagents',    r: '你的 loop 一行不改；engram + probe 在底下跑，agent body 完全不动。' },
+    { n: 'DSPy',          r: '把 DSPy.compile 出来的产物注册成 candidate；五行 probe 对着你定的 metric 跑；promote() 直接替掉 deploy.py。' },
+    { n: 'Letta',         r: '把 Letta 的 memory block 映射成 tier-2 engram；跨 agent 复用全走 probe + gate。' },
+  ];
+  const adds = [
+    '烂 prompt 不会因为 eval 分数高就溜上线',
+    '出了 incident，能查上一个 agent 学到了什么、当时为啥放行',
+    '两个 agent 不会莫名其妙串了状态——隔离写在结构里，不靠运维补 ACL',
+    '跨 agent 拍板走一条路，事后能查谁提的、谁投了、最后怎么定的',
+    'agent 能信到什么程度是算出来的，不是 YAML 改一行就升',
+    '能让 strategy 自己演化，过了那道 gate 才允许真上生产',
+    'sqlite3 打开 bene.db 就能查；cp、rsync、diff 都正常用',
+  ];
+  return (
+    <Section id="comparison">
+      <Kicker number="03" title="贴在现有 stack 下面" />
+      <h2 className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold mb-6 lg:mb-8">现在跑的 agent 框架不用换。BENE 在下面加一份 SQLite。</h2>
+      <p className="text-lg lg:text-xl xl:text-2xl text-bene-muted max-w-3xl lg:max-w-4xl xl:max-w-5xl leading-relaxed mb-12">
+        LangGraph、CrewAI，或者别的你已经在用的 orchestration「编排层」——继续用。BENE 贴在它下面：graph、agent、provider 都不动；run 的过程里，engram、gate、trust signal 会写进 bene.db。
+      </p>
+      <div className="border border-bene-dim bg-bene-surface p-6 mb-16">
+        <h3 className="font-mono text-bene-accent text-sm mb-4">BENE 在下面替你管这几件</h3>
+        <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 font-mono text-sm text-bene-text">
+          {adds.map((a, i) => (
+            <li key={i} className="flex gap-3"><span className="text-bene-accent">+</span>{a}</li>
+          ))}
+        </ul>
+      </div>
+      <h3 className="font-mono text-bene-accent text-sm mb-6 tracking-widest uppercase">接法 — 用 BENE 的原生能力自己接（没有单独的 adapter 包）</h3>
+      <div className="border border-bene-dim bg-bene-surface mb-16">
+        {recipes.map((r, i) => (
+          <div key={r.n} className={'flex flex-col md:flex-row md:items-center gap-2 md:gap-6 p-4 ' + (i < recipes.length - 1 ? 'border-b border-bene-dim' : '')}>
+            <div className="font-mono text-sm text-bene-accent md:w-32 shrink-0">{r.n}</div>
+            <div className="text-sm text-bene-text leading-relaxed">{r.r}</div>
+          </div>
+        ))}
+      </div>
+      <div className="space-y-6">
+        <p className="font-mono text-sm text-bene-text border-l-2 border-bene-accent pl-4">
+          Framework、provider 你自己挑。下面垫一份 bene.db，直接上线。
+        </p>
+        <p className="text-sm text-bene-muted max-w-3xl leading-relaxed">
+          agent loop 是开箱即用的——engram 和事件日志默认就在写，不用接。gate、记忆 consolidation、skills、evolve 这些得你自己拼：给的是真家伙，但没替你接成一条线。完整的诚实地图在 <a href="docs/integrating-bene.html" className="text-bene-accent hover:underline">Integrating BENE</a> 这篇文档里。
+        </p>
+        <div className="pt-8 border-t border-bene-dim flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <p className="text-xs text-bene-muted max-w-2xl">
+            评测数据和限制在下面的 docs 里。这一节只讲怎么接，不做榜单。
+          </p>
+          <div className="flex gap-4 font-mono text-xs">
+            the design documentation
+            <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/benchmarks/COMMUNITY-BENCH-REPORT.md" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">COMMUNITY-BENCH-REPORT.md</a>
+          </div>
+        </div>
+      </div>
+    </Section>
+  );
+};
+
+// ─── 04 · Proof (tabs) ──────────────────────────────────────────────
+const Proof = () => {
+  const [a, setA] = useState(0);
+  const tabs = [
+    { l: 'Tab 1：装好 + 跑通', c: '第一口 value：不要 API key，也不上云。',
+      r: (<><span className="text-bene-muted"># 即将上 PyPI — early access</span><br/>$ pip install bene<br/><br/><span className="text-bene-muted"># 已经 clone 了仓库？直接 smoke：</span><br/>$ uv run bene init && uv run bene demo --no-ui<br/><span className="text-bene-muted">[trace]</span> initializing harness...<br/><span className="text-bene-accent">[probe]</span> running baseline evaluation...<br/><span className="text-bene-muted">[evolve]</span> generating candidate strategies...<br/><span className="text-bene-muted">[trace]</span> story complete in 0.3s — 12 engrams, 4 experiment runs.</>) },
+    { l: 'Tab 2：Planner + Executor', c: '两个 agent，共吃一份 bene.db。协同决策只认 intent → vote → decide 这条链路。',
+      r: (<><span className="text-bene-accent">from</span> bene <span className="text-bene-accent">import</span> Bene<br/><span className="text-bene-accent">from</span> bene.shared_log <span className="text-bene-accent">import</span> SharedLog<br/><br/>harness = Bene(<span className="text-[#A3E635]">'bene.db'</span>)<br/>log = SharedLog(harness.conn)<br/>planner = harness.spawn(<span className="text-[#A3E635]">'planner'</span>)<br/>executor = harness.spawn(<span className="text-[#A3E635]">'executor'</span>)<br/><br/><span className="text-bene-muted"># intent → vote → decide —— 共享决策只走这一条路</span><br/>i = log.intent(agent_id=planner, action=<span className="text-[#A3E635]">'execute_plan'</span>)<br/>log.vote(agent_id=executor, intent_id=i, approve=<span className="text-bene-accent">True</span>, reason=<span className="text-[#A3E635]">'plan looks safe'</span>)<br/>log.decide(intent_id=i, agent_id=planner)<br/><br/><span className="text-bene-muted"># decision passed: True —— 1 票 approve</span></>) },
+    { l: 'Tab 3：grep engram', c: "你 agent 的 memory 就是一张 table。从写入到上线，中间没有厂商 API 插队。",
+      r: (<>$ sqlite3 /tmp/bene-demo-*/story.db <span className="text-[#A3E635]">"SELECT tier, kind, substr(title,1,46) FROM engrams ORDER BY created_at DESC LIMIT 5;"</span><br/><br/>0|trust|denial:evolve.promote<br/>0|eval|verdict:story-probe:ACCEPT<br/>0|eval|probe-lock:story-probe<br/>4|strategic|genome:01KV8RS1QPE6E488WKWCCY4N5N<br/>4|strategic|genome:01KV8RS1QPFVQDSERJ7RHAGNEH</>) },
+    { l: 'Tab 4：probe ACCEPT vs REJECT', c: "改 spec，直接 LockTamperError。连 baseline 都打不穿的 gate，只能记 VOID，别想混成 ACCEPT。",
+      r: (<><span className="text-bene-accent">def</span> <span className="text-[#60A5FA]">test_candidate</span>(eval_run):<br/>&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-bene-accent">if</span> eval_run.quality &lt; <span className="text-[#FBBF24]">0.70</span>:<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-bene-accent">raise</span> PromotionBlocked(<span className="text-[#A3E635]">'Quality regression'</span>)<br/><br/><span className="text-bene-muted"># Run 1: quality=0.71</span><br/><span className="text-[#A3E635]">ACCEPT</span>: Candidate promoted to tier 4.<br/><br/><span className="text-bene-muted"># Run 2: quality=0.62</span><br/><span className="text-bene-accent">PromotionBlocked</span>: Quality regression. Promotion aborted.</>) },
+  ];
+  return (
+    <Section id="proof">
+      <Kicker number="04" title="30 秒看见证据" />
+      <h2 className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold mb-6 lg:mb-8">装好、跑通、grep、过闸</h2>
+      <p className="text-lg lg:text-xl xl:text-2xl text-bene-muted max-w-3xl lg:max-w-4xl xl:max-w-5xl leading-relaxed mb-16">
+        四个 tab 够看全链路。Tab 1 装完就跑。Tab 2 拉起 planner 和 executor，协同只走 SharedLog。Tab 3 用 sqlite3 打开 demo 的 story.db，把 Tab 1 留下的 engram SELECT 出来。Tab 4 启一道 probe，现场拦住一次不该过的 promote。
+      </p>
+      <div className="border border-bene-dim bg-bene-surface mb-8">
+        <div className="flex overflow-x-auto border-b border-bene-dim hide-scrollbar">
+          {tabs.map((t, i) => (
+            <button key={i} onClick={() => setA(i)} className={`px-6 py-4 font-mono text-xs whitespace-nowrap transition-colors border-b-2 ${a === i ? 'border-bene-accent text-bene-text' : 'border-transparent text-bene-muted hover:text-bene-text hover:bg-bene-dim/20'}`}>{t.l}</button>
+          ))}
+        </div>
+        <div className="p-6">
+          <Terminal caption={tabs[a].c}>{tabs[a].r}</Terminal>
+        </div>
+      </div>
+      <p className="font-mono text-sm text-bene-text border-l-2 border-bene-accent pl-4">
+        再跑一句 <code className="text-bene-accent">uv run bene dashboard</code>。还是那份 .db，直接撑起实时 TUI，不补埋点。
+      </p>
+    </Section>
+  );
+};
+
+// ─── 05 · Recipes ───────────────────────────────────────────────────
+const Recipes = () => {
+  const rs = [
+    { id: 'R1', t: '上线翻车后回滚一次', m: 'bene.checkpoints', who: '你', flow: ['agent 跑一轮', 'checkpoint("green")', 'diff → restore'], d: 'Litany 循环。', c: 'bene checkpoint <agent> --label green; bene diff ...; bene restore ...', v: 'bene --json checkpoints <agent> | jq length  →  ≥ 1' },
+    { id: 'R2', t: '两个 agent 拍板', m: 'bene.shared_log', who: 'agent ↔ agent', flow: ['planner 提议', 'SharedLog vote', 'executor 拍板'], d: '超过 3 步的 task 用这个 2-agent pattern。', c: '# 参考 Proof 这一节的 Tab 2', v: 'bene log tail --n 5  →  intent、vote、decide 都在' },
+    { id: 'R3', t: '卡住下一次 promote', m: 'bene.kernel.eval', who: '你 + CI', flow: ['Probe(...).register()', 'promote()', 'ACCEPT / REJECT / VOID'], d: "五行代码定义 BENE 的 promotion contract。", c: 'Probe(name, [gate], fn).register(store, conn, baseline=base)', v: 'bene experiments show <run> | grep -E "ACCEPT|REJECT|VOID"  →  那条 verdict' },
+    { id: 'R4', t: '把 memory 跨 run 累积', m: 'bene.kernel.memory', who: '你 → agent', flow: ['legacy store', 'attach_kernel', '下次 search 命中'], d: '把 legacy store 映射成 engram；consolidate；adaptive retrieval。', c: 'attach_kernel(harness, memory=legacy_store)', v: 'bene memory search "<任务关键词>"  →  之前 session 的 hit' },
+    { id: 'R5', t: 'context 不爆预算', m: 'bene.kernel.memory.ContextOS', who: 'agent runtime', flow: ['ContextOS()', 'assemble(budget_tokens)', '不爆预算'], d: 'Budgeted assembly + pollution detector。', c: 'packed = ContextOS().assemble(items, budget_tokens=8192)', v: 'packed.manifest["estimated_tokens"] <= 8192  →  True' },
+    { id: 'R6', t: '提权 L0 → L4', m: 'bene.kernel.trust + .harness', who: 'agent 爬 · 人签 L4', flow: ['4 个 signal', 'composite ∈ [0,1]', 'human 签 L4'], d: '提权靠跑过 probe，不靠改 YAML。', c: "agent.grant_level(4, granted_by='human:alice')", v: 'bene trust <agent>  →  composite ∈ [0,1]' },
+    { id: 'R7', t: '繁育更好的 strategy', m: 'bene.kernel.evolve', who: 'agent / CI', flow: ['mh search', 'genome (Pareto)', 'gated promote'], d: '繁育 strategy；目前 bridge 还是手动接，end-to-end wiring 在 roadmap。', c: 'bene mh search --benchmark <name>', v: 'bene mh frontier <search_agent_id> | jq .' },
+    { id: 'R8', t: '把 BENE 挂到 agent 里', m: 'bene.mcp', who: '你，一次', flow: ['bene serve --transport stdio', 'MCP server', 'claude mcp ls 看到'], d: 'Claude Code / Cursor / Aider 各一行。', c: 'bene serve --transport stdio', v: 'claude mcp ls  →  能看到 bene' },
+  ];
+  return (
+    <Section id="recipes" inverted>
+      <Kicker number="05" title="Recipe" />
+      <h2 className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold mb-6 lg:mb-8">八个 recipe，方法论先落成动词</h2>
+      <p className="text-lg lg:text-xl xl:text-2xl text-bene-muted max-w-3xl lg:max-w-4xl xl:max-w-5xl leading-relaxed mb-16">
+        你的 task 只要能起名字，大概率就落在这八个 recipe 里。每个 recipe 都用一条 verify 命令收口。verify 没跑，闭环就没关上。
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+        {rs.map(r => (
+          <Card key={r.id} className="h-full flex flex-col p-6">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="bg-bene-dim text-bene-text font-mono text-xs px-2 py-1 rounded-sm">{r.id}</span>
+              <h3 className="font-mono text-bene-text text-sm">{r.t}</h3>
+              <span className="ml-auto font-mono text-[10px] text-bene-muted whitespace-nowrap shrink-0">{r.who}</span>
+            </div>
+            <p className="font-mono text-[11px] text-bene-accent mb-4 tracking-tight">{r.m}</p>
+            <div className="font-mono text-[10px] flex items-center gap-1.5 mb-4 text-bene-muted overflow-x-auto whitespace-nowrap">
+              <span className="border border-bene-dim px-2 py-0.5 rounded-sm">{r.flow[0]}</span>
+              <span className="text-bene-accent">→</span>
+              <span className="border border-bene-accent text-bene-text px-2 py-0.5 rounded-sm">{r.flow[1]}</span>
+              <span className="text-bene-accent">→</span>
+              <span className="border border-bene-dim px-2 py-0.5 rounded-sm">{r.flow[2]}</span>
+            </div>
+            <p className="text-sm text-bene-muted mb-6 flex-1">{r.d}</p>
+            <div className="space-y-3">
+              <div className="bg-[rgb(var(--term))] border border-bene-dim p-3 rounded-sm">
+                <code className="font-mono text-xs text-bene-muted">{r.c}</code>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-bene-accent font-mono text-xs mt-0.5">verify：</span>
+                <code className="font-mono text-xs text-bene-text break-all">{r.v}</code>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+      <p className="font-mono text-sm text-bene-text border-l-2 border-bene-accent pl-4">
+        找一条动词跟你 task 对得上的 recipe。跑 verify。把输出贴出来。这就是 ship on BENE。
+      </p>
+    </Section>
+  );
+};
+
+// ─── 06 · Architecture ──────────────────────────────────────────────
+const Architecture = () => {
+  const subsystems = [
+    {
+      key: 'engram',
+      name: 'Engram ladder',
+      oneLine: '5 层带类型的执行记忆',
+      scene: '一个 agent 卡了重跑，你想知道前一次它到底学到了什么、为什么走到这一步。',
+      common: '调 LLM provider 的 trace UI、看 chain-of-thought log、关键决策手抄到 Notion。要么没有，要么没分类，要么过几天被新数据 overwrite。',
+      mechanism: '默认每次 run 每轮落一条 tier-0 trace engram（想关：emit_engrams=False 或 kernel.emit_engrams: false）；consolidation 再往上抬 5 层：tier 0 原始 trace、tier 1 一次事件回顾、tier 2 跨事件抽象、tier 3 可复用 procedure、tier 4 候选 strategy。升一层得过 probe；新结论留下来，不动原始数据。',
+      diagram: (
+        <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] lg:text-xs">
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">tier 0 trace</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">tier 1 episodic</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">tier 2 semantic</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">tier 3 procedural</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-accent text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">tier 4 strategic</span>
+        </div>
+      ),
+      verify: 'bene query "SELECT tier, kind, substr(title,1,60) FROM engrams ORDER BY created_at DESC LIMIT 5"',
+    },
+    {
+      key: 'probe',
+      name: 'Probe + kill gate',
+      oneLine: '上线前那道闸',
+      scene: '一个新 prompt 跑过了 eval、分数比 baseline 高 2 个点。你不想 push 之后才发现它会在某类 case 上 regress。',
+      common: '在 CI 里加 "请人 review prompt 改动" 的 reminder、或者写个 GitHub Action 比 eval 分数——但这些都是文化默契，不是结构约束。',
+      mechanism: 'Probe(name, [gate], fn).register(...) 把 spec 用 sha256 锁死，promote(candidate) 调用时把 candidate 喂给 probe 跑一遍。verdict 只能是 ACCEPT / REJECT / VOID（probe 不合格——连自己 baseline 都打不穿的 gate；REJECT 才是 candidate 没过一道合格的 gate）。没 ACCEPT 就 raise PromotionBlocked，CI 看到 exception 直接停。spec 改了？sha256 对不上，直接拒跑（LockTamperError）。verdict 本身写成 engram，三个月后还能查。',
+      diagram: (
+        <div className="font-mono text-[11px] lg:text-xs space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">Probe(...).register()</span>
+            <span className="text-bene-accent">→</span>
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">promote(candidate)</span>
+            <span className="text-bene-accent">→</span>
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">sha256 比对 spec</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pl-4">
+            <span className="text-bene-muted">verdict →</span>
+            <span className="border border-bene-accent text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">ACCEPT</span>
+            <span className="text-bene-muted">/</span>
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">REJECT</span>
+            <span className="text-bene-muted">/</span>
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">VOID</span>
+          </div>
+        </div>
+      ),
+      verify: 'bene experiments show <run> | grep -E "ACCEPT|REJECT|VOID"',
+    },
+    {
+      key: 'context',
+      name: 'Context OS',
+      oneLine: 'context 不溢出，不静默截断',
+      scene: '一个 agent loop 跑了 30 步，context 越塞越多。某次轮到关键 step 时，前面的 system instruction 被 LLM 自己截断了——你不知道，只看到输出突然变蠢。',
+      common: '估算 token、写"控制上限"规则、或者就赌它不会溢出。出问题时只能 print prompt 排查。',
+      mechanism: '所有要进 LLM 的 context item 先进 ContextOS 拼装，pollution detector 跑 3 个 signal 抓被污染的 context，超 budget 时按优先级丢低权重 item——不让 LLM 自己截断。结果是个 budget-capped manifest，每次都记录得到的 item 列表 + 丢掉的 item，事后可查。',
+      diagram: (
+        <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] lg:text-xs">
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">incoming items</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">assemble + pollution detect</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-accent text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">budget-capped manifest</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">LLM</span>
+        </div>
+      ),
+      verify: 'ContextOS().assemble(items, budget_tokens=8192).manifest["estimated_tokens"] <= 8192',
+    },
+    {
+      key: 'autonomy',
+      name: 'Autonomy ladder + trust ledger',
+      oneLine: '信任是算出来的，不是 YAML 写的',
+      scene: '一个 agent 跑了三周一直没出错，团队想让它接管一类决策（不再每次 human-in-loop）。问题：怎么决定它可以？基于什么证据？',
+      common: '在 YAML 里加一行 autonomy_level: 3、或者负责人拍脑袋。出事时翻 commit message 看是谁批的。',
+      mechanism: '4 个 signal 全部从 audit trail 里算：verification_coverage（probe 通过率）、audit（review 命中率）、checkpoint（回滚频率）、outcome（任务成功率）。合成 [0,1] 的 composite，决定它现在落在 L0 / L1 / L2 / L3 哪一档。composite 是参考值——每次升档都得显式 grant，不会自动跳。L4（最高权）是硬契约：必须 granted_by="human:<name>"，不签就 API raise，任何 config 都绕不过这个 human 签名。',
+      diagram: (
+        <div className="font-mono text-[11px] lg:text-xs space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">verification</span>
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">audit</span>
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">checkpoint</span>
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">outcome</span>
+            <span className="text-bene-accent">→ 合成 →</span>
+            <span className="border border-bene-accent text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">composite ∈ [0,1]</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pl-4">
+            <span className="text-bene-accent">→</span>
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">L0 / L1 / L2 / L3</span>
+            <span className="text-bene-muted">参考值，升档要显式 grant</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pl-4">
+            <span className="text-bene-accent">→</span>
+            <span className="border border-bene-accent text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">L4</span>
+            <span className="text-bene-muted">必须 granted_by="human:&lt;name&gt;"</span>
+          </div>
+        </div>
+      ),
+      verify: 'bene trust <agent>',
+    },
+    {
+      key: 'breeding',
+      name: 'Breeding program',
+      oneLine: 'strategy 自己跨代变好',
+      scene: '同一类 task 你跑了 50 次，每次 prompt / strategy 略有不同。你想跨代搜出 Pareto 最优的几条，而不是每次手调。',
+      common: 'AutoML / DSPy compile 跑一遍出 candidate；要么手动复制粘贴上生产，要么直接 replace deploy.py——容易 reward-hack 上线。',
+      mechanism: 'mh_search 生成 candidate → 编码成 genome（把控制信号压成稠密向量）→ Pareto 前沿筛 → 想 promote 时走和普通 prompt 一样的 kill-gate，没有第二条 promote 路径。今天 mh_search → promote 的 bridge 还是手动接（
+      diagram: (
+        <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] lg:text-xs">
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">mh_search</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">genome (mutation + Pareto)</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-accent text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">必过 kill-gate</span>
+          <span className="text-bene-accent">→</span>
+          <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">tier-4 engram</span>
+        </div>
+      ),
+      verify: 'bene mh frontier <search_agent_id> | jq .',
+    },
+  ];
+  const modules = [
+    { p:'core.py', r:'Bene harness 入口' },
+    { p:'kernel/engrams.py', r:'Typed memory ladder' },
+    { p:'kernel/eval/', r:'Probe & kill gate' },
+    { p:'kernel/evolve/', r:'Mutation & selection' },
+    { p:'kernel/memory/', r:'VFS & SharedLog' },
+    { p:'kernel/harness/', r:'Trust & autonomy' },
+    { p:'kernel/adapters.py', r:'Provider 接口' },
+    { p:'metaharness/search.py', r:'Breeding search' },
+    { p:'mcp/server.py', r:'MCP transport' },
+    { p:'cli/main.py', r:'CLI 入口' },
+  ];
+  return (
+    <Section id="architecture">
+      <Kicker number="06" title="架构" />
+      <h2 className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold mb-6 lg:mb-8">凌晨 3 点出事——audit 的时候，证据在哪？</h2>
+      <p className="text-lg lg:text-xl xl:text-2xl text-bene-muted max-w-3xl lg:max-w-4xl xl:max-w-5xl leading-relaxed mb-12 lg:mb-16">
+        上面跑的是 LangGraph、CrewAI 或自己写的循环都行。prod 出事时大多数 stack 留给你的是 LLM provider 的 dashboard、CloudWatch 日志、几条手抄的 trace——都不在 git 里，<code className="text-bene-text font-mono">cp</code> / <code className="text-bene-text font-mono">rsync</code> / <code className="text-bene-text font-mono">diff</code> 都用不上。BENE 把 receipts、kill gate、trust 这几件事<span className="text-bene-text"> 写进代码 + 落到一份 SQLite 文件</span>：出事时 sqlite3 打开就能查，或者直接 <code className="text-bene-text font-mono">bene failure localize &lt;agent&gt;</code> 把第一个出问题的关键步骤拎出来——真实 run、默认就能用，不用门户。
+      </p>
+
+      {/* dual-path loop: 人静态 Harness + agent 动态 Meta-Harness → bene.db → 下一轮 */}
+      <div className="border border-bene-dim bg-bene-surface p-6 lg:p-8 rounded-md mb-8 font-mono text-[11px] lg:text-xs">
+        <div className="text-bene-muted text-[10px] lg:text-xs uppercase tracking-widest mb-4 text-center">两条路进来，一个文件出去</div>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">人</span>
+            <span className="text-bene-accent">— Probe(...).register() / promote() →</span>
+            <span className="border border-bene-accent text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">那道 kill gate</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">agent（走 MCP）</span>
+            <span className="text-bene-accent">— bene mh search →</span>
+            <span className="border border-bene-accent text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">同一道 kill gate</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pl-4">
+            <span className="text-bene-accent">→ ACCEPT / REJECT →</span>
+            <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">bene.db</span>
+            <span className="text-bene-accent">→ 下一轮的输入</span>
+          </div>
+        </div>
+        <p className="text-bene-muted mt-4 leading-relaxed">
+          边界你用代码定死（静态那层 Harness）；agent 对着它演化新 strategy（动态那层 Meta-Harness）。两边撞的是同一道 sha256-locked gate——没有第二条 promote 路径。这一把不管赢还是输，都落进 <code className="text-bene-text">bene.db</code>，喂给下一轮。
+        </p>
+      </div>
+
+      {/* 3-layer diagram */}
+      <div className="border border-bene-dim bg-bene-surface p-6 lg:p-8 rounded-md mb-16 lg:mb-20">
+        <div className="border border-bene-dim p-4 rounded-md font-mono text-xs lg:text-sm text-center">
+          <div className="text-bene-muted text-[10px] lg:text-xs uppercase tracking-widest mb-1">上层</div>
+          <div className="text-bene-text">你已经在跑的 orchestration</div>
+          <div className="text-bene-muted text-[11px] lg:text-xs mt-1">LangGraph · CrewAI · DSPy · smolagents · AutoGen · Letta · 自己写的循环</div>
+        </div>
+        <div className="flex justify-center my-3 text-bene-accent font-mono text-base">↓ 写 / 读</div>
+        <div className="border-2 border-bene-accent p-4 lg:p-6 rounded-md bg-[rgb(var(--bg))]">
+          <div className="text-center mb-3 font-mono text-xs lg:text-sm uppercase tracking-widest text-bene-accent">中层 — BENE 把这 5 件事写进代码</div>
+          <ul className="space-y-1 font-mono text-[11px] lg:text-xs text-bene-text">
+            <li>· 每一步发生了什么 <span className="text-bene-muted">（engram ladder）</span></li>
+            <li>· promote 时撞过什么闸 <span className="text-bene-muted">（probe + kill gate）</span></li>
+            <li>· context window 走偏了怎么拽回来 <span className="text-bene-muted">（Context OS）</span></li>
+            <li>· 信任分怎么算出来的 <span className="text-bene-muted">（autonomy + trust）</span></li>
+            <li>· 想让 strategy 自己变好 <span className="text-bene-muted">（breeding）</span></li>
+          </ul>
+        </div>
+        <div className="flex justify-center my-3 text-bene-accent font-mono text-base">↓ 全部落进</div>
+        <div className="border border-bene-dim p-4 rounded-md font-mono text-xs lg:text-sm text-center">
+          <div className="text-bene-muted text-[10px] lg:text-xs uppercase tracking-widest mb-1">下层</div>
+          <div className="text-bene-text">bene.db</div>
+          <div className="text-bene-muted text-[11px] lg:text-xs mt-1">一份 SQLite 文件 · sqlite3 / cp / rsync / diff 直接用</div>
+        </div>
+      </div>
+
+      <h3 className="font-mono text-bene-accent text-sm lg:text-base mb-8 lg:mb-10 tracking-widest uppercase">5 件事的内部 — 场景、机制、怎么验</h3>
+
+      <div className="space-y-12 lg:space-y-16 mb-16">
+        {subsystems.map((sub) => (
+          <div key={sub.key} className="border-l-2 border-bene-accent pl-6 lg:pl-8">
+            <div className="flex flex-col md:flex-row md:items-baseline md:gap-4 mb-4">
+              <h4 className="font-mono text-bene-text text-base lg:text-lg">{sub.name}</h4>
+              <span className="font-mono text-xs lg:text-sm text-bene-muted">{sub.oneLine}</span>
+            </div>
+
+            <div className="mb-4">
+              <div className="font-mono text-bene-accent text-[10px] lg:text-xs uppercase tracking-widest mb-1">场景</div>
+              <p className="text-sm lg:text-base text-bene-muted leading-relaxed">{sub.scene}</p>
+            </div>
+
+            <div className="mb-4">
+              <div className="font-mono text-bene-accent text-[10px] lg:text-xs uppercase tracking-widest mb-1">大多数 stack 这一步</div>
+              <p className="text-sm lg:text-base text-bene-muted leading-relaxed">{sub.common}</p>
+            </div>
+
+            <div className="mb-4">
+              <div className="font-mono text-bene-accent text-[10px] lg:text-xs uppercase tracking-widest mb-1">BENE 怎么落地</div>
+              <p className="text-sm lg:text-base text-bene-muted leading-relaxed">{sub.mechanism}</p>
+            </div>
+
+            <div className="bg-bene-surface border border-bene-dim p-4 lg:p-5 rounded-md mb-4 overflow-x-auto">
+              {sub.diagram}
+            </div>
+
+            <div className="font-mono text-xs lg:text-sm">
+              <span className="text-bene-accent uppercase tracking-widest mr-2">怎么验</span>
+              <code className="text-bene-text break-all">{sub.verify}</code>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-8 lg:gap-12 mb-12 lg:mb-16">
+        <div className="border border-bene-dim bg-bene-surface p-5 lg:p-6 rounded-md">
+          <h3 className="font-mono text-bene-accent text-sm mb-4 uppercase tracking-widest">平台约束</h3>
+          <ul className="space-y-3 font-mono text-xs lg:text-sm text-bene-muted">
+            <li className="flex gap-2"><span className="text-bene-dim shrink-0">·</span>Package <code className="text-bene-text">bene</code>、class <code className="text-bene-text">Bene</code>、config <code className="text-bene-text">bene.yaml</code>、db <code className="text-bene-text">bene.db</code></li>
+            <li className="flex gap-2"><span className="text-bene-dim shrink-0">·</span>Env：<code className="text-bene-text">BENE_DB</code>、<code className="text-bene-text">BENE_CONFIG</code></li>
+            <li className="flex gap-2"><span className="text-bene-dim shrink-0">·</span>全局 <code className="text-bene-text">--json</code>——stdout 被 pipe 时自动开</li>
+            <li className="flex gap-2"><span className="text-bene-dim shrink-0">·</span>Provider：claude_code、agent_sdk、anthropic、openai-compatible、local (raw httpx)</li>
+            <li className="flex gap-2 text-bene-accent"><span className="shrink-0">·</span>禁用 litellm 和 openai SDK——repo 两条都 ban 了</li>
+          </ul>
+        </div>
+        <div className="border border-bene-dim bg-bene-surface p-5 lg:p-6 rounded-md">
+          <h3 className="font-mono text-bene-accent text-sm mb-4 uppercase tracking-widest">代码在哪</h3>
+          <div className="font-mono text-xs lg:text-sm">
+            {modules.map((m,i) => (
+              <div key={i} className="flex border-b border-bene-dim last:border-0 py-2">
+                <div className="w-2/5 text-bene-text">{m.p}</div>
+                <div className="w-3/5 text-bene-muted">{m.r}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <p className="text-sm lg:text-base text-bene-muted leading-relaxed">
+        三个入口都通向同一份 bene.db：Python <code className="text-bene-text font-mono">from bene import Bene</code>、CLI <code className="text-bene-text font-mono">bene --json ls | jq</code>、MCP <code className="text-bene-text font-mono">bene serve --transport stdio</code>。
+      </p>
+    </Section>
+  );
+};
+
+// ─── 07 · Honest Limits ─────────────────────────────────────────────
+const Limits = () => {
+  const ls = [
+    { t: '单次、单文件改动', d: "一个普通 agent 更快。低于大概 3 个 agent 或 3 步任务，BENE 的 spawn + checkpoint + engram 开销不划算。" },
+    { t: 'OS 级硬沙盒', d: 'Per-agent VFS 是逻辑隔离，不是 container。代码不可信，用 Docker / Firecracker / E2B。' },
+    { t: 'Realtime sub-100ms 循环', d: 'CLI spawn + uv overhead 就是地板；SQLite write fsync 决定吞吐。batch 没问题，realtime serving 不行。' },
+    { t: '向量检索类的 workload', d: '检索是 lexical FTS5 + association link。不上 embedding。默认 ranking 走静态 BM25；outcome-weighted ranking 是 opt-in（bene skills search --rank weighted，COMMUNITY-BENCH A2 +13.33pp），但不是默认、也没接进自动检索（A1b 对 KAOS −13.3pp）。接进默认路径在 roadmap。' },
+  ];
+  return (
+    <Section id="limits" inverted>
+      <Kicker number="07" title="什么时候不要用 BENE" />
+      <h2 className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold mb-6 lg:mb-8">BENE 不是这 4 类 task 的答案</h2>
+      <p className="text-lg lg:text-xl xl:text-2xl text-bene-muted max-w-3xl lg:max-w-4xl xl:max-w-5xl leading-relaxed mb-16">
+        下面这四条 task，用更轻的工具就够了——不在 BENE 的设计范围里。
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+        {ls.map((l,i) => (
+          <Card key={i} className="h-full">
+            <h3 className="font-mono text-bene-accent mb-4">{l.t}</h3>
+            <p className="text-bene-muted leading-relaxed">{l.d}</p>
+          </Card>
+        ))}
+      </div>
+      <div className="border border-bene-dim bg-bene-surface p-6 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+        <div>
+          <h4 className="font-mono text-sm text-bene-text mb-2">已上线 / 在 roadmap</h4>
+          <p className="text-sm text-bene-muted max-w-3xl leading-relaxed">
+            <span className="text-bene-accent">在 roadmap，还没上线：</span>skill 的 demotion / retirement 策略（outcome-weighted ranking 已作为 opt-in 上线，接进默认检索路径是待办项）、nightly consolidation 的外部 CLI / cron wiring（deterministic planner 已上）、deterministic replay 的消费侧 CLI（journal + manifest 已上）、episode 内 harness 变异、MemGAS entropy routing。完整设计见 <code className="text-bene-text font-mono">docs/design/v0.3-roadmap-spec.md</code>。
+          </p>
+        </div>
+        the design documentation
+      </div>
+    </Section>
+  );
+};
+
+// ─── Beat badges (original Patagon-style geometric marks) ───────────
+const Badge = ({ kind }) => {
+  const c = 'currentColor';
+  const stroke = { fill: 'none', stroke: c, strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' };
+  const fill = { fill: c, stroke: 'none' };
+  const wrap = (children) => (
+    <svg viewBox="0 0 64 64" width="40" height="40" aria-hidden="true" className="text-bene-accent shrink-0">{children}</svg>
+  );
+  if (kind === 'other-memory') return wrap(<>
+    <path {...stroke} d="M 22 32 A 10 10 0 0 1 42 32" />
+    <path {...stroke} d="M 14 32 A 18 18 0 0 1 50 32" />
+    <path {...stroke} d="M 6 32 A 26 26 0 0 1 58 32" />
+    <circle {...fill} cx="32" cy="46" r="3" />
+  </>);
+  if (kind === 'missionaria') return wrap(<>
+    <path {...fill} d="M 32 44 C 26 34, 26 28, 32 24 C 38 28, 38 34, 32 44 Z" />
+    <path {...stroke} d="M 32 16 L 32 6" />
+    <path {...stroke} d="M 24 20 L 14 12" />
+    <path {...stroke} d="M 40 20 L 50 12" />
+    <path {...stroke} d="M 18 30 L 8 26" />
+    <path {...stroke} d="M 46 30 L 56 26" />
+  </>);
+  if (kind === 'breeding') return wrap(<>
+    <g {...{...stroke, strokeWidth: 1.5}}>
+      <path d="M 32 54 L 20 38 M 32 54 L 44 38" />
+      <path d="M 20 38 L 14 22 M 20 38 L 26 22" />
+      <path d="M 44 38 L 38 22 M 44 38 L 50 22" />
+      <path d="M 14 22 L 11 8 M 14 22 L 17 8" />
+      <path d="M 26 22 L 23 8 M 26 22 L 29 8" />
+      <path d="M 38 22 L 35 8 M 38 22 L 41 8" />
+      <path d="M 50 22 L 47 8 M 50 22 L 53 8" />
+    </g>
+    <circle {...fill} cx="32" cy="54" r="2.5" />
+  </>);
+  if (kind === 'litany') return wrap(<>
+    <path {...stroke} d="M 8 32 L 28 32" />
+    <path {...stroke} d="M 36 24 L 36 32 L 56 32" />
+  </>);
+  if (kind === 'gom-jabbar') return wrap(<>
+    <path {...stroke} d="M 32 18 L 32 56" />
+    <path {...stroke} d="M 16 40 L 48 40" />
+    <circle {...fill} cx="32" cy="12" r="2.5" />
+  </>);
+  return null;
+};
+
+// ─── 08 · Lore + Community ──────────────────────────────────────────
+const Lore = () => {
+  const m = [
+    { badge:'other-memory', l:'Other Memory · 跨世代记忆', v:['bene memory search','bene retrieve'] },
+    { badge:'missionaria',  l:'Missionaria Protectiva · 提前播种', v:['bene skills save','bene skills apply'] },
+    { badge:'breeding',     l:'The Breeding Program · 繁育计划', v:['bene mh search','genome_from_candidate','promote()'] },
+    { badge:'litany',       l:'The Litany Against Fear · 恐惧祷文', v:['bene checkpoint','bene diff','bene restore'] },
+    { badge:'gom-jabbar',   l:'Gom Jabbar · 兽物只会毁灭', v:['harness 命题：一个让 agent 去 build 而不是只 react 的 framework。'] },
+  ];
+  return (
+    <Section id="lore" className="pb-32">
+      <Kicker number="08" title="名字的来历 · 怎么参与" />
+      <h2 className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold mb-6 lg:mb-8">为什么叫它 BENE</h2>
+      <div className="grid md:grid-cols-2 gap-16 mb-24">
+        <div className="border border-bene-dim bg-bene-surface">
+          {m.map((it, i) => (
+            <div key={i} className="flex flex-col sm:flex-row border-b border-bene-dim last:border-0 p-4 gap-4 sm:gap-0 items-start">
+              <div className="sm:w-1/2 flex items-center gap-3">
+                <Badge kind={it.badge} />
+                <div className="font-sans text-sm text-bene-text font-medium">{it.l}</div>
+              </div>
+              <div className="sm:w-1/2 flex flex-wrap gap-2">
+                {it.v.map((vb, j) => (
+                  <code key={j} className="font-mono text-xs text-bene-muted bg-[rgb(var(--term))] px-1.5 py-0.5 rounded-sm border border-bene-dim">{vb}</code>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="space-y-6 text-sm text-bene-muted italic leading-relaxed border-l border-bene-dim pl-6">
+          <p>"I must not fear. Fear is the mind-killer. Fear is the little-death that brings total obliteration. I will face my fear. I will permit it to pass over me and through me. And when it has gone past I will turn the inner eye to see its path. Where the fear has gone there will be nothing. Only I will remain."</p>
+          <p className="font-sans">"我需心无所惧。恐惧是思想的屠者，恐惧是渐噬的湮灭。我将直面心之所惧，任它穿略，内观所及。恐惧所经之处，一片虚无。唯我将立。"</p>
+        </div>
+      </div>
+      <div className="max-w-3xl mx-auto mb-24">
+        <Terminal>
+          <span className="text-bene-muted"># 即将上 PyPI — early access</span>
+          <br />
+          pip install bene
+          <br />
+          <span className="text-bene-muted"># 已经 clone 了仓库？init、smoke、看它跑起来：</span>
+          <br />
+          uv run bene init && uv run bene demo --no-ui && uv run bene dashboard
+          <br />
+          <br />
+          <span className="text-bene-muted"># MCP 能跑的 agent：</span>
+          <br />
+          uv run bene serve --transport stdio
+        </Terminal>
+      </div>
+      <div className="border-t border-bene-dim pt-16 grid md:grid-cols-2 gap-12">
+        <div>
+          <h3 className="font-mono text-bene-text mb-4">在 BENE 上 build 东西？</h3>
+          <p className="text-sm text-bene-muted mb-6">在 repo 上开 Discussion。每一条都会有人读。</p>
+          <div className="flex flex-wrap gap-4 font-mono text-xs">
+            <a href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">GitHub</a>
+            <a href="https://github.com/EdwardTang/bene-site/blob/main/AGENTS.md" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">AGENTS.md</a>
+            <a href="https://github.com/EdwardTang/bene-site/blob/main/SKILL.md" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">SKILL.md</a>
+            <a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">Discussions</a>
+          </div>
+        </div>
+        <div>
+          <h3 className="font-mono text-bene-text mb-4">AI 政策</h3>
+          <p className="text-sm text-bene-muted font-mono mb-6">
+            AI agent：<code className="text-bene-text">gh issue create --label ai-reported</code>，priority 走 P0 / P1 / P2。欢迎 AI agent 提 bug。
+          </p>
+        </div>
+      </div>
+      <div className="mt-24 text-center">
+        <p className="font-mono text-sm text-bene-text border border-bene-accent bg-bene-accent/10 py-6 px-8 inline-block max-w-2xl leading-relaxed">
+          跑 demo。读 verify 的输出。exit 0 — 你已经在自己电脑上有一个带 falsifiable kill gate 和 trust ladder 的多智能体 harness。
+        </p>
+      </div>
+    </Section>
+  );
+};
+
+// ─── App ────────────────────────────────────────────────────────────
+function App() {
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem('bene-theme') || 'light'; } catch (e) { return 'light'; }
+  });
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem('bene-theme', theme); } catch (e) {}
+  }, [theme]);
+  return (
+    <div className="min-h-screen w-full bg-bene-bg text-bene-text font-sans selection:bg-bene-accent/30 selection:text-bene-accent overflow-x-hidden">
+      <Nav theme={theme} setTheme={setTheme} />
+      <main>
+        <Hero />
+        <TheGap />
+        <Contract />
+        <Comparison />
+        <Proof />
+        <Recipes />
+        <Architecture />
+        <Limits />
+        <Lore />
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

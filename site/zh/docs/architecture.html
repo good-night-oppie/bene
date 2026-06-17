@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BENE Architecture — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — BENE Architecture" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+:root { --bg:#F0EEE8; --surface:#EDE9E4; --border:#CFCCC8; --ink:#1F1D1C; --mute:#62666D; --accent:#EE6018; --gold:#B46A35; --term-bg:#0A0908; --term-fg:#EDE9E4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 Geist,ui-sans-serif,system-ui,sans-serif; }
+a { color:var(--gold); text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent); text-underline-offset:3px; }
+a:hover { color:var(--accent); }
+.top { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+.top-in { max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+.brand { font-family:Geist,ui-sans-serif,sans-serif; font-weight:700; letter-spacing:.12em; color:var(--ink); text-decoration:none; }
+.top a.nav { color:var(--mute); text-decoration:none; font-size:14px; }
+.top a.nav:hover { color:var(--accent); }
+.wrap { max-width:1200px; margin:0 auto; padding:24px; display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; }
+aside.sb { position:sticky; top:80px; align-self:start; max-height:calc(100vh - 100px); overflow-y:auto; font-size:13.5px; border-left:1px solid var(--border); padding-left:16px; }
+.sb h4 { margin:18px 0 6px; font:600 11px/1 "Geist Mono",ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+.sb a { display:block; padding:3px 0; color:var(--mute); text-decoration:none; }
+.sb a:hover { color:var(--accent); }
+.sb a.cur { color:var(--ink); font-weight:600; }
+main { min-width:0; max-width:760px; }
+main h1 { font-family:Geist,ui-sans-serif,sans-serif; font-size:2.1rem; line-height:1.2; margin:.2em 0 .5em; }
+main h2 { font-family:Geist,ui-sans-serif,sans-serif; font-size:1.45rem; margin-top:2em; border-bottom:1px solid var(--border); padding-bottom:.35em; }
+main h3 { font-size:1.12rem; margin-top:1.7em; }
+main img { max-width:100%; border:1px solid var(--border); border-radius:8px; }
+main table { border-collapse:collapse; width:100%; font-size:14.5px; display:block; overflow-x:auto; }
+main th, main td { border:1px solid var(--border); padding:8px 12px; text-align:left; vertical-align:top; }
+main th { background:var(--surface); font-weight:600; }
+main blockquote { margin:1em 0; padding:.2em 1.2em; border-left:3px solid var(--accent); color:var(--mute); background:var(--surface); border-radius:0 4px 4px 0; }
+main :not(pre) > code { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:.08em .35em; font:.86em "Geist Mono",ui-monospace,monospace; }
+.codehilite, main pre { background:var(--term-bg); color:var(--term-fg); border-radius:6px; padding:16px 18px; overflow-x:auto; font:13.5px/1.55 "Geist Mono",ui-monospace,monospace; }
+.codehilite pre, pre code { background:none; padding:0; margin:0; border:none; }
+.demo-embed { margin:20px 0 28px; }
+.demo-embed .frame { background:var(--term-bg); border-radius:6px; padding:14px; }
+.demo-embed .dots { display:flex; gap:6px; margin-bottom:10px; }
+.demo-embed .dots i { width:10px; height:10px; border-radius:50%; background:#3a3344; }
+.demo-embed img { border:none; border-radius:6px; display:block; width:100%; }
+.demo-embed p { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:8px 2px 0; }
+.crumbs { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-bottom:8px; }
+.crumbs a { color:var(--mute); }
+.src { font:12.5px "Geist Mono",ui-monospace,monospace; margin-top:48px; padding-top:16px; border-top:1px solid var(--border); color:var(--mute); }
+footer.ft { border-top:1px solid var(--border); margin-top:40px; }
+footer.ft .in { max-width:1200px; margin:0 auto; padding:24px; font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.idx-group h2 { font-family:Geist,ui-sans-serif,sans-serif; border:none; margin-top:1.6em; }
+.idx-group ul { list-style:none; padding:0; margin:.4em 0; }
+.idx-group li { padding:6px 0; border-bottom:1px dashed var(--border); }
+.idx-group .path { font:11.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-left:8px; }
+/* Mobile overrides — kept at the end so source order beats base rules.
+   Earlier this rule sat between base rules and got overridden by a later
+   `aside.sb { position:sticky }`, leaving the sidebar stuck on top of
+   main content on phones. */
+@media (max-width: 860px) {
+  .wrap { grid-template-columns:1fr; gap:24px; padding:16px; }
+  aside.sb { position:static; max-height:none; border-left:none; border-bottom:1px solid var(--border); padding-left:0; padding-bottom:16px; font-size:13px; }
+  .sb h4 { margin:12px 0 4px; }
+  main { max-width:none; }
+  main h1 { font-size:1.6rem; }
+  main h2 { font-size:1.2rem; }
+  main h3 { font-size:1.05rem; }
+  .top-in { padding:0 16px; gap:14px; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #49483e }
+.codehilite { background: #272822; color: #F8F8F2 }
+.codehilite .c { color: #959077 } /* Comment */
+.codehilite .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.codehilite .esc { color: #F8F8F2 } /* Escape */
+.codehilite .g { color: #F8F8F2 } /* Generic */
+.codehilite .k { color: #66D9EF } /* Keyword */
+.codehilite .l { color: #AE81FF } /* Literal */
+.codehilite .n { color: #F8F8F2 } /* Name */
+.codehilite .o { color: #FF4689 } /* Operator */
+.codehilite .x { color: #F8F8F2 } /* Other */
+.codehilite .p { color: #F8F8F2 } /* Punctuation */
+.codehilite .ch { color: #959077 } /* Comment.Hashbang */
+.codehilite .cm { color: #959077 } /* Comment.Multiline */
+.codehilite .cp { color: #959077 } /* Comment.Preproc */
+.codehilite .cpf { color: #959077 } /* Comment.PreprocFile */
+.codehilite .c1 { color: #959077 } /* Comment.Single */
+.codehilite .cs { color: #959077 } /* Comment.Special */
+.codehilite .gd { color: #FF4689 } /* Generic.Deleted */
+.codehilite .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F8F8F2 } /* Generic.Error */
+.codehilite .gh { color: #F8F8F2 } /* Generic.Heading */
+.codehilite .gi { color: #A6E22E } /* Generic.Inserted */
+.codehilite .go { color: #66D9EF } /* Generic.Output */
+.codehilite .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #959077 } /* Generic.Subheading */
+.codehilite .gt { color: #F8F8F2 } /* Generic.Traceback */
+.codehilite .kc { color: #66D9EF } /* Keyword.Constant */
+.codehilite .kd { color: #66D9EF } /* Keyword.Declaration */
+.codehilite .kn { color: #FF4689 } /* Keyword.Namespace */
+.codehilite .kp { color: #66D9EF } /* Keyword.Pseudo */
+.codehilite .kr { color: #66D9EF } /* Keyword.Reserved */
+.codehilite .kt { color: #66D9EF } /* Keyword.Type */
+.codehilite .ld { color: #E6DB74 } /* Literal.Date */
+.codehilite .m { color: #AE81FF } /* Literal.Number */
+.codehilite .s { color: #E6DB74 } /* Literal.String */
+.codehilite .na { color: #A6E22E } /* Name.Attribute */
+.codehilite .nb { color: #F8F8F2 } /* Name.Builtin */
+.codehilite .nc { color: #A6E22E } /* Name.Class */
+.codehilite .no { color: #66D9EF } /* Name.Constant */
+.codehilite .nd { color: #A6E22E } /* Name.Decorator */
+.codehilite .ni { color: #F8F8F2 } /* Name.Entity */
+.codehilite .ne { color: #A6E22E } /* Name.Exception */
+.codehilite .nf { color: #A6E22E } /* Name.Function */
+.codehilite .nl { color: #F8F8F2 } /* Name.Label */
+.codehilite .nn { color: #F8F8F2 } /* Name.Namespace */
+.codehilite .nx { color: #A6E22E } /* Name.Other */
+.codehilite .py { color: #F8F8F2 } /* Name.Property */
+.codehilite .nt { color: #FF4689 } /* Name.Tag */
+.codehilite .nv { color: #F8F8F2 } /* Name.Variable */
+.codehilite .ow { color: #FF4689 } /* Operator.Word */
+.codehilite .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.codehilite .w { color: #F8F8F2 } /* Text.Whitespace */
+.codehilite .mb { color: #AE81FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #AE81FF } /* Literal.Number.Float */
+.codehilite .mh { color: #AE81FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #AE81FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #AE81FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #E6DB74 } /* Literal.String.Affix */
+.codehilite .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.codehilite .sc { color: #E6DB74 } /* Literal.String.Char */
+.codehilite .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #E6DB74 } /* Literal.String.Doc */
+.codehilite .s2 { color: #E6DB74 } /* Literal.String.Double */
+.codehilite .se { color: #AE81FF } /* Literal.String.Escape */
+.codehilite .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.codehilite .si { color: #E6DB74 } /* Literal.String.Interpol */
+.codehilite .sx { color: #E6DB74 } /* Literal.String.Other */
+.codehilite .sr { color: #E6DB74 } /* Literal.String.Regex */
+.codehilite .s1 { color: #E6DB74 } /* Literal.String.Single */
+.codehilite .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.codehilite .bp { color: #F8F8F2 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #A6E22E } /* Name.Function.Magic */
+.codehilite .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.codehilite .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.codehilite .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.codehilite .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.codehilite .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.codehilite { background: var(--term-bg) !important; }
+</style>
+
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <a class="brand" href="../../index.html">BENE</a>
+  <a class="nav" href="../../index.html">Landing</a>
+  <a class="nav" href="index.html">文档索引</a>
+  <a class="nav" href="../../SKILL.md" target="_blank" rel="noopener noreferrer" title="把 BENE 交给你的 agent，一个 URL">SKILL.md ↗</a>
+  <button class="nav copy-llms" data-llms-url="../../llms.txt" data-copied-label="✓ 已复制" data-opened-label="↗ 已打开" title="把 llms.txt 索引拷到剪贴板 — 粘贴进你 agent 的 context">复制 llms.txt</button>
+  <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer">GitHub</a>
+  <a class="nav" href="../../docs/architecture.html" title="Switch to English" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">EN</a>
+</div></div>
+<div class="zh-banner" style="background:rgba(238,96,24,.07);border-bottom:1px solid rgba(238,96,24,.2);padding:12px 24px;font-size:13px;line-height:1.5;color:rgb(var(--muted))"><strong style="color:rgb(var(--text))">本页中文版正在按照 4-book methodology 翻译（Mom Test / Pressfield / Zinsser / Dicks）—— 不放 AI 翻译稿。</strong> 下方是英文原文，点上方 <a href="../../docs/architecture.html" style="color:rgb(var(--accent));text-decoration:underline">EN</a> 直接到英文页面， 或在 <a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer" style="color:rgb(var(--accent));text-decoration:underline">Discussions</a> 里贡献翻译。</div>
+<script>
+(function() {
+  document.querySelectorAll('button.copy-llms').forEach(function(btn) {
+    var original = btn.textContent;
+    btn.addEventListener('click', function() {
+      var url = btn.getAttribute('data-llms-url');
+      fetch(url, { cache: 'no-cache' })
+        .then(function(r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.text(); })
+        .then(function(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).then(function() {
+              btn.textContent = btn.getAttribute('data-copied-label') || '✓ copied';
+              setTimeout(function() { btn.textContent = original; }, 2200);
+            });
+          }
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        })
+        .catch(function() {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        });
+    });
+  });
+})();
+</script>
+<div class="wrap">
+<aside class="sb"><h4>Start, operate, recover</h4>
+<a href="README.html">README</a>
+<a class="cur" href="architecture.html">architecture</a>
+<a href="checkpoints.html">checkpoints</a>
+<a href="cli-reference.html">cli-reference</a>
+<a href="codegen.html">codegen</a>
+<a href="dashboard.html">dashboard</a>
+<a href="deployment.html">deployment</a>
+<a href="integrating-bene.html">integrating-bene</a>
+<a href="mcp-integration.html">mcp-integration</a>
+<a href="memory.html">memory</a>
+<a href="meta-harness.html">meta-harness</a>
+<a href="philosophy.html">philosophy</a>
+<a href="primitive-review-cycle.html">primitive-review-cycle</a>
+<a href="probe-authoring.html">probe-authoring</a>
+<a href="schema.html">schema</a>
+<a href="shared-log.html">shared-log</a>
+<a href="skills.html">skills</a>
+<a href="use-cases.html">use-cases</a>
+<h4>Recipes</h4>
+<a href="recipes/atomic-completion.html">atomic-completion</a>
+<h4>Design and claims</h4>
+<a href="design/BENE2-DESIGN.html">BENE2-DESIGN</a>
+<a href="design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
+<a href="design/KERNEL-SPEC.html">KERNEL-SPEC</a>
+<a href="design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
+<h4>Evidence and research</h4>
+<a href="research/GAP-AUDIT.html">GAP-AUDIT</a>
+<a href="research/SYNTHESIS.html">SYNTHESIS</a>
+<a href="research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<h4>Benchmarks and gates</h4>
+<a href="benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
+<a href="benchmarks/PREREG.html">PREREG</a>
+<h4>Tutorial playbooks</h4>
+<a href="tutorials/t00-bene-e2e-walkthrough.html">t00-bene-e2e-walkthrough</a>
+<a href="tutorials/t01-bene-meta-harness.html">t01-bene-meta-harness</a>
+<a href="tutorials/t02-e2e-self-healing.html">t02-e2e-self-healing</a>
+<a href="tutorials/t03-security-swarm.html">t03-security-swarm</a>
+<a href="tutorials/t04-migration-rollback.html">t04-migration-rollback</a>
+<a href="tutorials/t05-incident-response.html">t05-incident-response</a>
+<a href="tutorials/t06-ml-research-lab.html">t06-ml-research-lab</a>
+<a href="tutorials/t07-regression-guard.html">t07-regression-guard</a>
+<a href="tutorials/t08-hundred-agents-scale.html">t08-hundred-agents-scale</a>
+<a href="tutorials/t10-ci-overnight-bene-swarm.html">t10-ci-overnight-bene-swarm</a>
+<a href="tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
+<h4>Case studies</h4>
+<a href="case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
+<h4>Infrastructure</h4>
+<a href="infra/DNS.html">DNS</a></aside>
+<main>
+<div class="crumbs"><a href="index.html">docs</a> / architecture.md</div>
+<h1 id="bene-architecture">BENE Architecture</h1>
+<p>BENE gives each agent a private filesystem, a replayable event trail, and a model route that can be inspected from one SQLite-backed runtime.</p>
+<blockquote>
+<p><strong>Use this page to trace a request from MCP or CLI input, through agent execution, into the database you can copy, query, checkpoint, and restore.</strong></p>
+</blockquote>
+<p>The architecture has three jobs: keep agent state portable, keep agent work isolated, and keep model execution understandable. The sections below follow the path an operator usually debugs: first the request flow, then the stored state, then the subsystems that move and protect it.</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#data-flow">Data Flow</a></li>
+<li><a href="#system-overview">System Overview</a></li>
+<li><a href="#runtime-and-observability-boundary">Runtime And Observability Boundary</a></li>
+<li><a href="#vfs-engine">VFS Engine</a></li>
+<li><a href="#isolation-model">Isolation Model</a></li>
+<li><a href="#ccr-execution-loop">CCR Execution Loop</a></li>
+<li><a href="#tier-router">Tier Router</a></li>
+<li><a href="#mcp-server-integration">MCP Server Integration</a></li>
+<li><a href="#design-philosophy">Design Philosophy</a></li>
+</ol>
+<hr />
+<h2 id="data-flow">Data Flow</h2>
+<p>Start here when you need to answer "what happens when a client starts an agent?" The request enters through the MCP server or CLI, creates an agent in <code>Bene</code>, hands execution to the Claude Code Runner, and records every meaningful transition before returning the result.</p>
+<h3 id="complete-request-flow-mcp-client-to-model">Complete Request Flow (MCP Client to Model)</h3>
+<div class="codehilite"><pre><span></span><code>Claude Code                BENE MCP Server              BENE Core
+    |                           |                           |
+    |-- agent_spawn(task) -----&gt;|                           |
+    |                           |-- afs.spawn() -----------&gt;|
+    |                           |&lt;-- agent_id --------------|
+    |                           |                           |
+    |                           |-- ccr.run_agent() -------&gt;|
+    |                           |                           |
+    |                           |   +-- CCR Loop ----------+|
+    |                           |   |                       |
+    |                           |   |  Build system prompt  |
+    |                           |   |  Set state            |
+    |                           |   |       |               |
+    |                           |   |       v               |
+    |                           |   |  Tier Router          |
+    |                           |   |   |                   |
+    |                           |   |   | classify()        |
+    |                           |   |   | select model      |
+    |                           |   |   | compress context  |
+    |                           |   |   |       |           |
+    |                           |   |   |       v           |
+    |                           |   |   |  VLLMClient       |
+    |                           |   |   |  POST /v1/chat/   |
+    |                           |   |   |  completions      |
+    |                           |   |   |       |           |
+    |                           |   |   |       v           |
+    |                           |   |   |  vLLM Instance    |
+    |                           |   |   |  (local GPU)      |
+    |                           |   |   |       |           |
+    |                           |   |   |&lt;------+           |
+    |                           |   |   |                   |
+    |                           |   |  Parse response       |
+    |                           |   |  Execute tool calls   |
+    |                           |   |  Log to tool_calls    |
+    |                           |   |  Log to events        |
+    |                           |   |  Update state         |
+    |                           |   |  Auto-checkpoint      |
+    |                           |   |       |               |
+    |                           |   |  [loop or done]       |
+    |                           |   +-- End Loop -----------+
+    |                           |                           |
+    |                           |&lt;-- result ----------------|
+    |&lt;-- {agent_id, result} ----|                           |
+    |                           |                           |
+</code></pre></div>
+
+<p>That diagram is the fastest way to localize failures. If <code>agent_spawn</code> returns but the agent never changes state, inspect CCR. If CCR is active but no model response lands, inspect the Tier router and vLLM client. If the model responds but files look wrong, inspect <code>tool_calls</code>, <code>events</code>, and checkpoints for the agent.</p>
+<h3 id="data-at-rest-sqlite-schema">Data at Rest (SQLite Schema)</h3>
+<div class="codehilite"><pre><span></span><code>+------------------+      +------------------+
+|     agents       |      |      blobs       |
+|------------------|      |------------------|
+| agent_id (PK)    |      | content_hash (PK)|
+| name             |      | content (BLOB)   |
+| parent_id (FK)   |      | compressed       |
+| status           |      | ref_count        |
+| config (JSON)    |      +--------+---------+
+| metadata (JSON)  |               ^
+| pid              |               | content_hash
+| last_heartbeat   |               |
++--------+---------+      +--------+---------+
+         |                |      files       |
+         | agent_id       |------------------|
+         |                | file_id (PK)     |
+         +---------------&gt;| agent_id (FK)    |
+         |                | path             |
+         |                | content_hash (FK)|---+
+         |                | version          |   |
+         |                | deleted          |   |
+         |                +------------------+   |
+         |                                       |
+         |                +------------------+   |
+         +---------------&gt;|   tool_calls     |   |
+         |                |------------------|   |
+         |                | call_id (PK)     |   |
+         |                | agent_id (FK)    |   |
+         |                | tool_name        |   |
+         |                | input (JSON)     |   |
+         |                | output (JSON)    |   |
+         |                | status           |   |
+         |                | duration_ms      |   |
+         |                | token_count      |   |
+         |                | parent_call_id   |   |
+         |                +------------------+   |
+         |                                       |
+         |                +------------------+   |
+         +---------------&gt;|     state        |   |
+         |                |------------------|   |
+         |                | agent_id (FK,PK) |   |
+         |                | key (PK)         |   |
+         |                | value (JSON)     |   |
+         |                +------------------+   |
+         |                                       |
+         |                +------------------+   |
+         +---------------&gt;|    events        |   |
+         |                |------------------|   |
+         |                | event_id (PK)    |   |
+         |                | agent_id (FK)    |   |
+         |                | event_type       |   |
+         |                | payload (JSON)   |   |
+         |                | timestamp        |   |
+         |                +------------------+   |
+         |                                       |
+         |                +------------------+   |
+         +---------------&gt;|  checkpoints     |   |
+                          |------------------|   |
+                          | checkpoint_id(PK)|   |
+                          | agent_id (FK)    |   |
+                          | label            |   |
+                          | event_id (FK)    |   |
+                          | file_manifest    |---+
+                          | state_snapshot   |
+                          +------------------+
+</code></pre></div>
+
+<p>Every table that holds mutable agent work is scoped by <code>agent_id</code>; every file body is addressed by <code>content_hash</code>; every checkpoint points back into the same event stream. That is why one <code>.db</code> file is enough to carry the runtime.</p>
+<h3 id="concurrency-model">Concurrency Model</h3>
+<div class="codehilite"><pre><span></span><code>Thread 1 (Agent A)         Thread 2 (Agent B)        Thread 3 (Agent C)
+       |                          |                          |
+       v                          v                          v
+  thread-local conn          thread-local conn          thread-local conn
+       |                          |                          |
+       +----------- SQLite WAL mode (concurrent reads) -----+
+       |                          |                          |
+       v                          v                          v
+  Write (serialized)        Read (concurrent)        Read (concurrent)
+</code></pre></div>
+
+<p>SQLite WAL mode permits many readers while writes serialize. BENE pairs that with one SQLite connection per thread through <code>threading.local()</code>, and the CCR semaphore caps active agent loops so parallel work does not become resource exhaustion. <code>busy_timeout</code> gives write contention up to 30000ms (30s) before surfacing an error.</p>
+<hr />
+<h2 id="system-overview">System Overview</h2>
+<p>BENE is the runtime boundary around agent work. External clients talk to the CLI or MCP server; agent loops use CCR and the Tier router; durable state lands in <code>Bene</code> and its SQLite-backed stores.</p>
+<div class="codehilite"><pre><span></span><code>                     External Clients
+                    (Claude Code, CLI)
+                           |
+                           v
+        +------------------------------------------+
+        |           MCP Server / CLI               |
+        |          (bene.mcp / bene.cli)            |
+        +-----+------------------+-----------------+
+              |                  |
+              v                  v
+     +----------------+  +----------------+
+     |      CCR       |  |     Tier       |
+     | Execution Loop |-&gt;|    Router      |---&gt; vLLM Instances
+     | (bene.ccr)     |  | (bene.router)  |     (httpx)
+     +-------+--------+  +----------------+
+             |
+             v
+     +------------------------------------------+
+     |            BENE Core (Bene)            |
+     |              (bene.core)                  |
+     |                                           |
+     |  +----------+ +--------+ +-------------+ |
+     |  | BlobStore| | Event  | | Checkpoint  | |
+     |  | (blobs)  | | Journal| | Manager     | |
+     |  +----------+ +--------+ +-------------+ |
+     |               |                           |
+     |               v                           |
+     |      +------------------+                 |
+     |      |   SQLite (.db)   |                 |
+     |      |   WAL mode       |                 |
+     |      +------------------+                 |
+     +------------------------------------------+
+</code></pre></div>
+
+<p><strong>Package:</strong> <code>bene</code>
+<strong>CLI entry point:</strong> <code>bene</code> (defined in <code>bene.cli.main:cli</code>)
+<strong>Configuration file:</strong> <code>bene.yaml</code></p>
+<p>The core object is <code>Bene</code>, implemented in <code>bene/core.py</code>. It composes a blob store, event journal, checkpoint manager, virtual filesystem, and state store. The runner and MCP server call into that core rather than owning their own persistence.</p>
+<h2 id="runtime-and-observability-boundary">Runtime And Observability Boundary</h2>
+<p>BENE is the runtime. KAOS is observability around that runtime. Keep that split sharp when designing integrations or writing docs.</p>
+<p>BENE owns execution and durable state: agent identity, VFS files, checkpoints, tool-call records, engrams, memory, skills, shared-log decisions, probes, trust, and promotion gates. Anything that changes an agent's working state should enter through BENE APIs, the CLI, or the MCP server so the SQLite runtime remains the source of truth.</p>
+<p>KAOS observes, alerts, and nudges from outside that boundary. It may scrape tmux, summarize agent status, detect stalled sessions, watch logs, and report gaps, but it should not become a second runtime, hidden state store, or alternate promotion path. If KAOS discovers a fact that must persist, write it back through BENE memory, engrams, shared log, or a tracked issue.</p>
+<p>The operating rule is simple:</p>
+<div class="codehilite"><pre><span></span><code>BENE = runtime, state, gates, replay
+KAOS = observability, monitoring, babysitting, gap detection
+</code></pre></div>
+
+<p>That separation keeps BENE reproducible and KAOS replaceable. A run should still be inspectable from <code>bene.db</code> if KAOS is offline, and a KAOS alert should always point to a BENE command or record that verifies the underlying state.</p>
+<hr />
+<h2 id="vfs-engine">VFS Engine</h2>
+<p>Use the VFS engine when you need to know what an agent wrote, what version of a file it saw, or which checkpoint can recover a bad turn. It provides files, KV state, tool-call tracking, and checkpoint/restore on top of SQLite.</p>
+<h3 id="sqlite-configuration">SQLite Configuration</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA journal_mode=WAL&quot;</span><span class="p">)</span>    <span class="c1"># Write-Ahead Logging</span>
+<span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA foreign_keys=ON&quot;</span><span class="p">)</span>      <span class="c1"># Referential integrity</span>
+<span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA busy_timeout=30000&quot;</span><span class="p">)</span>   <span class="c1"># 30s retry on lock contention</span>
+<span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA wal_autocheckpoint=100&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Those pragmas are the database contract: WAL for concurrent readers, foreign keys for referential integrity, and a 30s retry window for lock contention.</p>
+<h3 id="thread-safety">Thread Safety</h3>
+<p>Each worker thread gets a separate SQLite connection. That keeps SQLite's connection rules simple while letting independent agent loops run in parallel.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Bene</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;bene.db&quot;</span><span class="p">,</span> <span class="n">compression</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;zstd&quot;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_local</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">local</span><span class="p">()</span>
+        <span class="c1"># Each thread gets its own connection via _get_conn()</span>
+</code></pre></div>
+
+<h3 id="content-addressable-blob-store">Content-Addressable Blob Store</h3>
+<p><code>bene/blobs.py</code> stores file bytes by SHA-256 hash. Identical content is deduplicated across agents, <code>ref_count</code> tracks live references, <code>store()</code> compresses and saves bytes, <code>retrieve()</code> returns decompressed bytes, zstd compression runs at level 3 by default, and <code>gc()</code> removes blobs with <code>ref_count &lt;= 0</code>.</p>
+<div class="codehilite"><pre><span></span><code>File Write Flow:
+
+  content bytes
+       |
+       v
+  SHA-256 hash -----&gt; exists in blobs table?
+       |                    |            |
+       |                   YES           NO
+       |                    |            |
+       |              ref_count += 1   compress (zstd)
+       |                    |            |
+       |                    |        INSERT blob
+       |                    |            |
+       +--------------------+------------+
+       |
+       v
+  INSERT into files table
+  (agent_id, path, content_hash, size, version)
+</code></pre></div>
+
+<h3 id="versioned-file-system">Versioned File System</h3>
+<p>File writes create new versions. Replacing a path soft-deletes the previous row (<code>deleted = 1</code>) without erasing it, which keeps file history available and gives checkpoint restore something to revive. <code>file_history(agent_id, path)</code> returns the version trail. Paths are normalized with <code>PurePosixPath</code>, and parent directories are created as nested files arrive.</p>
+<h3 id="event-journal">Event Journal</h3>
+<p><code>bene/events.py</code> is the append-only log for lifecycle, filesystem, state, tool, checkpoint, warning, and error events. It can be filtered by agent, <code>event_type</code>, time range, and pagination window.</p>
+<table>
+<thead>
+<tr>
+<th>Event Type</th>
+<th>Trigger</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent_spawn</code></td>
+<td>Agent created</td>
+</tr>
+<tr>
+<td><code>agent_pause</code> / <code>agent_resume</code></td>
+<td>Lifecycle transitions</td>
+</tr>
+<tr>
+<td><code>agent_kill</code> / <code>agent_complete</code> / <code>agent_fail</code></td>
+<td>Terminal states</td>
+</tr>
+<tr>
+<td><code>file_read</code> / <code>file_write</code> / <code>file_delete</code></td>
+<td>Filesystem operations</td>
+</tr>
+<tr>
+<td><code>state_change</code></td>
+<td>KV state modifications</td>
+</tr>
+<tr>
+<td><code>tool_call_start</code> / <code>tool_call_end</code></td>
+<td>Tool execution boundaries</td>
+</tr>
+<tr>
+<td><code>checkpoint_create</code> / <code>checkpoint_restore</code></td>
+<td>Checkpoint operations</td>
+</tr>
+<tr>
+<td><code>error</code> / <code>warning</code></td>
+<td>Runtime diagnostics</td>
+</tr>
+</tbody>
+</table>
+<p>Every record has a globally ordered <code>event_id</code>, the acting <code>agent_id</code>, an event type, JSON payload, and ISO 8601 timestamp with millisecond precision.</p>
+<h3 id="checkpoint-restore">Checkpoint / Restore</h3>
+<p>A checkpoint captures three things in <code>bene/checkpoints.py</code>: the live file manifest <code>(path, content_hash, version)</code>, all KV state for that agent, and the event watermark at checkpoint time. Restore soft-deletes the current files, restores or un-deletes files from the manifest, and replaces the agent's state snapshot. Diffing two checkpoints reports file changes, state changes, and tool calls between their event watermarks.</p>
+<hr />
+<h2 id="isolation-model">Isolation Model</h2>
+<p>BENE's isolation starts as a database property and can be raised to an OS property on Linux. The default is logical isolation; <code>bene/isolation.py</code> also contains the FUSE path for environments that can support mounts and cgroups.</p>
+<h3 id="tier-1-logical-isolation-default">Tier 1 -- Logical Isolation (Default)</h3>
+<p>Logical isolation binds every VFS operation to one <code>agent_id</code>. <code>LogicalIsolation</code> wraps <code>Bene</code> so callers do not pass arbitrary agent IDs at each method call.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LogicalIsolation</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">afs</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>  <span class="c1"># always scoped</span>
+</code></pre></div>
+
+<p>That tier has no extra runtime overhead, works on Windows, macOS, and Linux, and relies on SQL predicates such as <code>WHERE agent_id = ?</code> to keep namespaces separate.</p>
+<h3 id="tier-2-fuse-namespace-isolation-linux-only">Tier 2 -- FUSE + Namespace Isolation (Linux Only)</h3>
+<p>When a process needs a normal filesystem view, <code>IsolatedAgentProcess</code> can mount the agent VFS at <code>/tmp/bene/&lt;agent_id&gt;</code>, put the process in its own Linux mount namespace with <code>unshare</code>, and optionally apply cgroups v2 controls such as <code>memory.max</code> and <code>cpu.weight</code>.</p>
+<div class="codehilite"><pre><span></span><code>Tier 2 Isolation Stack:
+
+  +-------------------+
+  | Agent Process      |
+  +-------------------+
+  | Mount Namespace    |  &lt;-- unshare(CLONE_NEWNS)
+  +-------------------+
+  | FUSE Mount         |  &lt;-- /tmp/bene/&lt;agent_id&gt;
+  +-------------------+
+  | Bene VFS Engine |
+  +-------------------+
+  | SQLite WAL         |
+  +-------------------+
+  | cgroups v2         |  &lt;-- memory.max, cpu.weight
+  +-------------------+
+</code></pre></div>
+
+<p><strong>Requirements:</strong></p>
+<ul>
+<li>Linux only (<code>platform.system() == "Linux"</code>).</li>
+<li><code>fusepy</code> package — <code>uv sync --extra fuse</code> from a clone (bene is not on PyPI yet).</li>
+<li>Root or appropriate capabilities for namespace/cgroup operations.</li>
+</ul>
+<h3 id="isolation-factory">Isolation Factory</h3>
+<p><code>create_isolation()</code> chooses the tier from configuration:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">isolation</span> <span class="o">=</span> <span class="n">create_isolation</span><span class="p">(</span><span class="n">afs</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+<span class="c1"># Returns LogicalIsolation or IsolatedAgentProcess</span>
+</code></pre></div>
+
+<hr />
+<h2 id="ccr-execution-loop">CCR Execution Loop</h2>
+<p>The Claude Code Runner in <code>bene/ccr/runner.py</code> is the long-running agent loop. It turns a task into a system prompt, routes model calls through Tier, executes requested tools, persists observations, and checkpoints progress.</p>
+<h3 id="loop-architecture">Loop Architecture</h3>
+<div class="codehilite"><pre><span></span><code>                  +------------------+
+                  |   Task (prompt)  |
+                  +--------+---------+
+                           |
+                           v
+              +------------------------+
+              |  Build System Prompt   |
+              |  (agent context +      |
+              |   tool descriptions)   |
+              +----------+-------------+
+                         |
+            +============+============+
+            |     MAIN CCR LOOP       |
+            |  (up to max_iterations) |
+            |                         |
+            |  +-------------------+  |
+            |  |  1. PLAN          |  |
+            |  |  Route via Tier   |  |
+            |  |  Get model resp.  |  |
+            |  +---------+---------+  |
+            |            |            |
+            |            v            |
+            |  +-------------------+  |
+            |  |  2. ACT           |  |
+            |  |  Execute tool     |  |
+            |  |  calls (if any)   |  |
+            |  +---------+---------+  |
+            |            |            |
+            |            v            |
+            |  +-------------------+  |
+            |  |  3. OBSERVE       |  |
+            |  |  Append results   |  |
+            |  |  to conversation  |  |
+            |  |  Check for done   |  |
+            |  +---------+---------+  |
+            |            |            |
+            |   [not done? loop]      |
+            +============+============+
+                         |
+                         v
+                  +--------------+
+                  |   Result     |
+                  +--------------+
+</code></pre></div>
+
+<h3 id="step-by-step">Step-by-Step</h3>
+<ol>
+<li>Initialization sets the agent status to <code>running</code>, builds a system prompt from identity, tools, and task text, and stores the starting conversation in agent state.</li>
+<li>Plan sends the conversation to the Tier router, which classifies the request and chooses a vLLM model.</li>
+<li>Act executes any requested tool calls through <code>ToolRegistry</code>, recording <code>pending</code> -&gt; <code>running</code> -&gt; <code>success</code>/<code>error</code> state in <code>tool_calls</code>.</li>
+<li>Observe appends tool results back into the conversation, updates iteration count and heartbeat, and stops when the model returns <code>end_turn</code> without tool calls.</li>
+<li>Auto-checkpoint creates a snapshot every <code>checkpoint_interval</code> iterations; the default interval is 10.</li>
+</ol>
+<h3 id="termination-conditions">Termination Conditions</h3>
+<p>The loop stops on normal completion, <code>timeout_seconds</code>, <code>max_iterations</code>, a <code>killed</code> status observed between iterations, or a <code>paused</code> status that makes the loop sleep until resume.</p>
+<h3 id="parallel-execution">Parallel Execution</h3>
+<p><code>ClaudeCodeRunner.run_parallel()</code> runs agents with <code>asyncio.gather()</code> and a semaphore. The default <code>max_parallel_agents</code> value is 8.</p>
+<h3 id="tool-registry">Tool Registry</h3>
+<p><code>bene/ccr/tools.py</code> owns built-in and custom tool definitions. Built-in <code>fs_</code> and <code>state_</code> tools receive the active <code>agent_id</code> automatically so their operations stay inside the caller's namespace. The table below lists the core <code>fs_</code>/<code>state_</code>/<code>shell</code> tools; <code>tools.py</code> also registers a <code>squirrel_localpath</code> helper (translates internal/Jira URLs to NFS paths) that an internal deployment may keep or de-register.</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fs_read</code></td>
+<td>Read a file from the agent's VFS</td>
+</tr>
+<tr>
+<td><code>fs_write</code></td>
+<td>Write content to a file</td>
+</tr>
+<tr>
+<td><code>fs_ls</code></td>
+<td>List directory contents</td>
+</tr>
+<tr>
+<td><code>fs_delete</code></td>
+<td>Delete a file</td>
+</tr>
+<tr>
+<td><code>fs_mkdir</code></td>
+<td>Create a directory</td>
+</tr>
+<tr>
+<td><code>state_get</code></td>
+<td>Read a KV state value</td>
+</tr>
+<tr>
+<td><code>state_set</code></td>
+<td>Write a KV state value</td>
+</tr>
+<tr>
+<td><code>shell_exec</code></td>
+<td>Execute a shell command (with timeout)</td>
+</tr>
+</tbody>
+</table>
+<p>Custom tools are added with <code>ccr.register_tool(ToolDefinition(...))</code>.</p>
+<hr />
+<h2 id="tier-router">Tier Router</h2>
+<p>The Tier router in <code>bene/router/tier.py</code> is the model-dispatch layer. It labels each inference request as <code>trivial</code>, <code>moderate</code>, <code>complex</code>, or <code>critical</code>, routes to the configured model tier, compresses context when needed, and falls back when a model call fails.</p>
+<h3 id="architecture">Architecture</h3>
+<div class="codehilite"><pre><span></span><code>  Incoming Request
+  (messages, tools)
+        |
+        v
+  +-------------------+
+  |    Classify Task   |
+  |                    |
+  |  +--------------+  |
+  |  | LLM-based    |  |  (preferred, uses classifier_model)
+  |  | Classifier   |  |
+  |  +------+-------+  |
+  |         |          |
+  |    [on failure]    |
+  |         |          |
+  |  +------v-------+  |
+  |  | Heuristic    |  |  (fallback, regex + scoring)
+  |  | Classifier   |  |
+  |  +--------------+  |
+  +--------+-----------+
+           |
+           v
+  Classification Result
+  (trivial | moderate | complex | critical)
+           |
+           v
+  +-------------------+
+  | Routing Table      |
+  | trivial   -&gt; 7B    |
+  | moderate  -&gt; 32B   |
+  | complex   -&gt; 70B   |
+  | critical  -&gt; 70B   |
+  +--------+----------+
+           |
+           v
+  +-------------------+
+  | Context Compressor |
+  | (if enabled)       |
+  +--------+----------+
+           |
+           v
+  +-------------------+
+  |   VLLMClient      |
+  |   (raw httpx)     |
+  |   POST /v1/chat/  |
+  |   completions     |
+  +-------------------+
+</code></pre></div>
+
+<p>Tier is a vLLM-native cascade router. Each subsystem implements a mechanic that traces directly to a published paper — see <a href="#research-lineage">Research Lineage</a> at the end of this section. Naming the design choices honestly (rather than hiding them behind a brand) lets readers swap in newer variants from the same family when they want to.</p>
+<h3 id="task-classification">Task Classification</h3>
+<p><code>bene/router/classifier.py: LLMClassifier</code> sends a temperature-0 classification prompt to a small model such as <code>qwen2.5-coder-7b</code>. The desired response is one word from <code>trivial / moderate / complex / critical</code>; parsing tolerates uppercase and extra text, and errors fall back to the heuristic path. LLM classifications use fixed confidence 0.85.</p>
+<p>This pattern — prompting a small LLM at temperature 0 to act as a classifier head whose single-token output gates dispatch — descends from RouteLLM's <code>causal_llm</code> variant (<a href="https://arxiv.org/abs/2406.18665">Ong et al. 2024</a>).</p>
+<p><code>bene/router/classifier.py: HeuristicClassifier</code> scores the task text with three pattern sets:</p>
+<ul>
+<li><code>COMPLEX_PATTERNS</code>: refactor, architect, security, migration, distributed, etc. (+3.0 score each)</li>
+<li><code>MODERATE_PATTERNS</code>: implement, create function, write test, fix bug, etc. (+1.5 each)</li>
+<li><code>TRIVIAL_PATTERNS</code>: format, rename, comment, typo, import, etc. (-1.0 each)</li>
+</ul>
+<p>It also adds +2.0 for context above 50K chars, +1.0 for context above 20K chars, +1.0 for more than 10 tools (11+), and a two-tier bonus for task descriptions (+1.0 for &gt;500 chars, +0.5 for &gt;200 chars). Scores map to &gt;= 5.0 critical, &gt;= 3.0 complex, &gt;= 1.0 moderate, otherwise trivial. Confidence is <code>min(0.9, 0.5 + |score| * 0.1)</code>.</p>
+<h3 id="routing-table">Routing Table</h3>
+<p>The routing table comes from each model's <code>use_for</code> list in <code>bene.yaml</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">qwen2.5-coder-7b</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">use_for</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">trivial</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">code_completion</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">qwen2.5-coder-32b</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">use_for</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">moderate</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">code_generation</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">deepseek-r1-70b</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">use_for</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">complex</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">critical</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">planning</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<p>Any uncovered complexity level uses <code>fallback_model</code>. An agent-level <code>force_model</code> skips classification entirely.</p>
+<p>The discrete-tier dispatch (rather than learning a continuous score) most closely matches AutoMix (<a href="https://arxiv.org/abs/2310.12963">Aggarwal, Madaan et al. 2023</a>) and Hybrid LLM (<a href="https://arxiv.org/abs/2404.14618">Ding et al. 2024</a>). Hybrid LLM is the closest mechanical ancestor of the binary version of this dispatch; Tier generalizes it from 2 tiers to 4.</p>
+<h3 id="context-compression">Context Compression</h3>
+<p><code>ContextCompressor</code> in <code>bene/router/context.py</code> estimates tokens at roughly 4 characters per token, truncates long tool outputs above 2000 characters to the first 1000 plus last 500 characters with a <code>[truncated]</code> marker, drops middle messages while preserving the system message and the last 8 messages (PRESERVE_RECENT), summarizing everything in between, then trims more aggressively if the context still does not fit. It targets 85% of the selected model's <code>max_context</code>.</p>
+<p>The "summarize the middle into a synthetic system message, preserve recent messages verbatim" pattern descends from MemGPT (<a href="https://arxiv.org/abs/2310.08560">Packer et al. 2023</a>) and <em>Recursively Summarizing Enables Long-Term Dialogue Memory in LLMs</em> (<a href="https://arxiv.org/abs/2308.15022">Wang et al. 2023</a>). The implementation is faithful to Anthropic's productized <code>/compact</code> mechanism (Claude API beta <code>compact-2026-01-12</code>).</p>
+<h3 id="vllm-client">vLLM Client</h3>
+<p><code>bene/router/vllm_client.py</code> is a small async HTTP client, not an SDK wrapper. It lazily creates an <code>httpx.AsyncClient</code>, calls <code>POST {base_url}/chat/completions</code>, sends OpenAI-compatible fields (<code>model</code>, <code>messages</code>, <code>temperature</code>, <code>max_tokens</code>, <code>tools</code>, <code>tool_choice</code>), parses raw JSON into typed dataclasses (<code>ChatCompletion</code>, <code>ChatChoice</code>, <code>ChatMessage</code>, <code>Usage</code>), and exposes <code>close()</code> for cleanup. The default timeout is 120s.</p>
+<h3 id="retry-and-fallback">Retry and Fallback</h3>
+<p>The router retries failed model calls up to <code>max_retries</code>; the default is 1 (a single attempt, no retry). If a non-fallback model keeps failing, later attempts switch to the configured fallback model.</p>
+<h3 id="research-lineage">Research Lineage</h3>
+<table>
+<thead>
+<tr>
+<th>Subsystem</th>
+<th>Closest paper</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cascade routing (cheap-first → escalate)</td>
+<td><em>FrugalGPT</em>, Chen, Zaharia, Zou (Stanford 2023) — <a href="https://arxiv.org/abs/2305.05176">arXiv:2305.05176</a></td>
+<td>The foundational LLM-cascade paper. The tier table is FrugalGPT's "LLM cascade" pattern.</td>
+</tr>
+<tr>
+<td>Difficulty-classifier-driven dispatch</td>
+<td><em>Hybrid LLM</em>, Ding et al. (Microsoft 2024) — <a href="https://arxiv.org/abs/2404.14618">arXiv:2404.14618</a></td>
+<td>The closest mechanical ancestor of Tier. Tier generalizes its 2-tier router to 4 tiers.</td>
+</tr>
+<tr>
+<td>LLM-as-classifier head</td>
+<td><em>RouteLLM</em> (<code>causal_llm</code> variant), Ong et al. (UC Berkeley + Anyscale + LMSYS, 2024) — <a href="https://arxiv.org/abs/2406.18665">arXiv:2406.18665</a></td>
+<td>The "small LLM emits a routing label" pattern descends from this paper.</td>
+</tr>
+<tr>
+<td>Multi-tier discrete cascade</td>
+<td><em>AutoMix</em>, Aggarwal, Madaan et al. (CMU + Google 2023) — <a href="https://arxiv.org/abs/2310.12963">arXiv:2310.12963</a></td>
+<td>Closest precedent for the 4-bucket discretization of difficulty.</td>
+</tr>
+<tr>
+<td>Rolling-summary context compression</td>
+<td><em>MemGPT</em>, Packer et al. (UC Berkeley 2023) — <a href="https://arxiv.org/abs/2310.08560">arXiv:2310.08560</a>, and <em>Recursively Summarizing</em>, Wang et al. (CAS 2023) — <a href="https://arxiv.org/abs/2308.15022">arXiv:2308.15022</a></td>
+<td>The system-message continuation pattern. Anthropic's <code>/compact</code> is the engineering instantiation that the code targets.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Note on the previous name.</strong> This router was previously called <em>Tier</em> ("Generalized Execution Planning &amp; Allocation"). That acronym was reverse-engineered, was not present in any of the actual ancestor papers above, and collided with the unrelated <em>Tier: Reflective Prompt Evolution Can Outperform Reinforcement Learning</em> (<a href="https://arxiv.org/abs/2507.19457">Agrawal et al. 2025</a>) which is a prompt optimizer, not a router. <strong>Tier</strong> describes what the code mechanically does and lets readers trace the design back to its actual lineage.</p>
+</blockquote>
+<hr />
+<h2 id="mcp-server-integration">MCP Server Integration</h2>
+<p>The MCP server is the surface used by Claude Code and any other MCP-capable client. It exposes BENE operations while keeping implementation state in <code>Bene</code> and <code>ClaudeCodeRunner</code>.</p>
+<p>The MCP server (<code>bene/mcp/server.py</code>) is implemented using the <code>mcp</code> Python package and supports two transport modes:</p>
+<ul>
+<li><strong>stdio</strong>: For direct process integration (used by Claude Code).</li>
+<li><strong>SSE</strong>: For HTTP-based integration via Server-Sent Events (uses Starlette + uvicorn).</li>
+</ul>
+<p>The server exposes 37 tools across 9 categories (Lifecycle, VFS, Checkpoints, Query, Orchestration, Meta-Harness, Memory, Shared Log, Skills) that map directly to <code>Bene</code>, <code>ClaudeCodeRunner</code>, <code>MetaHarnessSearch</code>, and the durable coordination stores. See <a href="mcp-integration.html">mcp-integration.md</a> for the complete tool reference.</p>
+<h3 id="server-initialization">Server Initialization</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene.mcp.server</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_server</span>
+
+<span class="n">mcp_server</span> <span class="o">=</span> <span class="n">init_server</span><span class="p">(</span><span class="n">afs</span><span class="p">,</span> <span class="n">ccr</span><span class="p">)</span>
+<span class="c1"># afs: Bene instance</span>
+<span class="c1"># ccr: ClaudeCodeRunner instance</span>
+</code></pre></div>
+
+<p><code>init_server()</code> sets the module-level <code>Bene</code> and <code>ClaudeCodeRunner</code> references used by all tool handlers.</p>
+<hr />
+<h2 id="design-philosophy">Design Philosophy</h2>
+<p>These constraints explain why the runtime is shaped the way it is.</p>
+<h3 id="single-file-portability">Single-file portability</h3>
+<p>Agent files, state, tool-call logs, event history, and checkpoints live in one <code>.db</code> file. Copying the runtime is a normal file copy such as <code>cp bene.db backup.db</code>, and SQLite tooling can inspect it directly.</p>
+<h3 id="zero-ai-sdk-dependencies">Zero AI SDK dependencies</h3>
+<p>BENE deliberately avoids <code>openai</code>, <code>litellm</code>, and <code>dspy</code>. vLLM traffic uses raw <code>httpx</code> requests to the OpenAI-compatible <code>/v1/chat/completions</code> endpoint, reducing dependency drift and keeping the integration surface plain.</p>
+<h3 id="isolation-by-default">Isolation by default</h3>
+<p>Every filesystem operation and database query carries an <code>agent_id</code> boundary. Cross-agent data is not hidden by convention; it is absent from the API surface used by normal agent work.</p>
+<h3 id="append-only-auditability">Append-only auditability</h3>
+<p>Reads, writes, deletes, state changes, tool calls, checkpoints, lifecycle changes, warnings, and errors are appended to the event journal. The result is a chronological record that can be queried after the run.</p>
+<h3 id="composition-over-inheritance">Composition over inheritance</h3>
+<p><code>Bene</code> owns persistence components; <code>ClaudeCodeRunner</code> delegates routing to <code>TierRouter</code>; the MCP server delegates to both. Each part can be tested or replaced without subclassing the others.</p>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/architecture.md" target="_blank" rel="noopener noreferrer">docs/architecture.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+</main>
+</div>
+<footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>
+<a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer">Building something on bene? Open a Discussion.</a></div></footer>
+</body>
+</html>

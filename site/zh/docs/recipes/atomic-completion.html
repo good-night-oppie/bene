@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Recipe: atomic completion (exactly-once, ghost-free) — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — Recipe: atomic completion (exactly-once, ghost-free)" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+:root { --bg:#F0EEE8; --surface:#EDE9E4; --border:#CFCCC8; --ink:#1F1D1C; --mute:#62666D; --accent:#EE6018; --gold:#B46A35; --term-bg:#0A0908; --term-fg:#EDE9E4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 Geist,ui-sans-serif,system-ui,sans-serif; }
+a { color:var(--gold); text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent); text-underline-offset:3px; }
+a:hover { color:var(--accent); }
+.top { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+.top-in { max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+.brand { font-family:Geist,ui-sans-serif,sans-serif; font-weight:700; letter-spacing:.12em; color:var(--ink); text-decoration:none; }
+.top a.nav { color:var(--mute); text-decoration:none; font-size:14px; }
+.top a.nav:hover { color:var(--accent); }
+.wrap { max-width:1200px; margin:0 auto; padding:24px; display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; }
+aside.sb { position:sticky; top:80px; align-self:start; max-height:calc(100vh - 100px); overflow-y:auto; font-size:13.5px; border-left:1px solid var(--border); padding-left:16px; }
+.sb h4 { margin:18px 0 6px; font:600 11px/1 "Geist Mono",ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+.sb a { display:block; padding:3px 0; color:var(--mute); text-decoration:none; }
+.sb a:hover { color:var(--accent); }
+.sb a.cur { color:var(--ink); font-weight:600; }
+main { min-width:0; max-width:760px; }
+main h1 { font-family:Geist,ui-sans-serif,sans-serif; font-size:2.1rem; line-height:1.2; margin:.2em 0 .5em; }
+main h2 { font-family:Geist,ui-sans-serif,sans-serif; font-size:1.45rem; margin-top:2em; border-bottom:1px solid var(--border); padding-bottom:.35em; }
+main h3 { font-size:1.12rem; margin-top:1.7em; }
+main img { max-width:100%; border:1px solid var(--border); border-radius:8px; }
+main table { border-collapse:collapse; width:100%; font-size:14.5px; display:block; overflow-x:auto; }
+main th, main td { border:1px solid var(--border); padding:8px 12px; text-align:left; vertical-align:top; }
+main th { background:var(--surface); font-weight:600; }
+main blockquote { margin:1em 0; padding:.2em 1.2em; border-left:3px solid var(--accent); color:var(--mute); background:var(--surface); border-radius:0 4px 4px 0; }
+main :not(pre) > code { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:.08em .35em; font:.86em "Geist Mono",ui-monospace,monospace; }
+.codehilite, main pre { background:var(--term-bg); color:var(--term-fg); border-radius:6px; padding:16px 18px; overflow-x:auto; font:13.5px/1.55 "Geist Mono",ui-monospace,monospace; }
+.codehilite pre, pre code { background:none; padding:0; margin:0; border:none; }
+.demo-embed { margin:20px 0 28px; }
+.demo-embed .frame { background:var(--term-bg); border-radius:6px; padding:14px; }
+.demo-embed .dots { display:flex; gap:6px; margin-bottom:10px; }
+.demo-embed .dots i { width:10px; height:10px; border-radius:50%; background:#3a3344; }
+.demo-embed img { border:none; border-radius:6px; display:block; width:100%; }
+.demo-embed p { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:8px 2px 0; }
+.crumbs { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-bottom:8px; }
+.crumbs a { color:var(--mute); }
+.src { font:12.5px "Geist Mono",ui-monospace,monospace; margin-top:48px; padding-top:16px; border-top:1px solid var(--border); color:var(--mute); }
+footer.ft { border-top:1px solid var(--border); margin-top:40px; }
+footer.ft .in { max-width:1200px; margin:0 auto; padding:24px; font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.idx-group h2 { font-family:Geist,ui-sans-serif,sans-serif; border:none; margin-top:1.6em; }
+.idx-group ul { list-style:none; padding:0; margin:.4em 0; }
+.idx-group li { padding:6px 0; border-bottom:1px dashed var(--border); }
+.idx-group .path { font:11.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-left:8px; }
+/* Mobile overrides — kept at the end so source order beats base rules.
+   Earlier this rule sat between base rules and got overridden by a later
+   `aside.sb { position:sticky }`, leaving the sidebar stuck on top of
+   main content on phones. */
+@media (max-width: 860px) {
+  .wrap { grid-template-columns:1fr; gap:24px; padding:16px; }
+  aside.sb { position:static; max-height:none; border-left:none; border-bottom:1px solid var(--border); padding-left:0; padding-bottom:16px; font-size:13px; }
+  .sb h4 { margin:12px 0 4px; }
+  main { max-width:none; }
+  main h1 { font-size:1.6rem; }
+  main h2 { font-size:1.2rem; }
+  main h3 { font-size:1.05rem; }
+  .top-in { padding:0 16px; gap:14px; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #49483e }
+.codehilite { background: #272822; color: #F8F8F2 }
+.codehilite .c { color: #959077 } /* Comment */
+.codehilite .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.codehilite .esc { color: #F8F8F2 } /* Escape */
+.codehilite .g { color: #F8F8F2 } /* Generic */
+.codehilite .k { color: #66D9EF } /* Keyword */
+.codehilite .l { color: #AE81FF } /* Literal */
+.codehilite .n { color: #F8F8F2 } /* Name */
+.codehilite .o { color: #FF4689 } /* Operator */
+.codehilite .x { color: #F8F8F2 } /* Other */
+.codehilite .p { color: #F8F8F2 } /* Punctuation */
+.codehilite .ch { color: #959077 } /* Comment.Hashbang */
+.codehilite .cm { color: #959077 } /* Comment.Multiline */
+.codehilite .cp { color: #959077 } /* Comment.Preproc */
+.codehilite .cpf { color: #959077 } /* Comment.PreprocFile */
+.codehilite .c1 { color: #959077 } /* Comment.Single */
+.codehilite .cs { color: #959077 } /* Comment.Special */
+.codehilite .gd { color: #FF4689 } /* Generic.Deleted */
+.codehilite .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F8F8F2 } /* Generic.Error */
+.codehilite .gh { color: #F8F8F2 } /* Generic.Heading */
+.codehilite .gi { color: #A6E22E } /* Generic.Inserted */
+.codehilite .go { color: #66D9EF } /* Generic.Output */
+.codehilite .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #959077 } /* Generic.Subheading */
+.codehilite .gt { color: #F8F8F2 } /* Generic.Traceback */
+.codehilite .kc { color: #66D9EF } /* Keyword.Constant */
+.codehilite .kd { color: #66D9EF } /* Keyword.Declaration */
+.codehilite .kn { color: #FF4689 } /* Keyword.Namespace */
+.codehilite .kp { color: #66D9EF } /* Keyword.Pseudo */
+.codehilite .kr { color: #66D9EF } /* Keyword.Reserved */
+.codehilite .kt { color: #66D9EF } /* Keyword.Type */
+.codehilite .ld { color: #E6DB74 } /* Literal.Date */
+.codehilite .m { color: #AE81FF } /* Literal.Number */
+.codehilite .s { color: #E6DB74 } /* Literal.String */
+.codehilite .na { color: #A6E22E } /* Name.Attribute */
+.codehilite .nb { color: #F8F8F2 } /* Name.Builtin */
+.codehilite .nc { color: #A6E22E } /* Name.Class */
+.codehilite .no { color: #66D9EF } /* Name.Constant */
+.codehilite .nd { color: #A6E22E } /* Name.Decorator */
+.codehilite .ni { color: #F8F8F2 } /* Name.Entity */
+.codehilite .ne { color: #A6E22E } /* Name.Exception */
+.codehilite .nf { color: #A6E22E } /* Name.Function */
+.codehilite .nl { color: #F8F8F2 } /* Name.Label */
+.codehilite .nn { color: #F8F8F2 } /* Name.Namespace */
+.codehilite .nx { color: #A6E22E } /* Name.Other */
+.codehilite .py { color: #F8F8F2 } /* Name.Property */
+.codehilite .nt { color: #FF4689 } /* Name.Tag */
+.codehilite .nv { color: #F8F8F2 } /* Name.Variable */
+.codehilite .ow { color: #FF4689 } /* Operator.Word */
+.codehilite .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.codehilite .w { color: #F8F8F2 } /* Text.Whitespace */
+.codehilite .mb { color: #AE81FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #AE81FF } /* Literal.Number.Float */
+.codehilite .mh { color: #AE81FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #AE81FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #AE81FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #E6DB74 } /* Literal.String.Affix */
+.codehilite .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.codehilite .sc { color: #E6DB74 } /* Literal.String.Char */
+.codehilite .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #E6DB74 } /* Literal.String.Doc */
+.codehilite .s2 { color: #E6DB74 } /* Literal.String.Double */
+.codehilite .se { color: #AE81FF } /* Literal.String.Escape */
+.codehilite .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.codehilite .si { color: #E6DB74 } /* Literal.String.Interpol */
+.codehilite .sx { color: #E6DB74 } /* Literal.String.Other */
+.codehilite .sr { color: #E6DB74 } /* Literal.String.Regex */
+.codehilite .s1 { color: #E6DB74 } /* Literal.String.Single */
+.codehilite .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.codehilite .bp { color: #F8F8F2 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #A6E22E } /* Name.Function.Magic */
+.codehilite .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.codehilite .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.codehilite .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.codehilite .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.codehilite .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.codehilite { background: var(--term-bg) !important; }
+</style>
+
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <a class="brand" href="../../../index.html">BENE</a>
+  <a class="nav" href="../../../index.html">Landing</a>
+  <a class="nav" href="../index.html">文档索引</a>
+  <a class="nav" href="../../../SKILL.md" target="_blank" rel="noopener noreferrer" title="把 BENE 交给你的 agent，一个 URL">SKILL.md ↗</a>
+  <button class="nav copy-llms" data-llms-url="../../../llms.txt" data-copied-label="✓ 已复制" data-opened-label="↗ 已打开" title="把 llms.txt 索引拷到剪贴板 — 粘贴进你 agent 的 context">复制 llms.txt</button>
+  <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer">GitHub</a>
+  <a class="nav" href="../../../docs/recipes/atomic-completion.html" title="Switch to English" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">EN</a>
+</div></div>
+<div class="zh-banner" style="background:rgba(238,96,24,.07);border-bottom:1px solid rgba(238,96,24,.2);padding:12px 24px;font-size:13px;line-height:1.5;color:rgb(var(--muted))"><strong style="color:rgb(var(--text))">本页中文版正在按照 4-book methodology 翻译（Mom Test / Pressfield / Zinsser / Dicks）—— 不放 AI 翻译稿。</strong> 下方是英文原文，点上方 <a href="../../../docs/recipes/atomic-completion.html" style="color:rgb(var(--accent));text-decoration:underline">EN</a> 直接到英文页面， 或在 <a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer" style="color:rgb(var(--accent));text-decoration:underline">Discussions</a> 里贡献翻译。</div>
+<script>
+(function() {
+  document.querySelectorAll('button.copy-llms').forEach(function(btn) {
+    var original = btn.textContent;
+    btn.addEventListener('click', function() {
+      var url = btn.getAttribute('data-llms-url');
+      fetch(url, { cache: 'no-cache' })
+        .then(function(r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.text(); })
+        .then(function(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).then(function() {
+              btn.textContent = btn.getAttribute('data-copied-label') || '✓ copied';
+              setTimeout(function() { btn.textContent = original; }, 2200);
+            });
+          }
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        })
+        .catch(function() {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        });
+    });
+  });
+})();
+</script>
+<div class="wrap">
+<aside class="sb"><h4>Start, operate, recover</h4>
+<a href="../README.html">README</a>
+<a href="../architecture.html">architecture</a>
+<a href="../checkpoints.html">checkpoints</a>
+<a href="../cli-reference.html">cli-reference</a>
+<a href="../codegen.html">codegen</a>
+<a href="../dashboard.html">dashboard</a>
+<a href="../deployment.html">deployment</a>
+<a href="../integrating-bene.html">integrating-bene</a>
+<a href="../mcp-integration.html">mcp-integration</a>
+<a href="../memory.html">memory</a>
+<a href="../meta-harness.html">meta-harness</a>
+<a href="../philosophy.html">philosophy</a>
+<a href="../primitive-review-cycle.html">primitive-review-cycle</a>
+<a href="../probe-authoring.html">probe-authoring</a>
+<a href="../schema.html">schema</a>
+<a href="../shared-log.html">shared-log</a>
+<a href="../skills.html">skills</a>
+<a href="../use-cases.html">use-cases</a>
+<h4>Recipes</h4>
+<a class="cur" href="../recipes/atomic-completion.html">atomic-completion</a>
+<h4>Design and claims</h4>
+<a href="../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
+<a href="../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
+<a href="../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
+<a href="../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
+<h4>Evidence and research</h4>
+<a href="../research/GAP-AUDIT.html">GAP-AUDIT</a>
+<a href="../research/SYNTHESIS.html">SYNTHESIS</a>
+<a href="../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<h4>Benchmarks and gates</h4>
+<a href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
+<a href="../benchmarks/PREREG.html">PREREG</a>
+<h4>Tutorial playbooks</h4>
+<a href="../tutorials/t00-bene-e2e-walkthrough.html">t00-bene-e2e-walkthrough</a>
+<a href="../tutorials/t01-bene-meta-harness.html">t01-bene-meta-harness</a>
+<a href="../tutorials/t02-e2e-self-healing.html">t02-e2e-self-healing</a>
+<a href="../tutorials/t03-security-swarm.html">t03-security-swarm</a>
+<a href="../tutorials/t04-migration-rollback.html">t04-migration-rollback</a>
+<a href="../tutorials/t05-incident-response.html">t05-incident-response</a>
+<a href="../tutorials/t06-ml-research-lab.html">t06-ml-research-lab</a>
+<a href="../tutorials/t07-regression-guard.html">t07-regression-guard</a>
+<a href="../tutorials/t08-hundred-agents-scale.html">t08-hundred-agents-scale</a>
+<a href="../tutorials/t10-ci-overnight-bene-swarm.html">t10-ci-overnight-bene-swarm</a>
+<a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
+<h4>Case studies</h4>
+<a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
+<h4>Infrastructure</h4>
+<a href="../infra/DNS.html">DNS</a></aside>
+<main>
+<div class="crumbs"><a href="../index.html">docs</a> / recipes/atomic-completion.md</div>
+<h1 id="recipe-atomic-completion-exactly-once-ghost-free">Recipe: atomic completion (exactly-once, ghost-free)</h1>
+<p>The densest cluster of P1 bugs in a long-running agent system is <strong>non-atomic
+completion</strong>: a side effect (a receipt, a quota debit, a fork) happens, then the
+process dies before the durable record is committed — leaving a <strong>ghost</strong> (an
+external mutation no record knows about), a double-charge on retry, or an in-RAM
+counter that evaporates on restart.</p>
+<p>This is fixed with three substrate-agnostic moves on an ordinary SQLite/JSONL
+log — <strong>no Temporal, no durable-runtime dependency</strong>. The reference helpers live
+in <a href="../../bene/recipes/idempotent_append.py"><code>bene/recipes/idempotent_append.py</code></a>;
+they take a <code>sqlite3.Connection</code>, not a <code>Bene</code>, so you copy them into your own
+events layer.</p>
+<h2 id="the-three-moves">The three moves</h2>
+<ol>
+<li><strong>Idempotent append</strong> — <code>SELECT</code> by <code>idempotency_key</code> then <code>INSERT</code>; the
+   column is <code>UNIQUE</code>, so a replay (or a racer) is a no-op returning the prior
+   id. Exactly-once.</li>
+<li><strong>Ordering inversion</strong> — commit the durable record <em>before</em> the externally
+   visible side effect, then mark it done after the side effect returns. A crash
+   then leaves either a completed row or a recorded pending row you can retry,
+   never an orphan side effect with no record (a ghost).</li>
+<li><strong>Projection rebuild</strong> — on boot, fold the durable log to reconstruct in-RAM
+   state, so a restart doesn't lose a volatile counter/cache.</li>
+</ol>
+<h2 id="1-idempotent-append">1. Idempotent append</h2>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">sqlite3</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bene.recipes.idempotent_append</span><span class="w"> </span><span class="kn">import</span> <span class="n">ensure_log</span><span class="p">,</span> <span class="n">append_once</span>
+
+<span class="n">conn</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;:memory:&quot;</span><span class="p">)</span>
+<span class="n">ensure_log</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
+
+<span class="n">seq</span><span class="p">,</span> <span class="n">created</span> <span class="o">=</span> <span class="n">append_once</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s2">&quot;order-42:charge&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;amount&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">})</span>
+<span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+<span class="c1"># A replay with the same key is a no-op returning the prior id:</span>
+<span class="n">seq2</span><span class="p">,</span> <span class="n">created2</span> <span class="o">=</span> <span class="n">append_once</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s2">&quot;order-42:charge&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;amount&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">})</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">created</span><span class="p">,</span> <span class="n">created2</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span> <span class="ow">and</span> <span class="n">seq</span> <span class="o">==</span> <span class="n">seq2</span>
+</code></pre></div>
+
+<p>The <code>idempotency_key</code> column is <code>UNIQUE</code>, so even a racer that skips the <code>SELECT</code>
+and inserts directly hits the database constraint instead of writing a duplicate.</p>
+<h2 id="2-ordering-inversion-no-ghost">2. Ordering inversion (no ghost)</h2>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">sqlite3</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bene.recipes.idempotent_append</span><span class="w"> </span><span class="kn">import</span> <span class="n">ensure_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bene.recipes.idempotent_append</span><span class="w"> </span><span class="kn">import</span> <span class="n">complete_in_order</span>
+
+<span class="n">conn</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;:memory:&quot;</span><span class="p">)</span>
+<span class="n">ensure_log</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
+<span class="n">shipped</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">ship_the_box</span><span class="p">(</span><span class="n">payload</span><span class="p">):</span>
+    <span class="n">shipped</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;sku&quot;</span><span class="p">])</span>
+
+<span class="c1"># durable record commits FIRST, then the externally visible side effect</span>
+<span class="n">complete_in_order</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s2">&quot;order-42:ship&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;sku&quot;</span><span class="p">:</span> <span class="s2">&quot;X&quot;</span><span class="p">},</span> <span class="n">side_effect</span><span class="o">=</span><span class="n">ship_the_box</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">shipped</span> <span class="o">==</span> <span class="p">[</span><span class="s2">&quot;X&quot;</span><span class="p">]</span>
+</code></pre></div>
+
+<p><code>complete_in_order</code> appends + <strong>commits</strong> the record, then runs the side effect.
+A crash after the commit leaves a recorded-but-pending completion you can
+re-drive from the log; it can never leave a shipped box with no record. The
+anti-pattern it replaces — <code>complete_side_effect_first</code> — does the mutation
+before the commit, so a crash in between leaves a ghost (kept in the module only
+as a labelled contrast).</p>
+<p>If the process crashes <em>during</em> the external call, the helper will retry that
+pending row later. Pass the same idempotency key through to the external system
+or make the side effect safe to retry; a local log cannot make a non-idempotent
+remote mutation exactly-once by itself.</p>
+<h2 id="3-projection-rebuild-on-boot">3. Projection rebuild on boot</h2>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">sqlite3</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bene.recipes.idempotent_append</span><span class="w"> </span><span class="kn">import</span> <span class="n">append_once</span><span class="p">,</span> <span class="n">ensure_log</span><span class="p">,</span> <span class="n">replay_projection</span>
+
+<span class="n">conn</span> <span class="o">=</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;:memory:&quot;</span><span class="p">)</span>
+<span class="n">ensure_log</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
+<span class="n">append_once</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s2">&quot;charge-1&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;amount&quot;</span><span class="p">:</span> <span class="mi">40</span><span class="p">})</span>
+<span class="n">append_once</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s2">&quot;charge-2&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;amount&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">})</span>
+<span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+<span class="n">balance</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+<span class="n">replay_projection</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">key</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="n">balance</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span>
+    <span class="s2">&quot;total&quot;</span><span class="p">,</span> <span class="n">balance</span><span class="p">[</span><span class="s2">&quot;total&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;amount&quot;</span><span class="p">]))</span>
+<span class="k">assert</span> <span class="n">balance</span><span class="p">[</span><span class="s2">&quot;total&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">100</span>
+<span class="c1"># `balance` is rebuilt purely from the durable log — no volatile state lost</span>
+<span class="c1"># across restart (the restart-amnesia / `/replay` 404 class).</span>
+</code></pre></div>
+
+<h2 id="durability-caveat-no-temporal-needed">Durability caveat — no Temporal needed</h2>
+<p>This recipe is <strong>substrate-agnostic and adds no runtime dependency</strong>. It gives
+you exactly-once + ghost-free completion on whatever committed log you already
+have (SQLite here; the same shape ports to a <code>flock</code>-serialized JSONL appender).</p>
+<p>It does <strong>not</strong> add cross-process durability beyond your storage. In particular,
+bene's <code>LocalRuntime</code> is explicitly <em>not</em> durable across restart, and
+<code>submit_side_effect</code>'s fenced ledger only holds on <code>TemporalRuntime</code> (a stub in
+most deployments) — so do <strong>not</strong> lean on the runtime for the durable record.
+The committed log <em>is</em> the durable record, and that is the whole point: a plain
+reorder + an idempotency key captures the large majority of the atomicity win
+without taking on Temporal.</p>
+<h2 id="see-also">See also</h2>
+<ul>
+<li><a href="../../bene/recipes/idempotent_append.py"><code>bene/recipes/idempotent_append.py</code></a> — the reference helpers.</li>
+<li><a href="../../tests/test_atomic_completion_recipe.py"><code>tests/test_atomic_completion_recipe.py</code></a> — proves exactly-once + ghost-free under a simulated crash.</li>
+<li><a href="../integrating-bene.html">Integrating BENE</a> — where this sits among the five stages.</li>
+</ul>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/recipes/atomic-completion.md" target="_blank" rel="noopener noreferrer">docs/recipes/atomic-completion.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+</main>
+</div>
+<footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>
+<a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer">Building something on bene? Open a Discussion.</a></div></footer>
+</body>
+</html>

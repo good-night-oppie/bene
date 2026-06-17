@@ -1,0 +1,91 @@
+# yamllint disable rule:truthy
+# cherry-pick-back: when a fix lands on main, replay it on dev so the
+# integration trunk does not diverge.
+#
+# Plan: .factory/specs/bene-cicd-redesign-tiered.md (Stage C-5)
+
+name: cherry-pick-back
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: cherry-pick-back-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  pick:
+    name: cherry-pick to dev
+    runs-on: eng-github-runners
+    if: "${{ !startsWith(github.event.head_commit.message, 'chore(release): nightly dev->main') }}"
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Configure git identity
+        run: |
+          git config user.name "bene-bot"
+          git config user.email "bene-bot@users.noreply.github.com"
+      - name: Cherry-pick onto dev
+        id: pick
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          sha="${{ github.sha }}"
+          short="$(git rev-parse --short=12 "${sha}")"
+          branch="bot/cherry-pick-${short}"
+          git fetch origin dev
+          git checkout -b "${branch}" origin/dev
+          if git cherry-pick --allow-empty -x "${sha}"; then
+            echo "ok=true" >> "${GITHUB_OUTPUT}"
+            echo "branch=${branch}" >> "${GITHUB_OUTPUT}"
+            echo "short=${short}" >> "${GITHUB_OUTPUT}"
+          else
+            git cherry-pick --abort || true
+            echo "ok=false" >> "${GITHUB_OUTPUT}"
+            echo "short=${short}" >> "${GITHUB_OUTPUT}"
+          fi
+      - name: Push and open PR (clean cherry-pick)
+        if: steps.pick.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git push origin "${{ steps.pick.outputs.branch }}"
+          gh pr create \
+            --base dev \
+            --head "${{ steps.pick.outputs.branch }}" \
+            --title "chore: cherry-pick ${{ steps.pick.outputs.short }} to dev" \
+            --body "Auto-replay of main commit ${{ github.sha }} onto dev to keep integration trunk in sync."
+      - name: File issue on conflict
+        if: steps.pick.outputs.ok == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ github.sha }}
+          SHORT: ${{ steps.pick.outputs.short }}
+        run: |
+          set -euo pipefail
+          body_file="$(mktemp)"
+          {
+            echo "Commit ${SHA} on main does not cleanly cherry-pick onto dev."
+            echo
+            echo "Please resolve manually:"
+            echo '```'
+            echo "git fetch origin"
+            echo "git checkout -b cherry-pick-${SHORT} origin/dev"
+            echo "git cherry-pick -x ${SHA}"
+            echo "# resolve conflicts, push, open PR to dev"
+            echo '```'
+          } > "${body_file}"
+          gh issue create \
+            --title "cherry-pick conflict: ${SHORT} -> dev" \
+            --label "cherry-pick-conflict" \
+            --body-file "${body_file}"

@@ -1,0 +1,85 @@
+# BENE Temporal MVP — single-command end-to-end demo.
+#
+#   docker compose -f docker/docker-compose.yml up -d
+#   docker compose -f docker/docker-compose.yml logs -f bene-worker
+#
+#   # Trigger a workflow from the host (after `pip install 'bene[temporal]'`):
+#   bene temporal run --address localhost:7233 \
+#       --queue bene-main --name demo --prompt "say hello"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bene-postgres
+    environment:
+      POSTGRES_USER: bene
+      POSTGRES_PASSWORD: bene
+      POSTGRES_DB: bene
+      POSTGRES_MULTIPLE_DATABASES: bene,temporal
+    ports:
+      - "5432:5432"
+    volumes:
+      - bene-pg-data:/var/lib/postgresql/data
+      - ./postgres-init.sh:/docker-entrypoint-initdb.d/00-init.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bene -d bene"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  temporal:
+    image: temporalio/auto-setup:1.27.0
+    container_name: bene-temporal
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: bene
+      POSTGRES_PWD: bene
+      POSTGRES_SEEDS: postgres
+      POSTGRES_DB: temporal
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
+    ports:
+      - "7233:7233"   # frontend gRPC
+    healthcheck:
+      test: ["CMD-SHELL", "tctl --address temporal:7233 cluster health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  temporal-ui:
+    image: temporalio/ui:2.32.0
+    container_name: bene-temporal-ui
+    depends_on:
+      - temporal
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: "http://localhost:3000"
+    ports:
+      - "8080:8080"   # web UI: http://localhost:8080
+
+  bene-worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: bene-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+    environment:
+      BENE_TEMPORAL_ADDRESS: temporal:7233
+      BENE_POSTGRES_DSN: YOUR_DSN_HERE
+      BENE_TASK_QUEUE: bene-main
+    command: >
+      bene temporal worker
+        --address temporal:7233
+        --queue bene-main
+        --postgres-dsn YOUR_DSN_HERE
+    restart: unless-stopped
+
+volumes:
+  bene-pg-data:

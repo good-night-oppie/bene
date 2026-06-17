@@ -1,0 +1,38 @@
+# Pre-commit hooks for bene-main.
+#
+# Install (once):  uv run pre-commit install
+# Manual run:      uv run pre-commit run --all-files
+#
+# The landing-copy linter is a local hook (no external repo). It hard-rails
+# the landing surface (KILL_LIST + regex + per-rule allowlist) and runs in
+# under 1s. Editing rules.py to silence the linter is a dispatch-ironclad
+# violation — add an allowlist entry in scripts/landing_copy_linter/
+# allowlist.yaml with justification + expires instead.
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.7.4
+    hooks:
+      - id: ruff
+        args: [--no-fix]
+        files: ^(bene|tests)/
+      - id: ruff-format
+        files: ^(bene|tests)/
+
+  - repo: local
+    hooks:
+      - id: landing-copy-linter
+        name: BENE landing-copy linter (regex + KILL_LIST + allowlist)
+        entry: uv run python scripts/landing_copy_linter.py
+        language: system
+        # Fire on the landing surface, the docs (schema numbers / broken cmds
+        # live there too), or the linter itself.
+        files: ^(site/(index\.html|zh/index\.html|SKILL\.md|llms\.txt)|README\.md|docs/.*\.md|scripts/landing_copy_linter(\.py|/.*))$
+        pass_filenames: false
+      - id: landing-accuracy-gate
+        name: BENE accuracy gate (install resolves / doc hard-numbers match db)
+        # accuracy_gate prints VERDICT but doesn't sys.exit on REJECT — enforce here.
+        entry: bash -c 'uv run python scripts/landing_copy_linter/accuracy_gate.py check | tee /tmp/gate.out; grep -q "VERDICT=ACCEPT" /tmp/gate.out || { echo "accuracy gate REJECTED"; exit 1; }'
+        language: system
+        files: ^(site/(index\.html|zh/index\.html)|README\.md|docs/.*\.md|scripts/landing_copy_linter/.*)$
+        pass_filenames: false

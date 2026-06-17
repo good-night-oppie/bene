@@ -1,0 +1,17 @@
+[
+  {
+    "id": "tp1-checkpoint-recovery",
+    "prompt": "My bene agent corrupted its working files halfway through a refactor. Recover the last good state and show me exactly what changed between the good and bad states.",
+    "expected": "Follows R1: bene checkpoints to list, bene diff --from/--to to show the path of the failure, pauses at the CHECKPOINT marker before restore, runs bene restore, then verifies with `bene --json checkpoints | jq length` and `bene read`. Does not invent ad-hoc file backups."
+  },
+  {
+    "id": "tp2-gated-promotion",
+    "prompt": "I evolved a new prompt strategy for my classifier agent in bene. Wire it up so it only ships if it beats the baseline quality by at least 5%.",
+    "expected": "Follows R3: appends the candidate as a tier-4 strategic engram, registers a Probe with a relative_to_baseline gate (threshold 0.05) and subject_ref, runs it, calls promote() only on ACCEPT, explains PromotionBlocked on REJECT (change candidate, never the gate), verifies via `bene experiments ls --kind probe` and `bene probe ls`."
+  },
+  {
+    "id": "tp3-ambiguous-multiagent",
+    "prompt": "Use bene to build a document-processing service where several agents split the work without clobbering each other, and the team remembers what it learned for next time.",
+    "expected": "Picks the right tier (Level 1/2, not kernel hacking): fan-out via bene parallel with isolated VFS, SharedLog intent/vote/decide for shared decisions, memory write/search + lessons-learned keys for compounding knowledge, planner-executor only if >3 steps, ends every part with its verify command, and states limitations (logical isolation, batch-not-realtime)."
+  }
+]

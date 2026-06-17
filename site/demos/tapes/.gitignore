@@ -1,0 +1,3 @@
+# bene.db / story.db are side effects of running `bene init && bene demo` as cwd
+# during tape recording — they should not be tracked.
+*.db

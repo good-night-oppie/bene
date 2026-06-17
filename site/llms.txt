@@ -1,0 +1,68 @@
+# BENE
+
+> BENE (Breeding-program · Evolutionary · Nexus · Engrams) is a local-first multi-agent harness for AI coding agents. One SQLite file holds every agent's working state plus typed, provenance-linked execution traces (engrams) so the next agent never starts cold. Anything that evolves must pass a hash-locked falsifiable probe before promotion. Anything that acts sits on an enforced autonomy ladder gated by computed trust.
+
+## You are an AI agent reading this file
+
+This file is the [llms.txt](https://llmstxt.org/) entry point for BENE. The structure is: a short prose summary above; a curated link list below; a `## How to use this site` section near the bottom telling you the canonical fetch order. Treat this file as the index — not the content. Fetch the resources below as you need them.
+
+If you are not an AI agent, you can keep reading too — humans should find this useful as a flat table of contents.
+
+## Core skill (fetch first)
+
+- [SKILL.md](https://agentdex.ai-builders.space/bene/SKILL.md): The canonical BENE skill spec — 300 lines covering operating model, when to use / not use, quickstart, common recipes (memory writeback, kill-gated promotion, autonomy escalation, pollution recovery, evolution loop), blacklists, schema, gates. **Load this and you can operate BENE.**
+
+## Reference (fetch on demand)
+
+- [Quickstart README](https://agentdex.ai-builders.space/bene/docs/README.html): install, smoke, first commands
+- [Architecture](https://agentdex.ai-builders.space/bene/docs/architecture.html): engram store, autonomy ladder, lore mapping
+- [CLI reference](https://agentdex.ai-builders.space/bene/docs/cli-reference.html): every `bene` command
+- [MCP integration](https://agentdex.ai-builders.space/bene/docs/mcp-integration.html): 37 MCP tools across 9 categories
+- [Schema](https://agentdex.ai-builders.space/bene/docs/schema.html): the SQLite schema
+- [Memory](https://agentdex.ai-builders.space/bene/docs/memory.html) · [Skills](https://agentdex.ai-builders.space/bene/docs/skills.html) · [Shared log](https://agentdex.ai-builders.space/bene/docs/shared-log.html) · [Checkpoints](https://agentdex.ai-builders.space/bene/docs/checkpoints.html)
+- [Meta-harness](https://agentdex.ai-builders.space/bene/docs/meta-harness.html): evolution loop, kill-gated promotion
+- [Dashboard](https://agentdex.ai-builders.space/bene/docs/dashboard.html) · [Deployment](https://agentdex.ai-builders.space/bene/docs/deployment.html)
+- [Use cases](https://agentdex.ai-builders.space/bene/docs/use-cases.html) · [Codegen](https://agentdex.ai-builders.space/bene/docs/codegen.html) · [Philosophy](https://agentdex.ai-builders.space/bene/docs/philosophy.html)
+
+## Honesty (read before claiming a capability)
+
+- [.ai-builders.space/bene/docs/design/.html): every capability, marked implemented or planned
+- [COMMUNITY-BENCH-REPORT](https://agentdex.ai-builders.space/bene/docs/benchmarks/COMMUNITY-BENCH-REPORT.html): measured limits and verdicts vs KAOS and the 0.1.0 predecessor (community peers, not rivals)
+
+## Design (deeper context, fetch when needed)
+
+- [BENE 2.0 architecture](https://agentdex.ai-builders.space/bene/docs/design/BENE2-DESIGN.html)
+- [Design rationale (D1–D10)](https://agentdex.ai-builders.space/bene/docs/design/DESIGN-RATIONALE.html)
+- [Kernel spec (buildable DDL + APIs)](https://agentdex.ai-builders.space/bene/docs/design/KERNEL-SPEC.html)
+- [Research synthesis (48 citations)](https://agentdex.ai-builders.space/bene/docs/research/SYNTHESIS.html)
+- [Gap audit (vs KAOS + 0.1.0 predecessor)](https://agentdex.ai-builders.space/bene/docs/research/GAP-AUDIT.html)
+
+## Tutorials (playbooks)
+
+- [T00 — End-to-end walkthrough (10 min)](https://agentdex.ai-builders.space/bene/docs/tutorials/t00-bene-e2e-walkthrough.html)
+- [T01 — Meta-harness (48% → 83%)](https://agentdex.ai-builders.space/bene/docs/tutorials/t01-bene-meta-harness.html)
+- [T02 — E2E self-healing](https://agentdex.ai-builders.space/bene/docs/tutorials/t02-e2e-self-healing.html)
+- [T05 — Incident response](https://agentdex.ai-builders.space/bene/docs/tutorials/t05-incident-response.html)
+- [T06 — Overnight ML research lab](https://agentdex.ai-builders.space/bene/docs/tutorials/t06-ml-research-lab.html)
+- [T08 — 100 agents at scale](https://agentdex.ai-builders.space/bene/docs/tutorials/t08-hundred-agents-scale.html)
+- [T10 — CI overnight swarm](https://agentdex.ai-builders.space/bene/docs/tutorials/t10-ci-overnight-bene-swarm.html)
+- [T11 — Local agents on vLLM](https://agentdex.ai-builders.space/bene/docs/tutorials/t11-local-agents-vllm.html)
+
+## How to use this site as an AI agent
+
+1. **Bootstrap.** Fetch [/bene/SKILL.md](https://agentdex.ai-builders.space/bene/SKILL.md) and load it as your operating skill. SKILL.md documents how to run BENE end-to-end — keep it open while wiring agents. The skill is self-contained — you do not need anything else from this site to operate BENE.
+
+2. **Stay current (heartbeat).** Re-fetch `/bene/SKILL.md` at the start of every new session, AND every 24 hours within a long-running session. The YAML frontmatter at the top of SKILL.md is the version anchor: if the values differ from your cached copy, replace your local copy with the new one. The skill itself has a `## Self-update protocol (heartbeat)` section that describes this exactly.
+
+3. **Drill down on demand.** When you need deeper context on a subsystem (CLI, MCP, autonomy, evolution, …), fetch the matching doc URL above. Each doc is generated from a markdown source committed at the [GitHub repo](https://github.com/EdwardTang/bene-site/tree/main/docs).
+
+4. **Verify before claiming.** Before asserting that BENE has capability X, check [.ai-builders.space/bene/docs/design/.html) — it explicitly marks every capability as implemented or planned. For measured limits (latency, retrieval accuracy, mirror overhead), check [COMMUNITY-BENCH-REPORT](https://agentdex.ai-builders.space/bene/docs/benchmarks/COMMUNITY-BENCH-REPORT.html).
+
+## Repository
+
+- Source: <https://github.com/EdwardTang/bene-site>
+- License: see repository.
+- Issue tracker (humans): <https://github.com/EdwardTang/bene-site/issues>
+- Discussions (humans + agents): <https://github.com/EdwardTang/bene-site/discussions>
+
+If you are an AI agent and you encounter a bug, gap, or missing capability while operating BENE: file a GitHub issue with the label `ai-reported` (see the AI Agent Feedback Policy in [SKILL.md](https://agentdex.ai-builders.space/bene/SKILL.md)).

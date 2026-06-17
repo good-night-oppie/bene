@@ -1,0 +1,303 @@
+---
+# yamllint disable rule:truthy
+# CI Pipeline
+#
+# NOTE: eng-github-runners (Oppie IT-managed) do not have a Docker daemon.
+# Container builds live in a separate release workflow on Docker-enabled infra.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_FROZEN: "1"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: eng-github-runners
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0; uv 0.11.7
+        with:
+          version: "0.11.7"
+          enable-cache: true
+      - name: Install dev dependencies
+        run: uv sync --dev --group temporal
+      - name: Lint and format check
+        run: ./scripts/lint
+
+  typecheck:
+    name: Type Check (advisory)
+    runs-on: eng-github-runners
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0; uv 0.11.7
+        with:
+          version: "0.11.7"
+          enable-cache: true
+      - name: Install dev dependencies
+        run: uv sync --dev --group temporal
+      - name: mypy (full bene scope, advisory)
+        run: uv run mypy --ignore-missing-imports bene/ tests/
+
+  markdownlint:
+    name: markdownlint-cli2
+    runs-on: eng-github-runners
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "20"
+      - name: Run markdownlint-cli2
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            base_sha="${{ github.event.pull_request.base.sha }}"
+            files=$(git diff --name-only "${base_sha}...HEAD" -- '*.md' | tr '\n' ' ')
+          else
+            files=$(find . -name '*.md' | grep -v .venv | grep -v .worktrees | tr '\n' ' ')
+          fi
+
+          if [ -z "${files}" ]; then
+            echo "No markdown files to check."
+            exit 0
+          fi
+
+          npx --yes markdownlint-cli2@0.20.0 ${files}
+
+  yamllint:
+    name: yamllint
+    runs-on: eng-github-runners
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0; uv 0.11.7
+        with:
+          version: "0.11.7"
+      - name: Run yamllint on repo YAML
+        run: |
+          uv run --with yamllint yamllint -c .yamllint.yml \
+            .github/workflows/ci.yml \
+            .github/bene/bene-ci.yaml \
+            bene.yaml.example \
+            docker/docker-compose.yml
+
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: eng-github-runners
+    needs: [lint]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0; uv 0.11.7
+        with:
+          version: "0.11.7"
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+      - name: Install dev dependencies
+        run: uv sync --dev --group temporal
+      - name: Run tests with coverage
+        if: matrix.python-version == '3.12'
+        run: |
+          ./scripts/test \
+            --cov=bene \
+            --cov-report=term-missing
+      - name: Run tests
+        if: matrix.python-version != '3.12'
+        run: ./scripts/test
+      - name: Upload coverage
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-report
+          path: .coverage
+          retention-days: 7
+
+  regression-gate:
+    name: Regression Gate
+    runs-on: eng-github-runners
+    needs: [lint]
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    concurrency:
+      group: regression-gate-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.7"
+          enable-cache: true
+      - name: Install dev dependencies
+        run: uv sync --dev --group temporal
+      - name: Install pinned bene (CI-isolated venv)
+        env:
+          BENE_VENV: ${{ runner.temp }}/bene-pin
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./scripts/ci/install_bene_pinned.sh
+      - name: Run regression gate
+        env:
+          BASE_REF: origin/${{ github.event.pull_request.base.ref }}
+          BENE_CONFIG: .github/bene/bene-ci.yaml
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: ./scripts/ci/regression_gate.sh
+      - name: Upload triage artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: regression-gate-triage
+          path: ${{ runner.temp }}/bene-gate/triage.json
+          retention-days: 14
+          if-no-files-found: ignore
+
+  auto-fix:
+    name: Auto-fix bot
+    runs-on: eng-github-runners
+    needs: [lint]
+    if: failure() && github.event_name == 'pull_request'
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    concurrency:
+      group: auto-fix-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.7"
+          enable-cache: true
+      - name: Run autofix
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+        run: ./scripts/ci/auto_fix.sh
+
+  refactor-swarm:
+    name: BENE Refactor Swarm (mypy)
+    runs-on: eng-github-runners
+    needs: [lint]
+    if: >-
+      github.event_name == 'pull_request'
+      && github.event.pull_request.draft == false
+    continue-on-error: true
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency:
+      group: refactor-swarm-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          # Auto-apply path pushes a commit back to the PR head, so we need
+          # a token that can write to the PR ref. GITHUB_TOKEN works for
+          # same-repo branches; PRs from forks fall back to artifact-only.
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.7"
+          enable-cache: true
+      - name: Install dev dependencies
+        run: uv sync --dev --group temporal
+      - name: Install pinned bene (CI-isolated venv)
+        env:
+          BENE_VENV: ${{ runner.temp }}/bene-pin
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./scripts/ci/install_bene_pinned.sh
+      - name: Run refactor swarm (one agent per mypy file)
+        env:
+          BASE_REF: origin/${{ github.event.pull_request.base.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BENE_CONFIG: .github/bene/bene-ci.yaml
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Gate: only auto-apply when the PR carries the 'auto-apply-swarm'
+          # label. Otherwise the swarm runs in advisory-only mode (default).
+          SWARM_APPLY_FLAG: >-
+            ${{ contains(github.event.pull_request.labels.*.name, 'auto-apply-swarm') && '--apply' || '' }}
+        run: "${{ runner.temp }}/bene-pin/bin/python scripts/ci/refactor_swarm.py --max-shards 8 ${SWARM_APPLY_FLAG}"
+      - name: Upload refactor artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: refactor-swarm
+          path: |
+            .orchestra/refactor/swarm-*.md
+            .orchestra/refactor/swarm-*.json
+            .orchestra/refactor/patches/*.patch
+            .orchestra/refactor/refactor.db
+          retention-days: 14
+          if-no-files-found: warn
+
+  review-swarm:
+    name: BENE Review Swarm (dogfood CI)
+    runs-on: eng-github-runners
+    needs: [lint]
+    if: >-
+      github.event_name == 'pull_request'
+      && github.event.pull_request.draft == false
+    continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: write
+    concurrency:
+      group: review-swarm-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.7"
+          enable-cache: true
+      - name: Install dev dependencies
+        run: uv sync --dev --group temporal
+      - name: Install pinned bene (CI-isolated venv)
+        env:
+          BENE_VENV: ${{ runner.temp }}/bene-pin
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./scripts/ci/install_bene_pinned.sh
+      - name: Run review swarm (bene dogfooding its own CI)
+        env:
+          BASE_REF: origin/${{ github.event.pull_request.base.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BENE_CONFIG: .github/bene/bene-ci.yaml
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: "${{ runner.temp }}/bene-pin/bin/python scripts/ci/review_swarm.py"
+      - name: Upload review artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: review-swarm
+          path: .orchestra/review/swarm-*.md
+          retention-days: 14
+          if-no-files-found: warn

@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BENE 2.0 — Kernel Spec (buildable) — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — BENE 2.0 — Kernel Spec (buildable)" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+:root { --bg:#F0EEE8; --surface:#EDE9E4; --border:#CFCCC8; --ink:#1F1D1C; --mute:#62666D; --accent:#EE6018; --gold:#B46A35; --term-bg:#0A0908; --term-fg:#EDE9E4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 Geist,ui-sans-serif,system-ui,sans-serif; }
+a { color:var(--gold); text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent); text-underline-offset:3px; }
+a:hover { color:var(--accent); }
+.top { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+.top-in { max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+.brand { font-family:Geist,ui-sans-serif,sans-serif; font-weight:700; letter-spacing:.12em; color:var(--ink); text-decoration:none; }
+.top a.nav { color:var(--mute); text-decoration:none; font-size:14px; }
+.top a.nav:hover { color:var(--accent); }
+.wrap { max-width:1200px; margin:0 auto; padding:24px; display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; }
+aside.sb { position:sticky; top:80px; align-self:start; max-height:calc(100vh - 100px); overflow-y:auto; font-size:13.5px; border-left:1px solid var(--border); padding-left:16px; }
+.sb h4 { margin:18px 0 6px; font:600 11px/1 "Geist Mono",ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+.sb a { display:block; padding:3px 0; color:var(--mute); text-decoration:none; }
+.sb a:hover { color:var(--accent); }
+.sb a.cur { color:var(--ink); font-weight:600; }
+main { min-width:0; max-width:760px; }
+main h1 { font-family:Geist,ui-sans-serif,sans-serif; font-size:2.1rem; line-height:1.2; margin:.2em 0 .5em; }
+main h2 { font-family:Geist,ui-sans-serif,sans-serif; font-size:1.45rem; margin-top:2em; border-bottom:1px solid var(--border); padding-bottom:.35em; }
+main h3 { font-size:1.12rem; margin-top:1.7em; }
+main img { max-width:100%; border:1px solid var(--border); border-radius:8px; }
+main table { border-collapse:collapse; width:100%; font-size:14.5px; display:block; overflow-x:auto; }
+main th, main td { border:1px solid var(--border); padding:8px 12px; text-align:left; vertical-align:top; }
+main th { background:var(--surface); font-weight:600; }
+main blockquote { margin:1em 0; padding:.2em 1.2em; border-left:3px solid var(--accent); color:var(--mute); background:var(--surface); border-radius:0 4px 4px 0; }
+main :not(pre) > code { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:.08em .35em; font:.86em "Geist Mono",ui-monospace,monospace; }
+.codehilite, main pre { background:var(--term-bg); color:var(--term-fg); border-radius:6px; padding:16px 18px; overflow-x:auto; font:13.5px/1.55 "Geist Mono",ui-monospace,monospace; }
+.codehilite pre, pre code { background:none; padding:0; margin:0; border:none; }
+.demo-embed { margin:20px 0 28px; }
+.demo-embed .frame { background:var(--term-bg); border-radius:6px; padding:14px; }
+.demo-embed .dots { display:flex; gap:6px; margin-bottom:10px; }
+.demo-embed .dots i { width:10px; height:10px; border-radius:50%; background:#3a3344; }
+.demo-embed img { border:none; border-radius:6px; display:block; width:100%; }
+.demo-embed p { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:8px 2px 0; }
+.crumbs { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-bottom:8px; }
+.crumbs a { color:var(--mute); }
+.src { font:12.5px "Geist Mono",ui-monospace,monospace; margin-top:48px; padding-top:16px; border-top:1px solid var(--border); color:var(--mute); }
+footer.ft { border-top:1px solid var(--border); margin-top:40px; }
+footer.ft .in { max-width:1200px; margin:0 auto; padding:24px; font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.idx-group h2 { font-family:Geist,ui-sans-serif,sans-serif; border:none; margin-top:1.6em; }
+.idx-group ul { list-style:none; padding:0; margin:.4em 0; }
+.idx-group li { padding:6px 0; border-bottom:1px dashed var(--border); }
+.idx-group .path { font:11.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-left:8px; }
+/* Mobile overrides — kept at the end so source order beats base rules.
+   Earlier this rule sat between base rules and got overridden by a later
+   `aside.sb { position:sticky }`, leaving the sidebar stuck on top of
+   main content on phones. */
+@media (max-width: 860px) {
+  .wrap { grid-template-columns:1fr; gap:24px; padding:16px; }
+  aside.sb { position:static; max-height:none; border-left:none; border-bottom:1px solid var(--border); padding-left:0; padding-bottom:16px; font-size:13px; }
+  .sb h4 { margin:12px 0 4px; }
+  main { max-width:none; }
+  main h1 { font-size:1.6rem; }
+  main h2 { font-size:1.2rem; }
+  main h3 { font-size:1.05rem; }
+  .top-in { padding:0 16px; gap:14px; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #49483e }
+.codehilite { background: #272822; color: #F8F8F2 }
+.codehilite .c { color: #959077 } /* Comment */
+.codehilite .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.codehilite .esc { color: #F8F8F2 } /* Escape */
+.codehilite .g { color: #F8F8F2 } /* Generic */
+.codehilite .k { color: #66D9EF } /* Keyword */
+.codehilite .l { color: #AE81FF } /* Literal */
+.codehilite .n { color: #F8F8F2 } /* Name */
+.codehilite .o { color: #FF4689 } /* Operator */
+.codehilite .x { color: #F8F8F2 } /* Other */
+.codehilite .p { color: #F8F8F2 } /* Punctuation */
+.codehilite .ch { color: #959077 } /* Comment.Hashbang */
+.codehilite .cm { color: #959077 } /* Comment.Multiline */
+.codehilite .cp { color: #959077 } /* Comment.Preproc */
+.codehilite .cpf { color: #959077 } /* Comment.PreprocFile */
+.codehilite .c1 { color: #959077 } /* Comment.Single */
+.codehilite .cs { color: #959077 } /* Comment.Special */
+.codehilite .gd { color: #FF4689 } /* Generic.Deleted */
+.codehilite .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F8F8F2 } /* Generic.Error */
+.codehilite .gh { color: #F8F8F2 } /* Generic.Heading */
+.codehilite .gi { color: #A6E22E } /* Generic.Inserted */
+.codehilite .go { color: #66D9EF } /* Generic.Output */
+.codehilite .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #959077 } /* Generic.Subheading */
+.codehilite .gt { color: #F8F8F2 } /* Generic.Traceback */
+.codehilite .kc { color: #66D9EF } /* Keyword.Constant */
+.codehilite .kd { color: #66D9EF } /* Keyword.Declaration */
+.codehilite .kn { color: #FF4689 } /* Keyword.Namespace */
+.codehilite .kp { color: #66D9EF } /* Keyword.Pseudo */
+.codehilite .kr { color: #66D9EF } /* Keyword.Reserved */
+.codehilite .kt { color: #66D9EF } /* Keyword.Type */
+.codehilite .ld { color: #E6DB74 } /* Literal.Date */
+.codehilite .m { color: #AE81FF } /* Literal.Number */
+.codehilite .s { color: #E6DB74 } /* Literal.String */
+.codehilite .na { color: #A6E22E } /* Name.Attribute */
+.codehilite .nb { color: #F8F8F2 } /* Name.Builtin */
+.codehilite .nc { color: #A6E22E } /* Name.Class */
+.codehilite .no { color: #66D9EF } /* Name.Constant */
+.codehilite .nd { color: #A6E22E } /* Name.Decorator */
+.codehilite .ni { color: #F8F8F2 } /* Name.Entity */
+.codehilite .ne { color: #A6E22E } /* Name.Exception */
+.codehilite .nf { color: #A6E22E } /* Name.Function */
+.codehilite .nl { color: #F8F8F2 } /* Name.Label */
+.codehilite .nn { color: #F8F8F2 } /* Name.Namespace */
+.codehilite .nx { color: #A6E22E } /* Name.Other */
+.codehilite .py { color: #F8F8F2 } /* Name.Property */
+.codehilite .nt { color: #FF4689 } /* Name.Tag */
+.codehilite .nv { color: #F8F8F2 } /* Name.Variable */
+.codehilite .ow { color: #FF4689 } /* Operator.Word */
+.codehilite .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.codehilite .w { color: #F8F8F2 } /* Text.Whitespace */
+.codehilite .mb { color: #AE81FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #AE81FF } /* Literal.Number.Float */
+.codehilite .mh { color: #AE81FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #AE81FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #AE81FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #E6DB74 } /* Literal.String.Affix */
+.codehilite .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.codehilite .sc { color: #E6DB74 } /* Literal.String.Char */
+.codehilite .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #E6DB74 } /* Literal.String.Doc */
+.codehilite .s2 { color: #E6DB74 } /* Literal.String.Double */
+.codehilite .se { color: #AE81FF } /* Literal.String.Escape */
+.codehilite .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.codehilite .si { color: #E6DB74 } /* Literal.String.Interpol */
+.codehilite .sx { color: #E6DB74 } /* Literal.String.Other */
+.codehilite .sr { color: #E6DB74 } /* Literal.String.Regex */
+.codehilite .s1 { color: #E6DB74 } /* Literal.String.Single */
+.codehilite .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.codehilite .bp { color: #F8F8F2 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #A6E22E } /* Name.Function.Magic */
+.codehilite .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.codehilite .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.codehilite .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.codehilite .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.codehilite .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.codehilite { background: var(--term-bg) !important; }
+</style>
+
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <a class="brand" href="../../../index.html">BENE</a>
+  <a class="nav" href="../../../index.html">Landing</a>
+  <a class="nav" href="../index.html">文档索引</a>
+  <a class="nav" href="../../../SKILL.md" target="_blank" rel="noopener noreferrer" title="把 BENE 交给你的 agent，一个 URL">SKILL.md ↗</a>
+  <button class="nav copy-llms" data-llms-url="../../../llms.txt" data-copied-label="✓ 已复制" data-opened-label="↗ 已打开" title="把 llms.txt 索引拷到剪贴板 — 粘贴进你 agent 的 context">复制 llms.txt</button>
+  <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer">GitHub</a>
+  <a class="nav" href="../../../docs/design/KERNEL-SPEC.html" title="Switch to English" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">EN</a>
+</div></div>
+<div class="zh-banner" style="background:rgba(238,96,24,.07);border-bottom:1px solid rgba(238,96,24,.2);padding:12px 24px;font-size:13px;line-height:1.5;color:rgb(var(--muted))"><strong style="color:rgb(var(--text))">本页中文版正在按照 4-book methodology 翻译（Mom Test / Pressfield / Zinsser / Dicks）—— 不放 AI 翻译稿。</strong> 下方是英文原文，点上方 <a href="../../../docs/design/KERNEL-SPEC.html" style="color:rgb(var(--accent));text-decoration:underline">EN</a> 直接到英文页面， 或在 <a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer" style="color:rgb(var(--accent));text-decoration:underline">Discussions</a> 里贡献翻译。</div>
+<script>
+(function() {
+  document.querySelectorAll('button.copy-llms').forEach(function(btn) {
+    var original = btn.textContent;
+    btn.addEventListener('click', function() {
+      var url = btn.getAttribute('data-llms-url');
+      fetch(url, { cache: 'no-cache' })
+        .then(function(r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.text(); })
+        .then(function(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).then(function() {
+              btn.textContent = btn.getAttribute('data-copied-label') || '✓ copied';
+              setTimeout(function() { btn.textContent = original; }, 2200);
+            });
+          }
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        })
+        .catch(function() {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        });
+    });
+  });
+})();
+</script>
+<div class="wrap">
+<aside class="sb"><h4>Start, operate, recover</h4>
+<a href="../README.html">README</a>
+<a href="../architecture.html">architecture</a>
+<a href="../checkpoints.html">checkpoints</a>
+<a href="../cli-reference.html">cli-reference</a>
+<a href="../codegen.html">codegen</a>
+<a href="../dashboard.html">dashboard</a>
+<a href="../deployment.html">deployment</a>
+<a href="../integrating-bene.html">integrating-bene</a>
+<a href="../mcp-integration.html">mcp-integration</a>
+<a href="../memory.html">memory</a>
+<a href="../meta-harness.html">meta-harness</a>
+<a href="../philosophy.html">philosophy</a>
+<a href="../primitive-review-cycle.html">primitive-review-cycle</a>
+<a href="../probe-authoring.html">probe-authoring</a>
+<a href="../schema.html">schema</a>
+<a href="../shared-log.html">shared-log</a>
+<a href="../skills.html">skills</a>
+<a href="../use-cases.html">use-cases</a>
+<h4>Recipes</h4>
+<a href="../recipes/atomic-completion.html">atomic-completion</a>
+<h4>Design and claims</h4>
+<a href="../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
+<a href="../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
+<a class="cur" href="../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
+<a href="../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
+<h4>Evidence and research</h4>
+<a href="../research/GAP-AUDIT.html">GAP-AUDIT</a>
+<a href="../research/SYNTHESIS.html">SYNTHESIS</a>
+<a href="../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<h4>Benchmarks and gates</h4>
+<a href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
+<a href="../benchmarks/PREREG.html">PREREG</a>
+<h4>Tutorial playbooks</h4>
+<a href="../tutorials/t00-bene-e2e-walkthrough.html">t00-bene-e2e-walkthrough</a>
+<a href="../tutorials/t01-bene-meta-harness.html">t01-bene-meta-harness</a>
+<a href="../tutorials/t02-e2e-self-healing.html">t02-e2e-self-healing</a>
+<a href="../tutorials/t03-security-swarm.html">t03-security-swarm</a>
+<a href="../tutorials/t04-migration-rollback.html">t04-migration-rollback</a>
+<a href="../tutorials/t05-incident-response.html">t05-incident-response</a>
+<a href="../tutorials/t06-ml-research-lab.html">t06-ml-research-lab</a>
+<a href="../tutorials/t07-regression-guard.html">t07-regression-guard</a>
+<a href="../tutorials/t08-hundred-agents-scale.html">t08-hundred-agents-scale</a>
+<a href="../tutorials/t10-ci-overnight-bene-swarm.html">t10-ci-overnight-bene-swarm</a>
+<a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
+<h4>Case studies</h4>
+<a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
+<h4>Infrastructure</h4>
+<a href="../infra/DNS.html">DNS</a></aside>
+<main>
+<div class="crumbs"><a href="../index.html">docs</a> / design/KERNEL-SPEC.md</div>
+<h1 id="bene-20-kernel-spec-buildable">BENE 2.0 — Kernel Spec (buildable)</h1>
+<p>Implementation contract for <code>bene/kernel/</code>. Phases 4–8 build to this spec; deviations require updating this file in the same commit. Conventions inherited from <code>bene/schema.py</code>: TEXT ULID primary keys, ISO-8601 <code>created_at</code> defaults via <code>strftime('%Y-%m-%dT%H:%M:%f','now')</code>, CHECK-constrained enums, <code>IF NOT EXISTS</code> everywhere, partial indexes where useful. All writes go through the storage layer / same sqlite3 connection discipline as <code>bene/core.py</code> (WAL mode).</p>
+<hr />
+<h2 id="1-schema-v2-additive-benekernelschema_v2py">1. Schema v2 (additive — <code>bene/kernel/schema_v2.py</code>)</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- ============ ENGRAM SUBSTRATE ============</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">engrams</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">engram_id</span><span class="w">     </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">                 </span><span class="c1">-- ULID</span>
+<span class="w">    </span><span class="n">kind</span><span class="w">          </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">kind</span><span class="w"> </span><span class="k">IN</span>
+<span class="w">                  </span><span class="p">(</span><span class="s1">&#39;trace&#39;</span><span class="p">,</span><span class="s1">&#39;episodic&#39;</span><span class="p">,</span><span class="s1">&#39;semantic&#39;</span><span class="p">,</span><span class="s1">&#39;procedural&#39;</span><span class="p">,</span><span class="s1">&#39;strategic&#39;</span><span class="p">,</span>
+<span class="w">                   </span><span class="s1">&#39;eval&#39;</span><span class="p">,</span><span class="s1">&#39;experiment&#39;</span><span class="p">,</span><span class="s1">&#39;trust&#39;</span><span class="p">,</span><span class="s1">&#39;pollution&#39;</span><span class="p">,</span><span class="s1">&#39;intervention&#39;</span><span class="p">,</span>
+<span class="w">                   </span><span class="s1">&#39;proposal&#39;</span><span class="p">,</span><span class="s1">&#39;spec&#39;</span><span class="p">,</span><span class="s1">&#39;report&#39;</span><span class="p">)),</span>
+<span class="w">    </span><span class="n">tier</span><span class="w">          </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">tier</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="mi">4</span><span class="p">),</span>
+<span class="w">    </span><span class="n">title</span><span class="w">         </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">content_hash</span><span class="w">  </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">                              </span><span class="c1">-- payload in blob store (nullable for small inline)</span>
+<span class="w">    </span><span class="n">inline_body</span><span class="w">   </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">                              </span><span class="c1">-- small payloads (&lt; ~4KB) stored inline</span>
+<span class="w">    </span><span class="n">metadata</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span><span class="w">        </span><span class="c1">-- JSON</span>
+<span class="w">    </span><span class="n">provenance</span><span class="w">    </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">                     </span><span class="c1">-- JSON: {&quot;agent_id&quot;: ...} or {&quot;system&quot;: &quot;&lt;origin&gt;&quot;} — REQUIRED, enforced in EngramStore.append</span>
+<span class="w">    </span><span class="n">agent_id</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">agents</span><span class="p">(</span><span class="n">agent_id</span><span class="p">),</span><span class="w">  </span><span class="c1">-- scoping agent when applicable</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">    </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="p">(</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%dT%H:%M:%f&#39;</span><span class="p">,</span><span class="s1">&#39;now&#39;</span><span class="p">)),</span>
+<span class="w">    </span><span class="n">superseded_by</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">engrams</span><span class="p">(</span><span class="n">engram_id</span><span class="p">)</span><span class="w"> </span><span class="c1">-- set when a newer version exists (append-only versioning)</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_engrams_kind</span><span class="w">   </span><span class="k">ON</span><span class="w"> </span><span class="n">engrams</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_engrams_agent</span><span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">engrams</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_engrams_tier</span><span class="w">   </span><span class="k">ON</span><span class="w"> </span><span class="n">engrams</span><span class="p">(</span><span class="n">tier</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_engrams_active</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">engrams</span><span class="p">(</span><span class="n">kind</span><span class="p">)</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">superseded_by</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">engram_links</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">link_id</span><span class="w">     </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">                    </span><span class="c1">-- ULID</span>
+<span class="w">    </span><span class="n">src_id</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">engrams</span><span class="p">(</span><span class="n">engram_id</span><span class="p">),</span><span class="w">  </span><span class="c1">-- child / derived</span>
+<span class="w">    </span><span class="n">dst_id</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">engrams</span><span class="p">(</span><span class="n">engram_id</span><span class="p">),</span><span class="w">  </span><span class="c1">-- parent / source</span>
+<span class="w">    </span><span class="n">link_type</span><span class="w">   </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">link_type</span><span class="w"> </span><span class="k">IN</span>
+<span class="w">                </span><span class="p">(</span><span class="s1">&#39;derived_from&#39;</span><span class="p">,</span><span class="s1">&#39;consolidates&#39;</span><span class="p">,</span><span class="s1">&#39;verifies&#39;</span><span class="p">,</span><span class="s1">&#39;refutes&#39;</span><span class="p">,</span><span class="s1">&#39;associates&#39;</span><span class="p">,</span>
+<span class="w">                 </span><span class="s1">&#39;supersedes&#39;</span><span class="p">,</span><span class="s1">&#39;about_agent&#39;</span><span class="p">,</span><span class="s1">&#39;gated_by&#39;</span><span class="p">)),</span>
+<span class="w">    </span><span class="n">weight</span><span class="w">      </span><span class="nb">REAL</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">1</span><span class="p">.</span><span class="mi">0</span><span class="p">,</span><span class="w">           </span><span class="c1">-- association strength (plasticity-adjustable)</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">  </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="p">(</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%dT%H:%M:%f&#39;</span><span class="p">,</span><span class="s1">&#39;now&#39;</span><span class="p">)),</span>
+<span class="w">    </span><span class="k">UNIQUE</span><span class="p">(</span><span class="n">src_id</span><span class="p">,</span><span class="w"> </span><span class="n">dst_id</span><span class="p">,</span><span class="w"> </span><span class="n">link_type</span><span class="p">)</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_links_src</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">engram_links</span><span class="p">(</span><span class="n">src_id</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_links_dst</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">engram_links</span><span class="p">(</span><span class="n">dst_id</span><span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="n">VIRTUAL</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">engram_fts</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">fts5</span><span class="p">(</span>
+<span class="w">    </span><span class="n">engram_id</span><span class="w"> </span><span class="n">UNINDEXED</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">body</span><span class="p">,</span><span class="w"> </span><span class="n">tokenize</span><span class="o">=</span><span class="s1">&#39;porter&#39;</span>
+<span class="p">);</span><span class="w">  </span><span class="c1">-- maintained by EngramStore on append (title + searchable text of payload).</span>
+<span class="w">    </span><span class="c1">-- engram_id stored UNINDEXED (not contentless) so search can JOIN back to engrams.</span>
+
+<span class="c1">-- ============ CAPABILITIES &amp; AUTONOMY ============</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">capabilities</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">name</span><span class="w">            </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">                </span><span class="c1">-- e.g. &#39;memory.writeback&#39;, &#39;evolve.promote&#39;</span>
+<span class="w">    </span><span class="n">description</span><span class="w">     </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">autonomy_level</span><span class="w">  </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">autonomy_level</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="mi">4</span><span class="p">),</span>
+<span class="w">    </span><span class="n">handler_ref</span><span class="w">     </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">                            </span><span class="c1">-- dotted path or registry token (informational)</span>
+<span class="w">    </span><span class="n">metadata</span><span class="w">        </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="p">(</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%dT%H:%M:%f&#39;</span><span class="p">,</span><span class="s1">&#39;now&#39;</span><span class="p">))</span>
+<span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">autonomy_grants</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">agent_id</span><span class="w">    </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">agents</span><span class="p">(</span><span class="n">agent_id</span><span class="p">),</span>
+<span class="w">    </span><span class="k">domain</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;*&#39;</span><span class="p">,</span><span class="w">           </span><span class="c1">-- capability domain (&#39;*&#39; = general grant)</span>
+<span class="w">    </span><span class="k">level</span><span class="w">       </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="k">level</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="mi">4</span><span class="p">),</span>
+<span class="w">    </span><span class="n">granted_by</span><span class="w">  </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">                       </span><span class="c1">-- &#39;human:&lt;name&gt;&#39; | &#39;policy:&lt;rule&gt;&#39;</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">  </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="p">(</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%dT%H:%M:%f&#39;</span><span class="p">,</span><span class="s1">&#39;now&#39;</span><span class="p">)),</span>
+<span class="w">    </span><span class="n">revoked_at</span><span class="w">  </span><span class="nb">TEXT</span><span class="p">,</span>
+<span class="w">    </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span><span class="w"> </span><span class="k">domain</span><span class="p">)</span>
+<span class="p">);</span>
+
+<span class="c1">-- ============ EVAL REGISTRY (thin; verdicts live as engrams) ============</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">probe_registry</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">probe_id</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">                  </span><span class="c1">-- ULID</span>
+<span class="w">    </span><span class="n">name</span><span class="w">          </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">gate_spec</span><span class="w">     </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">                     </span><span class="c1">-- canonical JSON (sorted keys) of gates</span>
+<span class="w">    </span><span class="n">lock_sha256</span><span class="w">   </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">                     </span><span class="c1">-- sha256 over gate_spec; tamper =&gt; refuse</span>
+<span class="w">    </span><span class="n">status</span><span class="w">        </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;registered&#39;</span>
+<span class="w">                  </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;registered&#39;</span><span class="p">,</span><span class="s1">&#39;admissible&#39;</span><span class="p">,</span><span class="s1">&#39;inadmissible&#39;</span><span class="p">,</span><span class="s1">&#39;retired&#39;</span><span class="p">)),</span>
+<span class="w">    </span><span class="n">subject_ref</span><span class="w">   </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">                              </span><span class="c1">-- mechanism under test (engram id / module name)</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">    </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="p">(</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%dT%H:%M:%f&#39;</span><span class="p">,</span><span class="s1">&#39;now&#39;</span><span class="p">))</span>
+<span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">experiment_runs</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">run_id</span><span class="w">        </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">                  </span><span class="c1">-- ULID</span>
+<span class="w">    </span><span class="n">kind</span><span class="w">          </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">kind</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;probe&#39;</span><span class="p">,</span><span class="s1">&#39;evolution&#39;</span><span class="p">,</span><span class="s1">&#39;consolidation&#39;</span><span class="p">,</span><span class="s1">&#39;sweep&#39;</span><span class="p">)),</span>
+<span class="w">    </span><span class="n">probe_id</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">probe_registry</span><span class="p">(</span><span class="n">probe_id</span><span class="p">),</span>
+<span class="w">    </span><span class="n">verdict_engram</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">engrams</span><span class="p">(</span><span class="n">engram_id</span><span class="p">),</span>
+<span class="w">    </span><span class="n">summary</span><span class="w">       </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">metrics</span><span class="w">       </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span><span class="w">        </span><span class="c1">-- JSON</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">    </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="p">(</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%dT%H:%M:%f&#39;</span><span class="p">,</span><span class="s1">&#39;now&#39;</span><span class="p">))</span>
+<span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_experiments_kind</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">experiment_runs</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">);</span>
+
+<span class="c1">-- ============ KERNEL SCHEMA REVISION ============</span>
+<span class="c1">-- Separate from legacy schema_version (which is never touched)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">kernel_schema_version</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="k">version</span><span class="w">     </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">applied_at</span><span class="w">  </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="p">(</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%dT%H:%M:%f&#39;</span><span class="p">,</span><span class="s1">&#39;now&#39;</span><span class="p">))</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<p>8 CREATE TABLE (7 regular + 1 virtual). <strong>No ALTER on legacy tables, ever.</strong> Migration guard: <code>ensure_v2(conn)</code> is idempotent; a dedicated <code>kernel_schema_version</code> table (separate from the legacy <code>schema_version</code>, which has no component column and is never touched) tracks v2 revisions.</p>
+<h2 id="2-python-api-signatures-the-contract">2. Python API (signatures = the contract)</h2>
+<h3 id="21-benekernelengramspy">2.1 <code>bene/kernel/engrams.py</code></h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EngramStore</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conn</span><span class="p">:</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">Connection</span><span class="p">,</span> <span class="n">blobs</span><span class="p">:</span> <span class="n">BlobStore</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bytes</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span>
+               <span class="n">provenance</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">parents</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+               <span class="n">link_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;derived_from&quot;</span><span class="p">,</span> <span class="n">tier</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+               <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Append-only. Raises ProvenanceRequired if provenance lacks agent_id/system.</span>
+<span class="sd">        Payload &gt; ~4KB -&gt; blob store; else inline. Indexes title+text in FTS.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">engram_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Engram</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">payload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">engram_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">tier</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+               <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Engram</span><span class="p">]:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">lineage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">engram_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">direction</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ancestors&quot;</span><span class="p">,</span>
+                <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Engram</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;BFS over engram_links; direction in {&#39;ancestors&#39;,&#39;descendants&#39;}.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">promote</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">engram_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">new_tier</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                <span class="n">payload</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">provenance</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Consolidation: NEW engram at new_tier linked &#39;consolidates&#39; -&gt; source.</span>
+<span class="sd">        Never mutates the source. Raises TierViolation if new_tier &lt;= source tier.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supersede</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">new_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dst_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">link_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+
+<h3 id="22-benekernelbuspy">2.2 <code>bene/kernel/bus.py</code></h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EventBus</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">journal</span><span class="p">:</span> <span class="n">EventJournal</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">dict</span><span class="p">],</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unsubscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sub_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">publish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sync at-least-once dispatch; handler exceptions isolated (logged, others still run);</span>
+<span class="sd">        mirrors to legacy journal when attached.&quot;&quot;&quot;</span>
+</code></pre></div>
+
+<h3 id="23-benekernelcapabilitiespy">2.3 <code>bene/kernel/capabilities.py</code></h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">CapabilityRegistry</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">autonomy_level</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">handler</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">lookup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Capability</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_level</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Capability</span><span class="p">]:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dispatch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The enforcement point: AutonomyPolicy.check before handler; denial -&gt;</span>
+<span class="sd">        AutonomyDenied raised + trust engram emitted via bus.&quot;&quot;&quot;</span>
+</code></pre></div>
+
+<h3 id="24-benekerneleval-probepy-gatespy-verdictpy">2.4 <code>bene/kernel/eval/</code> (probe.py, gates.py, verdict.py)</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Gate</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">;</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">;</span> <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span><span class="p">;</span> <span class="n">op</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># one of &gt;=, &gt;, &lt;=, &lt;</span>
+    <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">;</span> <span class="n">relative_to_baseline</span><span class="p">:</span> <span class="nb">bool</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Probe</span><span class="p">:</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">gates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Gate</span><span class="p">]</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">EngramStore</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span>
+                 <span class="n">baseline</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">subject_ref</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Canonical-JSON gate spec -&gt; sha256 lock -&gt; probe_registry row.</span>
+<span class="sd">        Then admissibility self-test (folded in here — no separate</span>
+<span class="sd">        baseline_self_test method): evaluate baseline against itself; if NO gate</span>
+<span class="sd">        can kill the identity candidate -&gt; status &#39;inadmissible&#39; + VOID engram.</span>
+<span class="sd">        Else &#39;admissible&#39;.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subject</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">baseline</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">store</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span>
+            <span class="n">subject_ref</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Verdict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Recompute lock; mismatch -&gt; LockTamperError (refuse to run).</span>
+<span class="sd">        Evaluate gates -&gt; Verdict(ACCEPT|REJECT|VOID) persisted as &#39;eval&#39; engram</span>
+<span class="sd">        with &#39;verifies&#39;/&#39;refutes&#39; link to subject_ref; experiment_runs row logged.&quot;&quot;&quot;</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Verdict</span><span class="p">:</span>  <span class="c1"># ACCEPT / REJECT / VOID + per-gate results, engram-backed</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span><span class="p">;</span> <span class="n">gate_results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">];</span> <span class="n">engram_id</span><span class="p">:</span> <span class="nb">str</span>
+</code></pre></div>
+
+<h3 id="25-benekerneltrustpy">2.5 <code>bene/kernel/trust.py</code></h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TrustLedger</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Computed, never declared. Four documented signals (each 0..1):</span>
+<span class="sd">    verification_coverage = verified claims / claims;</span>
+<span class="sd">    audit_completeness   = tool calls w/ recorded outcome / tool calls;</span>
+<span class="sd">    checkpoint_discipline = checkpoints / risky-op windows;</span>
+<span class="sd">    outcome_reliability  = recency-weighted success rate (half-life decay).</span>
+<span class="sd">    composite = weighted mean (weights documented in module).&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;*&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">record</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">signal</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>  <span class="c1"># trust engram</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">eligible</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;*&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">weighted_vote</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>  <span class="c1"># for shared_log tally</span>
+</code></pre></div>
+
+<h3 id="26-benekernelevolve-gepapy-distillpy-genespy">2.6 <code>bene/kernel/evolve/</code> (gepa.py, distill.py, genes.py)</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Genome</span><span class="p">:</span>           <span class="c1"># structured: components mutated independently (D7/AHE/ADOPT)</span>
+    <span class="n">components</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>   <span class="c1"># {&#39;memory_policy&#39;,&#39;retrieval_policy&#39;,&#39;context_strategy&#39;,&#39;tool_config&#39;,&#39;prompt&#39;}</span>
+    <span class="n">gene</span><span class="p">:</span> <span class="n">StrategyGene</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">scores</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>     <span class="c1"># {&#39;quality&#39;,&#39;cost&#39;,&#39;tokens&#39;}</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ReflectiveEvolver</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">EngramStore</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span>
+                 <span class="n">reflect_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Genome</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
+                 <span class="n">benchmark</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Genome</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
+                 <span class="n">frontier</span><span class="p">:</span> <span class="n">GenomeFrontier</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">feedback_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Genome</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">surrogate</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;reflect_fn returns {&quot;component&quot;, &quot;new_text&quot;, &quot;rationale&quot;} — a structured</span>
+<span class="sd">        mutation targeting a named component (ADOPT credit assignment).&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="n">Genome</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">generations</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">population</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GenomeFrontier</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Per gen: reflect on worst failure traces -&gt; textual gradient -&gt; targeted</span>
+<span class="sd">        component mutation -&gt; (surrogate prefilter) -&gt; benchmark -&gt; frontier update.</span>
+<span class="sd">        Every round logged as experiment_run; candidates persisted as &#39;strategic&#39; engrams.&quot;&quot;&quot;</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">GenomeFrontier</span><span class="p">:</span>    <span class="c1"># non-dominated set; reuses bene/metaharness/pareto.dominates()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">genome</span><span class="p">:</span> <span class="n">Genome</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>   <span class="c1"># (NOT metaharness&#39;s ParetoFrontier —</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">members</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Genome</span><span class="p">]:</span> <span class="o">...</span>          <span class="c1">#  that is a different class)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">promote</span><span class="p">(</span><span class="n">candidate_engram_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">store</span><span class="p">,</span> <span class="n">conn</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Requires an ACCEPT &#39;eval&#39; engram linked (&#39;verifies&#39;) to the candidate.</span>
+<span class="sd">    Otherwise raises PromotionBlocked. Records &#39;gated_by&#39; link; returns the</span>
+<span class="sd">    verdict engram id. [D3]&quot;&quot;&quot;</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">TraceDistiller</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">distill</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">analyst_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Per-trace patches (success: single-pass; failure: evidence chain w/ root cause)</span>
+<span class="sd">        -&gt; prevalence-weighted merge -&gt; 3-level hierarchy (planning/functional/atomic)</span>
+<span class="sd">        as tier-3 engrams, &#39;consolidates&#39;-linked to EVERY source trace.&quot;&quot;&quot;</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">StrategyGene</span><span class="p">:</span>      <span class="c1"># control-signal-dense (GEP): match_signal, steps, avoid[]</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">merge</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="s2">&quot;StrategyGene&quot;</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="s2">&quot;StrategyGene&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StrategyGene&quot;</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+
+<h3 id="27-benekernelmemory-granulespy-retrievalpy-contextospy-pollutionpy">2.7 <code>bene/kernel/memory/</code> (granules.py, retrieval.py, contextos.py, pollution.py)</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GranuleStore</span><span class="p">:</span>      <span class="c1"># tiers 0..3 over EngramStore</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_turn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">meta</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">consolidate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">granule_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">summary</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                    <span class="n">provenance</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>   <span class="c1"># promotion via EngramStore.promote</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">associate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">AdaptiveRetriever</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RetrievalResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Familiarity score vs recent query engrams; &gt;= fast_threshold -&gt; fast path</span>
+<span class="sd">        (cached/top-k); else slow path (FTS + association expansion). Served path</span>
+<span class="sd">        recorded in result + engram metadata (auditable).&quot;&quot;&quot;</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ContextOS</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fn</span><span class="p">:</span> <span class="n">PackStrategy</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">select_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signals</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>   <span class="c1"># AgentSwing-style routing rules</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">assemble</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">items</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="n">budget_tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span>
+                 <span class="n">signals</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PackedContext</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Never exceeds budget (chars/4 estimator, pluggable). Caller passes items</span>
+<span class="sd">        directly ({&quot;id&quot;,&quot;text&quot;,&quot;relevance&quot;?}); agent-level assembly by agent_id</span>
+<span class="sd">        awaits runner wiring (PLANNED). Returns manifest: included[], dropped[],</span>
+<span class="sd">        strategy, estimated_tokens. [transparency/D8]&quot;&quot;&quot;</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">PollutionDetector</span><span class="p">:</span>
+    <span class="n">SIGNALS</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;repeated_failed_calls&#39;</span><span class="p">,</span> <span class="s1">&#39;error_rate_spike&#39;</span><span class="p">,</span> <span class="s1">&#39;contradiction_markers&#39;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">scan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PollutionReport</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">recover</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">report</span><span class="p">:</span> <span class="n">PollutionReport</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">bene</span><span class="p">:</span> <span class="s2">&quot;Bene&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Consolidate requirements from trace -&gt; emit &#39;pollution&#39; engram -&gt;</span>
+<span class="sd">        restore latest pre-contamination checkpoint (legacy API, wrapped not ported)</span>
+<span class="sd">        or respawn with consolidated context. Emits recovery event. Returns a</span>
+<span class="sd">        three-key dict: {&quot;pollution_engram&quot;, &quot;consolidated&quot;, &quot;restored_checkpoint&quot;}. [D9]&quot;&quot;&quot;</span>
+</code></pre></div>
+
+<h3 id="28-benekernelharness-autonomypy-sensespy-sweeperpy-guardspy">2.8 <code>bene/kernel/harness/</code> (autonomy.py, senses.py, sweeper.py, guards.py)</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AutonomyPolicy</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">grant</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">granted_by</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">capability</span><span class="p">:</span> <span class="n">Capability</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Takes a Capability object (needs .name/.autonomy_level for domain</span>
+<span class="sd">        derivation + comparison). max(grant level for domain) &gt;=</span>
+<span class="sd">        capability.autonomy_level; deny -&gt; trust engram.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">guard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">capability</span><span class="p">:</span> <span class="n">Capability</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>   <span class="c1"># decorator for handler fns</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">SensesManifest</span><span class="p">:</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="n">bene</span><span class="p">:</span> <span class="s2">&quot;Bene&quot;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;json&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sections: agents+status, capabilities+levels, skills, memory domains,</span>
+<span class="sd">        recent engram activity, entry-point commands. Generated from live db. [can&#39;t rot]&quot;&quot;&quot;</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">DebtSweeper</span><span class="p">:</span>
+    <span class="n">SIGNATURES</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">]</span>  <span class="c1"># 3 regexes: debug_print, stale_todo, dead_import</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">scan_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">paths</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">SweepReport</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">scan_agent_vfs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bene</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SweepReport</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Findings persisted as &#39;report&#39; engram; CLI `bene sweep`.</span>
+<span class="sd">        duplicated_block is detected by a separate sliding-window comparison</span>
+<span class="sd">        (DUP_WINDOW consecutive lines), not a SIGNATURES regex.&quot;&quot;&quot;</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">LoopGuard</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">repeat_threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Intervention</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Near-identical action repetition / oscillation -&gt; &#39;intervention&#39; engram +</span>
+<span class="sd">        callback (default: forced-reflection note + needs-attention mark). Removable middleware.&quot;&quot;&quot;</span>
+</code></pre></div>
+
+<h3 id="29-cli-additions-beneclimainpy">2.9 CLI additions (<code>bene/cli/main.py</code>)</h3>
+<p>Groups: <code>bene probe ls|show</code>, <code>bene trust &lt;agent_id&gt;</code>, <code>bene experiments ls|show</code>, <code>bene senses</code>, <code>bene sweep</code> — every command supports <code>--json</code>. (No <code>probe selftest</code> subcommand: the admissibility self-test runs automatically inside <code>Probe.register</code>.)</p>
+<h2 id="3-invariants-enforced-by-tests-phase-48">3. Invariants (enforced by tests, phase 4–8)</h2>
+<ol>
+<li>Engram append without provenance raises — no anonymous experience.</li>
+<li>Promotion never mutates sources; tiers only increase along <code>consolidates</code> links.</li>
+<li>Opening a 0.1.0 db: legacy <code>sqlite_master</code> entries byte-identical after <code>ensure_v2</code>.</li>
+<li>A probe with an edited gate spec refuses to run (LockTamperError).</li>
+<li>A probe whose baseline cannot trigger any kill gate is inadmissible (VOID).</li>
+<li><code>evolve.promote</code> without ACCEPT verdict raises PromotionBlocked.</li>
+<li>ContextOS.assemble output ≤ budget for all inputs (property test).</li>
+<li>An L1 agent invoking an L3 capability raises AutonomyDenied AND leaves a trust engram.</li>
+<li>Evolver and probe judge never share state (verifier isolation — AEVO). Test: <code>test_verifier_isolation_evolver_cannot_mint_verdicts</code> in <code>tests/kernel/test_hardening.py</code>.</li>
+<li>Every kernel CLI command supports <code>--json</code>.</li>
+</ol>
+<h2 id="4-port-plan-every-legacy-top-level-module">4. Port plan (every legacy top-level module)</h2>
+<table>
+<thead>
+<tr>
+<th>Legacy module</th>
+<th>Plan</th>
+<th>Phase</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>core.py (VFS)</td>
+<td>keep</td>
+<td>—</td>
+<td>kernel reads same conn; no changes</td>
+</tr>
+<tr>
+<td>schema.py</td>
+<td>keep</td>
+<td>—</td>
+<td>v2 additive in kernel/schema_v2.py</td>
+</tr>
+<tr>
+<td>blobs.py</td>
+<td>keep</td>
+<td>4</td>
+<td>engram payload backend</td>
+</tr>
+<tr>
+<td>events.py</td>
+<td>keep</td>
+<td>4</td>
+<td>bus mirrors into journal</td>
+</tr>
+<tr>
+<td>checkpoints.py</td>
+<td>keep (wrap)</td>
+<td>7</td>
+<td>pollution recovery calls it; never modified</td>
+</tr>
+<tr>
+<td>isolation.py</td>
+<td>keep</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>memory.py</td>
+<td>adapt</td>
+<td>9</td>
+<td>writes mirror to engram ladder via <code>attach_kernel(memory=...)</code> opt-in; no config flag</td>
+</tr>
+<tr>
+<td>skills.py / skills_discovery.py</td>
+<td>adapt</td>
+<td>9</td>
+<td>mirror to procedural engrams (shipped); skill decay/demotion lifecycle deferred (PLANNED)</td>
+</tr>
+<tr>
+<td>shared_log.py</td>
+<td>adapt</td>
+<td>9</td>
+<td>trust-weighted tally option</td>
+</tr>
+<tr>
+<td>intake.py</td>
+<td>keep</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>ccr/ (runner, tools, parallel_worker, prompts)</td>
+<td>adapt</td>
+<td>9</td>
+<td>runner wiring of ContextOS packing / loop-guard middleware / senses tools deferred to a later release (</td>
+</tr>
+<tr>
+<td>router/ (tier, providers, agent_sdk, classifier, vllm_client, context.py)</td>
+<td>keep</td>
+<td>9</td>
+<td>kept as-is; folding router/context.py into a ContextOS strategy deferred (PLANNED)</td>
+</tr>
+<tr>
+<td>mcp/server.py</td>
+<td>adapt</td>
+<td>9</td>
+<td>kernel families shipped via CLI (<code>bene probe/trust/experiments/senses/sweep</code>) + UI (/api/engrams, /api/trust); MCP kernel tool families deferred (PLANNED)</td>
+</tr>
+<tr>
+<td>cli/</td>
+<td>adapt</td>
+<td>5,8,9</td>
+<td>new groups; UX pass</td>
+</tr>
+<tr>
+<td>ui/</td>
+<td>adapt</td>
+<td>9</td>
+<td>engram browser + trust panel</td>
+</tr>
+<tr>
+<td>obsidian/</td>
+<td>keep</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>metaharness/</td>
+<td>adapt</td>
+<td>6,9</td>
+<td>evolve/ backend opt-in; pareto.py reused; verifier reused as probe judge</td>
+</tr>
+<tr>
+<td>benchmarks/ (empty ns)</td>
+<td>keep (docstring-only namespace)</td>
+<td>10</td>
+<td>left for the first real domain package, avoiding import-path breakage — .md "Known polish notes"</td>
+</tr>
+<tr>
+<td>storage/</td>
+<td>keep</td>
+<td>—</td>
+<td>kernel writes through it</td>
+</tr>
+<tr>
+<td>runtime/</td>
+<td>keep</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>temporal/</td>
+<td>keep</td>
+<td>—</td>
+<td>durability edge retained</td>
+</tr>
+<tr>
+<td>integrations/ (empty)</td>
+<td>keep (docstring-only namespace)</td>
+<td>10</td>
+<td>left for the first real domain package, avoiding import-path breakage — .md "Known polish notes"</td>
+</tr>
+<tr>
+<td>```</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/design/KERNEL-SPEC.md" target="_blank" rel="noopener noreferrer">docs/design/KERNEL-SPEC.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+</main>
+</div>
+<footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>
+<a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer">Building something on bene? Open a Discussion.</a></div></footer>
+</body>
+</html>

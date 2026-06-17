@@ -1,0 +1,26 @@
+# yamllint disable rule:truthy
+# Entry point: feature/* -> dev fast lane.
+#
+# Branch contract (.factory/specs/bene-cicd-redesign-tiered.md):
+#   - feature/* PRs target dev; only ci/fast is required.
+#   - Advisory lanes (mypy allowlist, full mypy, slow tests, regression-gate,
+#     review-swarm) live in the existing ci.yml until that workflow is
+#     refactored in Stage B follow-up.
+
+name: pr-feature
+
+on:
+  pull_request:
+    branches: [dev]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-feature-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fast-gate:
+    uses: ./.github/workflows/reusable-fast-gate.yml
+    secrets: inherit

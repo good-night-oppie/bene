@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Four Hypotheses, One Night: an Overnight ML Research Lab on BENE — BENE docs</title>
+<meta name="description" content="BENE 0.2.0 documentation — Four Hypotheses, One Night: an Overnight ML Research Lab on BENE" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+:root { --bg:#F0EEE8; --surface:#EDE9E4; --border:#CFCCC8; --ink:#1F1D1C; --mute:#62666D; --accent:#EE6018; --gold:#B46A35; --term-bg:#0A0908; --term-fg:#EDE9E4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 Geist,ui-sans-serif,system-ui,sans-serif; }
+a { color:var(--gold); text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent); text-underline-offset:3px; }
+a:hover { color:var(--accent); }
+.top { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+.top-in { max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+.brand { font-family:Geist,ui-sans-serif,sans-serif; font-weight:700; letter-spacing:.12em; color:var(--ink); text-decoration:none; }
+.top a.nav { color:var(--mute); text-decoration:none; font-size:14px; }
+.top a.nav:hover { color:var(--accent); }
+.wrap { max-width:1200px; margin:0 auto; padding:24px; display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; }
+aside.sb { position:sticky; top:80px; align-self:start; max-height:calc(100vh - 100px); overflow-y:auto; font-size:13.5px; border-left:1px solid var(--border); padding-left:16px; }
+.sb h4 { margin:18px 0 6px; font:600 11px/1 "Geist Mono",ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+.sb a { display:block; padding:3px 0; color:var(--mute); text-decoration:none; }
+.sb a:hover { color:var(--accent); }
+.sb a.cur { color:var(--ink); font-weight:600; }
+main { min-width:0; max-width:760px; }
+main h1 { font-family:Geist,ui-sans-serif,sans-serif; font-size:2.1rem; line-height:1.2; margin:.2em 0 .5em; }
+main h2 { font-family:Geist,ui-sans-serif,sans-serif; font-size:1.45rem; margin-top:2em; border-bottom:1px solid var(--border); padding-bottom:.35em; }
+main h3 { font-size:1.12rem; margin-top:1.7em; }
+main img { max-width:100%; border:1px solid var(--border); border-radius:8px; }
+main table { border-collapse:collapse; width:100%; font-size:14.5px; display:block; overflow-x:auto; }
+main th, main td { border:1px solid var(--border); padding:8px 12px; text-align:left; vertical-align:top; }
+main th { background:var(--surface); font-weight:600; }
+main blockquote { margin:1em 0; padding:.2em 1.2em; border-left:3px solid var(--accent); color:var(--mute); background:var(--surface); border-radius:0 4px 4px 0; }
+main :not(pre) > code { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:.08em .35em; font:.86em "Geist Mono",ui-monospace,monospace; }
+.codehilite, main pre { background:var(--term-bg); color:var(--term-fg); border-radius:6px; padding:16px 18px; overflow-x:auto; font:13.5px/1.55 "Geist Mono",ui-monospace,monospace; }
+.codehilite pre, pre code { background:none; padding:0; margin:0; border:none; }
+.demo-embed { margin:20px 0 28px; }
+.demo-embed .frame { background:var(--term-bg); border-radius:6px; padding:14px; }
+.demo-embed .dots { display:flex; gap:6px; margin-bottom:10px; }
+.demo-embed .dots i { width:10px; height:10px; border-radius:50%; background:#3a3344; }
+.demo-embed img { border:none; border-radius:6px; display:block; width:100%; }
+.demo-embed p { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:8px 2px 0; }
+.crumbs { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-bottom:8px; }
+.crumbs a { color:var(--mute); }
+.src { font:12.5px "Geist Mono",ui-monospace,monospace; margin-top:48px; padding-top:16px; border-top:1px solid var(--border); color:var(--mute); }
+footer.ft { border-top:1px solid var(--border); margin-top:40px; }
+footer.ft .in { max-width:1200px; margin:0 auto; padding:24px; font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.idx-group h2 { font-family:Geist,ui-sans-serif,sans-serif; border:none; margin-top:1.6em; }
+.idx-group ul { list-style:none; padding:0; margin:.4em 0; }
+.idx-group li { padding:6px 0; border-bottom:1px dashed var(--border); }
+.idx-group .path { font:11.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-left:8px; }
+/* Mobile overrides — kept at the end so source order beats base rules.
+   Earlier this rule sat between base rules and got overridden by a later
+   `aside.sb { position:sticky }`, leaving the sidebar stuck on top of
+   main content on phones. */
+@media (max-width: 860px) {
+  .wrap { grid-template-columns:1fr; gap:24px; padding:16px; }
+  aside.sb { position:static; max-height:none; border-left:none; border-bottom:1px solid var(--border); padding-left:0; padding-bottom:16px; font-size:13px; }
+  .sb h4 { margin:12px 0 4px; }
+  main { max-width:none; }
+  main h1 { font-size:1.6rem; }
+  main h2 { font-size:1.2rem; }
+  main h3 { font-size:1.05rem; }
+  .top-in { padding:0 16px; gap:14px; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #49483e }
+.codehilite { background: #272822; color: #F8F8F2 }
+.codehilite .c { color: #959077 } /* Comment */
+.codehilite .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.codehilite .esc { color: #F8F8F2 } /* Escape */
+.codehilite .g { color: #F8F8F2 } /* Generic */
+.codehilite .k { color: #66D9EF } /* Keyword */
+.codehilite .l { color: #AE81FF } /* Literal */
+.codehilite .n { color: #F8F8F2 } /* Name */
+.codehilite .o { color: #FF4689 } /* Operator */
+.codehilite .x { color: #F8F8F2 } /* Other */
+.codehilite .p { color: #F8F8F2 } /* Punctuation */
+.codehilite .ch { color: #959077 } /* Comment.Hashbang */
+.codehilite .cm { color: #959077 } /* Comment.Multiline */
+.codehilite .cp { color: #959077 } /* Comment.Preproc */
+.codehilite .cpf { color: #959077 } /* Comment.PreprocFile */
+.codehilite .c1 { color: #959077 } /* Comment.Single */
+.codehilite .cs { color: #959077 } /* Comment.Special */
+.codehilite .gd { color: #FF4689 } /* Generic.Deleted */
+.codehilite .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F8F8F2 } /* Generic.Error */
+.codehilite .gh { color: #F8F8F2 } /* Generic.Heading */
+.codehilite .gi { color: #A6E22E } /* Generic.Inserted */
+.codehilite .go { color: #66D9EF } /* Generic.Output */
+.codehilite .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #959077 } /* Generic.Subheading */
+.codehilite .gt { color: #F8F8F2 } /* Generic.Traceback */
+.codehilite .kc { color: #66D9EF } /* Keyword.Constant */
+.codehilite .kd { color: #66D9EF } /* Keyword.Declaration */
+.codehilite .kn { color: #FF4689 } /* Keyword.Namespace */
+.codehilite .kp { color: #66D9EF } /* Keyword.Pseudo */
+.codehilite .kr { color: #66D9EF } /* Keyword.Reserved */
+.codehilite .kt { color: #66D9EF } /* Keyword.Type */
+.codehilite .ld { color: #E6DB74 } /* Literal.Date */
+.codehilite .m { color: #AE81FF } /* Literal.Number */
+.codehilite .s { color: #E6DB74 } /* Literal.String */
+.codehilite .na { color: #A6E22E } /* Name.Attribute */
+.codehilite .nb { color: #F8F8F2 } /* Name.Builtin */
+.codehilite .nc { color: #A6E22E } /* Name.Class */
+.codehilite .no { color: #66D9EF } /* Name.Constant */
+.codehilite .nd { color: #A6E22E } /* Name.Decorator */
+.codehilite .ni { color: #F8F8F2 } /* Name.Entity */
+.codehilite .ne { color: #A6E22E } /* Name.Exception */
+.codehilite .nf { color: #A6E22E } /* Name.Function */
+.codehilite .nl { color: #F8F8F2 } /* Name.Label */
+.codehilite .nn { color: #F8F8F2 } /* Name.Namespace */
+.codehilite .nx { color: #A6E22E } /* Name.Other */
+.codehilite .py { color: #F8F8F2 } /* Name.Property */
+.codehilite .nt { color: #FF4689 } /* Name.Tag */
+.codehilite .nv { color: #F8F8F2 } /* Name.Variable */
+.codehilite .ow { color: #FF4689 } /* Operator.Word */
+.codehilite .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.codehilite .w { color: #F8F8F2 } /* Text.Whitespace */
+.codehilite .mb { color: #AE81FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #AE81FF } /* Literal.Number.Float */
+.codehilite .mh { color: #AE81FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #AE81FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #AE81FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #E6DB74 } /* Literal.String.Affix */
+.codehilite .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.codehilite .sc { color: #E6DB74 } /* Literal.String.Char */
+.codehilite .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #E6DB74 } /* Literal.String.Doc */
+.codehilite .s2 { color: #E6DB74 } /* Literal.String.Double */
+.codehilite .se { color: #AE81FF } /* Literal.String.Escape */
+.codehilite .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.codehilite .si { color: #E6DB74 } /* Literal.String.Interpol */
+.codehilite .sx { color: #E6DB74 } /* Literal.String.Other */
+.codehilite .sr { color: #E6DB74 } /* Literal.String.Regex */
+.codehilite .s1 { color: #E6DB74 } /* Literal.String.Single */
+.codehilite .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.codehilite .bp { color: #F8F8F2 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #A6E22E } /* Name.Function.Magic */
+.codehilite .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.codehilite .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.codehilite .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.codehilite .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.codehilite .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.codehilite { background: var(--term-bg) !important; }
+</style>
+
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <a class="brand" href="../../index.html">BENE</a>
+  <a class="nav" href="../../index.html">Landing</a>
+  <a class="nav" href="../index.html">Docs index</a>
+  <a class="nav" href="../../SKILL.md" target="_blank" rel="noopener noreferrer" title="Hand BENE to your agent in one URL">SKILL.md ↗</a>
+  <button class="nav copy-llms" data-llms-url="../../llms.txt" data-copied-label="✓ copied" data-opened-label="↗ opened" title="Copy the llms.txt site map (an LLM-friendly index pointing at SKILL.md + every doc). Paste it into your agent's context.">Copy llms.txt</button>
+  <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer">GitHub</a>
+  <a class="nav" href="../../zh/docs/tutorials/t06-ml-research-lab.html" title="切换到中文" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">文</a>
+</div></div>
+
+<script>
+(function() {
+  document.querySelectorAll('button.copy-llms').forEach(function(btn) {
+    var original = btn.textContent;
+    btn.addEventListener('click', function() {
+      var url = btn.getAttribute('data-llms-url');
+      fetch(url, { cache: 'no-cache' })
+        .then(function(r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.text(); })
+        .then(function(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).then(function() {
+              btn.textContent = btn.getAttribute('data-copied-label') || '✓ copied';
+              setTimeout(function() { btn.textContent = original; }, 2200);
+            });
+          }
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        })
+        .catch(function() {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        });
+    });
+  });
+})();
+</script>
+<div class="wrap">
+<aside class="sb"><h4>Start, operate, recover</h4>
+<a href="../README.html">README</a>
+<a href="../architecture.html">architecture</a>
+<a href="../checkpoints.html">checkpoints</a>
+<a href="../cli-reference.html">cli-reference</a>
+<a href="../codegen.html">codegen</a>
+<a href="../dashboard.html">dashboard</a>
+<a href="../deployment.html">deployment</a>
+<a href="../integrating-bene.html">integrating-bene</a>
+<a href="../mcp-integration.html">mcp-integration</a>
+<a href="../memory.html">memory</a>
+<a href="../meta-harness.html">meta-harness</a>
+<a href="../philosophy.html">philosophy</a>
+<a href="../primitive-review-cycle.html">primitive-review-cycle</a>
+<a href="../probe-authoring.html">probe-authoring</a>
+<a href="../schema.html">schema</a>
+<a href="../shared-log.html">shared-log</a>
+<a href="../skills.html">skills</a>
+<a href="../use-cases.html">use-cases</a>
+<h4>Recipes</h4>
+<a href="../recipes/atomic-completion.html">atomic-completion</a>
+<h4>Design and claims</h4>
+<a href="../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
+<a href="../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
+<a href="../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
+<a href="../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
+<h4>Evidence and research</h4>
+<a href="../research/GAP-AUDIT.html">GAP-AUDIT</a>
+<a href="../research/SYNTHESIS.html">SYNTHESIS</a>
+<a href="../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<h4>Benchmarks and gates</h4>
+<a href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
+<a href="../benchmarks/PREREG.html">PREREG</a>
+<h4>Tutorial playbooks</h4>
+<a href="../tutorials/t00-bene-e2e-walkthrough.html">t00-bene-e2e-walkthrough</a>
+<a href="../tutorials/t01-bene-meta-harness.html">t01-bene-meta-harness</a>
+<a href="../tutorials/t02-e2e-self-healing.html">t02-e2e-self-healing</a>
+<a href="../tutorials/t03-security-swarm.html">t03-security-swarm</a>
+<a href="../tutorials/t04-migration-rollback.html">t04-migration-rollback</a>
+<a href="../tutorials/t05-incident-response.html">t05-incident-response</a>
+<a class="cur" href="../tutorials/t06-ml-research-lab.html">t06-ml-research-lab</a>
+<a href="../tutorials/t07-regression-guard.html">t07-regression-guard</a>
+<a href="../tutorials/t08-hundred-agents-scale.html">t08-hundred-agents-scale</a>
+<a href="../tutorials/t10-ci-overnight-bene-swarm.html">t10-ci-overnight-bene-swarm</a>
+<a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
+<h4>Case studies</h4>
+<a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
+<h4>Infrastructure</h4>
+<a href="../infra/DNS.html">DNS</a></aside>
+<main>
+<div class="crumbs"><a href="../index.html">docs</a> / tutorials/t06-ml-research-lab.md</div>
+<h1 id="four-hypotheses-one-night-an-overnight-ml-research-lab-on-bene">Four Hypotheses, One Night: an Overnight ML Research Lab on BENE</h1>
+<p><em>ML Research</em></p>
+<p>Run four competing training experiments at once — on one cluster, in one night — and choose tomorrow's direction from a SQL table instead of a hunch. This tutorial builds an overnight research lab: four agents test four orthogonal ideas (LoRA, the Lion optimizer, batch scaling, regularization), each inside its own isolated filesystem, every action recorded in one auditable database.</p>
+<p><strong>Four hypotheses run in parallel while you sleep; by morning, a single query shows the winner cut val_loss by 19.2%.</strong></p>
+<p>ML experimentation defaults to serial: form a hypothesis, train, stare at the curve, form the next one. The loop is the bottleneck, not the thinking — and a four-idea backlog quietly becomes a four-night wait. BENE's answer is to give every idea its own agent and let them all run side by side.</p>
+<hr />
+<p><em>Spawned at 22:00; scale-explorer reports in first at 00:14, arch-explorer last at 05:47; the 06:00 SQL comparison names the winner.</em></p>
+<hr />
+<h2 id="tonights-job-beat-val_loss-234">Tonight's job: beat val_loss 2.34</h2>
+<p>The baseline is a character-level language model trained on Shakespeare, currently sitting at <code>val_loss = 2.34</code>. Four ideas might beat it, and each gets its own agent:</p>
+<ul>
+<li><strong>arch-explorer</strong> tests LoRA adapters against a full finetune — the bet is that fewer trainable parameters help a small model generalize.</li>
+<li><strong>optim-explorer</strong> pits AdamW against Lion — the bet is that Lion's sign-based updates suit small language models.</li>
+<li><strong>scale-explorer</strong> compares batch size 32 with 128 — the bet is that bigger batches make char-level training more stable.</li>
+<li><strong>reg-explorer</strong> weighs dropout 0.1 against 0.3 — the bet is that a model this small is overfitting and wants more regularization.</li>
+</ul>
+<p>Run them one at a time and tonight turns into four nights. Run them under BENE and tonight is enough.</p>
+<h2 id="step-1-launch-four-sandboxed-agents">Step 1 — Launch four sandboxed agents</h2>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>parallel<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">&quot;spawn arch-explorer  --from ./charlm --task lora_vs_full&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">&quot;spawn optim-explorer --from ./charlm --task adamw_vs_lion&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">&quot;spawn scale-explorer --from ./charlm --task batch_32_vs_128&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">&quot;spawn reg-explorer   --from ./charlm --task dropout_01_vs_03&quot;</span>
+
+<span class="c1"># [arch-explorer]   spawned  vfs_id=arch-2a1b  status=running</span>
+<span class="c1"># [optim-explorer]  spawned  vfs_id=opt-5c3d   status=running</span>
+<span class="c1"># [scale-explorer]  spawned  vfs_id=scl-8e4f   status=running</span>
+<span class="c1"># [reg-explorer]    spawned  vfs_id=reg-1g7h   status=running</span>
+<span class="c1">#</span>
+<span class="c1"># 4 agents training in parallel — 22:00</span>
+</code></pre></div>
+
+<p>Four private copies of <code>train.py</code>, four virtual filesystems, zero shared state. Nothing to lock, nothing to merge: no agent can clobber another's best checkpoint, and any experiment can be replayed later from the exact VFS state it ran in.</p>
+<h2 id="step-2-let-the-keep-or-revert-loop-run">Step 2 — Let the keep-or-revert loop run</h2>
+<p>Inside each sandbox the agent works the same disciplined loop: change one config value, train, compare against the previous best, then keep the change or revert it. Two agents mid-flight:</p>
+<div class="codehilite"><pre><span></span><code>Agent: arch-explorer
+  ├── Reads /train.py
+  ├── Changes CONFIG[&quot;activation&quot;] = &quot;swiglu&quot;
+  ├── Runs experiment → val_bpb = 1.12 (improved from 1.18)
+  ├── Keeps the change ✓
+  ├── Changes CONFIG[&quot;n_layers&quot;] = 8
+  ├── Runs experiment → val_bpb = 1.25 (regressed!)
+  ├── Reverts the change ✗
+  ├── Changes CONFIG[&quot;pos_encoding&quot;] = &quot;learned&quot;
+  ├── Runs experiment → val_bpb = 1.10 (improved!)
+  ├── Keeps the change ✓
+  └── ... continues ...
+
+Agent: optim-explorer (running simultaneously, isolated)
+  ├── Reads /train.py (its own copy, unaffected by arch-explorer)
+  ├── Changes CONFIG[&quot;optimizer&quot;] = &quot;lion&quot;
+  ├── Runs experiment → val_bpb = 1.05 (big improvement!)
+  ├── Keeps the change ✓
+  └── ... continues ...
+</code></pre></div>
+
+<p>Both agents are editing a file called <code>/train.py</code> — and that is fine, because every edit lands in that agent's own VFS. Coordination is not a feature anyone had to build; isolation makes it unnecessary.</p>
+<p>Through the night, the completions interleave:</p>
+<div class="codehilite"><pre><span></span><code>[00:14]  scale-explorer   COMPLETE  final_val_loss=2.21  (-5.6%)
+         Finding: batch_size=128 stabilizes training. Converges faster.
+
+[01:47]  reg-explorer     COMPLETE  final_val_loss=2.28  (-2.6%)
+         Finding: dropout=0.3 marginally helps. Small effect.
+
+[03:31]  optim-explorer   COMPLETE  final_val_loss=2.19  (-6.4%)
+         Finding: Lion optimizer wins on this task. Better char-level.
+
+[05:47]  arch-explorer    COMPLETE  final_val_loss=1.89  (-19.2%)
+         Finding: LoRA + cosine LR schedule. Clear winner.
+</code></pre></div>
+
+<p>The finish order tells its own story. Flipping a batch size is cheap, so <code>scale-explorer</code> is done by 00:14. <code>arch-explorer</code> needs until 05:47 — LoRA takes longer to stabilize, and the agent trains two complete cycles to get a fair comparison.</p>
+<h2 id="step-3-compare-results-with-one-query">Step 3 — Compare results with one query</h2>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">  </span><span class="n">agent_name</span><span class="p">,</span>
+<span class="w">  </span><span class="n">final_val_loss</span><span class="p">,</span>
+<span class="w">  </span><span class="n">ROUND</span><span class="p">((</span><span class="mi">2</span><span class="p">.</span><span class="mi">34</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">final_val_loss</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">2</span><span class="p">.</span><span class="mi">34</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">improvement_pct</span><span class="p">,</span>
+<span class="w">  </span><span class="n">train_time_min</span><span class="p">,</span>
+<span class="w">  </span><span class="n">notes</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">ml_results</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">run_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;overnight-2026-04-15&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">final_val_loss</span><span class="w"> </span><span class="k">ASC</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>Agent            val_loss  Improvement  Time    Finding
+---------------  --------  -----------  ------  ----------------------------------
+arch-explorer    1.89 *    -19.2% *     347min  LoRA + cosine LR schedule
+optim-explorer   2.19      -6.4%        191min  Lion optimizer outperforms AdamW
+scale-explorer   2.21      -5.6%        74min   batch=128 stabilizes convergence
+reg-explorer     2.28      -2.6%        182min  dropout=0.3 marginal improvement
+
+* winner
+</code></pre></div>
+
+<p>It is not close: <code>arch-explorer</code> lands at val_loss 1.89, 19.2% under the 2.34 baseline, on the strength of LoRA plus a cosine LR schedule. The Lion result from <code>optim-explorer</code> (-6.4%) is the natural candidate to stack on top of it next.</p>
+<h2 id="step-4-read-the-winning-config">Step 4 — Read the winning config</h2>
+<p>The winning agent wrote up its own findings. Read them straight out of its VFS:</p>
+<div class="codehilite"><pre><span></span><code>bene read arch-explorer /results/best_config.md
+
+## Winning Configuration — val_loss = 1.89
+
+### Architecture Changes
+- LoRA rank: 8 (r=8, alpha=16)
+- Applied to: q_proj, v_proj in all attention layers
+- Full finetune baseline: val_loss=2.34 (no improvement)
+- LoRA finetune: val_loss=1.89 (19.2% improvement)
+
+### Training Changes
+- LR schedule: cosine with warmup (1% warmup steps)
+- Peak LR: 3e-4 (was 1e-3 — reduced due to LoRA sensitivity)
+- Gradient clip: 1.0 (unchanged)
+
+### Hypothesis confirmed
+Parameter-efficient finetuning (LoRA) dramatically outperforms
+full finetune on this small character-level model. The reduced
+parameter count prevents overfitting on the Shakespeare corpus.
+</code></pre></div>
+
+<h2 id="step-5-bank-the-win-seed-the-next-search">Step 5 — Bank the win, seed the next search</h2>
+<p>Two commands turn tonight's result into tomorrow's starting point: checkpoint the winner, then point the meta-harness search at it.</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>checkpoint<span class="w"> </span>arch-explorer<span class="w"> </span>--label<span class="w"> </span>winning-lora-config
+
+<span class="c1"># Seed the next search from this agent&#39;s discoveries</span>
+bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-b<span class="w"> </span>char_lm<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--seed-from<span class="w"> </span>arch-explorer<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--model<span class="w"> </span>claude-sonnet-4-6<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-n<span class="w"> </span><span class="m">10</span>
+
+<span class="c1"># [mh-search] Loading knowledge from arch-explorer...</span>
+<span class="c1"># [mh-search] Loaded skills: lora_param_efficiency, cosine_lr_warmup</span>
+<span class="c1"># [mh-search] Seeding with best config: val_loss=1.89</span>
+<span class="c1"># [mh-search] Search starts from the known frontier, not from scratch</span>
+</code></pre></div>
+
+<p>The follow-up search opens at 1.89, not 2.34, and carries the LoRA finding forward as a reusable skill. Three overnight runs in, the knowledge agent holds a skill library for this architecture — so run 4 begins with a seed pool that manual iteration would have needed weeks to build. Wins accumulate instead of evaporating.</p>
+<h2 id="audit-the-night-afterward">Audit the night afterward</h2>
+<p>Beyond the leaderboard, the event journal answers operational questions that a results file never could — how hard did each agent work, what did the run cost, which files actually changed:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- How many experiments did each agent run?</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="n">tc</span><span class="p">.</span><span class="n">call_id</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">experiments</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tool_calls</span><span class="w"> </span><span class="n">tc</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tc</span><span class="p">.</span><span class="n">agent_id</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">tc</span><span class="p">.</span><span class="n">tool_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;shell_exec&#39;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">agent_id</span><span class="p">;</span>
+
+<span class="c1">-- Total compute across all agents</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">token_count</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_tokens</span><span class="p">,</span>
+<span class="w">       </span><span class="k">SUM</span><span class="p">(</span><span class="n">duration_ms</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1000</span><span class="p">.</span><span class="mi">0</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_seconds</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tool_calls</span><span class="p">;</span>
+
+<span class="c1">-- Which agent&#39;s train.py changed the most?</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="k">version</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">modifications</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">files</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">agent_id</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;/train.py&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="k">version</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+
+<span class="c1">-- What did the best agent actually change? (read its final train.py)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">content</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">files</span><span class="w"> </span><span class="n">f</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">agent_id</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;arch-explorer&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;/train.py&#39;</span><span class="p">;</span>
+</code></pre></div>
+
+<p>All of it runs against a single <code>.db</code> file, in a single query language.</p>
+<h2 id="prefer-python-the-sdk-underneath-the-cli">Prefer Python? The SDK underneath the CLI</h2>
+<p><code>bene parallel</code> is a thin layer over the Python SDK. Script it directly when you need per-agent seed scripts, custom direction prompts, or a reduction step after the runs finish.</p>
+<p><strong>Write the base training script.</strong> Every agent will receive a private copy of this file.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">BASE_TRAIN_PY</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">CONFIG = {</span>
+<span class="s2">    &quot;n_layers&quot;: 6,</span>
+<span class="s2">    &quot;n_heads&quot;: 6,</span>
+<span class="s2">    &quot;d_model&quot;: 384,</span>
+<span class="s2">    &quot;learning_rate&quot;: 3e-4,</span>
+<span class="s2">    &quot;optimizer&quot;: &quot;adamw&quot;,</span>
+<span class="s2">    &quot;activation&quot;: &quot;gelu&quot;,</span>
+<span class="s2">    &quot;dropout&quot;: 0.1,</span>
+<span class="s2">}</span>
+
+<span class="s2">def train(config):</span>
+<span class="s2">    # ... your PyTorch training loop ...</span>
+<span class="s2">    return {&quot;val_bpb&quot;: val_loss}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+</code></pre></div>
+
+<p><strong>Describe the research directions.</strong> One mandate per agent; the prompt is the hypothesis.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">DIRECTIONS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;arch-explorer&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Explore architecture changes: LoRA vs full finetune, layers, &quot;</span>
+                  <span class="s2">&quot;heads, activations. Try one change at a time. Keep improvements.&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;optim-explorer&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Explore optimizer changes: AdamW vs Lion, learning rates, &quot;</span>
+                  <span class="s2">&quot;weight decay, warmup schedules. Keep improvements.&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;scale-explorer&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Explore scaling: batch size 32 vs 128, FFN ratio, head count vs &quot;</span>
+                  <span class="s2">&quot;head dim. Find the stable configuration.&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;reg-explorer&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Explore regularization: dropout rates, weight decay, batch-size &quot;</span>
+                  <span class="s2">&quot;interactions. Keep improvements.&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<p><strong>Spawn, checkpoint, run.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bene</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bene.ccr</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClaudeCodeRunner</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bene.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">TierRouter</span>
+
+<span class="n">db</span> <span class="o">=</span> <span class="n">Bene</span><span class="p">(</span><span class="s2">&quot;research-lab.db&quot;</span><span class="p">)</span>
+<span class="n">router</span> <span class="o">=</span> <span class="n">TierRouter</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="s2">&quot;bene.yaml&quot;</span><span class="p">)</span>
+<span class="n">ccr</span> <span class="o">=</span> <span class="n">ClaudeCodeRunner</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">router</span><span class="p">,</span> <span class="n">checkpoint_interval</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">direction</span> <span class="ow">in</span> <span class="n">DIRECTIONS</span><span class="p">:</span>
+    <span class="n">agent_id</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="n">direction</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="s2">&quot;/train.py&quot;</span><span class="p">,</span> <span class="n">BASE_TRAIN_PY</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;baseline&quot;</span><span class="p">)</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ccr</span><span class="o">.</span><span class="n">run_parallel</span><span class="p">(</span><span class="n">DIRECTIONS</span><span class="p">)</span>
+</code></pre></div>
+
+<p><code>checkpoint_interval=5</code> puts a checkpoint down every 5 iterations. A crash at iteration 23 costs at most 3 experiments: restore the iteration-20 checkpoint and carry on. The night survives the crash.</p>
+<h2 id="go-bigger-three-gpus-six-agents-three-model-tiers">Go bigger: three GPUs, six agents, three model tiers</h2>
+<p>When the lab outgrows one GPU, the tier router places each agent on a specific model via <code>force_model</code>: cheap hyperparameter sweeps go to the small model, creative hypothesis generation goes to the largest one.</p>
+<h3 id="the-layout">The layout</h3>
+<div class="codehilite"><pre><span></span><code>GPU 0 — Qwen2.5-Coder-7B    (port 8000) → 2 sweep agents (fast hyperparameter scans)
+GPU 1 — Qwen2.5-Coder-32B   (port 8001) → 2 architecture agents (design exploration)
+GPU 2 — DeepSeek-R1-70B      (port 8002) → 2 novel research agents (creative hypothesis)
+</code></pre></div>
+
+<h3 id="the-config">The config</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># bene.yaml</span>
+<span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">qwen2.5-coder-7b</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">vllm_endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8000/v1</span>
+<span class="w">    </span><span class="nt">max_context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32768</span>
+<span class="w">    </span><span class="nt">use_for</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">trivial</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">sweep</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">qwen2.5-coder-32b</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">vllm_endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8001/v1</span>
+<span class="w">    </span><span class="nt">max_context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">131072</span>
+<span class="w">    </span><span class="nt">use_for</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">moderate</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">architecture</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">deepseek-r1-70b</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">vllm_endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8002/v1</span>
+<span class="w">    </span><span class="nt">max_context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">131072</span>
+<span class="w">    </span><span class="nt">use_for</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">complex</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">novel_research</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<h3 id="six-agents-one-script">Six agents, one script</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># examples/multi_gpu_research.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bene</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bene</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bene.ccr</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClaudeCodeRunner</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bene.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">TierRouter</span>
+
+<span class="n">db</span> <span class="o">=</span> <span class="n">Bene</span><span class="p">(</span><span class="s2">&quot;multi-gpu-research.db&quot;</span><span class="p">)</span>
+<span class="n">router</span> <span class="o">=</span> <span class="n">TierRouter</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="s2">&quot;bene.yaml&quot;</span><span class="p">)</span>
+<span class="n">ccr</span> <span class="o">=</span> <span class="n">ClaudeCodeRunner</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">router</span><span class="p">,</span> <span class="n">checkpoint_interval</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+<span class="n">DIRECTIONS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="c1"># GPU 0 — 7B: fast sweeps</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;lr-sweep&quot;</span><span class="p">,</span>    <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Sweep learning rates 1e-5 to 1e-2&quot;</span><span class="p">,</span>
+     <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;force_model&quot;</span><span class="p">:</span> <span class="s2">&quot;qwen2.5-coder-7b&quot;</span><span class="p">}},</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;batch-sweep&quot;</span><span class="p">,</span> <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Sweep batch sizes 16 to 256&quot;</span><span class="p">,</span>
+     <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;force_model&quot;</span><span class="p">:</span> <span class="s2">&quot;qwen2.5-coder-7b&quot;</span><span class="p">}},</span>
+
+    <span class="c1"># GPU 1 — 32B: architecture exploration</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;arch-depth&quot;</span><span class="p">,</span>  <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Explore deeper architectures (12-24 layers)&quot;</span><span class="p">,</span>
+     <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;force_model&quot;</span><span class="p">:</span> <span class="s2">&quot;qwen2.5-coder-32b&quot;</span><span class="p">}},</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;arch-width&quot;</span><span class="p">,</span>  <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Explore wider architectures (512-2048 d_model)&quot;</span><span class="p">,</span>
+     <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;force_model&quot;</span><span class="p">:</span> <span class="s2">&quot;qwen2.5-coder-32b&quot;</span><span class="p">}},</span>
+
+    <span class="c1"># GPU 2 — 70B: novel research ideas</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;novel-loss&quot;</span><span class="p">,</span>  <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Design a novel loss combining contrastive and generative objectives&quot;</span><span class="p">,</span>
+     <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;force_model&quot;</span><span class="p">:</span> <span class="s2">&quot;deepseek-r1-70b&quot;</span><span class="p">}},</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;novel-arch&quot;</span><span class="p">,</span>  <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Propose a novel attention mechanism for long sequences&quot;</span><span class="p">,</span>
+     <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;force_model&quot;</span><span class="p">:</span> <span class="s2">&quot;deepseek-r1-70b&quot;</span><span class="p">}},</span>
+<span class="p">]</span>
+
+<span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">DIRECTIONS</span><span class="p">:</span>
+    <span class="n">agent_id</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="s2">&quot;/train.py&quot;</span><span class="p">,</span> <span class="n">BASE_TRAIN_PY</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;baseline&quot;</span><span class="p">)</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ccr</span><span class="o">.</span><span class="n">run_parallel</span><span class="p">(</span><span class="n">DIRECTIONS</span><span class="p">)</span>
+</code></pre></div>
+
+<p>The 7B agents on GPU 0 burn through sweeps fast; the 70B on GPU 2 is slower per run but proposes more inventive directions. Nothing waits on anything else, every agent stays isolated, and all six write into the same <code>.db</code>, answerable with the same SQL.</p>
+<h2 id="what-the-night-cost">What the night cost</h2>
+<div class="codehilite"><pre><span></span><code>Approach                   Wall Time  Engineer Time               Hypotheses Tested
+-------------------------  ---------  --------------------------  -----------------
+Sequential (human-driven)  4 nights   4 × setup + analysis        4
+BENE parallel overnight    1 night    30 min setup + 15min review  4
+</code></pre></div>
+
+<p>The hypothesis count is identical; the calendar is not. Your hands-on time shrinks to half an hour of setup and a quarter hour of reading. And none of the four runs is wasted — the losing branches are still real data feeding the next search.</p>
+<h2 id="where-the-pattern-comes-from">Where the pattern comes from</h2>
+<p>This lab is <a href="https://github.com/karpathy/autoresearch">Karpathy's autoresearch</a>, multiplied. In autoresearch, a single agent sits with a single GPU and a training script: edit <code>train.py</code>, train, study the curve, keep what helped, drop what didn't, repeat until morning. What it demonstrates is that the research loop itself is mechanical enough to delegate — a model can read a loss curve and pick a sane next move. What stays serial in autoresearch is the loop itself.</p>
+<p>BENE removes that constraint by cloning the loop: N agents, each holding a private VFS copy of the training code, each chasing a different hypothesis at the same moment, none able to touch another's files. When they finish, every result is one query away, and what each agent learned travels into the next search through the BENE knowledge agent.</p>
+<h3 id="side-by-side">Side by side</h3>
+<table>
+<thead>
+<tr>
+<th>autoresearch</th>
+<th>BENE research lab</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 agent, 1 GPU</td>
+<td>N agents, N directions, parallel</td>
+</tr>
+<tr>
+<td>Git commit/reset for checkpoints</td>
+<td>Formal checkpoints with diff</td>
+</tr>
+<tr>
+<td><code>results.tsv</code> for tracking</td>
+<td>SQL-queryable event journal</td>
+</tr>
+<tr>
+<td>Git log for audit trail</td>
+<td>14-event-type append-only journal</td>
+</tr>
+<tr>
+<td>One <code>train.py</code>, modified in place</td>
+<td>Each agent has its own isolated copy</td>
+</tr>
+<tr>
+<td>Manual inspection</td>
+<td><code>bene query "SELECT ..."</code></td>
+</tr>
+<tr>
+<td>One direction at a time</td>
+<td>Architecture, optimizer, scaling, regularization simultaneously</td>
+</tr>
+</tbody>
+</table>
+<p>What the differences buy you:</p>
+<ul>
+<li><strong>Isolation without setup.</strong> autoresearch edits one <code>train.py</code> in place, so several directions would mean juggling git worktrees or copied directories. A BENE agent gets a private virtual filesystem for free.</li>
+<li><strong>Checkpoints, not git tricks.</strong> autoresearch leans on <code>git commit</code> and <code>git reset</code>. A BENE checkpoint bundles files, state, and event watermarks together, diffs cleanly against any other checkpoint, and restores one agent without disturbing the rest.</li>
+<li><strong>Questions answered in SQL.</strong> Which agent found the best loss, how many experiments ran in total, what the failing agent did wrong — each is one query against the journal, not a TSV-parsing session.</li>
+<li><strong>A lab you can carry.</strong> Agents, experiments, results: one <code>.db</code> file. Hand it to a colleague, open it on another machine, back it up with <code>cp</code>.</li>
+<li><strong>Throughput.</strong> autoresearch runs about 12 experiments/hour on one GPU. Four BENE agents across 4 GPUs run 48 experiments/hour — every one on a distinct direction, every one tracked.</li>
+</ul>
+<hr />
+<p>That is the whole shape of it. You stated four bets at 22:00 and read the verdict at 06:00: winning config checkpointed, findings written down by the agent that found them, lessons packaged as skills for the search after this one. The experiments ran themselves; your job was the judgment at either end.</p>
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="../README.html">README</a> — BENE overview and full doc index</li>
+<li><a href="../use-cases.html">Use Cases</a> — more real-world patterns</li>
+<li><a href="../use-cases.html#autonomous-research-lab">Use case: Autonomous Research Lab</a></li>
+<li><a href="../skills.html">Component guide: Cross-Agent Skill Library</a></li>
+<li><a href="https://github.com/karpathy/autoresearch">Karpathy's autoresearch</a> — the original single-agent pattern</li>
+<li>Runnable examples:</li>
+<li><a href="../../examples/autonomous_research_lab.py"><code>examples/autonomous_research_lab.py</code></a> — single-GPU, 4 agents</li>
+<li><a href="../../examples/multi_gpu_research.py"><code>examples/multi_gpu_research.py</code></a> — 3-GPU, 6 agents</li>
+<li><a href="./t11-local-agents-vllm.html">tutorials/t11 — Local Agents with vLLM</a> — setting up vLLM + BENE locally</li>
+</ul>
+<hr />
+<p><em>BENE is MIT-licensed, and the privacy claim is checkable: every agent, experiment, and result in this tutorial lives in a local SQLite file on your disk — nothing leaves your machine, and a full backup is one <code>cp</code> of that file.</em></p>
+<p><em>The single-agent pattern is <a href="https://github.com/karpathy/autoresearch">Karpathy's autoresearch</a>; BENE multiplies it into N parallel agents, an isolated VFS for each, SQL over every result, and knowledge that persists between searches.</em></p>
+<p><em>GitHub: <a href="https://github.com/good-night-oppie/bene">github.com/good-night-oppie/bene</a></em></p>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/tutorials/t06-ml-research-lab.md" target="_blank" rel="noopener noreferrer">docs/tutorials/t06-ml-research-lab.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+</main>
+</div>
+<footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>
+<a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer">Building something on bene? Open a Discussion.</a></div></footer>
+</body>
+</html>

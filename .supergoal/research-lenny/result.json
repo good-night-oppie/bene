@@ -1,0 +1,465 @@
+{
+  "summary": "Distill 4 books (Mom Test, Nobody Wants to Read, On Writing Well, Storyworthy) into evidence base for BENE landing zh rewrite v2",
+  "agentCount": 4,
+  "logs": [
+    "Distilled 4/4 books. Failed: none"
+  ],
+  "result": {
+    "distilled": [
+      {
+        "book_slug": "mom-test",
+        "book_title": "The Mom Test",
+        "author": "Rob Fitzpatrick",
+        "thesis": "Fitzpatrick 的核心论断不是「多聊客户」，而是大多数客户对话都在生产 bad data——三类垃圾：compliments（夸奖）、fluff（\"我通常 / 我一定会 / 我可能\"这类泛化、假设、未来时）、ideas（功能 wishlist）。compliments 是 fool's gold——发亮、扎眼、毫无价值；fluff 里最致命的一句是 \"I would definitely buy that\"。垃圾的来源是：你一旦把 idea 摆上桌，客户立刻从 source of truth 退化成想帮你的 consultant，开始描述 hypothetical 而不是 reality。Fitzpatrick 的三条规矩反过来：(1) Talk about their life instead of your idea；(2) Ask about specifics in the past instead of generics or opinions about the future；(3) Talk less and listen more。判定一次对话是否成立的标准不是对方点头，而是 commitment——time、reputation、money 三种 currency 里的至少一种被掏出来。\"I love it\" 不是信号；约下一次 30 分钟、把你介绍给老板、把钱预付出来——才是。这本书的母题贯穿写产品和写文案：**你在找真相，不是在等掌声**——you're searching for the truth, not trying to be right。这条原则映射到 landing copy：别描述你的方案有多妙，描述读者已经活过的那个具体场景。",
+        "reader_brain_moves": [
+          {
+            "name": "先把读者放回他自己已经活过的具体一刻 (anchor to a past scene before any pitch)",
+            "how_author_does_it": "Fitzpatrick 反复要求把对话从 'what would you do' 拽回 'talk me through the last time that happened'。不是问 '你觉得这功能怎么样'，而是问 '上一次这事发生是什么时候？你那天做了什么？花了多少钱？还试过别的什么？'——他让读者重新走一遍 workflow，而不是想象未来。",
+            "concrete_example": "书里推荐的两个标准开场是 'Talk me through your workflow' 和 'Talk me through the last time that happened'——这两句把对话从 hypothetical 钉死在 last-time-it-happened 的具体场景上。"
+          },
+          {
+            "name": "把抽象主张换成可付出代价的 commitment (replace opinions with currency)",
+            "how_author_does_it": "Fitzpatrick 主张一切对话以 commitment 收尾：time、reputation、money 三种 currency 之一。'compliment costs nothing, so it's worth nothing'——免费的信号没数据量。对应到 landing：别让读者只是点头，让他做一个具体动作（跑一条命令、看一个 diff），那个动作本身就是 currency。",
+            "concrete_example": "书里反复强调 meeting 成功的标准不是 '愉快'，而是 '对方掏出 time / reputation / money 之一'。一个零成本的 verbal 'I love it' 在他眼里就是 zombie lead——看上去活着，其实不会转化。"
+          },
+          {
+            "name": "诊断 bad data 三连：compliment / fluff / idea (name the failure mode before fixing it)",
+            "how_author_does_it": "Fitzpatrick 不是说 '客户在骗你'，他诊断出三种具体的 bad data：compliments（夸奖）、fluff（generics / hypotheticals / future tense）、ideas（功能 wishlist）。每一种都有专门的反制：deflect compliments、anchor fluff、dig beneath ideas。这种 '先命名失败模式，再开处方' 的结构让读者立刻能在自己对话里识别问题。",
+            "concrete_example": "书里给出 'the world's most deadly fluff is: I would definitely buy that'——一句话钉死最容易让人上当的 fluff 模式（feels concrete，但全是未来时）。"
+          },
+          {
+            "name": "把'听起来严谨'的提问当陷阱来拆 (the trap of false rigor)",
+            "how_author_does_it": "Fitzpatrick 警告：'Would you pay X for a product which did Y?' 不比 'Do you think it's a good idea?' 更可信——加了数字反而更危险，因为它 feels rigorous and truthy。对应到文案：精确的技术参数（'0.3 秒跑完'、'37 个工具'）听起来严谨，但如果没钉到读者具体的一刻，就和 'would you pay X' 一样是 false rigor。",
+            "concrete_example": "书里把 'Would you pay X for Y?' 列为 bad question 的标准案例，并明确说：加数字不是改善，是用 truthy 的外观掩盖 hypothetical 的本质。"
+          },
+          {
+            "name": "搜索真相而不是等掌声 (search for truth, not gold star)",
+            "how_author_does_it": "Fitzpatrick 反复说：'You're searching for the truth, not trying to be right' 和 'It's not anyone else's responsibility to show us the truth. It's our responsibility to find it'。文案对应：别写 '我们做了 X，是不是很厉害'，写 '在你笔记本上，这一条声明可以这样验'——把举证责任揽到自己身上，让读者去 falsify。",
+            "concrete_example": "Fitzpatrick 把客户对话比作 archaeological site：真相在底下，但很脆，blunt instrument（leading question / pitch）一下去就碎了。"
+          }
+        ],
+        "copyable_patterns": [
+          {
+            "pattern_name": "Last-time-it-happened anchor (用上一次发生的具体一刻替换抽象定义)",
+            "sentence_skeleton": "[读者上一次踩到这个坑的具体场景：动词 + 对象 + 后果] → [当时他下意识做了什么] → [那一招为什么没救回来] → [BENE 在这一刻具体做什么动作]",
+            "applied_to_bene_landing": "原句『一个 agent = 一份 SQLite 文件。cp 备份它，sqlite3 直接读它，不需要任何 API key，不上云。』 → 改写：『上一次 agent 把 main 分支改炸的时候，你 git stash 了，发现 stash 救不回未写入磁盘的中间状态。这一刻你想要的不是一个新概念，是 cp bene.db backup.db——文件就在那儿。』"
+          },
+          {
+            "pattern_name": "Deflect-compliment, surface the verb (把\"X是Y\"换成\"读者能对它做的具体动词\")",
+            "sentence_skeleton": "去掉所有 'is/equals/就是' 句式，把名词等价换成读者可以执行的动词链：[读者动词1] + [读者动词2] + [读者动词3]，每个动词后面跟它具体作用在什么对象上",
+            "applied_to_bene_landing": "原句『把 Context Engineering 落到一份 SQLite 文件里。』 → 改写：『你可以 grep 上一次 agent 错在哪、diff 它改了什么、cp 一份留作下次回放——同一个文件，三件事。』"
+          },
+          {
+            "pattern_name": "Anchor the fluff (把\"通常/每一步/任何\"等泛化词钉到一个具体回合)",
+            "sentence_skeleton": "把 '每一次 / 任何 / 所有' 这类 quantifier 删掉，替换成 '上一次 X 发生时' 的具体一回合 + 那一回合里读者具体看到了什么",
+            "applied_to_bene_landing": "原句『每个 agent 一份隔离 VFS，每一步进 checkpoint，每条声明都能本地重跑。』 → 改写：『你让 Claude Code 改了 replicas: 3 → 0，prod 挂了。下一秒 bene diff 让你看见它具体动了哪一行，bene restore 把它退回去——不是 git ritual 是一条命令。』"
+          },
+          {
+            "pattern_name": "Currency-of-commitment close (用读者能付出的最小代价收尾，而不是 verbal 点头)",
+            "sentence_skeleton": "[一条具体命令 / 一个具体动作] + [它本地 / 离线 / 一分钟内跑完] + [它产出的可检验的对象：diff / hash / 数值裁决]",
+            "applied_to_bene_landing": "原句『这页上的每条声明，在你笔记本上一分钟内就能验。』 → 改写：『bene demo --no-ui，0.3 秒，离线跑完。跑完之后你手里多三样东西：一份 probe 的 ACCEPT/REJECT 裁决、触发它的具体数值、能 sha256 复核的 spec hash。点头不算数，这三样算。』"
+          },
+          {
+            "pattern_name": "Name the bad-data failure mode before the fix (先命名读者上一次踩的具体陷阱，再说 BENE 怎么修)",
+            "sentence_skeleton": "[读者下意识用的工具：git stash / git revert / 重新 prompt] → [它在这种具体场景下为什么救不回来] → [BENE 在同一个场景下读者改打哪条命令]",
+            "applied_to_bene_landing": "原句『智能体把生产搞挂了。一条命令滚回去。』 → 改写：『agent 把 replicas 改成 0，git stash 救不回——因为出错的不只是 working tree，还有 agent 中途写进 .env / 临时文件的副作用。这一刻你打 bene restore <checkpoint>，文件、scratchpad、它中途学到的 lesson，一起退到那个点。』"
+          }
+        ],
+        "anti_patterns": [
+          {
+            "anti_pattern_name": "X = Y reductive equation (用等号把产品压成一个名词)",
+            "why_author_rejects_it": "Fitzpatrick 的第一条规矩就是 'Talk about their life instead of your idea'——一旦你把 idea 摆出来，客户就从 source of truth 退化成 consultant，开始描述 hypothetical。'一个 agent = 一份 SQLite 文件' 是最纯粹的 idea-first 句式：它定义了一个等价关系，但读者上一次踩坑那一刻并没有在思考 '我需要一份 SQLite 文件'，他在思考 'git stash 怎么没救回来'。这种等式句让读者立刻进入 hypothetical 模式，正是 The Mom Test 全书要拦截的对话失败。",
+            "bene_offender_verbatim": "一个 agent = 一份 SQLite 文件。`cp` 备份它，`sqlite3` 直接读它，不需要任何 API key，不上云。",
+            "how_to_rewrite": "上一次 agent 把 main 分支改炸、git stash 救不回来的时候，你想要的不是一个新概念。你想要的是：cp bene.db backup.db（文件就在那儿）、sqlite3 bene.db 查它改了哪几行（不用启服务）、不联网（你那台笔记本本来就在飞机上）。"
+          },
+          {
+            "anti_pattern_name": "Compliment-shaped value prop (用泛化夸奖代替具体动作)",
+            "why_author_rejects_it": "Fitzpatrick 把 compliments 列为三大 bad data 之首，称之为 'fool's gold of customer learning: shiny, distracting, and entirely worthless'。'落到一份 SQLite 文件里' 是典型的 self-compliment——它在夸自己干净、收敛、优雅，但没有告诉读者他能用这份文件干什么具体的事。读者上一次踩坑的那一刻不需要被告知架构有多优雅，需要被告知下一条命令打什么。",
+            "bene_offender_verbatim": "把 Context Engineering 落到一份 SQLite 文件里。",
+            "how_to_rewrite": "scratchpad、lessons-learned、跨 session 记忆——之前这三样各自塞在 prompt、临时文件、文档里。现在你可以 grep 一遍，找出 agent 上次错在哪；diff 一下，看下一个 agent 读到了什么；cp 一份，留给下周回放。同一个文件，三件事。"
+          },
+          {
+            "anti_pattern_name": "Generic quantifier fluff (用'每一步/任何/每一条'等泛化词代替具体一回合)",
+            "why_author_rejects_it": "Fitzpatrick 明确把 'always / usually / never / would' 列为 fluff——generic 和 hypothetical 的语言会让读者切换到泛泛而谈，而不是回到上一次具体的事件。'每个 agent 一份隔离 VFS，每一步进 checkpoint，每条声明都能本地重跑' 三个 'every' 连发，正是他书里点名的 fluff 句式：它听起来 comprehensive，但读者无法把任何一句钉到自己上一次的具体一回合上。",
+            "bene_offender_verbatim": "每个 agent 一份隔离 VFS，每一步进 checkpoint，每条声明都能本地重跑。",
+            "how_to_rewrite": "上一次你让 Claude Code 改 replicas，它把 3 改成了 0，prod 挂了。这一刻你打 bene diff，看见它动了哪一行；bene restore <checkpoint>，文件、scratchpad、agent 中途写下的 lesson 一起退回去；bene probe replay，0.3 秒重跑那一条声明，吐出触发它的具体数值。"
+          }
+        ],
+        "sources_cited": [
+          {
+            "source_kind": "goodreads",
+            "identifier": "https://www.goodreads.com/quotes/10670144",
+            "used_for": "Verbatim three rules: 'Talk about their life instead of your idea. Ask about specifics in the past instead of generics or opinions about the future. Talk less and listen more.'"
+          },
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://mtlynch.io/book-reports/the-mom-test/",
+            "used_for": "Backs the three categories of bad data (compliments / fluff / ideas) and the 'compliments are the fool's gold of customer learning' framing."
+          },
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://medium.com/binsights/the-mom-test-by-rob-fitzpatrick-book-summary-d3e4ffd8b128",
+            "used_for": "Backs the 'most deadly fluff is I would definitely buy that' and the bad-question rewrites ('Would you pay X for Y' as false rigor)."
+          },
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://dev.to/egepakten/the-mom-test-chapter-5-commitment-and-advancement-1k27",
+            "used_for": "Backs the commitment-and-advancement framework: three currencies (time, reputation, money) and 'a meeting succeeds when it ends with commitment to advance'."
+          },
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://www.koji.so/blog/mom-test-customer-interviews-2026",
+            "used_for": "Backs the 'searching for the truth, not trying to be right' quote and 'It's not anyone else's responsibility to show us the truth' principle."
+          },
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://www.ricklindquist.com/notes/the-mom-test-by-rob-fitzpatrick",
+            "used_for": "Backs the deflect-compliments / anchor-fluff / dig-beneath-ideas remediation framework."
+          },
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://www.thoughtleadersintech.io/the-mom-test/",
+            "used_for": "Backs the bad-question vs good-question rewrites ('Do you think it's a good idea?' fails; 'Talk me through the last time that happened' succeeds)."
+          },
+          {
+            "source_kind": "book_text",
+            "identifier": "The Mom Test, Rob Fitzpatrick, Chapter 1 (three rules) and Chapter 2 (avoiding bad data)",
+            "used_for": "Original source for all framework concepts; verified via multiple independent summaries above rather than quoted from memory."
+          }
+        ]
+      },
+      {
+        "book_slug": "nobody-wants-to-read",
+        "book_title": "Nobody Wants to Read Your Sh*t",
+        "author": "Steven Pressfield",
+        "thesis": "Pressfield 的整本书围绕一个交易关系展开：读者并不亏欠你，他只是太忙、太分心、太被生活揍。每一句没有挣到他注意力的话，都在偷他的时间。Pressfield 在广告业学到的第一课就是 Client's Disease——客户都迷恋自己的产品，以为别人也会爱它；这是任何 landing 文案的原罪。解药是三步：streamline（把信息砍到最简）、make it fun/sexy/scary/informative（让人疯了才会不读）、apply everywhere（小说、TED、grant、给房东的信都一样）。他要求作者把每件作品当一个 transaction：作者必须先想清楚两件事——theme（这玩意到底关于什么）和 concept（一个对常规说法的扭转，一个让其他竞品看起来都没意义的 framing）。结构上必须 Hook → Build → Payoff，必须有 Inciting Incident，必须 stay on-theme。对工程师 landing 而言最致命的提醒是：Nonfiction is fiction——技术文档、布道文也必须按故事来组织，因为读者的注意力机制不在乎你是不是写实。",
+        "reader_brain_moves": [
+          {
+            "name": "把读者的冷漠先摆到桌面上（Client's Disease 反向操作）",
+            "how_author_does_it": "Pressfield 不先夸产品，也不先讲方法论；他先承认一个让所有作者难堪的事实——没人想读你写的东西，包括你妈。把这个冷漠当作起点，读者立刻松一口气：终于有人不假装我有义务读完了。这种坦诚反而把读者的注意力请回来。",
+            "concrete_example": "全书的开篇就是 'Nobody wants to read your shit. They're just busy.' 他不解释为什么这本书值得读，他先把读者的真实状态——忙、不想读——说出来。这种 'I see you' 的姿态是后面所有论证的入场券。"
+          },
+          {
+            "name": "把抽象原则压成一句可重复的口号（concept 先行）",
+            "how_author_does_it": "Pressfield 反复示范：先找到 concept——'A diamond is forever'、'7Up the Uncola'、'Die Hard on a Plane'——再去展开。concept 不是 slogan，它是一个对常规说法的扭转，让 reader 一秒就 get 到你和别人的差别在哪。他要求作者在动笔前就回答 'What is the concept?'",
+            "concrete_example": "他用 7Up 'the Uncola' 当案例：直接把 7Up 跟 Coke/Pepsi 摆到平起平坐，而不是说 '我们也是好喝的汽水'。一个扭转的 framing 让所有竞品看起来都 moot and impotent。"
+          },
+          {
+            "name": "Nonfiction is fiction——非虚构按故事写",
+            "how_author_does_it": "Pressfield 反复强调：TED talk、博士论文、grant proposal、给房东的信——全部按 fiction 的结构写。Hook 抓住人，Build 升级紧张感，Payoff 兑现承诺。他不允许作者拿 '我写的是事实' 当不讲故事的借口。",
+            "concrete_example": "他在书里直接把自己的 The War of Art 拆给读者看：Hook 是 'Here's the problem'（resistance 在你心里），Build 是 'Here's the solution'，Payoff 是改变的承诺。同一个三段式他声称适用于 sales pitch、Master's thesis、军事行动。"
+          },
+          {
+            "name": "Inciting Incident——climax 必须埋在开场里",
+            "how_author_does_it": "Pressfield 要求每个故事的 climax 必须 'embedded within' the Inciting Incident。如果你开场那个让一切发生的事件里，看不到最后的结局，那你根本没有 inciting incident。这逼迫作者从读者第一秒就要看到 stakes。",
+            "concrete_example": "他对自己作品的复盘里，反复用这个 lens 反向检查：climax 是不是已经在第一场戏里就有了影子？如果没有，就回去重写 inciting incident。"
+          },
+          {
+            "name": "每句自审——读者现在在哪",
+            "how_author_does_it": "Pressfield 给作者一个可执行的自审清单：每一句都要问自己——'Is this interesting? Is it fun or challenging or inventive? Am I giving the reader enough? Is she bored? Is she following where I want to lead her?' 这把 'empathy' 从一个抽象的德性，变成可以在每一句上调用的检查动作。",
+            "concrete_example": "这套自审在书里反复出现，Pressfield 用它去解释为什么他每本书要改 10-15 稿——每改一稿就是再走一遍这个清单。"
+          }
+        ],
+        "copyable_patterns": [
+          {
+            "pattern_name": "Concept-first reframe（先扭转 framing，不解释组件）",
+            "sentence_skeleton": "[对手都在做 X] → [我们的扭转：把 X 变成 Y] → [一句让所有 X 都看起来 moot 的口号]",
+            "applied_to_bene_landing": "把 'builders.title: 把 Context Engineering 落到一份 SQLite 文件里。' 改写为：'别人的 agent 跑炸了你只能看 log；BENE 跑炸了你可以倒带。Context Engineering 在这里不是哲学，是一个能 cp 走的现场。'"
+          },
+          {
+            "pattern_name": "Hook = 读者此刻的痛点，不是产品的属性",
+            "sentence_skeleton": "[读者凌晨三点正在经历的具体场景] → [他下意识做的那一招] → [那一招失败的瞬间] → [此时 BENE 在场]",
+            "applied_to_bene_landing": "把 'hero.tagline: 每个 agent 一份隔离 VFS，每一步进 checkpoint，每条声明都能本地重跑。' 改写为：'凌晨三点，Claude Code 把你 prod 的 replicas 从 3 改成了 0。你 git stash，发现它写的是 helm values，stash 救不回来。BENE 在这一刻有用——它从那个 agent 第一次写盘起就在记账。'"
+          },
+          {
+            "pattern_name": "Nonfiction-as-fiction 三段式（Hook → Build → Payoff）",
+            "sentence_skeleton": "[Hook：一个具体事故] · [Build：你试了 N 个标准动作都没救回来] · [Payoff：BENE 用一条命令兑现承诺]",
+            "applied_to_bene_landing": "把 'rewind.title: 智能体把生产搞挂了。一条命令滚回去。' + 'rewind.body' 合改为：'agent 把 replicas: 3 改成了 0。git stash 没用——它写的是 helm values，不在你 tree 里。git revert 也没用——那不是一次 commit。bene restore <checkpoint> 把它写过的每一个字节倒回去，并且告诉你它在哪一 turn、读了什么、想了什么才决定这么改。'"
+          },
+          {
+            "pattern_name": "Streamline——砍到读者能在 7 秒内复述",
+            "sentence_skeleton": "[砍掉所有限定语和形容词] → [一句能被工程师在 Slack 转述的人话]",
+            "applied_to_bene_landing": "把 'watch.body: 一条命令，零密钥、零注册、不上云。bene demo --no-ui 在本地重放内核的完整故事——trace 被压缩、策略进化一轮、probe 过 kill-gate、越权动作被拒、信任分数被算出。它恰好 0.3 秒跑完，但快不是重点……' 砍成：'bene demo --no-ui。0.3 秒。不用密钥，不联网。你看到的每一个数字在你笔记本上重算了一遍。'"
+          },
+          {
+            "pattern_name": "Stakes-on-the-table（把 reader 的时间成本明码标价）",
+            "sentence_skeleton": "[告诉读者读完这一段他要付出什么] → [告诉他换回的是什么] → [让他自己判断这笔交易划不划算]",
+            "applied_to_bene_landing": "把 'receipts.title: 你的 tech lead 可以一条命令重跑每一个 check。' 改写为：'你的 tech lead 不需要相信我们。他花 40 秒 clone repo，跑 bene probe verify，每一个 ACCEPT/REJECT 都会带着触发它的那个数值打印出来——sha256 在跑之前就锁了，所以谁都没法改分。如果他不信任这些数，他不需要信任我们。'"
+          }
+        ],
+        "anti_patterns": [
+          {
+            "anti_pattern_name": "Client's Disease（迷恋自己的产品定义，假设读者跟你一样兴奋）",
+            "why_author_rejects_it": "Pressfield 在书里明确点名：'There's a phenomenon in advertising called Client's Disease. Every client is in love with his own product. The mistake he makes is believing that, because he loves it, everyone else will too. They won't.' X=Y 式的产品定义（'一个 agent = 一份 SQLite 文件'）正是 Client's Disease 的标本：它假设读者跟你一样觉得 'SQLite' 这三个字母就足以让人激动。读者不在乎你的实现选择。",
+            "bene_offender_verbatim": "hero.trustLine: '一个 agent = 一份 SQLite 文件。`cp` 备份它，`sqlite3` 直接读它，不需要任何 API key，不上云。'",
+            "how_to_rewrite": "把 '是什么' 换成 '你能用它干什么'：'你的 agent 把 prod 搞挂的那一 turn，留下的是一个文件。cp 一份带走给 tech lead，sqlite3 直接打开看它当时读了什么、想了什么、写了什么。不用 API key，不联网。'"
+          },
+          {
+            "anti_pattern_name": "没 concept，只有 feature 罗列（违反 'What is the concept?' 铁律）",
+            "why_author_rejects_it": "Pressfield 在动笔前的第一个问题是 'What is the concept?'——一个对常规说法的扭转，让所有竞品 framing 看起来都失效。罗列功能（'scratchpad、lessons-learned、跨 session 的持久记忆——这三个之前各自塞在 prompt、临时文件、文档里。BENE 让它们落到同一份 SQLite'）是没 concept 的产物：它告诉读者 BENE 装了什么，但没扭转读者看待 'agent memory' 这件事的 framing。",
+            "bene_offender_verbatim": "builders.body: 'scratchpad、lessons-learned、跨 session 的持久记忆——这三个之前各自塞在 prompt、临时文件、文档里。BENE 让它们落到同一份 SQLite：checkpoint 就是下一个 agent 能读的 scratchpad；engram 就是跨 session 累积的 lessons-learned；skill 在需要它之前就在 agent 之间传播。能搜、能 diff、能 cp。'",
+            "how_to_rewrite": "找一个扭转的 framing：'别人在教 agent 怎么记忆，BENE 在教 agent 怎么被审计。下一个 agent 接手时不是读你的 prompt，是读上一个 agent 在哪一 turn 改了哪一行、为什么改、跑没跑过 probe。Memory 在这里不是 context，是证据链。'"
+          },
+          {
+            "anti_pattern_name": "Hook 没抓人——开场说自己的属性，不说读者此刻的处境",
+            "why_author_rejects_it": "Pressfield 要求 Hook 必须 grab，且 climax 必须 embedded in the Inciting Incident。'AI 编程智能体跑坏的那一 turn，可以 checkpoint、diff、回滚' 把功能放在前景，把读者的处境（凌晨三点 prod 炸了 git stash 没救回来）藏在了 forWho 副标题里。读者第一眼读到的是产品的能力，而不是自己的痛。Hook 失效。",
+            "bene_offender_verbatim": "hero.title: 'AI 编程智能体跑坏的那一 turn，可以 checkpoint、diff、回滚。'",
+            "how_to_rewrite": "把 inciting incident 放到第一句：'Claude Code 把 replicas: 3 改成了 0，prod 炸了。你 git stash，发现它写的是 helm values——stash 救不回来。BENE 让这一 turn 变成可以 restore 的现场。'"
+          }
+        ],
+        "sources_cited": [
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://www.nateliason.com/notes/nobody-wants-read-your-shit-by-steven-pressfield",
+            "used_for": "Nat Eliason 的笔记直接给出 Hook/Build/Payoff、theme vs concept、'7Up the Uncola' 的 framing 案例，以及 Pressfield 用自己的 The War of Art 反向拆 Hook→Build→Payoff 的复盘。支撑 thesis 里 concept 概念和 reader_brain_moves 第三条 'Nonfiction is fiction' 的展开。"
+          },
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://sive.rs/book/NobodyWants",
+            "used_for": "Derek Sivers 的笔记给出 Pressfield 的直接引用 'At the inception of any project I ask myself, What is the concept?'、'A concept takes a conventional claim and puts a spin on it'、'Hook. Build. Payoff. This is the shape any story must take.'——支撑 copyable_patterns 1/3 和 anti_patterns 2 的引用。"
+          },
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://forum.effectivealtruism.org/posts/nrmmiezSq24S4hi9g/nobody-wants-to-read-your-sh-t-my-favorite-book-of-writing",
+            "used_for": "EA Forum 的浓缩版给出 Client's Disease 的完整段落（'Every client is in love with his own product. The mistake he makes is believing that, because he loves it, everyone else will too. They won't.'），以及 'Nonfiction is fiction' 和每句自审清单。直接支撑 anti_pattern 1 和 reader_brain_moves 第五条。"
+          },
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://www.befreed.ai/book/nobody-wants-to-read-your-sht-by-steven-pressfield",
+            "used_for": "BeFreed 总结提供 Hook 作为 advertiser 概念的定义（'the irresistible element that grabs attention and won't let go'），以及 concept = big-picture hooks that spawn endless executions——支撑 reader_brain_moves 第二条和 anti_pattern 3 中 Hook 失效的判定。"
+          },
+          {
+            "source_kind": "review",
+            "identifier": "https://explore.themarginalian.org/post/29333212011/nobody-wants-to-read-your-shit-theres-a",
+            "used_for": "The Marginalian 引用 Pressfield 原文，确认 reader 是 'donating time and attention, supremely valuable commodities' 的 transaction 框架——支撑 thesis 段第一句和 copyable_patterns 5（stakes-on-the-table）。"
+          }
+        ]
+      },
+      {
+        "book_slug": "on-writing-well",
+        "book_title": "On Writing Well: The Classic Guide to Writing Nonfiction",
+        "author": "William Zinsser",
+        "thesis": "Zinsser 的核心论点是：\"clutter is the disease of American writing\"——杂质（clutter）是美国写作的疾病。我们活在一个被 unnecessary words、circular constructions、pompous frills、meaningless jargon 勒死的社会里。写作者堆砌长词、行话和 concept nouns 的真正原因不是表达需要，而是怕显得不够 sophisticated、怕暴露自己其实没什么可说的——他用 dressing 把空心的句子撑起来。他的处方是四条信条：Clarity, Simplicity, Brevity, Humanity（清晰、简洁、精炼、有人味）。具体到操作层面：strip every sentence to its cleanest components；用 active verbs 而不是 concept nouns（\"most people just laugh with disbelief\" 而不是 \"the common reaction is incredulous laughter\"）；警惕 creeping nounism（把三四个名词串成分子链）——别说 \"precipitation activity\"，说 \"rain\"。最重要的一条是，把读者当成一个 attention span 只有 30 秒的人来对待：他不欠你读下去的义务，第一句话钓不住他，整篇文章就死了。clear thinking becomes clear writing；一个写不清楚的人，是因为没想清楚。",
+        "reader_brain_moves": [
+          {
+            "name": "Bracket the dead weight (让读者亲眼看见 clutter)",
+            "how_author_does_it": "Zinsser 不是说\"你写得太啰嗦\"——他实际拿一段满是 clutter 的句子，给每个不干活的词打上方括号，让读者直接看见这些词其实可以拿掉而句子毫发无损。这个动作把抽象的 \"be concise\" 变成一个可视化的、可执行的清单。",
+            "concrete_example": "在 chapter 2 \"Simplicity\" 里，他举 \"order up\" \"smile happily\" \"tall skyscraper\" \"a bit\" \"sort of\" \"in a sense\" 这类短语作为 bracket 对象——每一个括号里的词都可以删掉，意思不会丢。他也会把整句话括起来，如果那句只是在重复上一句已经说过的内容。"
+          },
+          {
+            "name": "Open with the 30-second reader (先把读者的处境画出来再讲原则)",
+            "how_author_does_it": "Zinsser 在讨论 lead（开篇）时不先讲技巧，而是先描绘读者的真实处境——\"a person assailed by many forces competing for attention\"，电视、邮件、孩子、宠物、健身、还有睡眠这个最强对手。这一招让读者意识到\"原来作者是在替我考虑\"，然后才接受他的建议。",
+            "concrete_example": "他在 chapter 4 \"The Lead and the Ending\" 里反复强调：第一句话如果没把读者拉到第二句，整篇文章就死了；第二句没拉到第三句，同样死。他把写作描述成一场每句话都在对抗读者注意力流失的搏斗。"
+          },
+          {
+            "name": "Replace concept nouns with people doing things (从抽象名词链回到有人有动词的画面)",
+            "how_author_does_it": "Zinsser 直接对比两个句子：\"the common reaction is incredulous laughter\" vs \"most people just laugh with disbelief\"。第一句里没有人，没有动词在干活，只有两个抽象 concept 在互相描述。他逼读者承认：第二句不仅短，而且你脑子里真的看见有人在笑——第一句你看不见任何东西。",
+            "concrete_example": "他还列出 \"Bemused cynicism isn't the only response to the old system\"、\"The current campus hostility is a symptom of the change\" 这类例子——共同特征是\"no people in them and no working verbs\"。chapter 10 \"Bits & Pieces\" 集中处理这条。"
+          },
+          {
+            "name": "Diagnose the writer's fear, not just the sentence (把臃肿归因于不自信)",
+            "how_author_does_it": "Zinsser 不停留在\"你这句话太长\"，他往上挖一层：你为什么写长？因为你怕你说的东西显得没分量、怕自己显得不够专业。这一招让读者认识到 clutter 不是技术问题，是心理问题——是 fear of sounding unsophisticated。",
+            "concrete_example": "他反复说\"trust the reader's intelligence\"——读者比你以为的聪明。简化不是 dumbing down，而是承认读者有判断力。Chapter 2 和 chapter 16（Business Writing）都把企业八股归结到同一个心理根源。"
+          },
+          {
+            "name": "Use yourself as the human element (把作者自己放进技术解释里)",
+            "how_author_does_it": "Zinsser 在 \"Science and Technology\" 那章主张：解释一个技术概念时，先把作者自己放进去——用 \"我第一次遇到这东西时是这样的\" 来钩住读者，再把抽象原理 reduce to an image they can visualize。他坚持 readers identify with people, not with abstractions like \"profitability\"。",
+            "concrete_example": "他举的核心原则是 \"lead readers who know nothing, step-by-step, to a grasp of subjects they didn't think they had an aptitude for\"——把陌生关联到熟悉，把抽象 reduce 成一个画面。这一招对 BENE 这类技术 landing 极有效："
+          }
+        ],
+        "copyable_patterns": [
+          {
+            "pattern_name": "People-doing-things 替换 X=Y reductive",
+            "sentence_skeleton": "[具体的人] 在 [具体的时刻] 用 [具体动词] 做 [具体动作]，于是 [可观察的结果]。——禁止用 \"A 是 B\" 或 \"一个 X = 一份 Y\" 这种 concept-noun 等式。",
+            "applied_to_bene_landing": "（原句：'一个 agent = 一份 SQLite 文件。`cp` 备份它，`sqlite3` 直接读它，不需要任何 API key，不上云。'）改写：'agent 跑完一轮，你想看它干了什么——`sqlite3 bene.db`，自己读；想留底，`cp bene.db backup.db`。没有 API key，没有云。'"
+          },
+          {
+            "pattern_name": "30-second reader 开头法：先画读者的处境",
+            "sentence_skeleton": "[读者刚刚遭遇的具体场景] → [他下意识做了什么] → [那一招为什么不灵] → [BENE 在这一刻做什么]。",
+            "applied_to_bene_landing": "（原句：'AI 编程智能体跑坏的那一 turn，可以 checkpoint、diff、回滚。'）改写：'你的 agent 把 working tree 改炸了。你 `git stash`——发现它根本没动 git 追踪的文件，stash 救不回来。BENE 在它每一步写入前都 checkpoint 了，一条 `bene restore` 倒回到那 turn 之前。'"
+          },
+          {
+            "pattern_name": "Active-verb 替换 concept-noun 链",
+            "sentence_skeleton": "把 \"[抽象名词1] 的 [抽象名词2] 是 [抽象名词3]\" 改写成 \"[具体的人/物] [active verb] [具体对象]，[active verb] [具体对象]\"——句子里必须有人或物在干活。",
+            "applied_to_bene_landing": "（原句：'把 Context Engineering 落到一份 SQLite 文件里。'）改写：'scratchpad、lessons-learned、跨 session 的记忆——之前散在 prompt、临时文件、文档里，下一个 agent 读不到。现在它们写进 bene.db；下一个 agent 启动时，`sqlite3` 直接捞，不必再问你昨天聊了啥。'"
+          },
+          {
+            "pattern_name": "Bracket-the-clutter：每一个修饰词都要交差",
+            "sentence_skeleton": "写完后，给每个形容词、副词、修饰短语打括号，问\"删掉它句子还成立吗\"——成立就删。只保留干活的词。",
+            "applied_to_bene_landing": "（原句：'每个 agent 一份隔离 VFS，每一步进 checkpoint，每条声明都能本地重跑。'）改写：'每个 agent 写自己的那份 VFS，互相看不见。每一步 checkpoint。你 `bene demo --no-ui`，0.3 秒，本页面所有声明在你笔记本上重放一遍。'（删\"隔离\"——VFS 互相看不见已经说了；删\"都能\"——直接给命令；删\"本地\"——\"在你笔记本上\"具体多了。）"
+          },
+          {
+            "pattern_name": "Use-yourself 技术写作：把作者放进解释里",
+            "sentence_skeleton": "[作者/读者亲历的失败] → [当时手头有什么] → [那东西为什么不够] → [BENE 这一刻能干什么]。用第一/第二人称，不用 \"用户可以\"\"系统支持\"。",
+            "applied_to_bene_landing": "（原句：'这页上的每条声明，在你笔记本上一分钟内就能验。'）改写：'我们也讨厌 landing page。所以这页上每说一句话，你都能验：`curl … | sh; bene demo --no-ui`。0.3 秒跑完，trace 被压缩、probe 过 kill-gate、越权动作被拒、信任分数被算出——全在你机器上，没有云回调，没有注册。不信？跑一下。'"
+          }
+        ],
+        "anti_patterns": [
+          {
+            "anti_pattern_name": "Concept-noun 等式（X = Y reductive，没有人、没有动词）",
+            "why_author_rejects_it": "Zinsser 在 chapter 10 \"Bits & Pieces\" 集中攻击 concept nouns：\"the common reaction is incredulous laughter\" 这种句子\"no people in them and no working verbs\"，读者无法在脑中看见任何东西。把世界写成抽象名词之间的关系，而不是\"人在做事\"，是学术、商业、法律写作里 clutter 的核心症状。\"一个 agent = 一份 SQLite 文件\"正是这种 X=Y 化简——既没人，也没动词，读者脑子里没画面。",
+            "bene_offender_verbatim": "一个 agent = 一份 SQLite 文件。`cp` 备份它，`sqlite3` 直接读它，不需要任何 API key，不上云。",
+            "how_to_rewrite": "Agent 跑完一轮，你想知道它改了什么——`sqlite3 bene.db \"select * from events where agent='claude-1' order by ts desc limit 20\"`，自己读。想留底，`cp bene.db snapshot.db`。没 API key，没云。"
+          },
+          {
+            "anti_pattern_name": "Creeping nounism（名词链：把三四个名词串起来代替一个动词）",
+            "why_author_rejects_it": "Zinsser 把这叫做\"a new American disease\"——\"nobody goes broke now; we have money problem areas. It no longer rains; we have precipitation activity or a thunderstorm probability situation. Please, let it rain.\" \"Context Engineering 落到一份 SQLite 文件里\"就是典型的名词链——\"Context Engineering\"\"SQLite 文件\"两个抽象 concept 被一个\"落到\"勉强连起来，读者根本不知道是谁在落、落了什么、为什么落得动。",
+            "bene_offender_verbatim": "把 Context Engineering 落到一份 SQLite 文件里。",
+            "how_to_rewrite": "下一个 agent 启动的时候，它需要读到上一个 agent 留下的 scratchpad、踩过的坑、学会的技巧——这三样以前你只能塞进 prompt 或忘记。现在它们 append 到 bene.db；`sqlite3` 一条 query 就捞出来。"
+          },
+          {
+            "anti_pattern_name": "用修饰词撑场面的句子（unnecessary words / pompous frills）",
+            "why_author_rejects_it": "Zinsser 反复强调\"strip every sentence to its cleanest components. Every word that serves no function … can be eliminated\"。他列的 bracket 候选包括 \"a bit\" \"sort of\" \"in a sense\"，以及任何\"和动词同义的副词\"。\"每个 agent 一份隔离 VFS，每一步进 checkpoint，每条声明都能本地重跑\"的问题是：\"隔离\"和 VFS 重复（VFS 本来就是隔离的），\"都能\"是空话（没说怎么验），\"本地\"过于抽象（不如说\"在你笔记本上\"）。三处修饰都不干活。",
+            "bene_offender_verbatim": "每个 agent 一份隔离 VFS，每一步进 checkpoint，每条声明都能本地重跑。",
+            "how_to_rewrite": "每个 agent 写自己那份 VFS，互相看不见。每一步 checkpoint。本页面所有声明，你跑 `bene demo --no-ui`，0.3 秒在你笔记本上重放一遍。"
+          }
+        ],
+        "sources_cited": [
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://www.shortform.com/summary/on-writing-well-summary-william-zinsser",
+            "used_for": "Backs Zinsser's core thesis 'clutter is the disease of American writing'，verbatim quote about 'a society strangling in unnecessary words, circular constructions, pompous frills and meaningless jargon'，以及 30-second-attention-span reader 的 framing。"
+          },
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://www.litcharts.com/lit/on-writing-well/chapter-10-bits-pieces",
+            "used_for": "Backs the concept-nouns vs people-doing-things contrast：\"the common reaction is incredulous laughter\" vs \"most people just laugh with disbelief\"；以及 \"no people in them and no working verbs\" 这一诊断语。Chapter 10 'Bits & Pieces' 来源。"
+          },
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://nysba.org/thoughts-on-legal-writing-from-the-greatest-of-them-all-william-zinsser/",
+            "used_for": "Backs 'creeping nounism' 概念、\"nobody goes broke now; we have money problem areas. It no longer rains; we have precipitation activity\" 这段 verbatim 例子，以及 'molecule chain' of concept nouns 的描述。"
+          },
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://www.archbee.com/blog/book-review-william-zinssers-on-writing-well",
+            "used_for": "Backs Zinsser 的四条信条 \"Clarity, Simplicity, Brevity, Humanity\"，以及 'Joe saw him' vs 'He was seen by Joe' 这一 active vs passive verb 经典对比。"
+          },
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://readingraphics.com/book-summary-on-writing-well-william-zinsser/",
+            "used_for": "Backs 'bracket every component that isn't doing useful work' 这一可操作的 clutter-detection 方法，以及关于 'order up' / 'smile happily' / 'tall skyscraper' / 'a bit' / 'sort of' / 'in a sense' 这些 bracket 候选词的清单。"
+          },
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://www.peterlunch.com/notes/writing-well-william-zinsser",
+            "used_for": "Backs the 'lead' principle (chapter 4)：第一句话钓不住读者整篇就死；以及 'rewriting is the essence of writing well: it's where the game is won or lost'。"
+          }
+        ]
+      },
+      {
+        "book_slug": "storyworthy",
+        "book_title": "Storyworthy: Engage, Teach, Persuade, and Change Your Life through the Power of Storytelling",
+        "author": "Matthew Dicks",
+        "thesis": "Dicks 的核心论断只有一句：一个故事 = 一个人在一个瞬间发生的一次改变（the five-second moment）。没有这个 moment，你手上的就只是 anecdote，不是 story。他给出的可执行机器是：先找到那个让心动了一下的五秒钟；把它放到故事最末；故事开头必须是这个改变的反面（the opposite of the end），这样才有 arc。句与句之间用 but / therefore 串，不能用 and——因为 and 不表示改变。开场 30 秒之内必须放一头 elephant：观众能看见的、巨大的、明确的 stakes，让他们知道为什么要听下去。每一个 moment 都要 anchor 在一个具体的物理房间里，让观众在脑中放电影；用现在时把他们拽进去。最重要的是反 anecdote 原则：你不需要撞穿挡风玻璃、不需要被枪指着头——一个 big story 想被人听懂，反而要靠里面那一个最小的、最普通的、最可关联的瞬间。observed 大事，relate 小事——这是 \"I am you\" 的 common ground。",
+        "reader_brain_moves": [
+          {
+            "name": "Open with the opposite of your ending (arc primer)",
+            "how_author_does_it": "Dicks 反复教：先想清楚故事的结尾——那个改变发生的五秒——然后从它的反面开场。让读者一进门看到的是「之前的我」，结尾才能感到「现在的我」不一样了。这是制造 arc 的机械手段，不是修辞。",
+            "concrete_example": "Dicks 在 Storyworthy 中明确写：\"Simply put, the beginning of the story should be the opposite of the end. Find the opposite of your transformation, revelation, or realization, and this is where your story should start.\" 他在 Lenny's Newsletter 播客上也复述这条：start every story at the end，意思是先锁定 ending 再倒推 opening。"
+          },
+          {
+            "name": "Plant the elephant in the first 30 seconds (stakes anchor)",
+            "how_author_does_it": "他不让作者慢慢「设定背景」。开场必须有一个所有人都看得见的巨大问题/欲望/危险——the elephant——告诉读者「为什么我要听下去」。elephant 可以变色（开头是爆胎，结尾是孤独），但不能没有。",
+            "concrete_example": "Dicks 给的 elephant 例句被各种 Storyworthy 笔记转引：\"My mother was a great woman but I hated her.\"——一句话同时给出 stakes 和方向。Ribbonfarm 的 Venkatesh Rao 总结他的方法时也把 \"every plot point anchored to specific physical locations and times\" 列为同一层的硬约束。"
+          },
+          {
+            "name": "Connect with but / therefore, never with and",
+            "how_author_does_it": "Dicks 借用 South Park 创作者也独立发现过的同一规律：用 and 串联的句子让故事没有方向，没有改变；用 but 表示「方向被打断了」，用 therefore 表示「所以下一步必须是这个」。读者大脑里因此持续感受到「事情在变」，即使事件本身是线性的。",
+            "concrete_example": "他在书中原话（被多个笔记站点引用）：\"AND stories have neither direction nor unique moments. BUT and THEREFORE, on the other hand, are used to denote change.\" Ribbonfarm 把这条列为他与 South Park 的 \"buts and therefores\" 不约而同。"
+          },
+          {
+            "name": "Find the small relatable moment inside the big story (I am you)",
+            "how_author_does_it": "Dicks 反复警告：big story 反而难讲，因为没人能 relate 撞车、坐牢、生死。要在 big story 里挖出那个最小的、谁都经历过的瞬间——让读者觉得「这就是我」。共情来自微小，不来自震撼。",
+            "concrete_example": "Storyworthy 笔记转引他的原话大意：\"You need not spend time in jail or crash through a windshield or have a gun jammed against the side of your head to tell a great story. The simplest stories about the smallest moments in our lives are often the most compelling.\" 他自己的例子：在 \"This is Going to Suck\" 里他真的死在路边，但那不是故事的焦点——观众记住的是另一段最日常的瞬间。"
+          },
+          {
+            "name": "Anchor every beat to a physical room, in present tense (cinema of the mind)",
+            "how_author_does_it": "他要求每一个时刻都要给读者一个具体的物理位置，让对方能在脑里放电影；用现在时态把读者拽进当下。抽象不行、概念不行——必须是「我现在站在哪里、我看到什么」。",
+            "concrete_example": "Storyworthy 多份笔记摘录的原则：\"Always provide a physical location for every moment of your story. Your goal is always to create a cinematic experience in the minds of your listeners.\" 以及 \"Use present tense to transport the audience into the story.\""
+          }
+        ],
+        "copyable_patterns": [
+          {
+            "pattern_name": "Opposite-of-ending opening (反面开场)",
+            "sentence_skeleton": "[读者结尾的状态——已经被救/已经能验/已经睡得着] 的反面 = [当下他正在经历的具体崩塌]。先写崩塌，再写产品出场。",
+            "applied_to_bene_landing": "把 hero.tagline「每个 agent 一份隔离 VFS，每一步进 checkpoint，每条声明都能本地重跑。」改写为：「凌晨两点，agent 把 replicas 改到 0，生产挂了，你 git stash 一把发现栈是空的——那一刻你想要的，是能回到上一步。BENE 让上一步还在原地。」"
+          },
+          {
+            "pattern_name": "Elephant in the first sentence (开场 30 秒立 stakes)",
+            "sentence_skeleton": "[一句话讲明读者怕什么 / 损失什么 / 想要什么]，然后 but / therefore 接产品的位置。不要先讲产品是什么。",
+            "applied_to_bene_landing": "把 builders.title「把 Context Engineering 落到一份 SQLite 文件里。」改写为：「agent 跑到第 30 turn 就忘了第 3 turn 的教训——这是 context 在第 30 turn 漏的水。BENE 让那个 turn 的 scratchpad、lessons-learned、skill，下一个 agent 进门就拿得到。」"
+          },
+          {
+            "pattern_name": "But / Therefore chain instead of And-list (用转折串句, 禁列表化)",
+            "sentence_skeleton": "[X 看起来已经够了]，但 [X 在 Y 场景下崩了]，所以 [产品在这一刻做了 Z]。禁止用「、」或者「，」并列三个 feature。",
+            "applied_to_bene_landing": "把 builders.body 中「scratchpad、lessons-learned、跨 session 的持久记忆——这三个之前各自塞在 prompt、临时文件、文档里。」改写为：「你以为把 lessons-learned 塞进 prompt 就够了，但下一个 session 的 agent 看不到那个 prompt；你以为写进临时文件就够了，但 agent 不知道该读哪一份；所以这三件事必须落在同一个地方，下一个 agent 进门就能 grep 到。」"
+          },
+          {
+            "pattern_name": "Small relatable moment inside the big claim (I am you)",
+            "sentence_skeleton": "[宏大声明] 不要单独站着。在它旁边放一个 [读者上周真的遇到过的、最普通的 30 秒]，让他点头：对，这就是我。",
+            "applied_to_bene_landing": "把 watch.title「这页上的每条声明，在你笔记本上一分钟内就能验。」改写为：「你上次试一个新工具，光填 API key 就花了 12 分钟，最后发现还要登录 dashboard——这一页不让你经历那个。一条命令，0 个 key，30 秒内你已经看到 kill-gate 拒掉一次越权动作。」"
+          },
+          {
+            "pattern_name": "Anchor to a physical room in present tense (具体房间 + 现在时)",
+            "sentence_skeleton": "[读者正坐在哪里 / 屏幕上正显示什么 / 他手指正在按什么]，[在这个房间里产品做了什么]。禁止抽象动词「支持」「提供」「赋能」。",
+            "applied_to_bene_landing": "把 hero.trustLine「一个 agent = 一份 SQLite 文件。`cp` 备份它，`sqlite3` 直接读它，不需要任何 API key，不上云。」改写为：「你打开终端，看到 ~/bene.db 这一个文件。`cp bene.db bene.bak` 就是这一次的备份；`sqlite3 bene.db '.schema'` 当场打印出 agent 这一 turn 写了什么。没有 dashboard、没有 key、没有外网请求。」"
+          }
+        ],
+        "anti_patterns": [
+          {
+            "anti_pattern_name": "X = Y 等号定义句 (anecdote-as-definition, 无 moment of change)",
+            "why_author_rejects_it": "Dicks 的核心判据：没有一个具体瞬间的「改变」就不是 story，是 anecdote。「一个 agent = 一份 SQLite 文件」这种等号句把一整套体验压扁成定义，没有人、没有房间、没有 stakes、没有 before/after。读者大脑里没有任何东西在动。Ribbonfarm 总结他的方法：没有 5-second soul、没有 contrasting before state，就不构成 story。",
+            "bene_offender_verbatim": "一个 agent = 一份 SQLite 文件。`cp` 备份它，`sqlite3` 直接读它，不需要任何 API key，不上云。",
+            "how_to_rewrite": "agent 把生产改炸了。你坐在终端前。你不点开浏览器、不去任何 dashboard——你输 `cp bene.db bene.bak`，再 `bene restore`。三秒之后，replicas 又是 3。整个过程都在这一个 .db 文件里发生，没离开过你的笔记本。"
+          },
+          {
+            "anti_pattern_name": "And-list 并列三件事 (无 but/therefore, 无方向)",
+            "why_author_rejects_it": "Dicks 明确写：\"AND stories have neither direction nor unique moments. BUT and THEREFORE, on the other hand, are used to denote change.\" 用「、」并列 scratchpad / lessons-learned / 跨 session 记忆，本质上是 and-list，读者大脑读完没有任何「方向被改变了」的感觉，只剩 feature 罗列。",
+            "bene_offender_verbatim": "scratchpad、lessons-learned、跨 session 的持久记忆——这三个之前各自塞在 prompt、临时文件、文档里。",
+            "how_to_rewrite": "你把 lessons-learned 塞进 prompt——但下一个 session 的 agent 看不见它；你改写进临时文件——但 agent 不知道哪份才是最新；所以这三件事必须落在同一份 .db 里，下一个 agent 一开机就 grep 得到。"
+          },
+          {
+            "anti_pattern_name": "Big claim 没 elephant 没小瞬间 (抽象大话不可关联)",
+            "why_author_rejects_it": "Dicks 反复警告：big story 反而难讲，因为不可 relate。「在你笔记本上一分钟内就能验」是大话，但读者大脑里没有一个具体的房间、没有一只 elephant、没有一个他上周经历过的 30 秒能挂上去。按他的标准，这种句子只是 announcement，不是 story；他会要求你 anchor 到一个具体的小瞬间——「上次你试一个新工具光填 API key 就花了 12 分钟」——让读者点头说「I am you」。",
+            "bene_offender_verbatim": "这页上的每条声明，在你笔记本上一分钟内就能验。",
+            "how_to_rewrite": "你上次试一个新工具，光填 API key 花了 12 分钟，最后还得登 dashboard——这一页不让你再经历一次。在你打开它之后 60 秒内，你已经亲眼看到 kill-gate 在终端里拒掉一次越权动作，数值就印在屏幕上。"
+          }
+        ],
+        "sources_cited": [
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://www.ribbonfarm.com/2021/06/24/storytelling-matthew-dicks/",
+            "used_for": "Backs the rejection of 'and'-linked scenes, the requirement of a 5-second soul + contrasting before-state, anchoring every plot point to a physical location/time, and Dicks's first-person purist stance."
+          },
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://bagerbach.com/books/storyworthy/",
+            "used_for": "Backs the five-second moment, Homework for Life mechanic, beginning-is-opposite-of-end rule, and 'small moments are most compelling' / I-am-you common-ground principle."
+          },
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://www.tosummarise.com/book-summary-storyworthy-by-matthew-dicks/",
+            "used_for": "Backs the Elephant rule (within first 30 seconds, signals stakes/direction, can change color), Backpacks/Breadcrumbs/Hourglasses suspense devices, present-tense cinema-of-the-mind anchoring, and the small-moment-inside-big-story doctrine."
+          },
+          {
+            "source_kind": "podcast",
+            "identifier": "https://www.lennysnewsletter.com/p/how-to-tell-better-stories-matthew",
+            "used_for": "Backs 'start every story at the end', stakes/surprise/suspense/humor as the four engagement levers, and Homework for Life as a daily practice (Lenny's Podcast interview with Matthew Dicks)."
+          },
+          {
+            "source_kind": "goodreads",
+            "identifier": "https://www.goodreads.com/work/quotes/59440320",
+            "used_for": "Verbatim quote: 'Simply put, the beginning of the story should be the opposite of the end...' and 'Seek out the moments when you felt your heart move...' and the present-tense immediacy quote."
+          },
+          {
+            "source_kind": "blog_summary",
+            "identifier": "https://medium.com/@nimisha-pandit/storyworthy-by-matthew-dicks-notes-fd072c4e420c",
+            "used_for": "Backs the But/Therefore vs And rule verbatim and the Elephant rule as a stakes-setting opener with the 'My mother was a great woman but I hated her' example."
+          }
+        ]
+      }
+    ],
+    "failed_slugs": []
+  }
+}

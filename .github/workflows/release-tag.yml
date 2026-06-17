@@ -1,0 +1,26 @@
+---
+# yamllint disable rule:truthy
+# Stage D entry workflow: tag push -> Gate-3 release.
+# Tag patterns:
+#   v*-rc*  -> rc tag, runs canary (4h soak)
+#   v*      -> final tag, skips canary
+
+name: release-tag
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  release:
+    uses: ./.github/workflows/reusable-release.yml
+    secrets: inherit
+    with:
+      tag: ${{ github.ref_name }}
+      is-rc: ${{ contains(github.ref_name, '-rc') }}
+      canary-hours: 4

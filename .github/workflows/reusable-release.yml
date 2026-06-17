@@ -1,0 +1,127 @@
+---
+# yamllint disable rule:truthy
+# Gate-3 Release: triggered by tag push, extends Gate-2 Strict.
+# Adds: SBOM (CycloneDX), artifact manifest, canary watcher (rc tags only).
+#
+# Contract (.factory/specs/bene-cicd-redesign-tiered.md):
+#   - reuse strict-block contents inline (org runners reject nested reusable)
+#   - SBOM scope: Python deps only (cyclonedx-bom from uv export)
+#   - canary: 4h soak for *-rc* tags, polling release-blocker label
+#   - manifest: flat sha256+size text (Oppie Released-Builds parallel)
+
+name: reusable-release
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+      is-rc:
+        type: boolean
+        default: false
+      canary-hours:
+        type: number
+        default: 4
+      cov-floor-file:
+        type: string
+        default: ".coverage-floor"
+      mypy-allowlist:
+        type: string
+        default: "scripts/ci/mypy_allowlist.txt"
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  strict-block:
+    name: ci/release/strict
+    runs-on: eng-github-runners
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.7"
+          enable-cache: true
+          python-version: "3.12"
+      - name: Install dev dependencies
+        run: uv sync --dev --group temporal
+      - name: ruff check
+        run: uv run ruff check bene/ tests/
+      - name: ruff format check
+        run: uv run ruff format --check bene/ tests/
+      - name: mypy strict on allowlist
+        env:
+          ALLOWLIST: ${{ inputs.mypy-allowlist }}
+        run: |
+          test -s "${ALLOWLIST}" || { echo "empty allowlist"; exit 1; }
+          # shellcheck disable=SC2046
+          uv run mypy --strict --follow-imports=silent $(cat "${ALLOWLIST}")
+      - name: full pytest with coverage floor
+        env:
+          COV_FLOOR: ${{ inputs.cov-floor-file }}
+        run: |
+          floor="$(cat "${COV_FLOOR}")"
+          uv run pytest -q \
+            --cov=bene --cov-report=term-missing \
+            "--cov-fail-under=${floor}"
+      - name: pipeline_validation smoke
+        run: uv run python scripts/ci/pipeline_validation/smoke.py
+
+  artifacts:
+    name: ci/release/artifacts
+    needs: strict-block
+    runs-on: eng-github-runners
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.7"
+          enable-cache: true
+          python-version: "3.12"
+      - name: Install dev dependencies
+        run: uv sync --dev --group temporal
+      - name: Build wheel + sdist
+        run: uv build --out-dir dist/
+      - name: Generate SBOM
+        run: bash scripts/ci/sbom.sh
+      - name: Generate artifact manifest
+        run: bash scripts/ci/artifact_manifest.sh
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: bene-release-${{ inputs.tag }}
+          path: |
+            dist/
+            artifacts/
+          retention-days: 90
+          if-no-files-found: error
+
+  canary:
+    name: ci/release/canary
+    needs: artifacts
+    if: ${{ inputs.is-rc }}
+    runs-on: eng-github-runners
+    timeout-minutes: 360
+    permissions:
+      contents: read
+      issues: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Watch canary for ${{ inputs.canary-hours }}h
+        env:
+          TAG: ${{ inputs.tag }}
+          REPO: ${{ github.repository }}
+          CANARY_HOURS: ${{ inputs.canary-hours }}
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ci/canary_watcher.sh
