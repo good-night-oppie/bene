@@ -2,7 +2,7 @@
 
 Launch, watch, rewind, and query a fleet of agents from your terminal — every command works against the same local `bene.db` file.
 
-> **Running from a clone:** `bene` isn't on your `PATH` after `uv sync` — prefix every command below with `uv run` (e.g. `uv run bene init`), or `source .venv/bin/activate` once so the bare `bene` commands shown here resolve. (bene is not on PyPI yet.)
+> **Running from a clone:** `bene` isn't on your `PATH` after `uv sync` — prefix every command below with `uv run` (e.g. `uv run bene init`), or `source .venv/bin/activate` once so the bare `bene` commands shown here resolve. (Or just `pip install bene`.)
 
 > **`--json` is a global flag — put it *before* the subcommand** (`bene --json ls`, not `bene ls --json`, which errors `No such option`). Any output can then feed `jq`, scripts, or another agent framework. (Piped output auto-emits JSON even without the flag.)
 
