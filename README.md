@@ -102,7 +102,7 @@ Try it (keyless, <60s, fresh directory):
 
 ```bash
 bene demo --no-ui     # the five-capability story
-bene senses --json    # what an incoming agent reads first
+bene --json senses    # what an incoming agent reads first
 bene trust <agent_id> # computed trust: 4 signals + composite
 bene experiments ls   # the probe/evolution journal
 bene sweep <agent_id> # debt sweep over an agent's VFS
