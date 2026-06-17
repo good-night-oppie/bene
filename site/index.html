@@ -201,7 +201,7 @@ const Nav = ({ theme, setTheme }) => {
             ))}
           </div>
           <a href="docs/index.html" className="font-mono text-xs text-bene-accent hover:bg-bene-accent/10 transition-colors border border-bene-accent rounded-sm px-3 py-1">Docs ↗</a>
-          <a href="SKILL.md" target="_blank" rel="noopener noreferrer" className="hidden sm:inline font-mono text-xs text-bene-text hover:text-bene-accent transition-colors" title="Paste this to make it a BENE expert (raw markdown)">SKILL.md</a>
+          <a href="SKILL.md" target="_blank" rel="noopener noreferrer" className="hidden sm:inline font-mono text-xs text-bene-text hover:text-bene-accent transition-colors" title="Drop this into your agent to make it a BENE expert (raw markdown)">SKILL.md</a>
           <a href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" className="hidden sm:inline font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors">GitHub</a>
           <a href="zh/" className="font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors border border-bene-dim rounded-sm px-2 py-1" title="切换到中文">文</a>
           <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -241,12 +241,12 @@ const CopyLlmsTxtButton = ({ className = '', label = 'Copy llms.txt' } = {}) => 
     }
   };
   const flash =
-    state === 'copied' ? '✓ copied — Paste this' :
+    state === 'copied' ? '✓ copied — paste into your agent' :
     state === 'opened' ? '↗ opened in new tab' :
     label;
   return (
     <button onClick={onClick}
-      title="Copy the llms.txt site map (an LLM-friendly index pointing at SKILL.md + every doc). Paste it into the harness's context."
+      title="Copy the llms.txt site map (an LLM-friendly index pointing at SKILL.md + every doc). Paste it into your agent's context."
       className={`font-mono text-xs text-bene-text hover:bg-bene-text/10 transition-colors border border-bene-text rounded-sm px-3 py-2 whitespace-nowrap ${className}`}>
       {flash}
     </button>
@@ -275,7 +275,7 @@ const Hero = () => (
       <div className="grid md:grid-cols-2 gap-12 items-start mb-16">
         <div>
           <p className="text-lg leading-relaxed mb-6">
-            03:00 the next night, the on-call walks into <code className="text-bene-text">bene.db</code> with sqlite3 and finds the engram of every retry the harness tried — and the locked probe that let the bad prompt through.{' '}
+            03:00 the next night, the on-call walks into <code className="text-bene-text">bene.db</code> with sqlite3 and finds the engram of every retry the agent tried — and the locked probe that let the bad prompt through.{' '}
             <span className="text-bene-text font-medium">No vendor portal. No dashboard you're waiting on.</span>
           </p>
           <p className="text-sm text-bene-muted leading-relaxed font-mono">
@@ -283,7 +283,7 @@ const Hero = () => (
           </p>
         </div>
         <div className="flex flex-col gap-3">
-          <Pill>30 seconds with the repo: init, smoke, grep the harness's memory</Pill>
+          <Pill>30 seconds with the repo: init, smoke, grep your agent's memory</Pill>
           <Pill>one bene.db, no cloud, no keys</Pill>
           <Pill>works inside Claude Code, Cursor, Aider</Pill>
         </div>
@@ -303,7 +303,7 @@ const Hero = () => (
       </Terminal>
       <div className="mt-8 pt-6 border-t border-bene-dim flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
         <p className="text-xs text-bene-muted leading-snug">
-          Or Run BENE in one URL — fetch the skill, fetch the index, the harness runs BENE itself.
+          Or hand BENE to your agent in one URL — fetch the skill, fetch the index, your agent runs BENE itself.
         </p>
         <div className="flex flex-wrap gap-2 shrink-0">
           <a href="SKILL.md" target="_blank" rel="noopener noreferrer"
@@ -344,7 +344,7 @@ const TheGap = () => (
       <Card className="md:col-span-6 h-full">
         <h3 className="font-mono text-bene-accent mb-4">Gap 3. Autonomy as a computed signal</h3>
         <p className="text-bene-muted leading-relaxed">
-          Most autonomy flags live in a config file — easy to set, easy to forget. BENE folds four signals into a [0,1] trust score, and L4 grants require <code className="text-bene-text">granted_by='human:&lt;name&gt;'</code> or the API raises. The escalation path can be observed.
+          Most autonomy flags live in a config file — easy to set, easy to forget. BENE folds four signals into a [0,1] trust score, and L4 grants require <code className="text-bene-text">granted_by='human:&lt;name&gt;'</code> or the API raises. The escalation path is observable, not declarative.
         </p>
         <GapDemo gif="gap-3-trust.gif" caption="bene trust <agent> returns 4 signals + composite. each value derives from the audit trail, not a config flag." />
       </Card>
@@ -401,7 +401,7 @@ const Comparison = () => {
     { n: 'LangGraph',     r: 'Wrap node outputs as engrams; gate promote() on the candidate prompt before the next graph run.' },
     { n: 'CrewAI',        r: 'crew.kickoff() → engram batch; promote new role configs only when their probe ACCEPTs.' },
     { n: 'AutoGen',       r: 'on_message hook → engram; SharedLog for cross-agent decisions; probe gates conversational hand-off.' },
-    { n: 'smolagents',    r: 'Thin loop unchanged; engrams + probe live underneath, no changes to the harness body.' },
+    { n: 'smolagents',    r: 'Thin loop unchanged; engrams + probe live underneath, no changes to the agent body.' },
     { n: 'DSPy',          r: 'Register DSPy.compile output as a candidate; 5-line probe against your metric; promote() replaces deploy.py.' },
     { n: 'Letta',         r: 'Mirror Letta memory blocks as tier-2 engrams; cross-agent reuse goes through the probe + gate.' },
   ];
@@ -443,14 +443,14 @@ const Comparison = () => {
           Bring your own framework. Bring your own provider. BENE writes the engrams, gates, and trust signal underneath; you ship through one bene.db.
         </p>
         <p className="text-sm text-bene-muted max-w-3xl leading-relaxed">
-          The harness loop is turnkey — engrams and the event journal are on by default, no wiring. The gate, memory consolidation, skills, and evolution are patterns you assemble yourself — real parts, but not chained together for you. The honest map is in <a href="docs/integrating-bene.html" className="text-bene-accent hover:underline">Integrating BENE</a>.
+          The agent loop is turnkey — engrams and the event journal are on by default, no wiring. The gate, memory consolidation, skills, and evolution are patterns you assemble yourself — real parts, but not chained together for you. The honest map is in <a href="docs/integrating-bene.html" className="text-bene-accent hover:underline">Integrating BENE</a>.
         </p>
         <div className="pt-8 border-t border-bene-dim flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <p className="text-xs text-bene-muted max-w-2xl">
             Receipts and limits are in the docs below.
           </p>
           <div className="flex gap-4 font-mono text-xs">
-            the design documentation
+            <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/design/CLAIMS-AUDIT.md" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">CLAIMS-AUDIT.md</a>
             <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/benchmarks/COMMUNITY-BENCH-REPORT.md" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">COMMUNITY-BENCH-REPORT.md</a>
           </div>
         </div>
@@ -506,7 +506,7 @@ const Recipes = () => {
     { id: 'R5', t: 'Keep context inside budget', m: 'bene.kernel.memory.ContextOS', who: 'agent runtime', flow: ['ContextOS()', 'assemble(budget_tokens)', 'never overshoots'], d: 'Budgeted assembly, pollution detector.', c: 'packed = ContextOS().assemble(items, budget_tokens=8192)', v: 'packed.manifest["estimated_tokens"] <= 8192  →  True' },
     { id: 'R6', t: 'Escalate autonomy by probe', m: 'bene.kernel.trust + .harness', who: 'agent climbs · human signs L4', flow: ['4 signals', 'composite ∈ [0,1]', 'human signs L4'], d: 'Grants escalate by passing probes, not editing YAML.', c: "agent.grant_level(4, granted_by='human:alice')", v: 'bene trust <agent>  →  composite ∈ [0,1]' },
     { id: 'R7', t: 'Breed a better strategy', m: 'bene.kernel.evolve', who: 'agent / CI', flow: ['mh search', 'genome (Pareto)', 'gated promote'], d: 'Breed strategies; bridge is manual today, end-to-end wiring on roadmap.', c: 'bene mh search --benchmark <name>', v: 'bene mh frontier <search_agent_id> | jq .' },
-    { id: 'R8', t: 'Plug BENE into the harness', m: 'bene.mcp', who: 'you, once', flow: ['bene serve --transport stdio', 'MCP server', 'claude mcp ls'], d: 'One line in Claude Code, Cursor, Aider.', c: 'bene serve --transport stdio', v: 'claude mcp ls  →  bene listed' },
+    { id: 'R8', t: 'Plug BENE into your agent', m: 'bene.mcp', who: 'you, once', flow: ['bene serve --transport stdio', 'MCP server', 'claude mcp ls'], d: 'One line in Claude Code, Cursor, Aider.', c: 'bene serve --transport stdio', v: 'claude mcp ls  →  bene listed' },
   ];
   return (
     <Section id="recipes" inverted>
@@ -581,7 +581,7 @@ const Architecture = () => {
       name: 'Probe + kill gate',
       oneLine: 'the gate before promotion',
       scene: 'A new prompt passes eval with a 2-point lift over baseline. You do not want to push it and then discover it regresses on some case nobody covered.',
-      common: 'A reminder in CI to "ask someone to review prompt changes" or a GitHub Action that compares eval scores. Both are cultural conventions constraints.',
+      common: 'A reminder in CI to "ask someone to review prompt changes" or a GitHub Action that compares eval scores. Both are cultural conventions, not structural constraints.',
       mechanism: 'Probe(name, [gate], fn).register(...) seals the spec under sha256. promote(candidate) runs the candidate through the probe; the verdict is ACCEPT, REJECT, or VOID (the probe is inadmissible — a gate that cannot kill its own baseline; REJECT means the candidate failed an admissible gate). No ACCEPT means PromotionBlocked is raised and CI halts on the exception. Try to evolve the spec to flip the verdict? The sha256 will not match and the probe refuses to run (LockTamperError). The verdict itself lands as an engram, re-readable months later.',
       diagram: (
         <div className="font-mono text-[11px] lg:text-xs space-y-2">
@@ -630,7 +630,7 @@ const Architecture = () => {
       oneLine: 'Run `bene trust <agent>`; four signals fold into a [0,1] composite',
       scene: 'An agent has run three weeks without an error and the team wants it to own a class of decisions outright. Question: by what evidence is that the right call?',
       common: "Set autonomy_level: 3 in a YAML, or the lead approves it from gut. When something breaks, dig commit messages to find out who signed off.",
-      mechanism: 'Four signals are computed from the audit trail: verification_coverage (probe pass rate), audit (review hit rate), checkpoint (rollback frequency), outcome (task success rate). They fold into a [0,1] composite that places the harness on L0 / L1 / L2 / L3. The composite is advisory — every level change is an explicit grant, never automatic. L4 (the top tier) is a hard contract: granted_by="human:<name>" or the API raises. No config flag bypasses that human requirement.',
+      mechanism: 'Four signals are computed from the audit trail: verification_coverage (probe pass rate), audit (review hit rate), checkpoint (rollback frequency), outcome (task success rate). They fold into a [0,1] composite that places the agent on L0 / L1 / L2 / L3. The composite is advisory — every level change is an explicit grant, never automatic. L4 (the top tier) is a hard contract: granted_by="human:<name>" or the API raises. No config flag bypasses that human requirement.',
       diagram: (
         <div className="font-mono text-[11px] lg:text-xs space-y-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -661,7 +661,7 @@ const Architecture = () => {
       oneLine: 'strategies that get better across generations',
       scene: "You have run the same task class fifty times with slightly different prompts or strategies. You want the Pareto front of the survivors across generations, not another hand-tune.",
       common: 'AutoML or a DSPy compile run produces a candidate; either someone copy-pastes it into production, or it replaces deploy.py directly — straight into a reward-hack on the metric.',
-      mechanism: 'mh_search generates candidates → genome encoding makes the control signals dense → Pareto front filters survivors → promote() routes them through the same kill gate any other promotion uses — every promotion goes through it, no separate path. The mh_search-to-promote bridge is manual today (); end-to-end wiring is on the roadmap and not claimed as shipping.',
+      mechanism: 'mh_search generates candidates → genome encoding makes the control signals dense → Pareto front filters survivors → promote() routes them through the same kill gate any other promotion uses — every promotion goes through it, no separate path. The mh_search-to-promote bridge is manual today (CLAIMS-AUDIT line 36 marks it partial); end-to-end wiring is on the roadmap and not claimed as shipping.',
       diagram: (
         <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] lg:text-xs">
           <span className="border border-bene-dim text-bene-text px-2 py-0.5 rounded-sm whitespace-nowrap">mh_search</span>
@@ -845,7 +845,7 @@ const Limits = () => {
             <span className="text-bene-accent">On the roadmap, not yet shipping:</span> skill demotion / retirement policy (outcome-weighted ranking already ships opt-in; wiring it into the default retrieval path is the open item); the external CLI / cron wiring around nightly consolidation (the deterministic planner already shipped); the consumer-side CLI for deterministic replay (the journal + manifest already shipped); in-episode harness mutation; MemGAS entropy routing. Full spec at <code className="text-bene-text font-mono">docs/design/v0.3-roadmap-spec.md</code>.
           </p>
         </div>
-        the design documentation
+        <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/design/CLAIMS-AUDIT.md" target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-bene-accent hover:underline whitespace-nowrap shrink-0">CLAIMS-AUDIT.md</a>
       </div>
     </Section>
   );
@@ -904,7 +904,7 @@ const Lore = () => {
     { badge:'missionaria',  l:'Missionaria Protectiva', v:['bene skills save','bene skills apply'] },
     { badge:'breeding',     l:'The Breeding Program', v:['bene mh search','genome_from_candidate','promote()'] },
     { badge:'litany',       l:'The Litany Against Fear', v:['bene checkpoint','bene diff','bene restore'] },
-    { badge:'gom-jabbar',   l:'Gom jabbar (beasts only destroy)', v:['The harness thesis: a framework that lets the harness build, not just react.'] },
+    { badge:'gom-jabbar',   l:'Gom jabbar (beasts only destroy)', v:['The harness thesis: a framework that lets the agent build, not just react.'] },
   ];
   return (
     <Section id="lore" className="pb-32">
