@@ -273,7 +273,7 @@ landing, and the skill; PREREG itself is a historical-locked artifact.</p>
 <li><strong>REJECT counted as success.</strong> Per PREREG principle 3, a LOSS row reported honestly is a successful audit outcome; sugar-coating any row voids the report. Wherever a gate statistic was ambiguous, the least-favorable reading for BENE was used.</li>
 </ul>
 <h2 id="headline">Headline</h2>
-<p><strong>BENE loses 4 rows where peer mechanisms have no shipped BENE equivalent: A1b, A2, A4, A5</strong> (outcome/plasticity-weighted retrieval ranking, learned-ranking delta, critical-step failure localization, continuous-quality outcome signal — all admitted as <em>planned</em> in ). A fifth Section-A loss, <strong>A6, is a loss of an implemented BENE mechanism</strong> (the <code>attach_kernel</code> memory mirror fails the overhead gate). In addition, <strong>two of three Section B rows FAIL</strong> (B1: metaharness eval loop internally zeroes every score on a missing <code>diagnostic_view</code> hook; B3: the bug_triage benchmark package was never migrated from the 0.1.0 predecessor). Only after stating these: BENE records 2 Section-A wins/passes besides parity (A3, A7), 1 Section-A parity (A1), 1 Section-B pass (B2), and 5/5 Section-C wins.</p>
+<p><strong>BENE loses 4 rows where peer mechanisms have no shipped BENE equivalent: A1b, A2, A4, A5</strong> (outcome/plasticity-weighted retrieval ranking, learned-ranking delta, critical-step failure localization, continuous-quality outcome signal — all <em>planned</em>, not shipped). A fifth Section-A loss, <strong>A6, is a loss of an implemented BENE mechanism</strong> (the <code>attach_kernel</code> memory mirror fails the overhead gate). In addition, <strong>two of three Section B rows FAIL</strong> (B1: metaharness eval loop internally zeroes every score on a missing <code>diagnostic_view</code> hook; B3: the bug_triage benchmark package was never migrated from the 0.1.0 predecessor). Only after stating these: BENE records 2 Section-A wins/passes besides parity (A3, A7), 1 Section-A parity (A1), 1 Section-B pass (B2), and 5/5 Section-C wins.</p>
 <p>Tally across all 16 rows: 7 WIN/PASS, 1 PARITY, 2 LOSS, 3 NA-LOSS, 2 FAIL, 1 B-row pass counted within the 7.</p>
 <h2 id="full-results">Full results</h2>
 <p>Numbers below are condensed; verbatim commands and raw per-row records are preserved in the collapsible appendix.</p>
@@ -308,7 +308,7 @@ landing, and the skill; PREREG itself is a historical-locked artifact.</p>
 <tr>
 <td>A2</td>
 <td>Neuroplasticity delta (weighted − bm25)</td>
-<td>No mechanism: 0 grep hits for plasticity/weighting; <code>record_outcome</code> counters never feed ranking; </td>
+<td>No mechanism: 0 grep hits for plasticity/weighting; <code>record_outcome</code> counters never feed ranking; decay policy not shipped</td>
 <td>KAOS +10.0pp absolute / +12.5% relative; re-run 0% deviation</td>
 <td><strong>NA-LOSS</strong></td>
 <td>Counts against BENE. No feedback-sensitive retrieval exists, so no delta is measurable. Caveat on the peer side: KAOS break_even=null and the weighted training curve runs below bm25 throughout training; the +10pp appears only at final measurement.</td>
@@ -450,7 +450,7 @@ landing, and the skill; PREREG itself is a historical-locked artifact.</p>
 <p><strong>Conclusion the rule yields: the phrase "BENE supersedes" may not be used.</strong> Two of the three conjunctive conditions fail independently; either alone is disqualifying.</p>
 <p>Capability gaps (N/A-planned rows, per PREREG principle 4 these count against any superiority claim):</p>
 <ol>
-<li><strong>Outcome/plasticity-weighted retrieval ranking</strong> (A1b, A2) — <code>record_outcome</code> counters never feed search ranking; decay/demotion admitted as planned in </li>
+<li><strong>Outcome/plasticity-weighted retrieval ranking</strong> (A1b, A2) — <code>record_outcome</code> counters never feed search ranking; decay/demotion is planned, not shipped.</li>
 <li><strong>Critical-step failure localization</strong> (A4) — TraceDistiller is a distillation framework with a caller-supplied analyst; no shipped localizer, no step model, no confidence output.</li>
 <li><strong>Continuous-quality outcome signal</strong> (A5) — binary <code>success: bool</code> only; with no outcome-fed ranker at all, the continuous-vs-binary question cannot even be posed.</li>
 </ol>
@@ -495,7 +495,7 @@ Exit 0, <1 min. Committed bm25 final_accuracy 0.7333, weighted 0.8667; re-run de
 </code></pre></div>
 
 
-`bene/skills.py` search() ranks by pure FTS5 BM25 (ORDER BY rank, line 234); `record_outcome()` increments counters that never feed ranking. )`) — manual sorting, not search-time ranking; least-favorable interpretation reported.
+`bene/skills.py` search() ranks by pure FTS5 BM25 (ORDER BY rank, line 234); `record_outcome()` increments counters that never feed ranking. The decay/consolidation scheduler is planned, not shipped. Note: skills CAN be listed sorted by success_count (`list(order_by='success_count')`) — manual sorting, not search-time ranking; least-favorable interpretation reported.
 
 **A2 — KAOS:**
 

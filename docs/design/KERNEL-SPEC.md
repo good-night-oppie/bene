@@ -329,16 +329,16 @@ Groups: `bene probe ls|show`, `bene trust <agent_id>`, `bene experiments ls|show
 | skills.py / skills_discovery.py | adapt | 9 | mirror to procedural engrams (shipped); skill decay/demotion lifecycle deferred (PLANNED) |
 | shared_log.py | adapt | 9 | trust-weighted tally option |
 | intake.py | keep | — | |
-| ccr/ (runner, tools, parallel_worker, prompts) | adapt | 9 | runner wiring of ContextOS packing / loop-guard middleware / senses tools deferred to a later release (see CLAIMS-AUDIT PLANNED); kernel primitives ship standalone |
+| ccr/ (runner, tools, parallel_worker, prompts) | adapt | 9 | runner wiring of ContextOS packing / loop-guard middleware / senses tools deferred to a later release (PLANNED); kernel primitives ship standalone |
 | router/ (tier, providers, agent_sdk, classifier, vllm_client, context.py) | keep | 9 | kept as-is; folding router/context.py into a ContextOS strategy deferred (PLANNED) |
 | mcp/server.py | adapt | 9 | kernel families shipped via CLI (`bene probe/trust/experiments/senses/sweep`) + UI (/api/engrams, /api/trust); MCP kernel tool families deferred (PLANNED) |
 | cli/ | adapt | 5,8,9 | new groups; UX pass |
 | ui/ | adapt | 9 | engram browser + trust panel |
 | obsidian/ | keep | — | |
 | metaharness/ | adapt | 6,9 | evolve/ backend opt-in; pareto.py reused; verifier reused as probe judge |
-| benchmarks/ (empty ns) | keep (docstring-only namespace) | 10 | left for the first real domain package, avoiding import-path breakage — see CLAIMS-AUDIT.md "Known polish notes" |
+| benchmarks/ (empty ns) | keep (docstring-only namespace) | 10 | left for the first real domain package, avoiding import-path breakage |
 | storage/ | keep | — | kernel writes through it |
 | runtime/ | keep | — | |
 | temporal/ | keep | — | durability edge retained |
-| integrations/ (empty) | keep (docstring-only namespace) | 10 | left for the first real domain package, avoiding import-path breakage — see CLAIMS-AUDIT.md "Known polish notes" |
+| integrations/ (empty) | keep (docstring-only namespace) | 10 | left for the first real domain package, avoiding import-path breakage |
 ```
