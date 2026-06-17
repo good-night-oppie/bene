@@ -6,7 +6,6 @@ This tutorial lets you give an agent a risky repair, watch the repair go wrong, 
 
 The loop you will follow: one red test, a plausible fix that turns it into four, a per-agent restore, a root-cause report the agent wrote about itself, and the repair that takes the suite to 47 green. Every transcript comes from the recorded run:
 
-
 *The whole loop in one take: spawn, checkpoint, cascade to 4 failures, restore, root-cause report, correct fix, 47 green.*
 
 ## The trap: a red test that invites a cascade
@@ -192,7 +191,7 @@ From the spawn at 02:14:29 to the green run at 02:14:54, every write, rewind, an
 
 - [Component guide: Checkpoints](../checkpoints.md) — snapshot and restore mechanics in depth
 - [Audit trail SQL: events table](../schema.md#events) — query the journal yourself
-- [Use case: End-to-end Self-Healing CI](../use-cases.md#end-to-end-self-healing-ci) — this pattern in the catalog
+- [Use case: End-to-end Self-Healing CI](../use-cases.md#end-to-end-self-healing-ci-worked-example) — this pattern in the catalog
 - [Use Cases](../use-cases.md) — more recovery and orchestration patterns
 - [README](../README.md) — the full doc map
 

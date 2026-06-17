@@ -4,7 +4,6 @@ This tutorial shows you how to fan bene out to hundreds of agents at once — on
 
 > **One command spawns 847 isolated agents; 809 succeed, 31 restore themselves cleanly, 0 regressions ship — and the complete audit trail is a 214MB `bene.db` you can `cp`.**
 
-
 *Seventeen batches, 847 agents: 809 succeed, 31 undo themselves, 7 go to humans, 0 regressions reach the codebase — and 2.45M tokens never get sent.*
 
 ---
@@ -351,7 +350,7 @@ Worth restating plainly: 847 agents, 8 minutes 47 seconds, 809 files migrated, 3
 
 - [README](../README.md) — BENE overview and full doc index
 - [Use Cases](../use-cases.md) — more real-world patterns
-- [Component guide: Meta-Harness CORAL](../meta-harness.md#coral-getting-unstuck-v060)
+- [Component guide: Meta-Harness CORAL](../meta-harness.md#coral-getting-unstuck-v020)
 - [Use case: Multi-Agent Co-Evolution](../use-cases.md#multi-agent-co-evolution-coral)
 - [Architecture: scaling and isolation](../architecture.md)
 

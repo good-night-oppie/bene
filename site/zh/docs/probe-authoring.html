@@ -381,7 +381,7 @@ bene<span class="w"> </span>--json<span class="w"> </span>probe<span class="w"> 
 any can't fail. Run it alongside your test gate so a no-op probe can never give
 false assurance.</p>
 <h2 id="worked-example-the-lighthouse-trace-probe">Worked example: the lighthouse trace probe</h2>
-<p><a href="../examples/lighthouse_trace_probe.py"><code>examples/lighthouse_trace_probe.py</code></a>
+<p><a href="../../examples/lighthouse_trace_probe.py"><code>examples/lighthouse_trace_probe.py</code></a>
 reproduces the <code>isinstance(..., bool)</code> footgun end-to-end. A shape gate registers
 inadmissible → VOID, while a falsifiable <code>propagated_true &gt;= 1</code> gate REJECTs the
 broken environment and ACCEPTs the fix:</p>
@@ -399,7 +399,7 @@ PASS-31 reproduced: shape gate VOID, broken REJECT, fixed ACCEPT ✓
 
 <h2 id="see-also">See also</h2>
 <ul>
-<li><a href="../examples/lighthouse_trace_probe.py"><code>examples/lighthouse_trace_probe.py</code></a> — the runnable proof.</li>
+<li><a href="../../examples/lighthouse_trace_probe.py"><code>examples/lighthouse_trace_probe.py</code></a> — the runnable proof.</li>
 <li><a href="cli-reference.html">CLI reference</a> — every command and flag.</li>
 <li><a href="integrating-bene.html">Integrating BENE</a> — where the eval gate sits among the five stages.</li>
 <li><a href="architecture.html">Architecture</a> — the hash-locked kill gate and the engram substrate.</li>

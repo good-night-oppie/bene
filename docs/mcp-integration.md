@@ -8,7 +8,6 @@ Hook BENE up to Claude Code once, and from then on you run agents in plain Engli
 
 Everything these tools touch lives in `bene.db` on your machine. The stdio transport opens no network socket, and `agent_query` is read-only by construction — write statements raise a `PermissionError`. Network access only happens if you ask for it, by starting the SSE transport on a host you choose.
 
-
 On this page:
 
 - [Connect Claude Code](#connect-claude-code)

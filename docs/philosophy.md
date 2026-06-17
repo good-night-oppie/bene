@@ -102,7 +102,7 @@ We integrated them and made them compose:
 | Cross-agent skill library | Zhou et al. 2026 (arXiv:2604.08224) | Agents reinventing the same dashboard query, the same dedup heuristic, the same rollback recipe | [skills.md](skills.md) |
 | Shared log + voting coordination | LogAct (arXiv:2604.07988) | Risky changes (kill agent, mass-restore checkpoint) need consensus and an audit trail | [shared-log.md](shared-log.md) |
 | Compact context notation (AAAK) | MemPalace | Context bloat eating accuracy and budget on long-running searches | [meta-harness.md](meta-harness.md) |
-| Stagnation + co-evolution | CORAL (arXiv:2604.01658) | The proposer plateauing on one harness shape | [meta-harness.md#coral-getting-unstuck-v060](meta-harness.md#coral-getting-unstuck-v060) |
+| Stagnation + co-evolution | CORAL (arXiv:2604.01658) | The proposer plateauing on one harness shape | [meta-harness.md#coral-getting-unstuck-v020](meta-harness.md#coral-getting-unstuck-v020) |
 | Failure diagnosis (verifier) | EvoSkills (arXiv:2604.01687) | Opaque failures giving the next iteration nothing actionable | [meta-harness.md](meta-harness.md) |
 | Automated optimization | Meta-Harness (arXiv:2603.28052) | Manual prompt engineering that doesn't compound across releases | [meta-harness.md](meta-harness.md) and [tutorials/t01](tutorials/t01-bene-meta-harness.md) |
 
@@ -130,7 +130,6 @@ same PR cannot stomp each other. A wrong-fix can be checkpoint-restored
 in 0.3s without disturbing the other agents on the project. Isolation is
 how you let an autonomous agent loose on production-adjacent work
 without writing a postmortem about *the orchestration layer*.
-
 
 ### Compounding is the point
 

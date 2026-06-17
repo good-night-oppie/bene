@@ -186,4 +186,4 @@ Future runs should target a second entity-actor consumer (request coalescer, con
 - [skills.md](skills.md) — How reusable patterns are stored and retrieved
 - [meta-harness.md](meta-harness.md) — How BENE evolves harness strategies
 - [use-cases.md](use-cases.md) — The current BENE use-case landscape (mostly parallel-agent shapes; entity-actor is the new direction codegen would serve)
-- [`bene/runtime/handle.py`](../bene/runtime/handle.py) (runtime protocol) + [`bene/runtime/core.py`](../bene/runtime/core.py) (boundary DTOs) — what the IR codegen targets
+- `bene/runtime/handle.py` (runtime protocol) + `bene/runtime/core.py` (boundary DTOs) — what the IR codegen targets
