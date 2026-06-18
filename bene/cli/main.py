@@ -3021,7 +3021,9 @@ def observe_status(ctx, config: str):
 
 
 @observe.command("up")
-@click.option("--compose", default=None, help="docker compose file (default: bundled langfuse v3 stack)")
+@click.option(
+    "--compose", default=None, help="docker compose file (default: bundled langfuse v3 stack)"
+)
 @click.option("--config", default=DEFAULT_CONFIG, help="bene.yaml path")
 @click.pass_context
 def observe_up(ctx, compose: str | None, config: str):
@@ -3061,16 +3063,22 @@ def observe_down(ctx, compose: str | None, config: str):
 
 @observe.command("ensure")
 @click.option("--compose", default=None, help="docker compose file (default: bundled stack)")
-@click.option("--host", default=None, help="langfuse host to health-check (default: $LANGFUSE_HOST or localhost:3000)")
+@click.option(
+    "--host",
+    default=None,
+    help="langfuse host to health-check (default: $LANGFUSE_HOST or localhost:3000)",
+)
 @click.option("--config", default=DEFAULT_CONFIG, help="bene.yaml path")
 @click.pass_context
 def observe_ensure(ctx, compose: str | None, host: str | None, config: str):
     """Bring langfuse up only if it is not already healthy (idempotent)."""
     from bene.observe.selfhost import DEFAULT_HOST, SelfHostError, ensure
 
-    target = host or os.environ.get("LANGFUSE_HOST") or DEFAULT_HOST
+    obs_cfg = _observability_config(config)
+    config_host = obs_cfg.get("host") if isinstance(obs_cfg, dict) else None
+    target = host or os.environ.get("LANGFUSE_HOST") or config_host or DEFAULT_HOST
     try:
-        result = ensure(compose, host=target, config=_observability_config(config))
+        result = ensure(compose, host=target, config=obs_cfg)
     except SelfHostError as exc:
         if not _json_out(ctx, {"ok": False, "error": str(exc)}):
             console.print(f"[red]{exc}[/red]")
@@ -3080,7 +3088,9 @@ def observe_ensure(ctx, compose: str | None, host: str | None, config: str):
     if result["action"] == "noop":
         console.print(f"langfuse already healthy at [cyan]{target}[/cyan]")
     else:
-        console.print(f"langfuse starting via [cyan]{result['compose']}[/cyan] (was down at {target})")
+        console.print(
+            f"langfuse starting via [cyan]{result['compose']}[/cyan] (was down at {target})"
+        )
 
 
 # ---- continual harness (probe-gated in-episode genome swaps) ----
