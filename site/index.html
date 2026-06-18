@@ -160,7 +160,7 @@ const Pill = ({ children }) => (
 
 // ─── Gap demo (a recorded terminal showing how BENE addresses one gap) ─
 // Source .tape sits in site/demos/tapes/gap-N-*.tape; the GIF is recorded
-// against bene-main HEAD with no edits.
+// against bene v0.2.1 with no edits.
 const GapDemo = ({ gif, caption }) => (
   <div className="mt-5 bg-[rgb(var(--term))] border border-bene-dim rounded-sm overflow-hidden">
     <div className="flex items-center px-3 py-2 border-b border-bene-dim bg-bene-surface">
@@ -311,16 +311,21 @@ const Hero = () => (
         <br />
         sqlite3 /tmp/bene-demo-*/story.db <span className="text-[#A3E635]">"SELECT tier, kind, substr(title,1,60) FROM engrams ORDER BY created_at DESC LIMIT 5;"</span>
       </Terminal>
-      <div className="mt-8 pt-6 border-t border-bene-dim flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
-        <p className="text-xs text-bene-muted leading-snug">
-          Or hand BENE to your agent in one URL — fetch the skill, fetch the index, your agent runs BENE itself.
+      <div className="mt-8 pt-6 border-t border-bene-dim space-y-4">
+        <p className="text-sm text-bene-muted leading-relaxed max-w-3xl">
+          Honest scope, up front: the agent loop is turnkey — engrams and the event journal write on every run, no wiring. The gate, memory consolidation, skills, and evolution are real parts you wire yourself, not chained together for you. <a href="docs/integrating-bene.html" className="text-bene-accent hover:underline">The honest map →</a>
         </p>
-        <div className="flex flex-wrap gap-2 shrink-0">
-          <a href="SKILL.md" target="_blank" rel="noopener noreferrer"
-             className="font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors border border-bene-dim rounded-sm px-3 py-1.5 whitespace-nowrap">
-            /bene/SKILL.md ↗
-          </a>
-          <CopyLlmsTxtButton className="text-bene-muted border-bene-dim hover:text-bene-accent !py-1.5" label="Copy llms.txt" />
+        <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
+          <p className="text-xs text-bene-muted leading-snug">
+            Or hand BENE to your agent in one URL — fetch the skill, fetch the index, your agent runs BENE itself.
+          </p>
+          <div className="flex flex-wrap gap-2 shrink-0">
+            <a href="SKILL.md" target="_blank" rel="noopener noreferrer"
+               className="font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors border border-bene-dim rounded-sm px-3 py-1.5 whitespace-nowrap">
+              /bene/SKILL.md ↗
+            </a>
+            <CopyLlmsTxtButton className="text-bene-muted border-bene-dim hover:text-bene-accent !py-1.5" label="Copy llms.txt" />
+          </div>
         </div>
       </div>
     </div>
@@ -335,7 +340,7 @@ const TheGap = () => (
       Production gaps the research moved past.<br />
       <span className="text-bene-muted">Your stack closes some — BENE closes them in one auditable file.</span>
     </h2>
-    <p className="font-mono text-xs text-bene-muted mb-8">The 4 clips below are real bene-main HEAD runs — no output edits.</p>
+    <p className="font-mono text-xs text-bene-muted mb-8">The 4 clips below are real runs recorded against bene v0.2.1 — no output edits.</p>
     <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-16">
       <Card className="md:col-span-12 h-full">
         <h3 className="font-mono text-bene-accent mb-4">Gap 1. Eval scoring ≠ promotion gating</h3>
@@ -498,6 +503,7 @@ const Proof = () => {
           <Terminal caption={tabs[a].c}>{tabs[a].r}</Terminal>
         </div>
       </div>
+      <p className="font-mono text-xs text-bene-muted mb-8">Tab 1 is a real bene v0.2.1 run — its 0.3s, 12 engrams, and 4 experiment runs are unedited output.</p>
       <p className="font-mono text-sm text-bene-text border-l-2 border-bene-accent pl-4">
         Run <code className="text-bene-accent">bene dashboard</code>. The same .db drives a live TUI with no extra instrumentation.
       </p>
