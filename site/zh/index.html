@@ -201,7 +201,7 @@ const Nav = ({ theme, setTheme }) => {
           <a href="docs/index.html" className="font-mono text-xs text-bene-accent hover:bg-bene-accent/10 transition-colors border border-bene-accent rounded-sm px-3 py-1">文档 ↗</a>
           <a href="blog/index.html" className="font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors">Blog</a>
           <a href="../SKILL.md" target="_blank" rel="noopener noreferrer" className="hidden sm:inline font-mono text-xs text-bene-text hover:text-bene-accent transition-colors" title="把这份扔给你的 agent，让它直接懂 BENE（raw markdown）">SKILL.md</a>
-          <a href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="GitHub" className="font-mono text-bene-muted hover:text-bene-accent transition-colors inline-flex items-center"><svg height="18" width="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg></a>
+          <a href="https://github.com/good-night-oppie/bene" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="GitHub" className="font-mono text-bene-muted hover:text-bene-accent transition-colors inline-flex items-center"><svg height="18" width="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg></a>
           <a href="../" className="font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors border border-bene-dim rounded-sm px-2 py-1" title="Switch to English">EN</a>
           <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className="font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors border border-bene-dim rounded-sm px-2 py-1"
@@ -258,7 +258,7 @@ const Hero = () => (
     <div className="max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12 w-full">
       <div className="flex items-center gap-3 mb-8 font-mono text-[11px] tracking-[0.15em] uppercase text-bene-muted">
         <span className="w-1.5 h-1.5 rounded-full bg-bene-accent" />
-        <span>v0.2.0</span>
+        <span>v0.2.1</span>
         <span className="text-bene-dim">·</span>
         <span>local-first 多智能体 harness</span>
         <span className="text-bene-dim">·</span>
@@ -449,7 +449,7 @@ const Comparison = () => {
             评测数据和限制在下面的 docs 里。这一节只讲怎么接，不做榜单。
           </p>
           <div className="flex gap-4 font-mono text-xs">
-            <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/benchmarks/COMMUNITY-BENCH-REPORT.md" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">COMMUNITY-BENCH-REPORT.md</a>
+            <a href="https://github.com/good-night-oppie/bene/blob/main/docs/benchmarks/COMMUNITY-BENCH-REPORT.md" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">COMMUNITY-BENCH-REPORT.md</a>
           </div>
         </div>
       </div>
@@ -949,10 +949,10 @@ const Lore = () => {
           <h3 className="font-mono text-bene-text mb-4">在 BENE 上 build 东西？</h3>
           <p className="text-sm text-bene-muted mb-6">在 repo 上开 Discussion。每一条都会有人读。</p>
           <div className="flex flex-wrap gap-4 font-mono text-xs">
-            <a href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">GitHub</a>
-            <a href="https://github.com/EdwardTang/bene-site/blob/main/AGENTS.md" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">AGENTS.md</a>
-            <a href="https://github.com/EdwardTang/bene-site/blob/main/SKILL.md" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">SKILL.md</a>
-            <a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">Discussions</a>
+            <a href="https://github.com/good-night-oppie/bene" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">GitHub</a>
+            <a href="https://github.com/good-night-oppie/bene/blob/main/AGENTS.md" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">AGENTS.md</a>
+            <a href="https://github.com/good-night-oppie/bene/blob/main/SKILL.md" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">SKILL.md</a>
+            <a href="https://github.com/good-night-oppie/bene/discussions" target="_blank" rel="noopener noreferrer" className="text-bene-accent hover:underline">Discussions</a>
           </div>
         </div>
         <div>

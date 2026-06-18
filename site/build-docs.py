@@ -36,7 +36,19 @@ if not (ROOT / "bene").is_dir():
     )
 DOCS = ROOT / "docs"
 OUT = ROOT / "site" / "docs"
-GITHUB_BLOB = "https://github.com/EdwardTang/bene-site/blob/main/docs"
+GITHUB_BLOB = "https://github.com/good-night-oppie/bene/blob/main/docs"
+
+
+def _bene_version() -> str:
+    # Single source of truth: read the version straight from pyproject.toml so the
+    # site footer/meta never drift from the shipped package (P0 provenance — a
+    # product that sells reproducibility must not show a stale version on its docs).
+    text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    m = re.search(r'^version\s*=\s*"([^"]+)"', text, re.M)
+    return m.group(1) if m else "0.0.0"
+
+
+VERSION = _bene_version()
 
 GROUPS = [
     ("Start, operate, recover", "."),
@@ -249,7 +261,7 @@ def page(
         toggle_title = "Switch to English"
         html_lang = "zh-CN"
         title_suffix = "中文索引 / 翻译中"
-        meta_desc = f"BENE 0.2.0 文档 — {html.escape(title)}"
+        meta_desc = f"BENE {VERSION} 文档 — {html.escape(title)}"
         nav_landing = "Landing"
         nav_idx = "文档索引"
         nav_skill_title = "把 BENE 交给你的 agent，一个 URL"
@@ -261,7 +273,7 @@ def page(
             '<div class="zh-banner" style="background:rgba(238,96,24,.07);border-bottom:1px solid rgba(238,96,24,.2);padding:12px 24px;font-size:13px;line-height:1.5;color:rgb(var(--muted))">'
             '<strong style="color:rgb(var(--text))">本页中文版正在按照 4-book methodology 翻译（Mom Test / Pressfield / Zinsser / Dicks）—— 不放 AI 翻译稿。</strong>'
             f' 下方是英文原文，点上方 <a href="{toggle_href}" style="color:rgb(var(--accent));text-decoration:underline">EN</a> 直接到英文页面，'
-            ' 或在 <a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer" style="color:rgb(var(--accent));text-decoration:underline">Discussions</a> 里贡献翻译。'
+            ' 或在 <a href="https://github.com/good-night-oppie/bene/discussions" target="_blank" rel="noopener noreferrer" style="color:rgb(var(--accent));text-decoration:underline">Discussions</a> 里贡献翻译。'
             "</div>"
         )
     else:
@@ -275,7 +287,7 @@ def page(
         toggle_title = "切换到中文"
         html_lang = "en"
         title_suffix = "BENE docs"
-        meta_desc = f"BENE 0.2.0 documentation — {html.escape(title)}"
+        meta_desc = f"BENE {VERSION} documentation — {html.escape(title)}"
         nav_landing = "Landing"
         nav_idx = "Docs index"
         nav_skill_title = "Hand BENE to your agent in one URL"
@@ -319,7 +331,7 @@ def page(
   <a class="nav" href="{idx}">{nav_idx}</a>
   <a class="nav" href="{skill}" target="_blank" rel="noopener noreferrer" title="{nav_skill_title}">SKILL.md ↗</a>
   <button class="nav copy-llms" data-llms-url="{llms}" data-copied-label="{nav_copied}" data-opened-label="{nav_opened}" title="{nav_copy_title}">{nav_copy_label}</button>
-  <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="GitHub"><svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="vertical-align:text-bottom"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg></a>
+  <a class="nav" href="https://github.com/good-night-oppie/bene" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="GitHub"><svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="vertical-align:text-bottom"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg></a>
   <a class="nav" href="{toggle_href}" title="{toggle_title}" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">{toggle_label}</a>
 </div></div>
 {banner}
@@ -359,8 +371,8 @@ def page(
 {src_line}
 </main>
 </div>
-<footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>
-<a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer">Building something on bene? Open a Discussion.</a></div></footer>
+<footer class="ft"><div class="in"><span>BENE {VERSION} · local-first · SQLite · built in the open</span>
+<a href="https://github.com/good-night-oppie/bene/discussions" target="_blank" rel="noopener noreferrer">Building something on bene? Open a Discussion.</a></div></footer>
 </body>
 </html>
 """
@@ -487,7 +499,7 @@ def build() -> None:
         "<h1>BENE documentation</h1>"
         f"<p>{len(entries)} documents, generated from <code>docs/</code>. Pick the job you are doing: start local, "
         "rewind a bad turn, connect an agent, verify a claim, or scale a run. These are the same files you can read "
-        f'<a href="https://github.com/EdwardTang/bene-site/tree/main/docs" target="_blank" rel="noopener noreferrer">on GitHub</a>. '
+        f'<a href="https://github.com/good-night-oppie/bene/tree/main/docs" target="_blank" rel="noopener noreferrer">on GitHub</a>. '
         "Edit the markdown, rerun <code>site/build-docs.py</code>; never edit the HTML.</p>"
         + demo_block("README", 0)
         + "".join(groups_html)
@@ -502,7 +514,7 @@ def build() -> None:
         f"<p><strong>翻译进行中。</strong>共 {len(entries)} 个文档，源在 <code>docs/</code>。"
         "本站采用 4-book methodology（Mom Test / Pressfield / Zinsser / Dicks）逐页翻译——不放 AI 翻译稿。"
         "下方每个条目点开是英文原文，顶部 nav 的 <code>EN</code> 按钮直接回到对应的英文页面。"
-        f' 想贡献翻译，请在 <a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer">Discussions</a> 留言。</p>'
+        f' 想贡献翻译，请在 <a href="https://github.com/good-night-oppie/bene/discussions" target="_blank" rel="noopener noreferrer">Discussions</a> 留言。</p>'
         + "".join(groups_html)
     )
     zh_out_dir = OUT.parent / "zh" / "docs"

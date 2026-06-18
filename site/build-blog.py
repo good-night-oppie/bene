@@ -166,7 +166,7 @@ def shell(lang: str, title: str, body: str, *, cur: str) -> str:
     footer = (
         '<footer class="ft"><div class="in">'
         f'<span>{html.escape(s["edit_note"])}</span>'
-        '<a href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer">GitHub</a>'
+        '<a href="https://github.com/good-night-oppie/bene" target="_blank" rel="noopener noreferrer">GitHub</a>'
         "</div></footer>"
     )
     return (

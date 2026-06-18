@@ -11,7 +11,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-0.2.0-C2541B?style=flat-square&labelColor=1A1530)](https://github.com/EdwardTang/bene-site)
+[![Version](https://img.shields.io/badge/version-0.2.1-C2541B?style=flat-square&labelColor=1A1530)](https://github.com/good-night-oppie/bene)
 [![Python](https://img.shields.io/badge/python-3.11%2B-E8C49A?style=flat-square&labelColor=1A1530&logo=python&logoColor=E8C49A)](#development)
 [![Storage](https://img.shields.io/badge/local--first-SQLite-F4A940?style=flat-square&labelColor=1A1530&logo=sqlite&logoColor=F4A940)](#architecture)
 [![MCP](https://img.shields.io/badge/MCP-server%20ready-C2541B?style=flat-square&labelColor=1A1530)](#mcp-server)
