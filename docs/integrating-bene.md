@@ -30,7 +30,7 @@ The short version: **the agent loop is turnkey; everything else is lego.** BENE 
 
 ## What changed in the 0.30 kernel pass
 
-These are kernel-side fixes shipped to the runtime (the published package is still `0.2.0`; this section is the docs/landing framing for the change set):
+These are kernel-side fixes shipped to the runtime and included in the published `0.2.1` package:
 
 - **`bene failure localize` works on a real run** — the runner emits a tier-0 trace engram per tool call (`tool_name` / `status` / `error_message`) at every completion path, so the "a run leaves engrams → localize finds where it went wrong" composition is exercised end-to-end, not just on hand-seeded test traces.
 - **`bene query` is read-only at the engine level** — enforced by `PRAGMA query_only`, so a `WITH … DELETE` CTE or a comment-prefixed write can no longer slip past a keyword guard; a blocked write raises `PermissionError`.
