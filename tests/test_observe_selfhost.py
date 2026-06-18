@@ -174,3 +174,33 @@ def test_cli_ensure_config_host_beats_env(monkeypatch, tmp_path):
     res = CliRunner().invoke(cli, ["--json", "observe", "ensure", "--config", str(cfg)])
     assert res.exit_code == 0
     assert seen["host"] == "http://configured-langfuse:3000"
+
+
+@pytest.mark.parametrize(
+    "disabled_obs",
+    [
+        "provider: none\n    host: http://disabled-cfg:3000",
+        "enabled: false\n    host: http://disabled-cfg:3000",
+    ],
+)
+def test_cli_ensure_disabled_config_host_yields_to_env(monkeypatch, tmp_path, disabled_obs):
+    """A disabled observability config (provider: none / enabled: false) keeps a
+    leftover host, but the runner uses NullObserver and never traces there — so
+    ensure must NOT let it outrank $LANGFUSE_HOST (the real self-host). PR #60 review."""
+    from click.testing import CliRunner
+
+    from bene.cli.main import cli
+
+    cfg = tmp_path / "bene.yaml"
+    cfg.write_text(f"kernel:\n  observability:\n    {disabled_obs}\n")
+    seen: dict[str, str] = {}
+
+    def fake_healthy(host, **kw):
+        seen["host"] = host
+        return True
+
+    monkeypatch.setattr(selfhost, "is_healthy", fake_healthy)
+    monkeypatch.setenv("LANGFUSE_HOST", "http://env-langfuse:3000")
+    res = CliRunner().invoke(cli, ["--json", "observe", "ensure", "--config", str(cfg)])
+    assert res.exit_code == 0
+    assert seen["host"] == "http://env-langfuse:3000"
