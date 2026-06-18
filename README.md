@@ -1,5 +1,5 @@
 <div align="center">
-  <a href="#quick-start">
+  <a href="#quick-start-60-seconds">
     <img src="docs/assets/bene-banner.png" alt="BENE — Agents that remember, evolve, and never start cold" width="100%">
   </a>
 </div>
@@ -18,7 +18,7 @@
 [![Papers](https://img.shields.io/badge/grounded%20in-16%20AAOP%20papers-E8C49A?style=flat-square&labelColor=1A1530)](#grounded-in-research-the-16-aaop-papers)
 
 [**🌐 Live site &amp; docs**](https://agentdex.ai-builders.space/bene/) ·
-[Quick Start](#quick-start) ·
+[Quick Start](#quick-start-60-seconds) ·
 [Core Concepts](#core-concepts) ·
 [CLI](#cli-reference) ·
 [MCP Server](#mcp-server) ·
@@ -29,114 +29,39 @@
 
 <hr>
 
-> "I must not fear. Fear is the mind-killer. Fear is the little-death that brings total obliteration. I will face my fear. I will permit it to pass over me and through me. And when it has gone past, I will turn the inner eye to see its path. Where the fear has gone there will be nothing. Only I will remain."
->
-> 我需心无所惧。
-> 恐惧是思想的屠者，恐惧是渐噬的湮灭。
-> 我将直面心之所惧，任它穿略，内观所及。
-> 恐惧所经之处，一片虚无。
-> 唯我将立。
+**BENE puts an AI coding agent's whole run inside one auditable SQLite file** — every file, every tool call, every event — and adds the harness primitives a run needs to be trusted: searchable execution traces (engrams), kill-gated promotion, checkpoints, and a computed trust/autonomy ladder. Use it as a Python library, a CLI, or an MCP server. One file today; Postgres when you outgrow it.
 
-Run AI coding agents inside one SQLite file each — its files, its tool calls, every event. When something goes wrong, `sqlite3` into the file and see exactly what happened. Every run leaves searchable execution **traces** so the next agent doesn't start cold. Skills and memory propagate across agents before they're needed. An evolutionary meta-harness breeds stronger harness strategies generation by generation. One file today; Postgres when you outgrow it. Use it as a Python library, a CLI, or an MCP server.
+- **One file per run, fully auditable.** Each agent's files, tool calls, and events live in one SQLite database. When something breaks, `sqlite3` into the file and see exactly what happened — no hidden state.
+- **Runs that don't start cold.** Every run leaves searchable execution traces (engrams); the next agent inherits the path already walked, and `bene failure localize` finds where a real run went wrong.
+- **Gates and trust you can audit.** Promotion needs a sha256-locked probe `ACCEPT` (`PromotionBlocked` otherwise); autonomy L0–L4 is computed from the audit trail, and L4 always needs a human grant.
 
-The name nods to Frank Herbert's Bene Gesserit: a Sisterhood whose power is not raw force but patient framework — ancestral memory, knowledge seeded ahead of need, and a multi-generation breeding program. A raw LLM, like a beast, reacts only to what is in front of it and can only destroy; *"兽物的意识无法超越眼前所见……它们，只会毁灭，不会创造……而人，则需框架逻辑，来理解世界。"* A human — and an agent that wants to build rather than merely react — needs a framework. BENE is that framework.
+**Honest scope:** the agent loop is turnkey — attach BENE and every turn lands an engram. Everything else (eval gates, memory consolidation, skills, evolution) is real primitives you wire yourself; there is no single adapter that chains all five. The [Integrating BENE](docs/integrating-bene.md) guide is the exact turnkey-vs-wire-yourself map.
 
-## The Bene Gesserit Framing
+📖 **Full docs:** [agentdex.ai-builders.space/bene](https://agentdex.ai-builders.space/bene/) — CLI reference, MCP integration, tutorials, and the benchmark report. New to the name? See [Why the name works](#why-the-name-works) at the end.
 
-BENE's backronym — **B**reeding-program · **E**volutionary · **N**exus · **E**ngrams — maps one-to-one onto its real features. We started with the Dune metaphor because it actually fit. Each motif lines up with a concrete capability; the table below is the receipts. If the metaphor stops carrying weight, we drop it.
+## Quick start (60 seconds)
 
-| Bene Gesserit motif | What it means in the lore | BENE feature |
-| --- | --- | --- |
-| **Other Memory** | A Reverend Mother's access to all ancestral memory. | Searchable execution **traces** + trace-based RAG. The next agent inherits every prior run and never starts cold. |
-| **Missionaria Protectiva** | Sisters sent ahead to seed protective myths and ideas before they are needed. | **Skills + memory + shared-log**: knowledge seeded ahead of need, propagating across agents. |
-| **The Breeding Program** | Patient, multi-generation selection toward a stronger line. | The **evolutionary meta-harness** that breeds better harness strategies on a benchmark, generation after generation. |
-| **The Litany Against Fear** | Face the fear, let it pass over and through you, then turn the inner eye to see its path. | **Checkpoints + restore + diff**: face a failed turn, let it pass through, turn the inner eye to its path, and restore. |
-| **"Beasts only destroy; humans need frameworks"** | The gom jabbar test: a beast reacts only to what is in front of it; a human builds. | The **harness thesis**: a raw LLM reacts to what is in its context window (the beast); a framework — engrams, checkpoints, kill gates, autonomy ladder — lets the harness build instead of merely react. |
-
-## Grounded in Research: the 16 AAOP papers
-
-Sixteen Agent Auto-Optimization Papers (AAOP) ground the design, referenced below (paper sources are vendored in the research workspace, not in this repo). Each contributes a concrete idea to one of BENE's capabilities — traces/Other-Memory, skills/Missionaria Protectiva, the evolutionary meta-harness/Breeding Program, harness engineering, or continual/federated learning.
-
-| Paper | Core idea | Informs in BENE |
-| --- | --- | --- |
-| **Meta-Harness** (Lee et al., Stanford IRIS) — *referenced (vendored in the research workspace, not this repo)* | End-to-end search over the task-specific harness (what to store/retrieve/show) around a frozen base model instead of tuning the model itself. | evolutionary meta-harness (the Breeding Program) + harness engineering |
-| **SkillX** (ZJU NLP) — *referenced (vendored in the research workspace, not this repo)* | Distills a strong agent's success traces into a plug-and-play three-level skill hierarchy (planning/functional/atomic) that transfers to weaker agents. | skills & memory propagation (Missionaria Protectiva) |
-| **EvoMap / Strategy Genes** (EvoMap × Tsinghua) — *referenced (vendored in the research workspace, not this repo)* | Encode accumulated experience as compact "Gene" control signals rather than sparse skill docs, giving stronger, more stable test-time evolution. | evolutionary meta-harness (the Breeding Program) + skills & memory propagation |
-| **Trace2Skill** (Alibaba Qwen-Applications) — *referenced (vendored in the research workspace, not this repo)* | Mine a pool of execution traces in parallel, propose trajectory-local patches with multiple analysts, then hierarchically consolidate into a conflict-free skill directory. | trace-based RAG / Other-Memory |
-| **SkillClaw** (Alibaba AMAP / DreamX) — *referenced (vendored in the research workspace, not this repo)* | Collective skill evolution that aggregates multi-user/session/device traces into a stable direction, with nightly validation, so distributed experience compounds. | skills & memory propagation (Missionaria Protectiva) + continual/federated learning |
-| **SKILL0 / SkillZero** (Meituan / ZJU-REAL) — *referenced (vendored in the research workspace, not this repo)* | In-context agentic RL that progressively internalizes external skills into the model's own parameters (skill internalization). | continual/federated learning + skills & memory propagation |
-| **Skill1** (Meituan / USTC AlphaLab) — *referenced (vendored in the research workspace, not this repo)* | Co-evolves skill selection, utilization, and distillation in one RL policy from a single task-outcome reward via frequency-decomposed credit assignment. | skills & memory propagation (Missionaria Protectiva) |
-| **AHE — Agentic Harness Engineering** (Fudan / PKU) — *referenced (vendored in the research workspace, not this repo)* | Observability-driven automatic evolution of all harness components (prompts, tools, middleware, skills, sub-agents, memory) with auditable, git-tracked, falsifiable edits. | harness engineering + evolutionary meta-harness (the Breeding Program) |
-| **Continual Harness** (Princeton / Google, Karten et al.) — *referenced (vendored in the research workspace, not this repo)* | Reset-free, in-episode online adaptation where a Refiner CRUD-edits the live prompt/sub-agents/skills/memory mid-run (validated on Pokemon). | continual/federated learning + harness engineering |
-| **Ctx2Skill** (Tsinghua) — *referenced (vendored in the research workspace, not this repo)* | Zero-annotation multi-agent self-play loop that discovers/refines context-specific natural-language skills from documents with no external feedback. | skills & memory propagation + context compaction |
-| **CoEvolve** (Alibaba AMAP, ACL26) — *referenced (vendored in the research workspace, not this repo)* | Agent-data mutual evolution: failure signals from rollouts synthesize new validated training tasks, closing the loop between policy and its data distribution. | evolutionary meta-harness (the Breeding Program) + continual/federated learning |
-| **MUSE-Autoskill** (ByteDance MUSE) — *referenced, not vendored* (wiki idx 12; arXiv 2605.27366) | Gives agents a full skill lifecycle manager that auto-creates, tests, maintains, and evaluates skills (creation/memory/management/evaluation). | skills & memory propagation (Missionaria Protectiva) + checkpoints/recovery |
-| **SkillForge** (SIGIR26 Industry, cloud support) — *referenced, not vendored* (wiki idx 13; arXiv 2604.08618) | Uses failure attribution to continually evolve domain-specific cloud-customer-support skills; the only paper with real deployment economics (vertical wedge precedent). | skills & memory propagation + harness engineering (vertical/forward-deployed) |
-| **Autogenesis** (NTU, AGP protocol) — *referenced (vendored in the research workspace, not this repo)* | A self-evolving agent protocol (RSPL) modeling prompts/agents/tools/envs/memory as versioned, lifecycle-managed resources so evolution is composable, inspectable, and auditable. | agent isolation/VFS + checkpoints/recovery + shared-log coordination |
-| **AEVO / A-Evolve** (HKUST) — *referenced (vendored in the research workspace, not this repo)* | A MetaAgent takes over the evolution mechanism itself to solve long-horizon evolution drift; universal infra to evolve any agent/domain with any evolution algorithm. | evolutionary meta-harness (the Breeding Program) + harness engineering |
-| **FedTextGrad** (UBC, ICLR25) — *referenced (vendored in the research workspace, not this repo)* | Federated textual-gradient prompt optimization: clients upload locally TextGrad-optimized prompts and the server aggregates them (privacy-preserving, no numeric loss). | continual/federated learning + shared-log coordination |
-
-## BENE 2.0 — The Kernel (v0.2.0)
-
-> *Everything is an engram.* One typed, append-only, provenance-linked engram
-> store carrying five capabilities, with falsifiable gates on everything that
-> evolves and an autonomy ladder on everything that acts.
-
-Every 2.0 decision was argued three ways — as science (what would prove this
-wrong?), as compression (what's the smallest representation that still
-predicts the data?), and as engineering (what breaks at the tail?) — see
-`docs/design/DESIGN-RATIONALE.md`, grounded in 48 paper
-citations (`docs/research/SYNTHESIS.md`) and an evidence-backed audit of two
-predecessor frameworks (`docs/research/GAP-AUDIT.md`). Architecture:
-`docs/design/BENE2-DESIGN.md` · buildable spec: `docs/design/KERNEL-SPEC.md`.
-
-| Capability | What ships in `bene/kernel/` |
-| --- | --- |
-| **Engram store** | compression ladder (raw trace → episodic → semantic → procedural → strategic), mandatory provenance, lineage queries, FTS |
-| **Trust & falsifiable eval** | hash-locked kill-gate probes (tamper → refuse; unkillable → inadmissible), ACCEPT/REJECT/VOID verdicts, experiments journal, **computed** per-agent trust ledger |
-| **Evolution engine** | structured genomes, reflective mutation, Pareto frontier, trace→skill distillation, strategy genes — promotion **requires** a probe ACCEPT (`PromotionBlocked` otherwise) |
-| **Memory & context OS** | granule consolidation, familiarity-gated fast/slow retrieval, budget-capped context assembly with manifests, context-pollution detection → checkpoint recovery |
-| **Harness layer** | autonomy ladder L0–L4 enforced at the capability boundary (L4 needs a human grant), agent-senses manifest generated from the live db, debt sweeper, loop guards |
-
-Try it (keyless, <60s, fresh directory):
-
-```bash
-bene demo --no-ui     # the five-capability story
-bene --json senses    # what an incoming agent reads first
-bene trust <agent_id> # computed trust: 4 signals + composite
-bene experiments ls   # the probe/evolution journal
-bene sweep <agent_id> # debt sweep over an agent's VFS
-```
-
-Legacy 0.1.0 APIs are untouched: the kernel is additive (v2 tables), and
-legacy stores mirror into engrams only when explicitly attached
-(`bene.kernel.adapters.attach_kernel`).
-
-## Quick Start
-
-Install from PyPI:
+Install from PyPI, then run the keyless demo:
 
 ```bash
 pip install bene        # or: pipx install bene  ·  uv tool install bene
+bene setup              # writes bene.yaml + bene.db (optionally installs the Claude Code MCP entry)
+bene demo --no-ui       # seeds the five-capability story — no model keys needed
+```
+
+**What you get:** a single `bene.db` you can open with any SQLite client. Inspect what the demo seeded:
+
+```bash
+bene experiments ls     # the probe/evolution journal — e.g. story-probe → ACCEPT
+bene --json senses      # what an incoming agent reads first
+bene trust <agent_id>   # computed trust: 4 signals + a composite
 ```
 
 > **`bene: command not found`?** The install environment's `bin` directory isn't on your `PATH`. Use `pipx install bene` (it puts `bene` on your `PATH` for you), activate the virtualenv you installed into, or add the install bin directory (e.g. `~/.local/bin`) to your `PATH`.
-
-Then initialize a project:
-
-```bash
-bene setup
-```
-
-`bene setup` creates `bene.yaml`, initializes `bene.db`, and can install BENE as an MCP server for Claude Code.
-
+>
 > **The MCP install needs `uv`.** If you accept the Claude Code MCP step, `bene setup` writes an entry that launches the server via `uv run --project … bene serve` — so `uv` must be on your `PATH` for the MCP server to start, even when you installed BENE with `pip`/`pipx`. Install [uv](https://docs.astral.sh/uv/) first, or skip the MCP step and run `bene serve --transport stdio` yourself.
 
-Run the demo without model keys:
-
-```bash
-bene demo
-```
+## Running agents
 
 Run a single agent:
 
@@ -144,7 +69,7 @@ Run a single agent:
 bene run "Refactor auth.py for testability" --name refactor-auth
 ```
 
-Run several agents in parallel:
+Run several agents in parallel — each in its own isolated VFS:
 
 ```bash
 bene parallel \
@@ -161,6 +86,28 @@ bene status <agent_id>
 bene logs <agent_id>
 bene read <agent_id> /path/in/agent/vfs
 ```
+
+## What ships — the BENE 2.0 kernel
+
+> *Everything is an engram.* One typed, append-only, provenance-linked engram
+> store carrying five capabilities, with falsifiable gates on everything that
+> evolves and an autonomy ladder on everything that acts.
+
+Every 2.0 decision was argued three ways — as science (what would prove this
+wrong?), as compression (the smallest representation that still predicts the
+data), and as engineering (what breaks at the tail?).
+
+| Capability | What ships in `bene/kernel/` |
+| --- | --- |
+| **Engram store** | compression ladder (raw trace → episodic → semantic → procedural → strategic), mandatory provenance, lineage queries, FTS |
+| **Trust & falsifiable eval** | hash-locked kill-gate probes (tamper → refuse; unkillable → inadmissible), ACCEPT/REJECT/VOID verdicts, experiments journal, **computed** per-agent trust ledger |
+| **Evolution engine** | structured genomes, reflective mutation, Pareto frontier, trace→skill distillation, strategy genes — promotion **requires** a probe ACCEPT (`PromotionBlocked` otherwise) |
+| **Memory & context OS** | granule consolidation, familiarity-gated fast/slow retrieval, budget-capped context assembly with manifests, context-pollution detection → checkpoint recovery |
+| **Harness layer** | autonomy ladder L0–L4 enforced at the capability boundary (L4 needs a human grant), agent-senses manifest generated from the live db, debt sweeper, loop guards |
+
+Legacy 0.1.0 APIs are untouched: the kernel is additive (v2 tables), and
+legacy stores mirror into engrams only when explicitly attached
+(`bene.kernel.adapters.attach_kernel`).
 
 ## Why BENE Exists
 
@@ -503,6 +450,51 @@ The package requires Python 3.11 or newer.
 - `--json` produces structured output; it is also enabled automatically when stdout is piped.
 - `bene.db` is portable, but live concurrent use depends on SQLite WAL semantics on the host filesystem.
 - Agent VFS isolation prevents accidental path collisions inside BENE; external side effects from tools still need normal sandboxing discipline.
+
+## Why the name works
+
+The name nods to Frank Herbert's Bene Gesserit: a Sisterhood whose power is not raw force but patient framework — ancestral memory, knowledge seeded ahead of need, and a multi-generation breeding program. A raw LLM, like a beast, reacts only to what is in front of it and can only destroy; *"兽物的意识无法超越眼前所见……它们，只会毁灭，不会创造……而人，则需框架逻辑，来理解世界。"* A human — and an agent that wants to build rather than merely react — needs a framework. BENE is that framework.
+
+BENE's backronym — **B**reeding-program · **E**volutionary · **N**exus · **E**ngrams — maps one-to-one onto its real features. We started with the Dune metaphor because it actually fit; each motif lines up with a concrete capability. If the metaphor stops carrying weight, we drop it.
+
+| Bene Gesserit motif | What it means in the lore | BENE feature |
+| --- | --- | --- |
+| **Other Memory** | A Reverend Mother's access to all ancestral memory. | Searchable execution **traces** + trace-based RAG. The next agent inherits every prior run and never starts cold. |
+| **Missionaria Protectiva** | Sisters sent ahead to seed protective myths and ideas before they are needed. | **Skills + memory + shared-log**: knowledge seeded ahead of need, propagating across agents. |
+| **The Breeding Program** | Patient, multi-generation selection toward a stronger line. | The **evolutionary meta-harness** that breeds better harness strategies on a benchmark, generation after generation. |
+| **The Litany Against Fear** | Face the fear, let it pass over and through you, then turn the inner eye to see its path. | **Checkpoints + restore + diff**: face a failed turn, let it pass through, turn the inner eye to its path, and restore. |
+| **"Beasts only destroy; humans need frameworks"** | The gom jabbar test: a beast reacts only to what is in front of it; a human builds. | The **harness thesis**: a raw LLM reacts to what is in its context window (the beast); a framework — engrams, checkpoints, kill gates, autonomy ladder — lets the harness build instead of merely react. |
+
+> "I must not fear. Fear is the mind-killer. Fear is the little-death that brings total obliteration. I will face my fear. I will permit it to pass over me and through me. And when it has gone past, I will turn the inner eye to see its path. Where the fear has gone there will be nothing. Only I will remain."
+>
+> 我需心无所惧。
+> 恐惧是思想的屠者，恐惧是渐噬的湮灭。
+> 我将直面心之所惧，任它穿略，内观所及。
+> 恐惧所经之处，一片虚无。
+> 唯我将立。
+
+## Grounded in research: the 16 AAOP papers
+
+Sixteen Agent Auto-Optimization Papers (AAOP) ground the design (paper sources are vendored in the research workspace, not in this repo). Each contributes a concrete idea to one of BENE's capabilities — traces/Other-Memory, skills/Missionaria Protectiva, the evolutionary meta-harness/Breeding Program, harness engineering, or continual/federated learning.
+
+| Paper | Core idea | Informs in BENE |
+| --- | --- | --- |
+| **Meta-Harness** (Lee et al., Stanford IRIS) — *referenced (vendored in the research workspace, not this repo)* | End-to-end search over the task-specific harness (what to store/retrieve/show) around a frozen base model instead of tuning the model itself. | evolutionary meta-harness (the Breeding Program) + harness engineering |
+| **SkillX** (ZJU NLP) — *referenced (vendored in the research workspace, not this repo)* | Distills a strong agent's success traces into a plug-and-play three-level skill hierarchy (planning/functional/atomic) that transfers to weaker agents. | skills & memory propagation (Missionaria Protectiva) |
+| **EvoMap / Strategy Genes** (EvoMap × Tsinghua) — *referenced (vendored in the research workspace, not this repo)* | Encode accumulated experience as compact "Gene" control signals rather than sparse skill docs, giving stronger, more stable test-time evolution. | evolutionary meta-harness (the Breeding Program) + skills & memory propagation |
+| **Trace2Skill** (Alibaba Qwen-Applications) — *referenced (vendored in the research workspace, not this repo)* | Mine a pool of execution traces in parallel, propose trajectory-local patches with multiple analysts, then hierarchically consolidate into a conflict-free skill directory. | trace-based RAG / Other-Memory |
+| **SkillClaw** (Alibaba AMAP / DreamX) — *referenced (vendored in the research workspace, not this repo)* | Collective skill evolution that aggregates multi-user/session/device traces into a stable direction, with nightly validation, so distributed experience compounds. | skills & memory propagation (Missionaria Protectiva) + continual/federated learning |
+| **SKILL0 / SkillZero** (Meituan / ZJU-REAL) — *referenced (vendored in the research workspace, not this repo)* | In-context agentic RL that progressively internalizes external skills into the model's own parameters (skill internalization). | continual/federated learning + skills & memory propagation |
+| **Skill1** (Meituan / USTC AlphaLab) — *referenced (vendored in the research workspace, not this repo)* | Co-evolves skill selection, utilization, and distillation in one RL policy from a single task-outcome reward via frequency-decomposed credit assignment. | skills & memory propagation (Missionaria Protectiva) |
+| **AHE — Agentic Harness Engineering** (Fudan / PKU) — *referenced (vendored in the research workspace, not this repo)* | Observability-driven automatic evolution of all harness components (prompts, tools, middleware, skills, sub-agents, memory) with auditable, git-tracked, falsifiable edits. | harness engineering + evolutionary meta-harness (the Breeding Program) |
+| **Continual Harness** (Princeton / Google, Karten et al.) — *referenced (vendored in the research workspace, not this repo)* | Reset-free, in-episode online adaptation where a Refiner CRUD-edits the live prompt/sub-agents/skills/memory mid-run (validated on Pokemon). | continual/federated learning + harness engineering |
+| **Ctx2Skill** (Tsinghua) — *referenced (vendored in the research workspace, not this repo)* | Zero-annotation multi-agent self-play loop that discovers/refines context-specific natural-language skills from documents with no external feedback. | skills & memory propagation + context compaction |
+| **CoEvolve** (Alibaba AMAP, ACL26) — *referenced (vendored in the research workspace, not this repo)* | Agent-data mutual evolution: failure signals from rollouts synthesize new validated training tasks, closing the loop between policy and its data distribution. | evolutionary meta-harness (the Breeding Program) + continual/federated learning |
+| **MUSE-Autoskill** (ByteDance MUSE) — *referenced, not vendored* (wiki idx 12; arXiv 2605.27366) | Gives agents a full skill lifecycle manager that auto-creates, tests, maintains, and evaluates skills (creation/memory/management/evaluation). | skills & memory propagation (Missionaria Protectiva) + checkpoints/recovery |
+| **SkillForge** (SIGIR26 Industry, cloud support) — *referenced, not vendored* (wiki idx 13; arXiv 2604.08618) | Uses failure attribution to continually evolve domain-specific cloud-customer-support skills; the only paper with real deployment economics (vertical wedge precedent). | skills & memory propagation + harness engineering (vertical/forward-deployed) |
+| **Autogenesis** (NTU, AGP protocol) — *referenced (vendored in the research workspace, not this repo)* | A self-evolving agent protocol (RSPL) modeling prompts/agents/tools/envs/memory as versioned, lifecycle-managed resources so evolution is composable, inspectable, and auditable. | agent isolation/VFS + checkpoints/recovery + shared-log coordination |
+| **AEVO / A-Evolve** (HKUST) — *referenced (vendored in the research workspace, not this repo)* | A MetaAgent takes over the evolution mechanism itself to solve long-horizon evolution drift; universal infra to evolve any agent/domain with any evolution algorithm. | evolutionary meta-harness (the Breeding Program) + harness engineering |
+| **FedTextGrad** (UBC, ICLR25) — *referenced (vendored in the research workspace, not this repo)* | Federated textual-gradient prompt optimization: clients upload locally TextGrad-optimized prompts and the server aggregates them (privacy-preserving, no numeric loss). | continual/federated learning + shared-log coordination |
 
 ## Credits
 
