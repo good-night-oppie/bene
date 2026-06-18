@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import html
 import re
+import shutil
 from pathlib import Path
 
 import markdown
@@ -181,6 +182,21 @@ def shell(lang: str, title: str, body: str, *, cur: str) -> str:
     )
 
 
+def rewrite_links(body: str) -> str:
+    """Rewrite internal `*.md` links to `*.html` so cross-post links resolve.
+
+    A post that links to a sibling post by its source name — e.g.
+    `[next](what-bene.md)` — would otherwise 404, since this builder writes
+    `what-bene.html`. Only relative links are rewritten; external `http(s)://`
+    links are left alone. Mirrors site/build-docs.py's rewrite_links.
+    """
+    return re.sub(
+        r'(href=")(?!https?://)([^"]+?)\.md(#[^"]*)?(")',
+        lambda m: m.group(1) + m.group(2) + ".html" + (m.group(3) or "") + m.group(4),
+        body,
+    )
+
+
 def parse_post(md_path: Path) -> dict:
     """Pull slug/title/kind/date/excerpt/body_html out of a post markdown file."""
     text = md_path.read_text(encoding="utf-8")
@@ -205,7 +221,7 @@ def parse_post(md_path: Path) -> dict:
             body_src = rest[m_by.end():]
 
     md = markdown.Markdown(extensions=MD_EXTS, extension_configs=MD_CFG)
-    body_html = md.convert(body_src.strip())
+    body_html = rewrite_links(md.convert(body_src.strip()))
 
     # Excerpt = first rendered paragraph, stripped of tags, clipped.
     m_p = re.search(r"<p>(.*?)</p>", body_html, re.S)
@@ -289,8 +305,13 @@ def collect(src_dir: Path) -> list[dict]:
 
 
 def build() -> None:
-    OUT.mkdir(parents=True, exist_ok=True)
-    ZH_OUT.mkdir(parents=True, exist_ok=True)
+    # Clear stale output first so a renamed/deleted post's old <slug>.html can't
+    # linger and keep being deployed (the index would no longer list it). Keeps
+    # the build reproducible from sources alone, like site/build-docs.py.
+    for out_dir in (OUT, ZH_OUT):
+        if out_dir.exists():
+            shutil.rmtree(out_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
 
     en_posts = collect(BLOG)
     zh_posts = collect(BLOG / "zh")
