@@ -20,6 +20,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
+from bene import __version__
 from bene.config import load_config, runner_kwargs_from_config
 from bene.core import Bene
 
@@ -52,7 +53,7 @@ def _json_err(ctx, msg: str):
 
 
 @click.group()
-@click.version_option(version="0.2.0", prog_name="bene")
+@click.version_option(version=__version__, prog_name="bene")
 @click.option(
     "--json",
     "json_output",
@@ -2984,15 +2985,21 @@ def observe():
 @click.pass_context
 def observe_status(ctx, config: str):
     """Report which observability backend the runner would select."""
+    import importlib.util
+
     import bene.observe.langfuse  # noqa: F401 — import to self-register the adapter
     from bene.observe import available_providers, resolve_provider
 
+    # The langfuse adapter self-registers as "available" on import even when the
+    # SDK is absent (the SDK import is deferred), so probe it explicitly here.
+    langfuse_sdk_installed = importlib.util.find_spec("langfuse") is not None
     obs_cfg = _observability_config(config)
     host = os.environ.get("LANGFUSE_HOST") or None
     data = {
         "selected_provider": resolve_provider(obs_cfg),
         "available_providers": available_providers(),
         "langfuse_host": host,
+        "langfuse_sdk_installed": langfuse_sdk_installed,
         "config": obs_cfg,
     }
     if _json_out(ctx, data):
@@ -3000,6 +3007,13 @@ def observe_status(ctx, config: str):
     console.print(f"observability backend: [cyan]{data['selected_provider']}[/cyan]")
     console.print(f"  available providers: {', '.join(data['available_providers'])}")
     console.print(f"  LANGFUSE_HOST: {host or '[dim]unset[/dim]'}")
+    if (
+        data["selected_provider"] == "langfuse" or "langfuse" in data["available_providers"]
+    ) and not langfuse_sdk_installed:
+        console.print(
+            "  [yellow]langfuse selected but its SDK is not installed[/yellow] — "
+            'install: pip install "bene[langfuse]"'
+        )
     if data["selected_provider"] == "null":
         console.print(
             "  [dim]traces disabled — set LANGFUSE_HOST or kernel.observability.provider[/dim]"

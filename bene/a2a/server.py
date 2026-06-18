@@ -12,7 +12,7 @@ from bene.a2a.executor import BeneAgentExecutor
 from bene.a2a.store import SharedLogTaskStore
 
 
-def build_app(db_path: str, url: str = DEFAULT_URL, *, version: str = "0.2.0") -> Any:
+def build_app(db_path: str, url: str = DEFAULT_URL, *, version: str | None = None) -> Any:
     """Build the Starlette ASGI app: bene Agent Card at /.well-known/agent-card.json
     + JSON-RPC message/send, seated on the bene.db at ``db_path``."""
     from bene import Bene

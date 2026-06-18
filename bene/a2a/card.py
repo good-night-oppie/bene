@@ -10,11 +10,19 @@ from __future__ import annotations
 
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill
 
+from bene import __version__
+
 DEFAULT_URL = "http://127.0.0.1:8710/"
 
 
-def build_bene_agent_card(url: str = DEFAULT_URL, version: str = "0.2.0") -> AgentCard:
-    """Build bene's A2A Agent Card. ``url`` is the public JSON-RPC endpoint."""
+def build_bene_agent_card(url: str = DEFAULT_URL, version: str | None = None) -> AgentCard:
+    """Build bene's A2A Agent Card. ``url`` is the public JSON-RPC endpoint.
+
+    ``version`` defaults to the installed bene version (single source of truth);
+    note ``protocol_version`` below is the A2A spec version, not bene's.
+    """
+    if version is None:
+        version = __version__
     skills = [
         AgentSkill(
             id="coordinate",

@@ -19,6 +19,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from bene import __version__
+
 from bene.obsidian import assets
 from bene.obsidian.renderer import safe_filename, wikilink
 from bene.obsidian.templates import (
@@ -93,14 +95,14 @@ class VaultExporter:
         db_path: str | Path,
         vault_path: str | Path,
         wave_map: dict[str, int] | None = None,
-        bene_version: str = "0.2.0",
+        bene_version: str | None = None,
     ) -> None:
         self.db_path = str(db_path)
         self.vault_path = Path(vault_path).expanduser().resolve()
         self.wave_map = dict(DEFAULT_WAVE_MAP)
         if wave_map:
             self.wave_map.update(wave_map)
-        self.bene_version = bene_version
+        self.bene_version = bene_version if bene_version is not None else __version__
         self._agents_by_id: dict[str, dict[str, Any]] = {}
         self._skill_files: dict[int, str] = {}
         self._memory_files: dict[int, str] = {}
