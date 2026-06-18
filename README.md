@@ -102,7 +102,7 @@ Try it (keyless, <60s, fresh directory):
 
 ```bash
 bene demo --no-ui     # the five-capability story
-bene senses --json    # what an incoming agent reads first
+bene --json senses    # what an incoming agent reads first
 bene trust <agent_id> # computed trust: 4 signals + composite
 bene experiments ls   # the probe/evolution journal
 bene sweep <agent_id> # debt sweep over an agent's VFS
@@ -129,6 +129,8 @@ bene setup
 ```
 
 `bene setup` creates `bene.yaml`, initializes `bene.db`, and can install BENE as an MCP server for Claude Code.
+
+> **The MCP install needs `uv`.** If you accept the Claude Code MCP step, `bene setup` writes an entry that launches the server via `uv run --project … bene serve` — so `uv` must be on your `PATH` for the MCP server to start, even when you installed BENE with `pip`/`pipx`. Install [uv](https://docs.astral.sh/uv/) first, or skip the MCP step and run `bene serve --transport stdio` yourself.
 
 Run the demo without model keys:
 

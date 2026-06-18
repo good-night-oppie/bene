@@ -106,7 +106,7 @@ class IsolatedAgentProcess:
         except ImportError:
             raise RuntimeError(
                 "FUSE isolation requires the 'fusepy' package. "
-                "Install with: uv pip install bene[fuse]"
+                'Install with: pip install "bene[fuse]"'
             )
 
         return self.mount_point
