@@ -27,8 +27,8 @@ pre-registered, hash-locked check with a verdict of ACCEPT, REJECT, or VOID.
 
 ```bash
 bene probe ls --check-admissible    # every probe must be able to REJECT
-bene probe run <name> --subject m.json --baseline base.json --json
-# ACCEPT -> exit 0 ; REJECT / VOID -> exit 1
+bene --json probe run <name> --subject m.json --baseline base.json
+# ACCEPT -> exit 0 ; REJECT / VOID -> exit 1   (--json is a top-level flag)
 ```
 
 The load-bearing rule is **admissibility**: a probe has to be able to REJECT a
@@ -43,13 +43,15 @@ output.
 ## Loop 3 — the evolution loop: the breeding program
 
 BENE does not hand-tune its harness strategies — it **breeds** them. A
-meta-harness search mutates strategies across generations on a benchmark, and a
-candidate is promoted only when it clears the same kind of kill-gated probe
-everything else faces.
+meta-harness search mutates strategies across generations on a benchmark and
+bridges each survivor into the engram store as a tier-4 candidate. Promotion past
+the kill-gate is a separate, **opt-in** step (default off, no `mh search` flag):
+the search *proposes* candidates; a deliberate auto-promote run — facing the same
+kill-gated probe everything else does — *disposes*.
 
 ```bash
-bene mh search --benchmark agentic_coding   # mutate + evaluate across generations
-bene mh frontier                            # the Pareto frontier that survived
+bene mh search --benchmark agentic_coding --background   # mutate + evaluate (prints a search-agent id)
+bene mh frontier <search-agent-id>                       # the Pareto frontier that survived
 ```
 
 Selection is patient and gated: no candidate promotes by looking good in a demo,

@@ -65,8 +65,8 @@ executed — the plan is the artifact, the diff is the consequence.</p>
 <p>Every claim BENE makes about itself must survive a <strong>falsifiable probe</strong> — a
 pre-registered, hash-locked check with a verdict of ACCEPT, REJECT, or VOID.</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>probe<span class="w"> </span>ls<span class="w"> </span>--check-admissible<span class="w">    </span><span class="c1"># every probe must be able to REJECT</span>
-bene<span class="w"> </span>probe<span class="w"> </span>run<span class="w"> </span>&lt;name&gt;<span class="w"> </span>--subject<span class="w"> </span>m.json<span class="w"> </span>--baseline<span class="w"> </span>base.json<span class="w"> </span>--json
-<span class="c1"># ACCEPT -&gt; exit 0 ; REJECT / VOID -&gt; exit 1</span>
+bene<span class="w"> </span>--json<span class="w"> </span>probe<span class="w"> </span>run<span class="w"> </span>&lt;name&gt;<span class="w"> </span>--subject<span class="w"> </span>m.json<span class="w"> </span>--baseline<span class="w"> </span>base.json
+<span class="c1"># ACCEPT -&gt; exit 0 ; REJECT / VOID -&gt; exit 1   (--json is a top-level flag)</span>
 </code></pre></div>
 
 <p>The load-bearing rule is <strong>admissibility</strong>: a probe has to be able to REJECT a
@@ -78,11 +78,13 @@ posts was run against the real CLI before it was written down. No fabricated
 output.</p>
 <h2 id="loop-3-the-evolution-loop-the-breeding-program">Loop 3 — the evolution loop: the breeding program</h2>
 <p>BENE does not hand-tune its harness strategies — it <strong>breeds</strong> them. A
-meta-harness search mutates strategies across generations on a benchmark, and a
-candidate is promoted only when it clears the same kind of kill-gated probe
-everything else faces.</p>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>--benchmark<span class="w"> </span>agentic_coding<span class="w">   </span><span class="c1"># mutate + evaluate across generations</span>
-bene<span class="w"> </span>mh<span class="w"> </span>frontier<span class="w">                            </span><span class="c1"># the Pareto frontier that survived</span>
+meta-harness search mutates strategies across generations on a benchmark and
+bridges each survivor into the engram store as a tier-4 candidate. Promotion past
+the kill-gate is a separate, <strong>opt-in</strong> step (default off, no <code>mh search</code> flag):
+the search <em>proposes</em> candidates; a deliberate auto-promote run — facing the same
+kill-gated probe everything else does — <em>disposes</em>.</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>--benchmark<span class="w"> </span>agentic_coding<span class="w"> </span>--background<span class="w">   </span><span class="c1"># mutate + evaluate (prints a search-agent id)</span>
+bene<span class="w"> </span>mh<span class="w"> </span>frontier<span class="w"> </span>&lt;search-agent-id&gt;<span class="w">                       </span><span class="c1"># the Pareto frontier that survived</span>
 </code></pre></div>
 
 <p>Selection is patient and gated: no candidate promotes by looking good in a demo,

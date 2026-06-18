@@ -84,10 +84,11 @@ underneath has to guarantee four things that a bare LLM loop cannot:</p>
 <ul>
 <li>
 <p><strong>Isolation.</strong> Competitors must not see or stomp on each other's work. In BENE
-  every agent reaches its filesystem through <code>agent_id</code>-scoped VFS methods — one
-  agent's reads and writes <em>cannot</em> land in another's space. One database, many
-  sealed rooms. (The raw <code>query</code>/<code>search</code> tools see across agents on purpose:
-  they're the operator's audit view, not something you hand a competitor.)</p>
+  every agent's own <code>fs_*</code> tools are pinned to its <code>agent_id</code> — an agent's reads
+  and writes <em>cannot</em> land in another's space. One database, many sealed rooms.
+  (The operator surface — the raw <code>query</code>/<code>search</code> plus the <code>read</code>/<code>write</code>
+  MCP/CLI tools — takes an explicit <code>agent_id</code> and crosses agents by design: it's
+  the operator's view, not something you hand a competitor.)</p>
 </li>
 <li>
 <p><strong>Auditability.</strong> A score is only as trustworthy as its receipt. Every tool
@@ -123,7 +124,8 @@ one-to-one onto how the harness earns its keep:</p>
 <li><strong>The Breeding Program</strong> — patient, multi-generation selection → an
   <strong>evolutionary meta-harness search</strong> that breeds better harness strategies on a
   benchmark; surviving candidates are bridged into the engram store, and a
-  separate, opt-in kill-gated promotion step keeps only real improvements.</li>
+  separate, opt-in kill-gated promotion step keeps only real improvements on the
+  accuracy-style objectives the gate maximizes.</li>
 <li><strong>The Litany Against Fear</strong> — <em>face it, let it pass, turn the inner eye, restore</em>
   → <strong>checkpoint, restore, diff</strong>: face a failed turn, let it pass through it, see
   its path, and restore.</li>

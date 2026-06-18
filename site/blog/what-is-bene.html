@@ -48,33 +48,38 @@ footer.ft .in { max-width:760px; margin:0 auto; padding:24px; font:13px "Geist M
 }
 </style></head><body><div class="top"><div class="top-in"><a class="brand" href="../index.html">BENE</a><a class="nav" href="../index.html">Landing</a><a class="nav" href="../docs/index.html">Docs</a><a class="nav cur" href="index.html">Blog</a><span class="spacer"></span><a class="nav" href="../zh/blog/index.html" title="切换到中文">文</a></div></div><div class="wrap"><main><div class="crumbs"><a href="index.html">← All posts</a></div><h1>What BENE Is: The Seven Pillars</h1><p class="byline"><span class="kind">the WHAT</span> · 2026-06-18</p><p>The <a href="why-bene.html">first post</a> argued <em>why</em> a reactive language model needs a
 harness to build instead of merely react. This one is concrete: <strong>what is BENE,
-actually?</strong> Seven pillars, each a feature you can run today. Every command below
-is real — copy it after <code>pip install bene</code>.</p>
+actually?</strong> Seven pillars, each a feature you can run today. The commands below
+are real — run them after <code>pip install bene &amp;&amp; bene setup</code>, swapping in the ids
+the commands print (a <code>run</code> prints a new <code>agent_id</code>; inspection commands take it).</p>
 <p>BENE is a <strong>local-first, single-file, multi-agent harness</strong>. One SQLite database
 holds every agent's filesystem, every event, every checkpoint, every trace. No
 server, no broker — <code>bene init</code> creates the file and you are running.</p>
 <h2 id="1-per-agent-vfs-sealed-rooms-in-one-file">1. Per-agent VFS — sealed rooms in one file</h2>
 <p>Every agent gets its own virtual filesystem, scoped by <code>agent_id</code> at the SQL
-layer. An agent <em>cannot</em> construct a query that reaches into another agent's
-space — isolation is a property of the engine, not a convention.</p>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>init<span class="w">                       </span><span class="c1"># create bene.db</span>
-bene<span class="w"> </span>run<span class="w"> </span>--name<span class="w"> </span>researcher<span class="w"> </span><span class="s2">&quot;summarize the codebase&quot;</span>
-bene<span class="w"> </span>ls<span class="w">                         </span><span class="c1"># every agent + status</span>
-bene<span class="w"> </span><span class="nb">read</span><span class="w"> </span>researcher<span class="w"> </span>/notes.md<span class="w">  </span><span class="c1"># read one agent&#39;s file</span>
+layer — one agent's reads and writes stay in its own space. (The <code>query</code>/<code>read</code>
+tools can see across agents <em>by design</em> — for the operator, not a competitor —
+so this is logical namespacing in one file, not a hardened OS sandbox.)</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>init<span class="w">                        </span><span class="c1"># create bene.db</span>
+bene<span class="w"> </span>setup<span class="w">                       </span><span class="c1"># write bene.yaml (run needs a config)</span>
+bene<span class="w"> </span>run<span class="w"> </span>--name<span class="w"> </span>researcher<span class="w"> </span><span class="s2">&quot;summarize the codebase&quot;</span><span class="w">   </span><span class="c1"># prints a new agent_id</span>
+bene<span class="w"> </span>ls<span class="w">                          </span><span class="c1"># every agent + status — copy the agent_id</span>
+bene<span class="w"> </span><span class="nb">read</span><span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>/notes.md<span class="w">   </span><span class="c1"># read by the id run printed (not the --name)</span>
 </code></pre></div>
 
 <p><em>Why it matters:</em> a dozen agents share one database and never clobber each other.</p>
 <h2 id="2-checkpoints-face-the-failed-turn-restore">2. Checkpoints — face the failed turn, restore</h2>
 <p>Snapshot an agent's entire world and restore it on demand. This is the Litany
 Against Fear as a feature: face a bad turn, let it pass, see its path, restore.</p>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>checkpoint<span class="w"> </span>researcher<span class="w"> </span>--label<span class="w"> </span>pre-refactor<span class="w">   </span><span class="c1"># snapshot; returns a checkpoint id</span>
-bene<span class="w"> </span>checkpoints<span class="w"> </span>researcher<span class="w">                        </span><span class="c1"># list checkpoint ids + labels</span>
-bene<span class="w"> </span>diff<span class="w"> </span>researcher<span class="w"> </span>--from<span class="w"> </span>&lt;cp-a&gt;<span class="w"> </span>--to<span class="w"> </span>&lt;cp-b&gt;<span class="w">     </span><span class="c1"># what changed between two</span>
-bene<span class="w"> </span>restore<span class="w"> </span>researcher<span class="w"> </span>--checkpoint<span class="w"> </span>&lt;cp-id&gt;<span class="w">       </span><span class="c1"># roll back</span>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>checkpoint<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>--label<span class="w"> </span>pre-refactor<span class="w">   </span><span class="c1"># snapshot; returns a checkpoint id</span>
+bene<span class="w"> </span>checkpoints<span class="w"> </span>&lt;agent-id&gt;<span class="w">                        </span><span class="c1"># list checkpoint ids + labels</span>
+bene<span class="w"> </span>diff<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>--from<span class="w"> </span>&lt;cp-a&gt;<span class="w"> </span>--to<span class="w"> </span>&lt;cp-b&gt;<span class="w">     </span><span class="c1"># what changed between two</span>
+bene<span class="w"> </span>restore<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>--checkpoint<span class="w"> </span>&lt;cp-id&gt;<span class="w">       </span><span class="c1"># roll back BENE state</span>
 </code></pre></div>
 
-<p><em>Why it matters:</em> every run is reversible, so any dispute is settled by replay,
-not argument.</p>
+<p><em>Why it matters:</em> an agent's BENE-managed VFS and key-value state roll back
+cleanly. Side effects a tool pushed <em>outside</em> BENE — host files, a network call,
+a spawned process — aren't replayed, so restore rewinds the recorded state, not
+the whole world.</p>
 <h2 id="3-engrams-the-next-agent-never-starts-cold">3. Engrams — the next agent never starts cold</h2>
 <p>Execution traces are compressed into searchable <strong>engrams</strong> — a Reverend
 Mother's Other Memory. By default every run drops a trace; later agents retrieve
@@ -88,8 +93,9 @@ one context window.</p>
 <p>A probe is a pre-registered, <strong>hash-locked</strong> falsifiable check. It must be able
 to REJECT a broken baseline before it is allowed to ACCEPT a fix — an
 inadmissible gate VOIDs instead of rubber-stamping.</p>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>probe<span class="w"> </span>run<span class="w"> </span>lighthouse<span class="w"> </span>--subject<span class="w"> </span>metrics.json<span class="w"> </span>--baseline<span class="w"> </span>base.json<span class="w"> </span>--json
-<span class="c1"># ACCEPT -&gt; exit 0 ; REJECT/VOID -&gt; exit 1   (CI-ready)</span>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>--json<span class="w"> </span>probe<span class="w"> </span>run<span class="w"> </span>&lt;probe&gt;<span class="w"> </span>--subject<span class="w"> </span>metrics.json<span class="w"> </span>--baseline<span class="w"> </span>base.json
+<span class="c1"># ACCEPT -&gt; exit 0 ; REJECT/VOID -&gt; exit 1   (CI-ready; --json is a top-level flag)</span>
+<span class="c1"># register &lt;probe&gt; first — see docs/recipes/probe-authoring</span>
 </code></pre></div>
 
 <p><em>Why it matters:</em> evolved strategies only get promoted past a gate that could
@@ -97,9 +103,9 @@ have killed them — no self-certifying progress.</p>
 <h2 id="5-autonomy-ladder-earn-the-next-rung">5. Autonomy ladder — earn the next rung</h2>
 <p>Agents operate at a level L0–L4. Lower rungs are configurable defaults; the
 highest stays a human grant. Trust is <em>computed</em> from four signals, not asserted.</p>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>autonomy<span class="w"> </span>show<span class="w">                       </span><span class="c1"># effective level per domain</span>
-bene<span class="w"> </span>trust<span class="w"> </span>researcher<span class="w">                    </span><span class="c1"># 4 computed signals + composite</span>
-bene<span class="w"> </span>autonomy<span class="w"> </span>grant<span class="w"> </span>researcher<span class="w"> </span><span class="m">3</span><span class="w"> </span>--by<span class="w"> </span>human:eddie
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>autonomy<span class="w"> </span>show<span class="w"> </span>&lt;agent-id&gt;<span class="w">            </span><span class="c1"># effective level per domain</span>
+bene<span class="w"> </span>trust<span class="w"> </span>&lt;agent-id&gt;<span class="w">                    </span><span class="c1"># 4 computed signals + composite</span>
+bene<span class="w"> </span>autonomy<span class="w"> </span>grant<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span><span class="m">3</span><span class="w"> </span>--by<span class="w"> </span>human:eddie
 </code></pre></div>
 
 <p><em>Why it matters:</em> autonomy is gated on observed behavior, with L4 reserved for a
@@ -115,8 +121,8 @@ you already use.</p>
 <h2 id="7-evolutionary-meta-harness-search-the-breeding-program">7. Evolutionary meta-harness search — the breeding program</h2>
 <p>BENE breeds better harness strategies across generations on a benchmark, and
 promotes a candidate only behind a kill-gated probe ACCEPT.</p>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>--benchmark<span class="w"> </span>agentic_coding<span class="w">   </span><span class="c1"># detached search worker</span>
-bene<span class="w"> </span>mh<span class="w"> </span>frontier<span class="w">                            </span><span class="c1"># the Pareto frontier of strategies</span>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>--benchmark<span class="w"> </span>agentic_coding<span class="w"> </span>--background<span class="w">   </span><span class="c1"># detached search worker (prints a search-agent id)</span>
+bene<span class="w"> </span>mh<span class="w"> </span>frontier<span class="w"> </span>&lt;search-agent-id&gt;<span class="w">                       </span><span class="c1"># the Pareto frontier of strategies</span>
 </code></pre></div>
 
 <p><em>Why it matters:</em> the harness improves itself under the same falsifiable gate it
