@@ -101,3 +101,26 @@ def test_cli_ensure_json_noop(monkeypatch):
     res = CliRunner().invoke(cli, ["--json", "observe", "ensure"])
     assert res.exit_code == 0
     assert '"action": "noop"' in res.output
+
+
+def test_cli_ensure_honors_config_host(monkeypatch, tmp_path):
+    """`observe ensure --config` must probe the configured kernel.observability.host
+    (not just --host/$LANGFUSE_HOST/localhost) so a config-only setup pointed at an
+    already-healthy backend does not start the bundled local stack. PR #54 review."""
+    from click.testing import CliRunner
+
+    from bene.cli.main import cli
+
+    cfg = tmp_path / "bene.yaml"
+    cfg.write_text("kernel:\n  observability:\n    host: http://configured-langfuse:3000\n")
+    seen: dict[str, str] = {}
+
+    def fake_healthy(host, **kw):
+        seen["host"] = host
+        return True
+
+    monkeypatch.setattr(selfhost, "is_healthy", fake_healthy)
+    monkeypatch.delenv("LANGFUSE_HOST", raising=False)
+    res = CliRunner().invoke(cli, ["--json", "observe", "ensure", "--config", str(cfg)])
+    assert res.exit_code == 0
+    assert seen["host"] == "http://configured-langfuse:3000"
