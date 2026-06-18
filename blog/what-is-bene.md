@@ -21,11 +21,15 @@ so this is logical namespacing in one file, not a hardened OS sandbox.)
 
 ```bash
 bene init                        # create bene.db
-bene setup                       # write bene.yaml (run needs a config)
+bene setup                       # pick a model preset (local/cloud) — run needs one configured
 bene run --name researcher "summarize the codebase"   # prints a new agent_id
 bene ls                          # every agent + status — copy the agent_id
 bene read <agent-id> /notes.md   # read by the id run printed (not the --name)
 ```
+
+> `run` drives a model, so `bene setup` must write a `models:` entry (the local
+> or cloud preset). For a keyless tour of just the VFS, use the Python API
+> (`spawn`/`write`/`read`) — no model required.
 
 *Why it matters:* a dozen agents share one database and never clobber each other.
 
@@ -106,8 +110,8 @@ BENE breeds better harness strategies across generations on a benchmark, and
 promotes a candidate only behind a kill-gated probe ACCEPT.
 
 ```bash
-bene mh search --benchmark agentic_coding --background   # detached search worker (prints a search-agent id)
-bene mh frontier <search-agent-id>                       # the Pareto frontier of strategies
+bene mh search --benchmark agentic_coding   # returns a search-agent id (add --background to detach)
+bene mh frontier <search-agent-id>          # the Pareto frontier of strategies
 ```
 
 *Why it matters:* the harness improves itself under the same falsifiable gate it

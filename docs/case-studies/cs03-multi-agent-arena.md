@@ -43,7 +43,7 @@ hard parts are the engine's job.
 | Isolation | per-agent VFS, SQL-scoped by `agent_id` | an entrant's own `fs_*` tools stay in its namespace (add an OS sandbox + restricted tools for adversarial code — see below) |
 | Auditability | append-only event journal + execution traces | every action is a row (append-only by convention; hash-chain for tamper-evidence if the DB is writable) |
 | Reproducibility | checkpoint / restore / diff | re-run a match's BENE state from a snapshot (not external side effects) |
-| Accumulated memory | engrams + trace retrieval | learn across matches; scope retrieval per agent |
+| Accumulated memory | engrams + trace retrieval | learn across matches; the kernel retrievers don't filter by agent, so scope hits yourself |
 
 ### Isolation — sealed rooms, one file
 

@@ -50,8 +50,9 @@ the search *proposes* candidates; a deliberate auto-promote run — facing the s
 kill-gated probe everything else does — *disposes*.
 
 ```bash
-bene mh search --benchmark agentic_coding --background   # mutate + evaluate (prints a search-agent id)
-bene mh frontier <search-agent-id>                       # the Pareto frontier that survived
+bene mh search --benchmark agentic_coding   # mutate + evaluate; returns a search-agent id
+bene mh frontier <search-agent-id>          # the Pareto frontier that survived
+# (add --background to detach a worker instead of running in the foreground)
 ```
 
 Selection is patient and gated: no candidate promotes by looking good in a demo,

@@ -60,12 +60,17 @@ layer — one agent's reads and writes stay in its own space. (The <code>query</
 tools can see across agents <em>by design</em> — for the operator, not a competitor —
 so this is logical namespacing in one file, not a hardened OS sandbox.)</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>init<span class="w">                        </span><span class="c1"># create bene.db</span>
-bene<span class="w"> </span>setup<span class="w">                       </span><span class="c1"># write bene.yaml (run needs a config)</span>
+bene<span class="w"> </span>setup<span class="w">                       </span><span class="c1"># pick a model preset (local/cloud) — run needs one configured</span>
 bene<span class="w"> </span>run<span class="w"> </span>--name<span class="w"> </span>researcher<span class="w"> </span><span class="s2">&quot;summarize the codebase&quot;</span><span class="w">   </span><span class="c1"># prints a new agent_id</span>
 bene<span class="w"> </span>ls<span class="w">                          </span><span class="c1"># every agent + status — copy the agent_id</span>
 bene<span class="w"> </span><span class="nb">read</span><span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>/notes.md<span class="w">   </span><span class="c1"># read by the id run printed (not the --name)</span>
 </code></pre></div>
 
+<blockquote>
+<p><code>run</code> drives a model, so <code>bene setup</code> must write a <code>models:</code> entry (the local
+or cloud preset). For a keyless tour of just the VFS, use the Python API
+(<code>spawn</code>/<code>write</code>/<code>read</code>) — no model required.</p>
+</blockquote>
 <p><em>Why it matters:</em> a dozen agents share one database and never clobber each other.</p>
 <h2 id="2-checkpoints-face-the-failed-turn-restore">2. Checkpoints — face the failed turn, restore</h2>
 <p>Snapshot an agent's entire world and restore it on demand. This is the Litany
@@ -121,8 +126,8 @@ you already use.</p>
 <h2 id="7-evolutionary-meta-harness-search-the-breeding-program">7. Evolutionary meta-harness search — the breeding program</h2>
 <p>BENE breeds better harness strategies across generations on a benchmark, and
 promotes a candidate only behind a kill-gated probe ACCEPT.</p>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>--benchmark<span class="w"> </span>agentic_coding<span class="w"> </span>--background<span class="w">   </span><span class="c1"># detached search worker (prints a search-agent id)</span>
-bene<span class="w"> </span>mh<span class="w"> </span>frontier<span class="w"> </span>&lt;search-agent-id&gt;<span class="w">                       </span><span class="c1"># the Pareto frontier of strategies</span>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>--benchmark<span class="w"> </span>agentic_coding<span class="w">   </span><span class="c1"># returns a search-agent id (add --background to detach)</span>
+bene<span class="w"> </span>mh<span class="w"> </span>frontier<span class="w"> </span>&lt;search-agent-id&gt;<span class="w">          </span><span class="c1"># the Pareto frontier of strategies</span>
 </code></pre></div>
 
 <p><em>Why it matters:</em> the harness improves itself under the same falsifiable gate it
