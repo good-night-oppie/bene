@@ -114,7 +114,7 @@ services:
     volumes:
       - bene_langfuse_redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_AUTH:-bene-local-dev-redis}", "ping"]
       interval: 3s
       timeout: 10s
       retries: 10
