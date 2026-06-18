@@ -9,6 +9,8 @@ shape; the prose says what it's load-bearing for.
 Every agent has its own VFS, event journal, checkpoints, and traces — but they
 all live in **one** SQLite database. That single file is the Nexus: the join
 point for the whole swarm, and the thing you copy, diff, or check into git.
+(WAL mode keeps recent commits in a `bene.db-wal` sidecar until checkpoint/close,
+so copy the db when the process is idle — or copy the `-wal`/`-shm` files too.)
 
 ```mermaid
 flowchart TB
@@ -24,8 +26,12 @@ flowchart TB
     DB --> S["shared log · blobs · engrams"]
 ```
 
-*Load-bearing:* isolation is enforced at the SQL layer, so "many agents, one
-file" never means "agents can read each other." The union is the audit surface.
+*Load-bearing:* an agent's own `fs_*` tools are scoped to its `agent_id`, so in
+normal operation "many agents, one file" doesn't mean agents stumble into each
+other. It is logical namespacing, not a hard authorization boundary — the
+operator surface (`Bene.read`/`query`, the `agent_read`/`agent_write` MCP tools)
+takes an explicit `agent_id` and can cross agents by design. The union is the
+audit surface.
 
 ## The engram compression ladder
 
@@ -59,12 +65,13 @@ flowchart TB
     L1 --> L2["L2 · Act in sandbox"]
     L2 --> L3["L3 · Act on shared state"]
     L3 --> L4["L4 · Autonomous-promote"]
-    Trust["computed trust<br/>(4 signals + composite)"] -. "raises the floor,<br/>capped below L4" .-> L3
+    Trust["computed trust<br/>(4 signals + composite)"] -. "informs grant decisions<br/>(does not auto-raise the level)" .-> L3
     Human["human grant<br/>(--by human:name)"] ==> L4
 ```
 
-*Load-bearing:* autonomy is *earned* from observed behavior, not asserted — and
-the one rung that can change the shared world on its own stays a human decision.
+*Load-bearing:* autonomy is *earned* from observed behavior, not asserted.
+Shared-state actions live at **L3**; the top rung — **L4**, autonomous
+self-promotion — is the one that always requires a human grant.
 
 ---
 

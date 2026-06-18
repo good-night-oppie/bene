@@ -12,8 +12,10 @@ Run any of them with:
 
 ```bash
 uv run python examples/<name>.py     # from a source checkout
-# or, installed:  python examples/<name>.py
 ```
+
+> The `examples/` scripts ship with the source repo, **not** the PyPI package —
+> clone the repo (or copy a script) to run them.
 
 ## Per-agent VFS & state
 
@@ -26,7 +28,7 @@ uv run python examples/<name>.py     # from a source checkout
 
 | Example | What it shows | Runs |
 |---|---|---|
-| [`post_mortem.py`](../examples/post_mortem.py) | Post-mortem debugging: checkpoint, inspect the event journal, and diff to find where a run went wrong. | standalone |
+| [`post_mortem.py`](../examples/post_mortem.py) | Post-mortem debugging: checkpoint, inspect the event journal, and diff to find where a run went wrong. | standalone (args: `<database.db> <agent-id>`) |
 | [`self_healing_agent.py`](../examples/self_healing_agent.py) | An agent that checkpoints before a risky step and restores on failure (the Litany loop). | model-backed |
 
 ## Engrams & cross-agent memory
@@ -48,7 +50,7 @@ uv run python examples/<name>.py     # from a source checkout
 | [`shared_log_coordination.py`](../examples/shared_log_coordination.py) | The append-only coordination log: the intent → vote → decide → act protocol across agents. | standalone ✓ |
 | [`safety_voting.py`](../examples/safety_voting.py) | A policy-enforced safety gate built on the shared log: human-in-the-loop + multi-agent consensus before a risky action. | model-backed |
 | [`code_review_swarm.py`](../examples/code_review_swarm.py) | A fan-out of reviewer agents coordinating findings over the shared log. | model-backed |
-| [`parallel_refactor.py`](../examples/parallel_refactor.py) | Many agents refactoring in parallel, each isolated, results merged. | model-backed |
+| [`parallel_refactor.py`](../examples/parallel_refactor.py) | Many agents refactoring in parallel, each isolated, results merged. | model-backed (illustrative — read it for the pattern) |
 
 ## Evolutionary meta-harness search
 
