@@ -35,7 +35,12 @@ logger = logging.getLogger(__name__)
 _afs: Bene | None = None
 _ccr: ClaudeCodeRunner | None = None
 
-server = Server("bene", version=__version__)
+server = Server("bene")
+# Single-source the version WITHOUT the constructor `version=` kwarg: older
+# mcp 1.x SDKs (still allowed by our `mcp>=1.0` floor) don't accept it and would
+# raise TypeError at import, breaking `bene serve`. Setting the attribute is
+# always safe and flows into create_initialization_options().server_version.
+server.version = __version__
 
 
 def init_server(afs: Bene, ccr: ClaudeCodeRunner) -> Server:
