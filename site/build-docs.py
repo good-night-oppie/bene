@@ -442,13 +442,16 @@ def build() -> None:
                 )
             zh_md = markdown.Markdown(extensions=MD_EXTS, extension_configs=MD_CFG)
             zh_body = zh_md.convert(zh_text)
-            # zh tree is one level deeper than EN, so its ../examples and ../assets
-            # links need the same extra ../ the EN-mirror fallback already gets via
-            # zh_reroot — without it real translated pages 404 on every example link.
-            zh_body = zh_reroot(rewrite_links(zh_body))
+            zh_body = rewrite_links(zh_body)
             zh_demo = demo_block(rel.with_suffix("").as_posix(), depth)
             if zh_demo:
                 zh_body = re.sub(r"(</h1>)", r"\1" + zh_demo, zh_body, count=1)
+            # zh tree is one level deeper than EN, so its ../examples and ../assets
+            # links need the same extra ../ the EN-mirror fallback already gets via
+            # zh_reroot — without it real translated pages 404 on every example link.
+            # Reroot AFTER the demo embed so the demo's ../assets/demos/ src is
+            # rerooted too (it's injected at the EN depth).
+            zh_body = zh_reroot(zh_body)
             
             # Write without banner, just pure zh html
             zh_dst.write_text(
