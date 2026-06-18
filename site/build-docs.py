@@ -459,6 +459,8 @@ def build() -> None:
             )
         else:
             # Fallback to EN with banner
+            if rel.parts[0] in ("design", "research"):
+                continue
             zh_dst.write_text(
                 page(rel, zh_reroot(body), title, needs_mermaid, lang="zh"), encoding="utf-8"
             )
