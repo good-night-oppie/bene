@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Parallel security review: four agents, one query — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — Parallel security review: four agents, one query" />
+<title>并发安全审查：四狼下山，一条 SQL 收网 — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — 并发安全审查：四狼下山，一条 SQL 收网" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -205,12 +205,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../codegen.html">codegen</a>
 <a href="../dashboard.html">dashboard</a>
 <a href="../deployment.html">deployment</a>
+<a href="../examples.html">examples</a>
 <a href="../integrating-bene.html">integrating-bene</a>
 <a href="../mcp-integration.html">mcp-integration</a>
 <a href="../memory.html">memory</a>
 <a href="../meta-harness.html">meta-harness</a>
 <a href="../philosophy.html">philosophy</a>
-<a href="../primitive-review-cycle.html">primitive-review-cycle</a>
 <a href="../probe-authoring.html">probe-authoring</a>
 <a href="../schema.html">schema</a>
 <a href="../shared-log.html">shared-log</a>
@@ -219,14 +219,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <h4>Recipes</h4>
 <a href="../recipes/atomic-completion.html">atomic-completion</a>
 <h4>Design and claims</h4>
-<a href="../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
-<a href="../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
-<a href="../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
-<a href="../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
-<h4>Evidence and research</h4>
-<a href="../research/GAP-AUDIT.html">GAP-AUDIT</a>
-<a href="../research/SYNTHESIS.html">SYNTHESIS</a>
-<a href="../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<a href="../design/architecture-diagrams.html">architecture-diagrams</a>
 <h4>Benchmarks and gates</h4>
 <a href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
 <a href="../benchmarks/PREREG.html">PREREG</a>
@@ -244,37 +237,38 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
 <h4>Case studies</h4>
 <a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
-<h4>Infrastructure</h4>
-<a href="../infra/DNS.html">DNS</a></aside>
+<a href="../case-studies/cs03-multi-agent-arena.html">cs03-multi-agent-arena</a>
+<a href="../case-studies/cs04-trace-rag-other-memory.html">cs04-trace-rag-other-memory</a>
+<a href="../case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="../index.html">docs</a> / tutorials/t03-security-swarm.md</div>
-<h1 id="parallel-security-review-four-agents-one-query">Parallel security review: four agents, one query</h1>
-<p><em>Security</em></p>
-<p>Point four isolated agents at one pull request — injection, secrets, auth, deserialization — and read back a severity-ranked findings table from a single SQL query. The whole review takes 20 minutes of wall clock where four serial passes take 80.</p>
+<h1 id="sql">并发安全审查：四狼下山，一条 SQL 收网</h1>
+<p><em>安全篇</em></p>
+<p>把四只被关在绝对隔离沙盒里的 agent 同时砸向同一个 PR —— 一只查注入、一只翻硬编码密钥、一只看越权、一只盯反序列化 —— 等它们跑完，你只需要甩出一条 SQL，就能拿到一张按严重程度排好序的体检报告单。整场审查，墙上时钟只转了 20 分钟；如果是人肉或者串行排队查，这活得干 80 分钟。</p>
 <blockquote>
-<p><strong>One scanner per attack surface, zero shared state, every finding in one table.</strong></p>
+<p><strong>每个攻击面专供一台扫描仪，彼此之间绝对不共享上下文，所有的战报最后全汇聚在一张表里。</strong></p>
 </blockquote>
-<p><em>PR-2847 under review: the scanners launch together, and one query collects everything they found.</em></p>
-<h2 id="launch-the-swarm">Launch the swarm</h2>
-<p>Reviewing serially costs you three ways: every switch between threat models drops the previous one on the floor, the fourth pass over the same 400 lines gets less of your attention than the first did, and the first bug you spot recruits you into hunting its lookalikes while orthogonal ones slip past.</p>
-<p>Splitting the review removes all three taxes. One command starts four scanners, each specialized for a single threat model:</p>
+<p><em>实盘接客 PR-2847：四台扫描仪同时起飞，一条 SQL 捞出所有战果。</em></p>
+<h2 id="_1">放狼出笼</h2>
+<p>串行审查（比如人肉 review 或者挨个跑脚本）会在这三个地方抽你的税：每次你在脑子里切换威胁模型时，上一个模型里的细节就会掉在地上；当你第四遍硬啃同一段 400 行的代码时，你的注意力绝对比不上第一遍；还有，你揪出来的第一个 bug，会潜移默化地把你拖进一个只找这类 bug 的隧道视野里，而那些八竿子打不着的其他致命漏洞，就会趁机从你眼皮子底下溜走。</p>
+<p>把审查拆解成并发，这三笔税一笔勾销。一条命令拉起四台扫描仪，每一台都被剥夺了其他的杂念，脑子里只装着自己专属的那个威胁模型：</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>parallel<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span><span class="s2">&quot;spawn sqli-scanner    --from ./pr-2847 --task sqli_audit&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span><span class="s2">&quot;spawn secrets-scanner --from ./pr-2847 --task secrets_audit&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span><span class="s2">&quot;spawn auth-scanner    --from ./pr-2847 --task auth_audit&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span><span class="s2">&quot;spawn deser-scanner   --from ./pr-2847 --task deser_audit&quot;</span>
 
-<span class="c1"># [sqli-scanner]    spawned  vfs_id=sqli-4a1b  status=running</span>
-<span class="c1"># [secrets-scanner] spawned  vfs_id=sec-9c2d   status=running</span>
-<span class="c1"># [auth-scanner]    spawned  vfs_id=auth-3e4f   status=running</span>
-<span class="c1"># [deser-scanner]   spawned  vfs_id=desr-7g8h   status=running</span>
+<span class="c1"># [sqli-scanner]    成功投放战场  vfs_id=sqli-4a1b  status=running</span>
+<span class="c1"># [secrets-scanner] 成功投放战场  vfs_id=sec-9c2d   status=running</span>
+<span class="c1"># [auth-scanner]    成功投放战场  vfs_id=auth-3e4f   status=running</span>
+<span class="c1"># [deser-scanner]   成功投放战场  vfs_id=desr-7g8h   status=running</span>
 <span class="c1">#</span>
-<span class="c1"># 4 agents running in parallel</span>
+<span class="c1"># 4 匹战狼正在并发厮杀</span>
 </code></pre></div>
 
-<p>Every scanner gets a private virtual filesystem (bene's per-agent VFS) holding its own copy of the PR. No agent can read what a sibling wrote — the no-anchoring property is enforced by the database, not by discipline.</p>
-<h2 id="know-when-the-scanners-finish">Know when the scanners finish</h2>
-<p>The agents complete on their own schedules — injection at the 4-minute mark, secrets at 6, auth at 18 — each reporting a finding count as it lands:</p>
+<p>每一台扫描仪都会分到一个私有的虚拟文件系统 (bene 的单 agent 专属 VFS)，里面装着这个 PR 的全量拷贝。没有任何一只 agent 能偷看隔壁兄弟写了什么 —— 这种 "绝对防锚定 (no-anchoring)" 的隔离特性，是由数据库底层直接上锁的，而不是靠什么代码规范或者 prompt 去软约束。</p>
+<h2 id="_2">盯梢战局</h2>
+<p>这帮 agent 按着各自的节奏陆续收工 —— 查注入的 4 分钟搞定，查密钥的 6 分钟，查越权的啃了 18 分钟 —— 每一只在完工时都会把自己的斩获如实上报：</p>
 <div class="codehilite"><pre><span></span><code><span class="p">[</span>
 <span class="w">  </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sqli-scanner&quot;</span><span class="p">,</span><span class="w">    </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;complete&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;findings_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">},</span>
 <span class="w">  </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;secrets-scanner&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;complete&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;findings_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">},</span>
@@ -283,8 +277,8 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <span class="p">]</span>
 </code></pre></div>
 
-<h2 id="pull-every-finding-with-one-query">Pull every finding with one query</h2>
-<p>Results sit in each agent's own VFS store, but the stores share one database — so a single SELECT, ordered by severity, assembles the entire review:</p>
+<h2 id="sql_1">一条 SQL，一把全捞</h2>
+<p>虽然查出来的漏洞都各自躺在它们自己的 VFS 账本里，但这些账本全在同一个大数据库里 —— 所以，一发 <code>SELECT</code>，带上按严重度排序的 <code>ORDER BY</code>，整个 PR 的安全审查报告就全部拼好了：</p>
 <div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">agent_name</span><span class="p">,</span><span class="w"> </span><span class="n">severity</span><span class="p">,</span><span class="w"> </span><span class="n">finding_type</span><span class="p">,</span><span class="w"> </span><span class="n">file_path</span><span class="p">,</span><span class="w"> </span><span class="n">line_no</span><span class="p">,</span><span class="w"> </span><span class="n">summary</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">vfs_findings</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">pr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;PR-2847&#39;</span>
@@ -299,28 +293,28 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 
 <div class="codehilite"><pre><span></span><code>Agent            Severity  Type              File                Line  Summary
 ---------------  --------  ----------------  ------------------  ----  ----------------------------------------
-sqli-scanner     CRITICAL  sql_injection     api/search.py       14    f-string interpolation into SQL query
-secrets-scanner  CRITICAL  hardcoded_secret  config/settings.py  47    Production API key in source code
-secrets-scanner  MEDIUM    ssrf              api/webhooks.py     83    Unvalidated URL passed to requests.get()
-auth-scanner     CLEAN     —                 —                   —     No auth bypass vectors found
-deser-scanner    CLEAN     —                 —                   —     No unsafe deserialization found
+sqli-scanner     CRITICAL  sql_injection     api/search.py       14    f-string 直接往 SQL 里裸拼参数
+secrets-scanner  CRITICAL  hardcoded_secret  config/settings.py  47    生产环境 API Key 被硬编码写死了
+secrets-scanner  MEDIUM    ssrf              api/webhooks.py     83    用户传进来的 URL 没洗过就直接丢给 requests.get()
+auth-scanner     CLEAN     —                 —                   —     未发现越权或登录绕过漏洞
+deser-scanner    CLEAN     —                 —                   —     未发现危险的反序列化点
 </code></pre></div>
 
-<p>2 CRITICAL findings, 1 MEDIUM, and 2 surfaces confirmed clean — assembled without opening any agent's workspace.</p>
-<h2 id="what-each-scanner-caught">What each scanner caught</h2>
-<p><strong>SQL injection — CRITICAL, 4 minutes.</strong> Working across <code>api/users.py</code>, <code>api/search.py</code>, and the database layer, the injection scanner flagged a query built by f-string:</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># api/search.py — FINDING: SQL injection via f-string interpolation</span>
+<p>2 个 CRITICAL (致命), 1 个 MEDIUM (中危), 还有 2 个面被盖了安全戳 —— 整个拼装过程，你连一个 agent 的工作区都不需要亲自点开。</p>
+<h2 id="_3">扒开看看它们到底逮住了啥</h2>
+<p><strong>SQL 注入 — CRITICAL (致命)，耗时 4 分钟。</strong> 在犁过了 <code>api/users.py</code>、<code>api/search.py</code> 以及一堆数据库中间件后，注入扫描仪精准咬住了一发用 f-string 狂拼出来的裸奔 SQL：</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># api/search.py — 抓包现场: 靠 f-string 搞的 SQL 注入漏洞</span>
 
 <span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/search&#39;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">search_users</span><span class="p">():</span>
     <span class="n">query</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;q&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
-    <span class="c1"># CRITICAL: direct string interpolation into SQL</span>
+    <span class="c1"># 致命死穴：直接把字符串裸拼进 SQL 语句里</span>
     <span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT * FROM users WHERE name LIKE &#39;%</span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">%&#39;&quot;</span>
     <span class="n">results</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 </code></pre></div>
 
-<p>The fix it proposed binds the value as a parameter instead:</p>
+<p>它顺手甩出来的补丁，老老实实地把值做成了参数化绑定：</p>
 <div class="codehilite"><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/search&#39;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">search_users</span><span class="p">():</span>
     <span class="n">query</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;q&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
@@ -329,11 +323,11 @@ deser-scanner    CLEAN     —                 —                   —     No 
     <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 </code></pre></div>
 
-<p>This agent never learned that a leaked key existed elsewhere in the diff. It held the injection threat model from first file to last, because nothing else was visible to it.</p>
-<p><strong>Leaked key + SSRF — CRITICAL and MEDIUM, 6 minutes.</strong> The secrets scanner surfaced a production API key committed in <code>config/settings.py</code> — CRITICAL, and recoverable from git history forever — then flagged <code>api/webhooks.py</code>, where a user-supplied URL reaches <code>requests.get()</code> without validation (MEDIUM, SSRF).</p>
-<p><strong>Two clean surfaces.</strong> The auth scanner walked session management, JWT handling, and every piece of authentication middleware, coming back empty after 18 minutes. The deserialization scanner audited each <code>pickle.loads()</code>, <code>yaml.load()</code>, and <code>eval()</code> call site and likewise found nothing.</p>
-<h2 id="verify-that-no-agent-saw-another">Verify that no agent saw another</h2>
-<p>The zero-shared-state claim above is checkable, not rhetorical. The event journal records every read; ask it how many crossed an agent boundary:</p>
+<p>注意，这只 agent 永远不可能知道隔壁的配置文件里其实还漏了一把 API Key。从第一个文件翻到最后一个文件，它的脑子里只有 "SQL 注入" 这四个大字，因为除了这个，其他所有的杂音对它而言根本不存在。</p>
+<p><strong>密钥裸奔 + SSRF — 一发 CRITICAL，一发 MEDIUM，耗时 6 分钟。</strong> 密钥扫描仪从 <code>config/settings.py</code> 里扒出了一把硬编码的生产环境 API Key —— 这是实打实的 CRITICAL 致命雷，并且只要合进去，就会永远阴魂不散地死在 git 历史里。紧接着，它又在 <code>api/webhooks.py</code> 里揪出了一个由用户传入的、未经任何清洗就直接喂给 <code>requests.get()</code> 的野 URL (判为 MEDIUM 中危级别的 SSRF 漏洞)。</p>
+<p><strong>两张 "没毛病" 的安全戳。</strong> 越权扫描仪把整个会话管理模块、JWT 鉴权逻辑以及所有的认证中间件翻了个底朝天，啃了 18 分钟后空手而归。反序列化扫描仪顺着每一个 <code>pickle.loads()</code>、<code>yaml.load()</code> 和 <code>eval()</code> 的调用栈往上爬，同样一无所获。</p>
+<h2 id="_4">实锤查账：拿数据证明它们确实没互相偷看</h2>
+<p>前面吹过的 "绝对防锚定" 可不是句空头口号，这是经得起查账的。系统的审计流水记录了每一次读取操作；我们直接敲 SQL 问问它，到底有没有发生过跨 agent 的偷吃行为：</p>
 <div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">shared_events</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="n">a</span>
 <span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">vfs_events</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">id</span>
@@ -341,31 +335,31 @@ deser-scanner    CLEAN     —                 —                   —     No 
 <span class="k">WHERE</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;sqli-scanner&#39;</span><span class="p">,</span><span class="s1">&#39;secrets-scanner&#39;</span><span class="p">,</span><span class="s1">&#39;auth-scanner&#39;</span><span class="p">,</span><span class="s1">&#39;deser-scanner&#39;</span><span class="p">)</span>
 <span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span>
 
-<span class="c1">-- Result: 0 cross-agent reads for all 4 agents</span>
+<span class="c1">-- 验算结果: 4 只 agent 的 cross_agent_read (跨界读取) 次数全部为 0</span>
 </code></pre></div>
 
-<p>Zero, on all four scanners. That number is what turns "no anchoring" from a hope into a property: had the secrets agent watched the injection finding arrive, it could have drifted toward injection lookalikes and sailed straight past the key it was built to catch.</p>
-<h2 id="what-it-costs">What it costs</h2>
-<div class="codehilite"><pre><span></span><code>Approach                   Time               Anchoring Risk
+<p>全是 0，无可辩驳。正是这个 0，把 "防锚定" 从一句虚无缥缈的愿景，变成了一道硬核的物理屏障：如果刚才那只负责搜密钥的 agent 偷看到了隔壁查出的 SQL 注入漏洞，它的注意力极有可能会被带偏，转而也去搜代码里有没有拼错的字符串，从而直接放过它本来应该死死咬住的那把 API Key。</p>
+<h2 id="_5">算总账：你到底赚了啥</h2>
+<div class="codehilite"><pre><span></span><code>姿势                       耗时               隧道视野锚定风险
 -------------------------  -----------------  --------------
-Sequential (1 reviewer)    80 min             High
-Sequential (4 reviewers)   20 min wall clock  Medium
-BENE parallel agents       20 min wall clock  None
+串行排队 (1 个人肉看全场)  80 分钟            极高
+串行排队 (4 个人肉分别看)  20 分钟(挂钟时间)  中等
+BENE 并发狼群扑咬          20 分钟(挂钟时间)  绝对为 0
 </code></pre></div>
 
-<p>The findings come out identical either way. Parallelizing buys a 4× wall-clock win over a single reviewer; the isolation buys an anchoring column that reads "None" by construction rather than by effort.</p>
-<p>Note where the bugs sat: the injection and the key live in different mental categories — exactly where a serial reviewer pays the switching tax — and the SSRF is the kind most likely to vanish behind whichever category was loaded last. All three surfaced in 20 minutes, with an audit trail proving no finding shaped another.</p>
-<h2 id="related">Related</h2>
+<p>无论你怎么审，这 3 个雷最终可能都会被扫出来。但是，把审查并发化，让你在墙上的挂钟时间里白赚了 4 倍的提速；而纯粹的物理隔离，让你在 "锚定风险" 那一栏里，因为系统底层的硬刚而拿到了一个极其笃定的 "0"，而不是靠着人类的意志力去死撑。</p>
+<p>再回头看看这几个雷的分布：注入漏洞和泄露密钥，在脑图里完全属于两个八竿子打不着的神经元板块 —— 这恰恰是那个单枪匹马串行审查的倒霉蛋，在脑子切换时最容易掉链子的死穴。而那个 SSRF，更是只要你脑子里还装着上一个复杂逻辑，就极其容易被你直接划过去的隐蔽角落。现在，所有的三颗雷都在 20 分钟内被生刨了出来，而且还有那份审计流水为你作证：它们查出来的战果，绝对没有互相污染。</p>
+<h2 id="_6">顺藤摸瓜</h2>
 <ul>
-<li><a href="../README.html">README</a> — BENE overview and full doc index</li>
-<li><a href="../use-cases.html">Use Cases</a> — more real-world patterns</li>
-<li><a href="../use-cases.html#security-audit-swarm">Use case: Security Audit Swarm</a></li>
-<li><a href="../memory.html">Component guide: Cross-Agent Memory</a></li>
-<li><a href="../architecture.html">Architecture: agent isolation</a></li>
+<li><a href="../README.html">README 首页</a> — BENE 全景大局观和全套文档入口</li>
+<li><a href="../use-cases.html">破局战法 (Use Cases)</a> — 更多来自一线火线上的实战套路</li>
+<li><a href="../use-cases.html#security-audit-swarm">破局战法：并发安全审查蜂群</a></li>
+<li><a href="../memory.html">核心部件指南：跨代记忆库 (Memory)</a></li>
+<li><a href="../architecture.html">架构设计：Agent 物理隔离屏障</a></li>
 </ul>
 <hr />
-<p><em>bene is MIT-licensed and local-first: this whole review ran on one machine, and its complete state — agents, events, findings — is a single SQLite file you can copy.</em></p>
-<p><em>GitHub: <a href="https://github.com/good-night-oppie/bene">github.com/good-night-oppie/bene</a></em></p>
+<p><em>bene 基于 MIT 协议开源，并且是一个纯粹的 Local-first 原教旨主义者：这场惊心动魄的安全审查全都在一台机器上跑完，而且所有的尸体积件 —— agent 状态、审计流水、战果清单 —— 统统被塞在了一个你可以随手拷贝走的 SQLite 文件里。</em></p>
+<p><em>源码老家 GitHub: <a href="https://github.com/good-night-oppie/bene">github.com/good-night-oppie/bene</a></em></p>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/tutorials/t03-security-swarm.md" target="_blank" rel="noopener noreferrer">docs/tutorials/t03-security-swarm.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>
 </div>

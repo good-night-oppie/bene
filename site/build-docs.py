@@ -136,8 +136,13 @@ def all_docs() -> list[Path]:
     # that must NOT be published — they were relocated to ops/runbooks/ (2026-06-18).
     # This filter is the safety net so anything dropped under docs/**/infra/ in
     # future is never rendered to the public site.
+    # `zh/` holds the Chinese translations: they are the *zh-mirror* source for each
+    # EN page (rendered via zh_src below), NOT standalone EN pages — excluding them
+    # here stops docs/zh/*.md being mis-rendered into site/docs/zh/ and the
+    # double-nested site/zh/docs/zh/.
+    skip = {"infra", "zh"}
     return sorted(
-        p for p in DOCS.rglob("*.md") if "infra" not in p.relative_to(DOCS).parts
+        p for p in DOCS.rglob("*.md") if not (skip & set(p.relative_to(DOCS).parts))
     )
 
 
@@ -365,6 +370,13 @@ def build() -> None:
     if OUT.exists():
         shutil.rmtree(OUT)
     OUT.mkdir(parents=True)
+    # The zh-mirror tree lives outside OUT (site/zh/docs), so the rmtree above does
+    # not cover it. Wipe it too, or a re-run can leave STALE pages behind — e.g. an
+    # infra/ page that is now filtered out, or a doc that was deleted/renamed. Without
+    # this, deleting a source never removes its already-committed zh static page.
+    zh_docs_out = OUT.parent / "zh" / "docs"
+    if zh_docs_out.exists():
+        shutil.rmtree(zh_docs_out)
 
     # pygments css appended once into shared CSS (dark scheme on term background)
     global CSS
@@ -412,16 +424,38 @@ def build() -> None:
         dst.parent.mkdir(parents=True, exist_ok=True)
         dst.write_text(page(rel, body, title, needs_mermaid), encoding="utf-8")
 
-        # zh-tree mirror: same EN body, prefixed with a translation-in-progress
-        # banner; nav toggle routes back to the EN sibling. As per-page zh.md
-        # sources land in docs/zh/, this will be replaced with the translated
-        # markdown body.
+        # zh-tree mirror
         zh_out = OUT.parent / "zh" / "docs"
         zh_dst = zh_out / rel.with_suffix(".html")
         zh_dst.parent.mkdir(parents=True, exist_ok=True)
-        zh_dst.write_text(
-            page(rel, zh_reroot(body), title, needs_mermaid, lang="zh"), encoding="utf-8"
-        )
+        
+        zh_src = DOCS / "zh" / rel
+        if zh_src.exists():
+            zh_text = zh_src.read_text(encoding="utf-8")
+            zh_title = title_of(zh_text, rel)
+            if needs_mermaid:
+                zh_text = re.sub(
+                    r"```mermaid\n(.*?)```",
+                    lambda m: '<div class="mermaid">\n' + m.group(1) + "</div>",
+                    zh_text,
+                    flags=re.S,
+                )
+            zh_md = markdown.Markdown(extensions=MD_EXTS, extension_configs=MD_CFG)
+            zh_body = zh_md.convert(zh_text)
+            zh_body = rewrite_links(zh_body)
+            zh_demo = demo_block(rel.with_suffix("").as_posix(), depth)
+            if zh_demo:
+                zh_body = re.sub(r"(</h1>)", r"\1" + zh_demo, zh_body, count=1)
+            
+            # Write without banner, just pure zh html
+            zh_dst.write_text(
+                page(rel, zh_body, zh_title, needs_mermaid, lang="zh"), encoding="utf-8"
+            )
+        else:
+            # Fallback to EN with banner
+            zh_dst.write_text(
+                page(rel, zh_reroot(body), title, needs_mermaid, lang="zh"), encoding="utf-8"
+            )
 
     # index page
     groups_html = []

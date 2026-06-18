@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Four Hypotheses, One Night: an Overnight ML Research Lab on BENE — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — Four Hypotheses, One Night: an Overnight ML Research Lab on BENE" />
+<title>一夜试遍四种假说：在 BENE 上跑一个通宵的 ML 炼丹实验室 — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — 一夜试遍四种假说：在 BENE 上跑一个通宵的 ML 炼丹实验室" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -205,12 +205,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../codegen.html">codegen</a>
 <a href="../dashboard.html">dashboard</a>
 <a href="../deployment.html">deployment</a>
+<a href="../examples.html">examples</a>
 <a href="../integrating-bene.html">integrating-bene</a>
 <a href="../mcp-integration.html">mcp-integration</a>
 <a href="../memory.html">memory</a>
 <a href="../meta-harness.html">meta-harness</a>
 <a href="../philosophy.html">philosophy</a>
-<a href="../primitive-review-cycle.html">primitive-review-cycle</a>
 <a href="../probe-authoring.html">probe-authoring</a>
 <a href="../schema.html">schema</a>
 <a href="../shared-log.html">shared-log</a>
@@ -219,14 +219,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <h4>Recipes</h4>
 <a href="../recipes/atomic-completion.html">atomic-completion</a>
 <h4>Design and claims</h4>
-<a href="../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
-<a href="../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
-<a href="../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
-<a href="../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
-<h4>Evidence and research</h4>
-<a href="../research/GAP-AUDIT.html">GAP-AUDIT</a>
-<a href="../research/SYNTHESIS.html">SYNTHESIS</a>
-<a href="../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<a href="../design/architecture-diagrams.html">architecture-diagrams</a>
 <h4>Benchmarks and gates</h4>
 <a href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
 <a href="../benchmarks/PREREG.html">PREREG</a>
@@ -244,83 +237,84 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
 <h4>Case studies</h4>
 <a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
-<h4>Infrastructure</h4>
-<a href="../infra/DNS.html">DNS</a></aside>
+<a href="../case-studies/cs03-multi-agent-arena.html">cs03-multi-agent-arena</a>
+<a href="../case-studies/cs04-trace-rag-other-memory.html">cs04-trace-rag-other-memory</a>
+<a href="../case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="../index.html">docs</a> / tutorials/t06-ml-research-lab.md</div>
-<h1 id="four-hypotheses-one-night-an-overnight-ml-research-lab-on-bene">Four Hypotheses, One Night: an Overnight ML Research Lab on BENE</h1>
-<p><em>ML Research</em></p>
-<p>Run four competing training experiments at once — on one cluster, in one night — and choose tomorrow's direction from a SQL table instead of a hunch. This tutorial builds an overnight research lab: four agents test four orthogonal ideas (LoRA, the Lion optimizer, batch scaling, regularization), each inside its own isolated filesystem, every action recorded in one auditable database.</p>
-<p><strong>Four hypotheses run in parallel while you sleep; by morning, a single query shows the winner cut val_loss by 19.2%.</strong></p>
-<p>ML experimentation defaults to serial: form a hypothesis, train, stare at the curve, form the next one. The loop is the bottleneck, not the thinking — and a four-idea backlog quietly becomes a four-night wait. BENE's answer is to give every idea its own agent and let them all run side by side.</p>
+<h1 id="bene-ml">一夜试遍四种假说：在 BENE 上跑一个通宵的 ML 炼丹实验室</h1>
+<p><em>机器学习研发篇</em></p>
+<p>把四套截然不同的模型训练思路同时跑起来 —— 就在同一个集群上，仅仅花一个晚上 —— 并且在第二天早晨，用一张冰冷无情的 SQL 数据表，而不是凭你虚无缥缈的直觉，来敲定接下来的研发方向。这篇教程将带你搭一个通宵跑的无人炼丹实验室：四只 agent 将背对背地测试四种完全正交的假说 (LoRA、Lion 优化器、大 Batch 缩放、正则化)，每一只都关在自己绝对隔离的文件系统里，而它们所做的每一个动作，全都被死死咬进同一个随时能拉出来审计的数据库里。</p>
+<p><strong>在你蒙头大睡的这晚，四种假说在暗中疯狂赛跑；等到天亮，只需一条 SQL 查询，就能告诉你昨晚的冠军把 <code>val_loss</code> (验证集损失) 生生砸下去了 19.2%。</strong></p>
+<p>在 ML 圈子里，做实验默认都是串行的：拍出一个假说，开跑，死盯着损失曲线看，然后再拍下一个假说。卡脖子的从来不是你想点子的速度，而是这个跑回归的破循环 —— 当你手头攒了四个牛逼的想法时，你已经在悄无声息中搭进去了四个晚上的青春。BENE 给出的解法非常暴力：既然你有四个想法，那就派四只 agent 出去，让它们在同一时间一起跑。</p>
 <hr />
-<p><em>Spawned at 22:00; scale-explorer reports in first at 00:14, arch-explorer last at 05:47; the 06:00 SQL comparison names the winner.</em></p>
+<p><em>22:00 准时鸣枪起跑；查 Batch 缩放的那只在 00:14 最先交卷，摸架构的那只在 05:47 最后完赛；06:00 准时发出的那条 SQL 查询，当场宣判了冠军归属。</em></p>
 <hr />
-<h2 id="tonights-job-beat-val_loss-234">Tonight's job: beat val_loss 2.34</h2>
-<p>The baseline is a character-level language model trained on Shakespeare, currently sitting at <code>val_loss = 2.34</code>. Four ideas might beat it, and each gets its own agent:</p>
+<h2 id="234-val_loss">今晚的任务：打爆 2.34 的 <code>val_loss</code></h2>
+<p>我们的基线是一个在莎士比亚全集上跑出来的、字符级别的语言模型，现在的成绩卡在 <code>val_loss = 2.34</code>。手头有四个极具潜力的想法，每一个分派给一只专门的 agent：</p>
 <ul>
-<li><strong>arch-explorer</strong> tests LoRA adapters against a full finetune — the bet is that fewer trainable parameters help a small model generalize.</li>
-<li><strong>optim-explorer</strong> pits AdamW against Lion — the bet is that Lion's sign-based updates suit small language models.</li>
-<li><strong>scale-explorer</strong> compares batch size 32 with 128 — the bet is that bigger batches make char-level training more stable.</li>
-<li><strong>reg-explorer</strong> weighs dropout 0.1 against 0.3 — the bet is that a model this small is overfitting and wants more regularization.</li>
+<li><strong>arch-explorer (架构拓荒者)</strong>：拿 LoRA 适配器跟全参微调 (full finetune) 刚正面 —— 它的底气是，对于这种小模型来说，越少的可训练参数反而能带来更强的泛化能力。</li>
+<li><strong>optim-explorer (优化器拓荒者)</strong>：让 AdamW 和 Lion 在八角笼里死磕 —— 它的底气是，Lion 这种基于符号 (sign-based) 的更新策略，简直就是小语言模型的天菜。</li>
+<li><strong>scale-explorer (缩放拓荒者)</strong>：把 batch size 32 和 128 拉出来遛遛 —— 它的底气是，喂给它更大的 batch 能够强行稳住字符级训练时抽风的梯度。</li>
+<li><strong>reg-explorer (正则化拓荒者)</strong>：在 dropout 0.1 和 0.3 之间左右互搏 —— 它的底气是，这么点大的模型绝对已经过拟合了，必须下重手加正则化。</li>
 </ul>
-<p>Run them one at a time and tonight turns into four nights. Run them under BENE and tonight is enough.</p>
-<h2 id="step-1-launch-four-sandboxed-agents">Step 1 — Launch four sandboxed agents</h2>
+<p>如果你挨个跑，今晚这活得干四个晚上。如果你把它们塞进 BENE 里跑，今晚就搞定。</p>
+<h2 id="step-1">Step 1 — 放出四只带沙盒的特种兵</h2>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>parallel<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span><span class="s2">&quot;spawn arch-explorer  --from ./charlm --task lora_vs_full&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span><span class="s2">&quot;spawn optim-explorer --from ./charlm --task adamw_vs_lion&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span><span class="s2">&quot;spawn scale-explorer --from ./charlm --task batch_32_vs_128&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span><span class="s2">&quot;spawn reg-explorer   --from ./charlm --task dropout_01_vs_03&quot;</span>
 
-<span class="c1"># [arch-explorer]   spawned  vfs_id=arch-2a1b  status=running</span>
-<span class="c1"># [optim-explorer]  spawned  vfs_id=opt-5c3d   status=running</span>
-<span class="c1"># [scale-explorer]  spawned  vfs_id=scl-8e4f   status=running</span>
-<span class="c1"># [reg-explorer]    spawned  vfs_id=reg-1g7h   status=running</span>
+<span class="c1"># [arch-explorer]   成功投放战场  vfs_id=arch-2a1b  status=running</span>
+<span class="c1"># [optim-explorer]  成功投放战场  vfs_id=opt-5c3d   status=running</span>
+<span class="c1"># [scale-explorer]  成功投放战场  vfs_id=scl-8e4f   status=running</span>
+<span class="c1"># [reg-explorer]    成功投放战场  vfs_id=reg-1g7h   status=running</span>
 <span class="c1">#</span>
-<span class="c1"># 4 agents training in parallel — 22:00</span>
+<span class="c1"># 4 匹战狼正在并发炼丹 — 22:00</span>
 </code></pre></div>
 
-<p>Four private copies of <code>train.py</code>, four virtual filesystems, zero shared state. Nothing to lock, nothing to merge: no agent can clobber another's best checkpoint, and any experiment can be replayed later from the exact VFS state it ran in.</p>
-<h2 id="step-2-let-the-keep-or-revert-loop-run">Step 2 — Let the keep-or-revert loop run</h2>
-<p>Inside each sandbox the agent works the same disciplined loop: change one config value, train, compare against the previous best, then keep the change or revert it. Two agents mid-flight:</p>
-<div class="codehilite"><pre><span></span><code>Agent: arch-explorer
-  ├── Reads /train.py
-  ├── Changes CONFIG[&quot;activation&quot;] = &quot;swiglu&quot;
-  ├── Runs experiment → val_bpb = 1.12 (improved from 1.18)
-  ├── Keeps the change ✓
-  ├── Changes CONFIG[&quot;n_layers&quot;] = 8
-  ├── Runs experiment → val_bpb = 1.25 (regressed!)
-  ├── Reverts the change ✗
-  ├── Changes CONFIG[&quot;pos_encoding&quot;] = &quot;learned&quot;
-  ├── Runs experiment → val_bpb = 1.10 (improved!)
-  ├── Keeps the change ✓
-  └── ... continues ...
+<p>它们拿到的是四份完全互不相干的 <code>train.py</code> 拷贝，四个结界重重的虚拟文件系统，没有任何一丝一毫的共享状态。不需要加锁，不需要 merge 代码：没有任何一只 agent 能把隔壁兄弟辛辛苦苦炼出来的最优 checkpoint 踩掉，并且在未来，任何一炉实验，都能随时从它当年所在的那个 VFS 结界里做到像素级复刻。</p>
+<h2 id="step-2">Step 2 — 撒手让 "保留还是回滚" 循环自己跑</h2>
+<p>在各自的沙盒结界里，每只 agent 都在一丝不苟地重复着同一套铁血纪律：改一个参数，开炼，拿跑出来的分数去碰瓷目前手里的最优解，如果比原来好就保留 (keep)，要是拉胯了就当场回滚 (revert)。看看半空中正在跑的两只 agent：</p>
+<div class="codehilite"><pre><span></span><code>Agent: arch-explorer (架构拓荒者)
+  ├── 读了读 /train.py
+  ├── 把配置改成了 CONFIG[&quot;activation&quot;] = &quot;swiglu&quot;
+  ├── 开炼 → 跑出来的 val_bpb = 1.12 (从 1.18 进步了)
+  ├── 保留这次修改 ✓
+  ├── 把配置改成了 CONFIG[&quot;n_layers&quot;] = 8
+  ├── 开炼 → 跑出来的 val_bpb = 1.25 (开倒车了！)
+  ├── 回滚这次修改 ✗
+  ├── 把配置改成了 CONFIG[&quot;pos_encoding&quot;] = &quot;learned&quot;
+  ├── 开炼 → 跑出来的 val_bpb = 1.10 (又有进步！)
+  ├── 保留这次修改 ✓
+  └── ... 继续刚 ...
 
-Agent: optim-explorer (running simultaneously, isolated)
-  ├── Reads /train.py (its own copy, unaffected by arch-explorer)
-  ├── Changes CONFIG[&quot;optimizer&quot;] = &quot;lion&quot;
-  ├── Runs experiment → val_bpb = 1.05 (big improvement!)
-  ├── Keeps the change ✓
-  └── ... continues ...
+Agent: optim-explorer (优化器拓荒者，在平行时空同时跑着)
+  ├── 读了读 /train.py (它自己兜里的那份，跟 arch-explorer 拿的那份没半毛钱关系)
+  ├── 把配置改成了 CONFIG[&quot;optimizer&quot;] = &quot;lion&quot;
+  ├── 开炼 → 跑出来的 val_bpb = 1.05 (一波巨大的提升！)
+  ├── 保留这次修改 ✓
+  └── ... 继续刚 ...
 </code></pre></div>
 
-<p>Both agents are editing a file called <code>/train.py</code> — and that is fine, because every edit lands in that agent's own VFS. Coordination is not a feature anyone had to build; isolation makes it unnecessary.</p>
-<p>Through the night, the completions interleave:</p>
-<div class="codehilite"><pre><span></span><code>[00:14]  scale-explorer   COMPLETE  final_val_loss=2.21  (-5.6%)
-         Finding: batch_size=128 stabilizes training. Converges faster.
+<p>这两只 agent 都在疯狂往一个叫 <code>/train.py</code> 的文件里写东西 —— 没事，因为所有的写入，都只落在了各自专属的 VFS 结界里。所谓的 "并发防撞车"，压根就不需要任何人去写什么代码来处理；因为有了绝对的物理隔离，撞车这种事从根源上就被抹杀了。</p>
+<p>漫漫长夜，它们的战报陆续传了回来：</p>
+<div class="codehilite"><pre><span></span><code>[00:14]  scale-explorer   完赛  最终的 final_val_loss=2.21  (干掉 5.6%)
+         探明真相: batch_size=128 确实能稳住训练。收敛速度肉眼可见地变快了。
 
-[01:47]  reg-explorer     COMPLETE  final_val_loss=2.28  (-2.6%)
-         Finding: dropout=0.3 marginally helps. Small effect.
+[01:47]  reg-explorer     完赛  最终的 final_val_loss=2.28  (干掉 2.6%)
+         探明真相: dropout=0.3 聊胜于无。杯水车薪。
 
-[03:31]  optim-explorer   COMPLETE  final_val_loss=2.19  (-6.4%)
-         Finding: Lion optimizer wins on this task. Better char-level.
+[03:31]  optim-explorer   完赛  最终的 final_val_loss=2.19  (干掉 6.4%)
+         探明真相: 在这活儿上，Lion 优化器完爆 AdamW。字符级的表现好太多了。
 
-[05:47]  arch-explorer    COMPLETE  final_val_loss=1.89  (-19.2%)
-         Finding: LoRA + cosine LR schedule. Clear winner.
+[05:47]  arch-explorer    完赛  最终的 final_val_loss=1.89  (干掉 19.2%)
+         探明真相: LoRA + 余弦退火 (cosine LR schedule)。毫无争议的最强王者。
 </code></pre></div>
 
-<p>The finish order tells its own story. Flipping a batch size is cheap, so <code>scale-explorer</code> is done by 00:14. <code>arch-explorer</code> needs until 05:47 — LoRA takes longer to stabilize, and the agent trains two complete cycles to get a fair comparison.</p>
-<h2 id="step-3-compare-results-with-one-query">Step 3 — Compare results with one query</h2>
+<p>看交卷的顺序，你就能猜出里面发生了什么。动 batch size 这种事简直就是顺手牵羊，所以 <code>scale-explorer</code> 在 00:14 就打卡下班了。而 <code>arch-explorer</code> 熬到了 05:47 才收工 —— 因为 LoRA 需要跑很久才能收敛，为了得出严谨的结论，这只 agent 甚至硬生生跑完了两个完整的训练周期。</p>
+<h2 id="step-3-sql">Step 3 — 一条 SQL，宣判成败</h2>
 <div class="codehilite"><pre><span></span><code><span class="k">SELECT</span>
 <span class="w">  </span><span class="n">agent_name</span><span class="p">,</span>
 <span class="w">  </span><span class="n">final_val_loss</span><span class="p">,</span>
@@ -334,85 +328,84 @@ Agent: optim-explorer (running simultaneously, isolated)
 
 <div class="codehilite"><pre><span></span><code>Agent            val_loss  Improvement  Time    Finding
 ---------------  --------  -----------  ------  ----------------------------------
-arch-explorer    1.89 *    -19.2% *     347min  LoRA + cosine LR schedule
-optim-explorer   2.19      -6.4%        191min  Lion optimizer outperforms AdamW
-scale-explorer   2.21      -5.6%        74min   batch=128 stabilizes convergence
-reg-explorer     2.28      -2.6%        182min  dropout=0.3 marginal improvement
+arch-explorer    1.89 *    -19.2% *     347min  LoRA + 余弦退火 (cosine LR schedule)
+optim-explorer   2.19      -6.4%        191min  Lion 优化器锤爆了 AdamW
+scale-explorer   2.21      -5.6%        74min   batch=128 能稳住收敛
+reg-explorer     2.28      -2.6%        182min  dropout=0.3 聊胜于无
 
-* winner
+* 桂冠归属
 </code></pre></div>
 
-<p>It is not close: <code>arch-explorer</code> lands at val_loss 1.89, 19.2% under the 2.34 baseline, on the strength of LoRA plus a cosine LR schedule. The Lion result from <code>optim-explorer</code> (-6.4%) is the natural candidate to stack on top of it next.</p>
-<h2 id="step-4-read-the-winning-config">Step 4 — Read the winning config</h2>
-<p>The winning agent wrote up its own findings. Read them straight out of its VFS:</p>
+<p>这不仅是赢，这是血洗：<code>arch-explorer</code> 靠着 LoRA 和余弦退火的王炸组合，生生把成绩干到了 <code>val_loss</code> 1.89，比 2.34 的基线低了令人发指的 19.2%。而 <code>optim-explorer</code> 跑出来的那个 Lion (-6.4%)，显然就是下一步往这套最强阵容上继续叠甲的最佳候选人。</p>
+<h2 id="step-4">Step 4 — 把冠军的祖传偏方抠出来</h2>
+<p>登顶的 agent 会把它的心得体会自己写好。直接伸手进它的 VFS 里掏出来看就行了：</p>
 <div class="codehilite"><pre><span></span><code>bene read arch-explorer /results/best_config.md
 
-## Winning Configuration — val_loss = 1.89
+## 最强配置战报 — val_loss = 1.89
 
-### Architecture Changes
-- LoRA rank: 8 (r=8, alpha=16)
-- Applied to: q_proj, v_proj in all attention layers
-- Full finetune baseline: val_loss=2.34 (no improvement)
-- LoRA finetune: val_loss=1.89 (19.2% improvement)
+### 动刀了哪些架构
+- LoRA 秩 (rank): 8 (r=8, alpha=16)
+- 挂在什么地方: 所有的注意力层里的 q_proj, v_proj
+- 拿全参微调跑出来的基线: val_loss=2.34 (死活降不下去)
+- 拿 LoRA 跑出来的成绩: val_loss=1.89 (硬生生干下去了 19.2%)
 
-### Training Changes
-- LR schedule: cosine with warmup (1% warmup steps)
-- Peak LR: 3e-4 (was 1e-3 — reduced due to LoRA sensitivity)
-- Gradient clip: 1.0 (unchanged)
+### 炼丹手法的微调
+- 学习率调度策略: 带 warmup 的余弦退火 (拿 1% 的步数搞 warmup)
+- 峰值学习率 (Peak LR): 3e-4 (本来是 1e-3 — 因为 LoRA 太敏感了，所以压低了)
+- 梯度裁剪 (Gradient clip): 1.0 (没动过)
 
-### Hypothesis confirmed
-Parameter-efficient finetuning (LoRA) dramatically outperforms
-full finetune on this small character-level model. The reduced
-parameter count prevents overfitting on the Shakespeare corpus.
+### 假说已被实锤
+在对付这种袖珍的字符级模型时，极简的参数微调 (LoRA) 简直把全参微调按在地上摩擦。
+极其收敛的参数量，死死摁住了它在莎士比亚语料上疯狂过拟合的毛病。
 </code></pre></div>
 
-<h2 id="step-5-bank-the-win-seed-the-next-search">Step 5 — Bank the win, seed the next search</h2>
-<p>Two commands turn tonight's result into tomorrow's starting point: checkpoint the winner, then point the meta-harness search at it.</p>
+<h2 id="step-5">Step 5 — 把战利品死死锁进金库，当成下一次起飞的弹射板</h2>
+<p>只需两条指令，昨晚打下的江山，就会化作明晚继续开疆拓土的基石：给冠军拍个快照锁死，然后把 meta-harness (演化脚手架) 搜索引擎的枪口直接架在这上面。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>checkpoint<span class="w"> </span>arch-explorer<span class="w"> </span>--label<span class="w"> </span>winning-lora-config
 
-<span class="c1"># Seed the next search from this agent&#39;s discoveries</span>
+<span class="c1"># 用这只 agent 昨晚趟出来的血泪教训，作为下一场搜索的火种</span>
 bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-b<span class="w"> </span>char_lm<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--seed-from<span class="w"> </span>arch-explorer<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--model<span class="w"> </span>claude-sonnet-4-6<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-n<span class="w"> </span><span class="m">10</span>
 
-<span class="c1"># [mh-search] Loading knowledge from arch-explorer...</span>
-<span class="c1"># [mh-search] Loaded skills: lora_param_efficiency, cosine_lr_warmup</span>
-<span class="c1"># [mh-search] Seeding with best config: val_loss=1.89</span>
-<span class="c1"># [mh-search] Search starts from the known frontier, not from scratch</span>
+<span class="c1"># [mh-search] 正在从 arch-explorer 脑子里抽取知识...</span>
+<span class="c1"># [mh-search] 成功提取神技: lora_param_efficiency (LoRA 参数极简), cosine_lr_warmup (余弦预热)</span>
+<span class="c1"># [mh-search] 拿最强配置当起跑线: val_loss=1.89</span>
+<span class="c1"># [mh-search] 本轮搜寻直接从已知的巅峰阵地起飞，不再是从零开始的瞎碰</span>
 </code></pre></div>
 
-<p>The follow-up search opens at 1.89, not 2.34, and carries the LoRA finding forward as a reusable skill. Three overnight runs in, the knowledge agent holds a skill library for this architecture — so run 4 begins with a seed pool that manual iteration would have needed weeks to build. Wins accumulate instead of evaporating.</p>
-<h2 id="audit-the-night-afterward">Audit the night afterward</h2>
-<p>Beyond the leaderboard, the event journal answers operational questions that a results file never could — how hard did each agent work, what did the run cost, which files actually changed:</p>
-<div class="codehilite"><pre><span></span><code><span class="c1">-- How many experiments did each agent run?</span>
+<p>跟进的这轮搜寻，一上来起跳的分数就是 1.89，而不是那个惨不忍睹的 2.34，并且会把关于 LoRA 的心得像随身老爷爷一样当成可复用技能 (reusable skill) 带着走。这样连续熬过三个晚上，知识库 agent (knowledge agent) 肚子里就会囤满针对这套架构的打法大全 —— 等到第 4 晚开跑时，它开局拿到的那手好牌，如果换作人肉去试，起码得搭进去几周的时间。所有的赢面都在雪球般地复利叠加，而不是每次都被清零。</p>
+<h2 id="_1">天亮后查账</h2>
+<p>除了那份排好座次的榜单外，事件流水账 (event journal) 还能回答一堆结果文件里死活找不出的运营问题 —— 比如，每只 agent 到底干了多少活，这晚总共烧了多少算力，以及究竟有哪些文件真被动过手脚：</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 问: 每只 agent 到底跑了几把实验？</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="n">tc</span><span class="p">.</span><span class="n">call_id</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">experiments</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tool_calls</span><span class="w"> </span><span class="n">tc</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tc</span><span class="p">.</span><span class="n">agent_id</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">tc</span><span class="p">.</span><span class="n">tool_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;shell_exec&#39;</span>
 <span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">agent_id</span><span class="p">;</span>
 
-<span class="c1">-- Total compute across all agents</span>
+<span class="c1">-- 问: 这群牲口这晚总共吃了多少算力？</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">token_count</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_tokens</span><span class="p">,</span>
 <span class="w">       </span><span class="k">SUM</span><span class="p">(</span><span class="n">duration_ms</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1000</span><span class="p">.</span><span class="mi">0</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_seconds</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tool_calls</span><span class="p">;</span>
 
-<span class="c1">-- Which agent&#39;s train.py changed the most?</span>
+<span class="c1">-- 问: 谁名下的 train.py 被改得面目全非？</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="k">version</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">modifications</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">files</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">agent_id</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;/train.py&#39;</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="k">version</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
 
-<span class="c1">-- What did the best agent actually change? (read its final train.py)</span>
+<span class="c1">-- 问: 那个跑第一的家伙，最后到底往 train.py 里塞了什么狗屁代码？ (直接把它的那份代码拔出来看)</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">content</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">files</span><span class="w"> </span><span class="n">f</span>
 <span class="k">JOIN</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">agent_id</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;arch-explorer&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;/train.py&#39;</span><span class="p">;</span>
 </code></pre></div>
 
-<p>All of it runs against a single <code>.db</code> file, in a single query language.</p>
-<h2 id="prefer-python-the-sdk-underneath-the-cli">Prefer Python? The SDK underneath the CLI</h2>
-<p><code>bene parallel</code> is a thin layer over the Python SDK. Script it directly when you need per-agent seed scripts, custom direction prompts, or a reduction step after the runs finish.</p>
-<p><strong>Write the base training script.</strong> Every agent will receive a private copy of this file.</p>
+<p>这一切的一切，都在用同一种 SQL，死死咬着同一个 <code>.db</code> 文件。</p>
+<h2 id="pythoncli-sdk">更喜欢用 Python？CLI 底下藏着的原生 SDK 满足你</h2>
+<p><code>bene parallel</code> 说白了也就是用 Python SDK 糊出来的一层薄薄的外皮。当你需要给每只 agent 发放独家开局剧本、精雕细琢特定的推演指令、或者等它们全跑完后还要做一波 map-reduce 操作时，你可以直接写 Python 脚本来盘它们。</p>
+<p><strong>把炼丹祖传代码备好。</strong> 每只 agent 都会领到这份代码的一份绝密拷贝。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">BASE_TRAIN_PY</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">CONFIG = {</span>
 <span class="s2">    &quot;n_layers&quot;: 6,</span>
@@ -425,37 +418,37 @@ bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </s
 <span class="s2">}</span>
 
 <span class="s2">def train(config):</span>
-<span class="s2">    # ... your PyTorch training loop ...</span>
+<span class="s2">    # ... 你祖传的 PyTorch 炼丹炉循环 ...</span>
 <span class="s2">    return {&quot;val_bpb&quot;: val_loss}</span>
 <span class="s2">&quot;&quot;&quot;</span>
 </code></pre></div>
 
-<p><strong>Describe the research directions.</strong> One mandate per agent; the prompt is the hypothesis.</p>
+<p><strong>划定拓荒方向。</strong> 给每只 agent 一道死命令；给出去的 prompt 就是它们的行动纲领。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">DIRECTIONS</span> <span class="o">=</span> <span class="p">[</span>
     <span class="p">{</span>
         <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;arch-explorer&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Explore architecture changes: LoRA vs full finetune, layers, &quot;</span>
-                  <span class="s2">&quot;heads, activations. Try one change at a time. Keep improvements.&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;去趟一趟架构方面的水：拿 LoRA 去跟全参微调碰一碰，试试动动层数、&quot;</span>
+                  <span class="s2">&quot;注意力头、或者是激活函数。一次只能改一样。遇到好成绩就留下。&quot;</span><span class="p">,</span>
     <span class="p">},</span>
     <span class="p">{</span>
         <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;optim-explorer&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Explore optimizer changes: AdamW vs Lion, learning rates, &quot;</span>
-                  <span class="s2">&quot;weight decay, warmup schedules. Keep improvements.&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;去趟一趟优化器的水：拿 AdamW 去跟 Lion 刚正面，试试捣鼓一下学习率、&quot;</span>
+                  <span class="s2">&quot;权重衰减系数 (weight decay)、或者是 warmup 策略。遇到好成绩就留下。&quot;</span><span class="p">,</span>
     <span class="p">},</span>
     <span class="p">{</span>
         <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;scale-explorer&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Explore scaling: batch size 32 vs 128, FFN ratio, head count vs &quot;</span>
-                  <span class="s2">&quot;head dim. Find the stable configuration.&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;去趟一趟缩放比例的水：把 batch size 的 32 和 128 拉出来遛遛，试试调一下 FFN 比例、&quot;</span>
+                  <span class="s2">&quot;或者是头数 (head count) 跟头的维度 (head dim) 的博弈。把最稳的那套配置找出来。&quot;</span><span class="p">,</span>
     <span class="p">},</span>
     <span class="p">{</span>
         <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;reg-explorer&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Explore regularization: dropout rates, weight decay, batch-size &quot;</span>
-                  <span class="s2">&quot;interactions. Keep improvements.&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;去趟一趟正则化的水：搓一搓 dropout 率，调调 weight decay，以及看看跟 batch-size 之间&quot;</span>
+                  <span class="s2">&quot;有没有什么化学反应。遇到好成绩就留下。&quot;</span><span class="p">,</span>
     <span class="p">},</span>
 <span class="p">]</span>
 </code></pre></div>
 
-<p><strong>Spawn, checkpoint, run.</strong></p>
+<p><strong>空投，拍照，开跑。</strong></p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bene</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bene.ccr</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClaudeCodeRunner</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bene.router</span><span class="w"> </span><span class="kn">import</span> <span class="n">TierRouter</span>
@@ -472,16 +465,16 @@ bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </s
 <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ccr</span><span class="o">.</span><span class="n">run_parallel</span><span class="p">(</span><span class="n">DIRECTIONS</span><span class="p">)</span>
 </code></pre></div>
 
-<p><code>checkpoint_interval=5</code> puts a checkpoint down every 5 iterations. A crash at iteration 23 costs at most 3 experiments: restore the iteration-20 checkpoint and carry on. The night survives the crash.</p>
-<h2 id="go-bigger-three-gpus-six-agents-three-model-tiers">Go bigger: three GPUs, six agents, three model tiers</h2>
-<p>When the lab outgrows one GPU, the tier router places each agent on a specific model via <code>force_model</code>: cheap hyperparameter sweeps go to the small model, creative hypothesis generation goes to the largest one.</p>
-<h3 id="the-layout">The layout</h3>
-<div class="codehilite"><pre><span></span><code>GPU 0 — Qwen2.5-Coder-7B    (port 8000) → 2 sweep agents (fast hyperparameter scans)
-GPU 1 — Qwen2.5-Coder-32B   (port 8001) → 2 architecture agents (design exploration)
-GPU 2 — DeepSeek-R1-70B      (port 8002) → 2 novel research agents (creative hypothesis)
+<p><code>checkpoint_interval=5</code> 这个参数，会让它每熬过 5 轮就默默存个盘。哪怕在第 23 轮炸机了，你最多也就搭进去 3 把实验的心血：一键倒回到第 20 轮的存盘点，拍拍灰接着跑。系统就算崩溃，今晚这炉丹也绝不会付之东流。</p>
+<h2 id="_2">玩笔大的：三张显卡，六只特种兵，高低模型混合编队</h2>
+<p>当这个实验室的胃口大到一张 GPU 塞不下的时候，tier router (层级路由) 会直接接管，用 <code>force_model</code> 强行把特种兵派发到特定的模型池里去：那种纯靠人海战术的穷举调参，统统丢给便宜的小模型；而那些需要脑洞大开去凭空捏造全新假说的活，全部分配给拥有满级算力的大模型。</p>
+<h3 id="_3">布阵图</h3>
+<div class="codehilite"><pre><span></span><code>GPU 0 — Qwen2.5-Coder-7B    (端口 8000) → 2 只穷举兵 (负责闭着眼睛狂扫超参数)
+GPU 1 — Qwen2.5-Coder-32B   (端口 8001) → 2 只架构师 (负责探索各种骚气的设计)
+GPU 2 — DeepSeek-R1-70B      (端口 8002) → 2 只科研大佬 (负责憋出前所未见的神级假说)
 </code></pre></div>
 
-<h3 id="the-config">The config</h3>
+<h3 id="_4">挂参数</h3>
 <div class="codehilite"><pre><span></span><code><span class="c1"># bene.yaml</span>
 <span class="nt">models</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">qwen2.5-coder-7b</span><span class="p">:</span>
@@ -498,7 +491,7 @@ GPU 2 — DeepSeek-R1-70B      (port 8002) → 2 novel research agents (creative
 <span class="w">    </span><span class="nt">use_for</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">complex</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">novel_research</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-<h3 id="six-agents-one-script">Six agents, one script</h3>
+<h3 id="_5">一声令下，六狼齐出</h3>
 <div class="codehilite"><pre><span></span><code><span class="c1"># examples/multi_gpu_research.py</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bene</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bene</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bene.ccr</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClaudeCodeRunner</span>
@@ -509,22 +502,22 @@ GPU 2 — DeepSeek-R1-70B      (port 8002) → 2 novel research agents (creative
 <span class="n">ccr</span> <span class="o">=</span> <span class="n">ClaudeCodeRunner</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">router</span><span class="p">,</span> <span class="n">checkpoint_interval</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 
 <span class="n">DIRECTIONS</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="c1"># GPU 0 — 7B: fast sweeps</span>
-    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;lr-sweep&quot;</span><span class="p">,</span>    <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Sweep learning rates 1e-5 to 1e-2&quot;</span><span class="p">,</span>
+    <span class="c1"># GPU 0 — 7B: 穷举疯狗</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;lr-sweep&quot;</span><span class="p">,</span>    <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;把学习率从 1e-5 到 1e-2 统统扫一遍&quot;</span><span class="p">,</span>
      <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;force_model&quot;</span><span class="p">:</span> <span class="s2">&quot;qwen2.5-coder-7b&quot;</span><span class="p">}},</span>
-    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;batch-sweep&quot;</span><span class="p">,</span> <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Sweep batch sizes 16 to 256&quot;</span><span class="p">,</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;batch-sweep&quot;</span><span class="p">,</span> <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;把 batch sizes 从 16 到 256 统统扫一遍&quot;</span><span class="p">,</span>
      <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;force_model&quot;</span><span class="p">:</span> <span class="s2">&quot;qwen2.5-coder-7b&quot;</span><span class="p">}},</span>
 
-    <span class="c1"># GPU 1 — 32B: architecture exploration</span>
-    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;arch-depth&quot;</span><span class="p">,</span>  <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Explore deeper architectures (12-24 layers)&quot;</span><span class="p">,</span>
+    <span class="c1"># GPU 1 — 32B: 架构猎场</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;arch-depth&quot;</span><span class="p">,</span>  <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;去探探更深层的架构 (12-24 层深)&quot;</span><span class="p">,</span>
      <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;force_model&quot;</span><span class="p">:</span> <span class="s2">&quot;qwen2.5-coder-32b&quot;</span><span class="p">}},</span>
-    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;arch-width&quot;</span><span class="p">,</span>  <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Explore wider architectures (512-2048 d_model)&quot;</span><span class="p">,</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;arch-width&quot;</span><span class="p">,</span>  <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;去探探更宽泛的架构 (512-2048 的 d_model)&quot;</span><span class="p">,</span>
      <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;force_model&quot;</span><span class="p">:</span> <span class="s2">&quot;qwen2.5-coder-32b&quot;</span><span class="p">}},</span>
 
-    <span class="c1"># GPU 2 — 70B: novel research ideas</span>
-    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;novel-loss&quot;</span><span class="p">,</span>  <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Design a novel loss combining contrastive and generative objectives&quot;</span><span class="p">,</span>
+    <span class="c1"># GPU 2 — 70B: 科研核弹区</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;novel-loss&quot;</span><span class="p">,</span>  <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;设计一个前所未见的、把对比学习 (contrastive) 和生成式 (generative) 缝合在一起的怪胎损失函数&quot;</span><span class="p">,</span>
      <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;force_model&quot;</span><span class="p">:</span> <span class="s2">&quot;deepseek-r1-70b&quot;</span><span class="p">}},</span>
-    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;novel-arch&quot;</span><span class="p">,</span>  <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;Propose a novel attention mechanism for long sequences&quot;</span><span class="p">,</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;novel-arch&quot;</span><span class="p">,</span>  <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;想个绝活，捏一个专门用来对付超长上下文的诡异注意力机制出来&quot;</span><span class="p">,</span>
      <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;force_model&quot;</span><span class="p">:</span> <span class="s2">&quot;deepseek-r1-70b&quot;</span><span class="p">}},</span>
 <span class="p">]</span>
 
@@ -536,83 +529,83 @@ GPU 2 — DeepSeek-R1-70B      (port 8002) → 2 novel research agents (creative
 <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ccr</span><span class="o">.</span><span class="n">run_parallel</span><span class="p">(</span><span class="n">DIRECTIONS</span><span class="p">)</span>
 </code></pre></div>
 
-<p>The 7B agents on GPU 0 burn through sweeps fast; the 70B on GPU 2 is slower per run but proposes more inventive directions. Nothing waits on anything else, every agent stays isolated, and all six write into the same <code>.db</code>, answerable with the same SQL.</p>
-<h2 id="what-the-night-cost">What the night cost</h2>
-<div class="codehilite"><pre><span></span><code>Approach                   Wall Time  Engineer Time               Hypotheses Tested
+<p>在 GPU 0 上疯跑的 7B 就像清道夫一样把调参的脏活一扫而空；而镇守在 GPU 2 的 70B 虽然推演得慢，但它一旦开口，吐出来的绝对是那种脑洞大开的神仙路数。没有谁会等谁，没有任何一只 agent 被别人拖累，这六只狼全都在物理隔离的结界里狂奔，并且最后，它们所有的战利品都会被整整齐齐地塞进同一个 <code>.db</code> 里，乖乖等着你用同一口 SQL 去盘它们。</p>
+<h2 id="_6">算总账：这晚到底值不值</h2>
+<div class="codehilite"><pre><span></span><code>姿势                       挂钟耗时  榨干工程师的时间             趟过多少假说
 -------------------------  ---------  --------------------------  -----------------
-Sequential (human-driven)  4 nights   4 × setup + analysis        4
-BENE parallel overnight    1 night    30 min setup + 15min review  4
+全靠人肉 (串行排队跑)      4 晚       4 遍苦逼的配置 + 漫长的分析   4
+BENE 兵分四路夜袭          1 晚       睡前搭 30 分钟 + 睡醒看 15 分钟   4
 </code></pre></div>
 
-<p>The hypothesis count is identical; the calendar is not. Your hands-on time shrinks to half an hour of setup and a quarter hour of reading. And none of the four runs is wasted — the losing branches are still real data feeding the next search.</p>
-<h2 id="where-the-pattern-comes-from">Where the pattern comes from</h2>
-<p>This lab is <a href="https://github.com/karpathy/autoresearch">Karpathy's autoresearch</a>, multiplied. In autoresearch, a single agent sits with a single GPU and a training script: edit <code>train.py</code>, train, study the curve, keep what helped, drop what didn't, repeat until morning. What it demonstrates is that the research loop itself is mechanical enough to delegate — a model can read a loss curve and pick a sane next move. What stays serial in autoresearch is the loop itself.</p>
-<p>BENE removes that constraint by cloning the loop: N agents, each holding a private VFS copy of the training code, each chasing a different hypothesis at the same moment, none able to touch another's files. When they finish, every result is one query away, and what each agent learned travels into the next search through the BENE knowledge agent.</p>
-<h3 id="side-by-side">Side by side</h3>
+<p>趟过的假说数量一模一样；但在日历上划掉的日子却有着天壤之别。在这个流派里，要你亲自上手的地方被残暴地压缩到了睡前花半小时搭场地，外加醒来后花一刻钟念战报。而且，这四条路哪怕跑崩了三条，也绝对不算白跑 —— 那些跑废掉的尸体，依然是能喂饱下一场战役的、带着血肉的极品饲料。</p>
+<h2 id="_7">这种邪道打法是从哪抄来的</h2>
+<p>这个破实验室，说白了就是把 <a href="https://github.com/karpathy/autoresearch">Karpathy 的 autoresearch</a> 给开了分身外挂。在 autoresearch 的套路里，是一只孤狼 agent 守着一张显卡和一份训练代码：改一下 <code>train.py</code>，跑一把，盯一会曲线，把提分的招数咽下去，把拉胯的动作吐出来，然后死循环一整晚。它的横空出世证明了这样一个极其狂妄的事实：所谓高大上的科研闭环，其实早就沦为了一种纯粹的体力活，完全可以直接外包给大模型 —— 因为模型它真的能看懂损失曲线，并且还能凭直觉猜出下一步该怎么走。而在 autoresearch 里唯一没被颠覆的，是这个闭环本身依然是单线程串行的。</p>
+<p>BENE 则一脚踹开了这个枷锁，直接把这套闭环无限分身：拉起 N 匹狼，给每匹狼在私有 VFS 里发一份训练代码拷贝，然后把它们同时踹向 N 条互不相交的死胡同去试错，且谁也别想动谁的奶酪。等天一亮，所有的战利品统统只用一条查询就能收缴完毕，而每匹狼在夜里用命趟出来的教训，都会通过 BENE 的知识库 agent，化作下一场战役的火种。</p>
+<h3 id="_8">摆在一起看</h3>
 <table>
 <thead>
 <tr>
-<th>autoresearch</th>
-<th>BENE research lab</th>
+<th>autoresearch 原版</th>
+<th>BENE 炼丹实验室</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>1 agent, 1 GPU</td>
-<td>N agents, N directions, parallel</td>
+<td>单狼，单卡</td>
+<td>N 狼齐出，N 条战线，纯并发</td>
 </tr>
 <tr>
-<td>Git commit/reset for checkpoints</td>
-<td>Formal checkpoints with diff</td>
+<td>靠 Git 的 commit/reset 来实现土制存档</td>
+<td>拥有带精确 diff 记录的工业级快照系统</td>
 </tr>
 <tr>
-<td><code>results.tsv</code> for tracking</td>
-<td>SQL-queryable event journal</td>
+<td>拿个 <code>results.tsv</code> 的破文件记流水账</td>
+<td>基于 SQLite、全量支持 SQL 拷问的事件流水系统</td>
 </tr>
 <tr>
-<td>Git log for audit trail</td>
-<td>14-event-type append-only journal</td>
+<td>拿 Git log 来充当半残的审计流水</td>
+<td>拥有 14 种事件类型的、强制只能追加的纯血审计记录</td>
 </tr>
 <tr>
-<td>One <code>train.py</code>, modified in place</td>
-<td>Each agent has its own isolated copy</td>
+<td>只有一份 <code>train.py</code>，只能在原处动刀子</td>
+<td>每一只狼都分到了一份被关在隔离区里的专属文件复刻本</td>
 </tr>
 <tr>
-<td>Manual inspection</td>
-<td><code>bene query "SELECT ..."</code></td>
+<td>苦逼地人肉翻阅战果</td>
+<td><code>bene query "SELECT ..."</code> 一键全知全能</td>
 </tr>
 <tr>
-<td>One direction at a time</td>
-<td>Architecture, optimizer, scaling, regularization simultaneously</td>
+<td>一次只能摸着石头过一条河</td>
+<td>架构探索、优化器海选、缩放调参、正则化试探，四条河同时过</td>
 </tr>
 </tbody>
 </table>
-<p>What the differences buy you:</p>
+<p>这些差别的背后，是你真金白银省下来的血汗：</p>
 <ul>
-<li><strong>Isolation without setup.</strong> autoresearch edits one <code>train.py</code> in place, so several directions would mean juggling git worktrees or copied directories. A BENE agent gets a private virtual filesystem for free.</li>
-<li><strong>Checkpoints, not git tricks.</strong> autoresearch leans on <code>git commit</code> and <code>git reset</code>. A BENE checkpoint bundles files, state, and event watermarks together, diffs cleanly against any other checkpoint, and restores one agent without disturbing the rest.</li>
-<li><strong>Questions answered in SQL.</strong> Which agent found the best loss, how many experiments ran in total, what the failing agent did wrong — each is one query against the journal, not a TSV-parsing session.</li>
-<li><strong>A lab you can carry.</strong> Agents, experiments, results: one <code>.db</code> file. Hand it to a colleague, open it on another machine, back it up with <code>cp</code>.</li>
-<li><strong>Throughput.</strong> autoresearch runs about 12 experiments/hour on one GPU. Four BENE agents across 4 GPUs run 48 experiments/hour — every one on a distinct direction, every one tracked.</li>
+<li><strong>零配置，原生隔离。</strong> autoresearch 是硬生生在那份 <code>train.py</code> 上动土的，所以你要想让它同时探几条路，就得苦逼地去折腾 git worktrees 或者自己人肉拷贝好几份文件夹。而在 BENE 里，任何 agent 被放出来的那一刻，系统就会免费发给它一个私有的虚拟文件系统 (VFS)。</li>
+<li><strong>正经快照，不用 Git 邪术。</strong> autoresearch 只能极其卑微地依赖 <code>git commit</code> 和 <code>git reset</code>。而在 BENE 里，一次快照就能把文件、运行状态、事件水位线等全盘定格，不仅能与其他快照极其干净地进行 diff，更牛逼的是，它能将某一只闯祸的 agent 单独时光倒流，而对隔壁那些还在埋头苦干的兄弟们不会造成任何干扰。</li>
+<li><strong>拿 SQL 拷问真相。</strong> 谁跑出了最低的损失率？今晚到底总共烧了多少炉实验？那只炸机的 agent 到底在哪一步踩了坑？所有的这些，全是对着流水账去敲一条 SQL 查询的事，而不是去那个破 TSV 文件里写一大串正则表达式。</li>
+<li><strong>这个实验室，你可以装在口袋里带走。</strong> 特种兵、战利品、战报流水：统统塞在这一个 <code>.db</code> 文件里。发给同事、装在另一台机器上跑、或者是拿 <code>cp</code> 备份，随你便。</li>
+<li><strong>碾压级的吞吐量。</strong> autoresearch 在单卡上，一小时大概能搓出 12 炉丹。如果换作 4 匹 BENE 战狼驾驭 4 张卡，一小时就能交出 48 炉 —— 每一炉都摸向了截然不同的深海，且每一炉的数据都被打上了清晰的钢印。</li>
 </ul>
 <hr />
-<p>That is the whole shape of it. You stated four bets at 22:00 and read the verdict at 06:00: winning config checkpointed, findings written down by the agent that found them, lessons packaged as skills for the search after this one. The experiments ran themselves; your job was the judgment at either end.</p>
-<h2 id="related">Related</h2>
+<p>这就是这场通宵炼丹局的全部真相。你在 22:00 丢下了四个异想天开的赌注，在 06:00 准时来收尸：最强的那套配置已被死死冻结进快照里，登顶的霸主早已自己写好了战报总结，而它趟出来的独门秘籍也已经被打包成了神技 (skills)，等着下一场搜索战役将它作为起手式。实验室自己就把活干完了；你唯一要干的，就是在开局抛出赌局，并在剧终时宣判成败。</p>
+<h2 id="_9">顺藤摸瓜</h2>
 <ul>
-<li><a href="../README.html">README</a> — BENE overview and full doc index</li>
-<li><a href="../use-cases.html">Use Cases</a> — more real-world patterns</li>
-<li><a href="../use-cases.html#autonomous-research-lab">Use case: Autonomous Research Lab</a></li>
-<li><a href="../skills.html">Component guide: Cross-Agent Skill Library</a></li>
-<li><a href="https://github.com/karpathy/autoresearch">Karpathy's autoresearch</a> — the original single-agent pattern</li>
-<li>Runnable examples:</li>
-<li><a href="../../../examples/autonomous_research_lab.py"><code>examples/autonomous_research_lab.py</code></a> — single-GPU, 4 agents</li>
-<li><a href="../../../examples/multi_gpu_research.py"><code>examples/multi_gpu_research.py</code></a> — 3-GPU, 6 agents</li>
-<li><a href="./t11-local-agents-vllm.html">tutorials/t11 — Local Agents with vLLM</a> — setting up vLLM + BENE locally</li>
+<li><a href="../README.html">README 首页</a> — BENE 全景大局观和全套文档入口</li>
+<li><a href="../use-cases.html">破局战法 (Use Cases)</a> — 更多来自泥坑一线的实战套路</li>
+<li><a href="../use-cases.html#autonomous-research-lab">破局战法：无人科研炼丹实验室</a></li>
+<li><a href="../skills.html">核心部件指南：跨代技能库 (Skills)</a></li>
+<li><a href="https://github.com/karpathy/autoresearch">Karpathy 搞出的 autoresearch</a> — 单兵作战流派的祖师爷</li>
+<li>拿去就能跑的真家伙:</li>
+<li><a href="../../examples/autonomous_research_lab.py"><code>examples/autonomous_research_lab.py</code></a> — 1 张卡，4 匹狼的低配场</li>
+<li><a href="../../examples/multi_gpu_research.py"><code>examples/multi_gpu_research.py</code></a> — 3 张卡，6 匹狼的诸神之战</li>
+<li><a href="./t11-local-agents-vllm.html">教程 t11 — 驾驭本地 vLLM 狼群</a> — 手把手教你在本地搭 vLLM + BENE</li>
 </ul>
 <hr />
-<p><em>BENE is MIT-licensed, and the privacy claim is checkable: every agent, experiment, and result in this tutorial lives in a local SQLite file on your disk — nothing leaves your machine, and a full backup is one <code>cp</code> of that file.</em></p>
-<p><em>The single-agent pattern is <a href="https://github.com/karpathy/autoresearch">Karpathy's autoresearch</a>; BENE multiplies it into N parallel agents, an isolated VFS for each, SQL over every result, and knowledge that persists between searches.</em></p>
-<p><em>GitHub: <a href="https://github.com/good-night-oppie/bene">github.com/good-night-oppie/bene</a></em></p>
+<p><em>BENE 基于 MIT 协议开源，并且它所吹嘘的 "数据绝对不出境" 是经得起查水表的：这篇教程里出现过的所有 agent、实验过程以及产出的结果，自始至终都被死死封印在你本地硬盘的那个 SQLite 文件里 —— 没有任何一个字节流向云端，所谓全量备份，也不过就是一句 <code>cp</code> 文件的基本操作。</em></p>
+<p><em>那套单兵作战的路数，最早是 <a href="https://github.com/karpathy/autoresearch">Karpathy 在 autoresearch 里趟出来的</a>；而 BENE 则是硬生生把它裂变出了 N 个并发的平行宇宙，给每一个宇宙发了一个绝对隔离的 VFS 结界，外加一套能用 SQL 拷问一切真相的流水账系统，以及跨越世代、永远不会遗忘的传承知识库。</em></p>
+<p><em>源码老家 GitHub: <a href="https://github.com/good-night-oppie/bene">github.com/good-night-oppie/bene</a></em></p>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/tutorials/t06-ml-research-lab.md" target="_blank" rel="noopener noreferrer">docs/tutorials/t06-ml-research-lab.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>
 </div>

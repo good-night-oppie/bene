@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Swap Models Without Shipping Regressions — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — Swap Models Without Shipping Regressions" />
+<title>换模型如换刀：切模型不断骨的防退化兵法 — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — 换模型如换刀：切模型不断骨的防退化兵法" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -205,12 +205,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../codegen.html">codegen</a>
 <a href="../dashboard.html">dashboard</a>
 <a href="../deployment.html">deployment</a>
+<a href="../examples.html">examples</a>
 <a href="../integrating-bene.html">integrating-bene</a>
 <a href="../mcp-integration.html">mcp-integration</a>
 <a href="../memory.html">memory</a>
 <a href="../meta-harness.html">meta-harness</a>
 <a href="../philosophy.html">philosophy</a>
-<a href="../primitive-review-cycle.html">primitive-review-cycle</a>
 <a href="../probe-authoring.html">probe-authoring</a>
 <a href="../schema.html">schema</a>
 <a href="../shared-log.html">shared-log</a>
@@ -219,14 +219,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <h4>Recipes</h4>
 <a href="../recipes/atomic-completion.html">atomic-completion</a>
 <h4>Design and claims</h4>
-<a href="../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
-<a href="../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
-<a href="../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
-<a href="../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
-<h4>Evidence and research</h4>
-<a href="../research/GAP-AUDIT.html">GAP-AUDIT</a>
-<a href="../research/SYNTHESIS.html">SYNTHESIS</a>
-<a href="../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<a href="../design/architecture-diagrams.html">architecture-diagrams</a>
 <h4>Benchmarks and gates</h4>
 <a href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
 <a href="../benchmarks/PREREG.html">PREREG</a>
@@ -244,22 +237,23 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
 <h4>Case studies</h4>
 <a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
-<h4>Infrastructure</h4>
-<a href="../infra/DNS.html">DNS</a></aside>
+<a href="../case-studies/cs03-multi-agent-arena.html">cs03-multi-agent-arena</a>
+<a href="../case-studies/cs04-trace-rag-other-memory.html">cs04-trace-rag-other-memory</a>
+<a href="../case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="../index.html">docs</a> / tutorials/t07-regression-guard.md</div>
-<h1 id="swap-models-without-shipping-regressions">Swap Models Without Shipping Regressions</h1>
-<p><em>MLOps</em></p>
-<p>You should be able to upgrade your model the way you upgrade a library: change one line, let the tests decide. This tutorial builds that — a bene regression guard in CI that replays your benchmark suite against every candidate model and refuses to deploy anything that scores worse than your baseline where it counts.</p>
+<h1 id="_1">换模型如换刀：切模型不断骨的防退化兵法</h1>
+<p><em>MLOps 篇</em></p>
+<p>给系统换底层大模型，就该像升级个普通第三方库一样简单：改一行代码，剩下的生杀大权交给测试套件。这篇教程教你怎么在 CI/CD 流水线里焊死一道基于 BENE 的防退化闸门 (regression guard)：它会把你的整个基准测试套件 (benchmark suite) 在候选模型上完整重播一遍，只要发现新模型在你最在乎的核心指标上敢拉胯，直接当场毙掉这次发布。</p>
 <blockquote>
-<p><strong>One CI job, 12 minutes: five benchmarks replayed against the new model, and any score that falls more than 5% blocks the deploy on its own.</strong></p>
+<p><strong>一道 CI 关卡，耗时 12 分钟：五个核心靶场在新模型上重头跑一遍，只要有任何一项得分的跌幅超过 5%，闸门就会自动锁死，发布当场被拦下。</strong></p>
 </blockquote>
-<p><em>One upgrade, end to end: the suite replays, <code>code_review</code> falls 8.4%, the gate holds the deploy, a five-iteration search recovers the score, and the swap ships Monday.</em></p>
-<p>You'll follow one real upgrade — <code>claude-sonnet-4-5</code> to <code>claude-sonnet-4-6</code> — from green pipeline to blocked deploy to restored baseline, with no person watching any step of it.</p>
-<h2 id="one-job-in-your-pipeline">One job in your pipeline</h2>
-<p>The whole guard is a single CI step. Spawn an agent pinned to the candidate model and anchored to the checkpoint your current model produced, replay the benchmarks, then query the score deltas:</p>
+<p><em>一次端到端的实盘升级演示：套件重播，<code>code_review</code> 这个靶场的成绩暴跌 8.4%，闸门死死卡住了发布，紧接着靠跑了一波 5 轮的演化搜索把分数捞了回来，最后这个升级包在周一早上安稳上线。</em></p>
+<p>接下来，我们将带你完整跟踪一次真实的切模型实盘 —— 从 <code>claude-sonnet-4-5</code> 升级到 <code>claude-sonnet-4-6</code> —— 从开局的一路绿灯，到中途发布被拦下，再到重振旗鼓恢复基线。整个过程全自动运转，无需任何活人盯盘。</p>
+<h2 id="_2">焊在流水线上的一道关卡</h2>
+<p>这道防退化闸门，在 CI 里只不过是一步任务。拉起一只配置了候选新模型的 agent，拿老模型当年留下的满分快照作为对标基准 (anchor)，重播全套靶场，最后用一条 SQL 查询把那些跌幅惨不忍睹的成绩抓出来：</p>
 <div class="codehilite"><pre><span></span><code><span class="c1"># .github/workflows/model-regression.yml</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Run regression suite</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">跑防退化重播套件</span>
 <span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
 <span class="w">    </span><span class="no">bene spawn regression-check-v46 \</span>
 <span class="w">      </span><span class="no">--model claude-sonnet-4-6 \</span>
@@ -274,111 +268,112 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <span class="w">      </span><span class="no">WHERE run_id = &#39;regression-check-v46&#39;</span>
 <span class="w">        </span><span class="no">AND delta_pct &lt; -5.0&quot; \</span>
 <span class="w">    </span><span class="no">| jq -e &#39;. | length == 0&#39; \</span>
-<span class="w">    </span><span class="no">|| (echo &quot;REGRESSION DETECTED — deploy blocked&quot; &amp;&amp; exit 1)</span>
+<span class="w">    </span><span class="no">|| (echo &quot;探明退化倒车行为 — 已锁定发布闸门&quot; &amp;&amp; exit 1)</span>
 </code></pre></div>
 
-<p>Three commands, one contract. <code>bene spawn</code> creates the agent with <code>baseline-v45</code> as its reference point; <code>bene run</code> executes the five benchmarks; the <code>--json query</code> pulls every benchmark whose delta fell past -5.0. A non-empty result makes <code>jq -e</code> fail, the step exits 1, and nothing deploys.</p>
-<p>Everything these runs produce — scores, checkpoints, traces — lives in <code>bene.db</code>, one local SQLite file you can cp, diff, and archive. Nothing leaves your machine.</p>
-<h2 id="the-whole-loop-up-front">The whole loop, up front</h2>
-<p>Six moves, repeated on every upgrade:</p>
+<p>三条指令，死守一个契约。<code>bene spawn</code> 捏出了一只咬死 <code>baseline-v45</code> (老版本基准快照) 作为对标参照物的 agent；<code>bene run</code> 把这五大靶场从头到尾重刷一遍；最后那发 <code>--json query</code> 查询，冷酷地把所有跌幅超过 -5.0% 的靶场全揪出来。只要查出来的结果不是空的，<code>jq -e</code> 就会报错，整个 CI 步骤直接以 exit 1 收场，谁也别想发版。</p>
+<p>这些跑出来的所有家当 —— 分数、快照、执行踪迹 —— 全部安安稳稳地躺在一个本地的 <code>bene.db</code> SQLite 文件里。你想备份就 cp，想查就 diff，想打包就压缩。没有任何一滴数据会流向云端。</p>
+<h2 id="_3">一览众山小：完整的攻防闭环</h2>
+<p>每次换模型，这六步雷打不动：</p>
 <ol>
-<li><strong>Swap</strong> — point the config at the candidate model.</li>
-<li><strong>Replay</strong> — run the full suite and diff each score against the baseline checkpoint.</li>
-<li><strong>Gate</strong> — let CI kill the build when any delta crosses the threshold.</li>
-<li><strong>Repair</strong> — aim a short, seeded meta-harness search at whichever benchmark fell.</li>
-<li><strong>Re-baseline</strong> — checkpoint the repaired harness with the new model as tomorrow's reference.</li>
-<li><strong>Ship</strong> — deploy once the gate is green.</li>
+<li><strong>切模型 (Swap)</strong> — 在配置文件里把枪管换成候选的新模型。</li>
+<li><strong>重播 (Replay)</strong> — 跑完整个靶场套件，把出炉的分数和老模型的基线快照挨个对齐比拼。</li>
+<li><strong>把门 (Gate)</strong> — 只要有任何一项跌幅跌穿了底线，放手让 CI 把构建流水线给崩了。</li>
+<li><strong>抢修 (Repair)</strong> — 把那个翻车的靶场单独拎出来，挂上元脚手架 (meta-harness)，拿之前沉淀的火种跑几轮定向短促突击。</li>
+<li><strong>立新规 (Re-baseline)</strong> — 把抢修成功的新 prompt 和新模型一起拍个快照，作为明天的新基准。</li>
+<li><strong>放行 (Ship)</strong> — 只要闸门见绿，随时可以发版上线。</li>
 </ol>
-<p>The rest of this tutorial walks one swap through all six.</p>
-<h2 id="a-real-swap-scored">A real swap, scored</h2>
-<p>12 minutes after the pipeline started, every benchmark had a verdict:</p>
+<p>本教程接下来的部分，将带你身临其境地走完这六步。</p>
+<h2 id="_4">真刀真枪的换防与判卷</h2>
+<p>流水线开转 12 分钟后，每一个靶场都拿到了自己的宣判书：</p>
 <div class="codehilite"><pre><span></span><code>Benchmark      v4-5  v4-6  Delta   Status
 -------------  ----  ----  ------  -------------------
-text_classify  0.87  0.87   0.0%   NO CHANGE
-tool_calling   0.88  0.91  +3.4%   IMPROVED
-math_qa        0.74  0.76  +2.7%   IMPROVED
-sentiment      0.83  0.81  -2.4%   REGRESSION
-code_review    0.83  0.76  -8.4%   CRITICAL REGRESSION  ← blocked
+text_classify  0.87  0.87   0.0%   毫无波澜 (NO CHANGE)
+tool_calling   0.88  0.91  +3.4%   高歌猛进 (IMPROVED)
+math_qa        0.74  0.76  +2.7%   高歌猛进 (IMPROVED)
+sentiment      0.83  0.81  -2.4%   轻微退化 (REGRESSION)
+code_review    0.83  0.76  -8.4%   致命倒车 (CRITICAL REGRESSION)  ← 拦下来了
 </code></pre></div>
 
-<p>Read the right-hand column first. Three benchmarks held or improved — <code>tool_calling</code> up 3.4%, <code>math_qa</code> up 2.7%, <code>text_classify</code> flat. Two fell. <code>sentiment</code> lost 2.4%, inside this team's tolerance. <code>code_review</code> lost 8.4% — far past the gate, and on the capability their users feel most directly. On aggregate the new model wins; in production it would have lost, because aggregate isn't what users touch.</p>
-<p>The gate's verdict came back as one JSON row:</p>
+<p>先看最右边那一列。有三个靶场稳住了甚至涨分了 —— <code>tool_calling</code> 涨了 3.4%，<code>math_qa</code> 涨了 2.7%，<code>text_classify</code> 稳如老狗。有两个栽了。<code>sentiment</code> 掉了 2.4%，还在这个团队能捏着鼻子认了的容忍度以内。但 <code>code_review</code> 暴跌了 8.4% —— 直接击穿了警戒线，而且这偏偏是用户最容易体感到的核心功能。如果单看总体大盘的平均分，新模型是赢了的；但如果真把它发到生产环境，它绝对会迎来一场客诉的血洗，因为用户在使用时摸到的从来不是什么 "大盘平均分"。</p>
+<p>闸门冷酷地吐出了一行 JSON 宣判书：</p>
 <div class="codehilite"><pre><span></span><code><span class="p">[{</span><span class="nt">&quot;benchmark&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;code_review&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;baseline_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.83</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;new_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.76</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;delta_pct&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">-8.4</span><span class="p">}]</span>
 
-<span class="err">#</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="err">cri</span><span class="kc">t</span><span class="err">ical</span><span class="w"> </span><span class="err">regressio</span><span class="kc">n</span><span class="w"> </span><span class="kc">f</span><span class="err">ou</span><span class="kc">n</span><span class="err">d</span>
-<span class="err">#</span><span class="w"> </span><span class="err">CI</span><span class="w"> </span><span class="err">ga</span><span class="kc">te</span><span class="p">:</span><span class="w"> </span><span class="err">FAILED</span>
-<span class="err">#</span><span class="w"> </span><span class="err">Deploy</span><span class="p">:</span><span class="w"> </span><span class="err">BLOCKED</span>
+<span class="err">#</span><span class="w"> </span><span class="err">揪出</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="err">处致命倒车</span>
+<span class="err">#</span><span class="w"> </span><span class="err">CI</span><span class="w"> </span><span class="err">闸门</span><span class="p">:</span><span class="w"> </span><span class="err">拦截</span><span class="w"> </span><span class="err">(FAILED)</span>
+<span class="err">#</span><span class="w"> </span><span class="err">发布状态</span><span class="p">:</span><span class="w"> </span><span class="err">锁定</span><span class="w"> </span><span class="err">(BLOCKED)</span>
 </code></pre></div>
 
-<p>Non-empty result, non-zero exit, held deploy — plus a notification naming the exact benchmark that failed. The -5.0 cutoff is yours to tune per task: tighter where a mistake is expensive, looser where day-to-day wobble is normal. What matters is that nobody has to remember it; the gate fires whether or not anyone is paying attention.</p>
-<h2 id="ask-the-diff-why">Ask the diff why</h2>
-<p>A blocked deploy is half the story. The other half is what changed. <code>bene diff</code> compares the two runs and writes the failure analysis:</p>
+<p>查出了脏东西，返回了非零错误码，发版被死死摁住 —— 还顺带发了条警报，指名道姓地点出了到底是谁在拖后腿。那个 -5.0 的警戒线，你可以针对每个靶场自己捏：在那种出了错要赔钱的地方收紧一点，在那种日常就喜欢随风摇摆的任务上放宽一点。最牛逼的地方在于，没人需要把这条红线记在脑子里；不管今天有没有活人盯着看板，这道闸门该劈下来的时候，绝对不会手软。</p>
+<h2 id="diff">拿 Diff 拷问死因</h2>
+<p>拦下发布只能算赢了一半。另一半是搞清楚到底哪里不对劲了。<code>bene diff</code> 把两场考试的卷子按在一起比对，直接出具了一份死因诊断书：</p>
 <div class="codehilite"><pre><span></span><code>bene diff baseline-v45 regression-check-v46 /results/code_review_failures.md
 
-## code_review regression analysis: 0.83 → 0.76 (-8.4%)
+## code_review 坠机复盘: 0.83 → 0.76 (-8.4%)
 
-### Failure pattern
-New model struggles to distinguish BLOCKER from IMPORTANT.
+### 翻车死状
+新模型在区分 BLOCKER (致命) 和 IMPORTANT (重要) 时，眼神极其迷离。
 
-v4-5: BLOCKER/IMPORTANT confusion rate: 14%
-v4-6: BLOCKER/IMPORTANT confusion rate: 31%
+v4-5: 错判 BLOCKER/IMPORTANT 的概率: 14%
+v4-6: 错判 BLOCKER/IMPORTANT 的概率: 31%
 
-### Example failure (new model)
-Input: &quot;SQL query is vulnerable to injection — must fix before merge&quot;
-Expected: BLOCKER
-Got:      IMPORTANT (new model downgrades severity)
+### 翻车现场还原 (新模型的作案录像)
+输入: &quot;SQL query is vulnerable to injection — must fix before merge&quot; (带注入漏洞——合并前必须修掉)
+标准答案: BLOCKER
+它的回答: IMPORTANT (新模型自行把严重度给降级了)
 
-### Root cause
-The harness was optimized for v4-5&#39;s instruction-following pattern.
-v4-5 responds strongly to &quot;must fix&quot; keywords → BLOCKER.
-v4-6 applies more nuanced severity reasoning → IMPORTANT.
+### 死因追溯
+你现在用的这套 prompt (脚手架) 是专门给 v4-5 那种服从指令的脑回路线路量身定制的。
+v4-5 对 &quot;must fix&quot; 这类关键词有着膝跳反射般的敏感度 → 看到就判 BLOCKER。
+v4-6 则喜欢对严重度进行一番更加细致入微的 &quot;深度思考&quot; → 结果思虑过度，降级成了 IMPORTANT。
 
-This is not a model deficiency — it&#39;s a harness mismatch.
-The two-step_attr_merged strategy from the original search
-may transfer better to v4-6&#39;s reasoning style.
+这锅不该新模型背 —— 纯粹是现有的脚手架跟新模型的脑回路八字不合。
+之前搜索战役里攒下来的那个 `two_step_attr_merged (两步属性提取)` 策略，
+或许更能对上 v4-6 的脑电波。
 </code></pre></div>
 
-<p>The BLOCKER/IMPORTANT confusion rate more than doubled, 14% to 31% — and nothing is wrong with the model. The old harness leaned on v4-5's habit of treating "must fix" phrasing as an automatic BLOCKER; v4-6 reasons about severity instead of pattern-matching it. Different RLHF, different reflexes. So the remedy isn't rolling the model back — it's re-tuning the harness to the model you actually want to run.</p>
-<h2 id="win-the-points-back">Win the points back</h2>
-<p>The diff already nominated a starting strategy, so the search doesn't begin cold. Seed it from the old frontier and give it five iterations on the one benchmark that fell:</p>
+<p>错判率翻了一倍都不止，从 14% 狂飙到 31% —— 而新模型本身并没有变蠢。问题出在老脚手架是在疯狂白嫖 v4-5 的一个怪癖：一看到 "must fix" 这类字眼，v4-5 就会无脑判死刑 (BLOCKER)；而 v4-6 却试图去推演背后的严重逻辑，而不是单纯的关键词匹配。同样的 RLHF 训练配方，养出了截然不同的条件反射。所以这病的解法不是把模型滚回去 —— 而是要为这个你真正想用的新模型，重新摸出一套能让它舒服的 prompt 脚手架。</p>
+<h2 id="_5">把丢掉的分亲手拿回来</h2>
+<p>诊断书里已经指明了一条明路，所以抢修行动根本不用从零开始抓瞎。直接拿老基线里的巅峰战果当火种，在这一个拉胯的靶场上，给新模型跑个 5 轮的小型定向爆破：</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-b<span class="w"> </span>code_review<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--model<span class="w"> </span>claude-sonnet-4-6<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-n<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--seed-from<span class="w"> </span>baseline-v45
 
-<span class="c1"># [mh-search] Loading from baseline-v45...</span>
-<span class="c1"># [mh-search] Seed: two_step_attr_merged  acc=0.76 (on v4-6, was 0.83 on v4-5)</span>
-<span class="c1"># [mh-search] Starting search from known frontier</span>
+<span class="c1"># [mh-search] 正在从 baseline-v45 抽取火种...</span>
+<span class="c1"># [mh-search] 提取火种: two_step_attr_merged  acc=0.76 (在 v4-6 上只跑出了 0.76, 尽管它当年在 v4-5 上是 0.83)</span>
+<span class="c1"># [mh-search] 从已知的巅峰阵地起飞，不再摸黑</span>
 </code></pre></div>
 
-<div class="codehilite"><pre><span></span><code>[iter 1/5]  two_step_attr_merged_v46  acc=0.78  +0.02  IMPROVED
-[iter 2/5]  attr_merged_explicit      acc=0.81  +0.03  IMPROVED
-[iter 3/5]  attr_merged_explicit_v2   acc=0.81  —      no improvement
-[iter 4/5]  blocker_severity_v46      acc=0.83  +0.02  IMPROVED  ← baseline restored
-[iter 5/5]  blocker_severity_merged   acc=0.83  —      no further gain
+<div class="codehilite"><pre><span></span><code>[iter 1/5]  two_step_attr_merged_v46  acc=0.78  +0.02  进化成功 (IMPROVED)
+[iter 2/5]  attr_merged_explicit      acc=0.81  +0.03  进化成功 (IMPROVED)
+[iter 3/5]  attr_merged_explicit_v2   acc=0.81  —      原地踏步
+[iter 4/5]  blocker_severity_v46      acc=0.83  +0.02  进化成功 (IMPROVED)  ← 成功收复失地
+[iter 5/5]  blocker_severity_merged   acc=0.83  —      榨干了，没进步
 
-Best: blocker_severity_v46  acc=0.83  (baseline fully restored)
+最终王者: blocker_severity_v46  acc=0.83  (阵地已全面收复)
 </code></pre></div>
 
-<p>Iteration 4 lands <code>blocker_severity_v46</code> at 0.83 — the old number, on the new model. The two-step structure survived the swap; what it needed was an explicit severity rubric written for how v4-6 reasons. The edit itself is small: a single added section of system prompt.</p>
-<h2 id="the-trap-this-retires">The trap this retires</h2>
-<p>The dangerous sentence in any model upgrade is "the new one is better, so the product gets better for free." Often true. Not reliably true — a model can improve on average while losing exactly the behavior your harness depended on, because that harness was shaped around the old model's quirks. Without a gate, the loss surfaces as weekend tickets or a 3am page. With one, it surfaces as a red CI run.</p>
-<p>Play this swap forward unguarded: it ships Friday afternoon; by Saturday, tickets arrive about reviews that quietly downgrade severity; Sunday belongs to the on-call engineer, debugging what is really a harness mismatch. Guarded, the same swap waited, picked up a re-tuned harness verified against v4-6, and went out clean Monday morning. That is the entire job of a regression guard.</p>
-<h2 id="related">Related</h2>
+<p>在第 4 轮时，<code>blocker_severity_v46</code> 成功登顶，拿到了 0.83 分 —— 完美在全新的模型上，复刻了那个巅峰分数。那套 "两步走" 的解题思路经受住了模型更迭的考验；它缺的，仅仅是针对 v4-6 的脾气，明明白白地写上一套判定严重度的细则而已。修复的补丁本身小得可怜：无非就是在 system prompt 里多加了一小节话。</p>
+<h2 id="_6">填平那个隐秘的夺命深坑</h2>
+<p>在升级大模型时，最致命的幻觉莫过于这句咒语："新模型更牛逼，所以我们的产品躺着就能变得更好。" 多数时候确实如此。但这句话绝对经不起推敲 —— 一个模型在宏观的智力大盘上高歌猛进的同时，极有可能在一夜之间丧失掉某种你的脚手架极其依赖的、古早的神经质行为，因为你现在的这套 prompt，完全就是照着老模型的那些怪癖长出来的。如果没有这道闸门，这种背刺式的能力退化，最终都会变成周末夺命连环 Call，或者凌晨 3 点的传呼机报警。而有了这道闸门，它最多只会变成流水线上一个刺眼的红色 CI 报错。</p>
+<p>如果你把这道防线撤了，重演这波发版：周五下午高高兴兴上线；到了周六，客诉工单雪片般飞来，全在骂你们的系统在背地里偷偷乱降漏洞严重度；周日的一整天，值班工程师都在满头大汗地抓虫，最后才绝望地发现，这特么压根就不是代码 bug，而是 prompt 水土不服。加上了这道防线，同样的升级包会被死死拦下，被迫回炉拿上一套专为 v4-6 调教过的、且实盘验证过的全新脚手架，然后在周一早上毫发无伤地顺利发车上线。</p>
+<p>这，就是一道防退化闸门存在的全部意义。</p>
+<h2 id="_7">顺藤摸瓜</h2>
 <ul>
-<li><a href="../README.html">README</a> — project overview and where every doc lives</li>
-<li><a href="../use-cases.html">Use Cases</a> — other patterns from production deployments</li>
-<li><a href="../meta-harness.html">Component guide: Meta-Harness</a> — how the search itself works</li>
-<li><a href="../use-cases.html#model-regression-guard">Use case: Model Regression Guard</a> — the condensed form of this pattern</li>
-<li><a href="t01-bene-meta-harness.html">Tutorial: t01 — Meta-Harness from 48% to 83%</a> — where the <code>baseline-v45</code> frontier came from</li>
+<li><a href="../README.html">README 首页</a> — 纵览全局，以及找到所有文档的老家</li>
+<li><a href="../use-cases.html">破局战法 (Use Cases)</a> — 更多从真实生产环境的尸山血海里爬出来的战术</li>
+<li><a href="../meta-harness.html">核心部件指南：演化脚手架 (Meta-Harness)</a> — 扒光搜索循环的底层逻辑</li>
+<li><a href="../use-cases.html#model-regression-guard">破局战法：模型防退化闸门 (Model Regression Guard)</a> — 这套打法的浓缩速记版</li>
+<li><a href="t01-bene-meta-harness.html">教程：t01 — Meta-Harness 从 48% 到 83% 的奇迹</a> — 看看那个用来当火种的 <code>baseline-v45</code> 巅峰成绩是怎么打出来的</li>
 </ul>
 <hr />
-<p><em>bene is MIT-licensed. Everything in this tutorial ran locally — nothing leaves your machine.</em></p>
-<p><em>GitHub: <a href="https://github.com/good-night-oppie/bene">github.com/good-night-oppie/bene</a></em></p>
+<p><em>bene 基于 MIT 协议开源。你在本教程里看到的这套腥风血雨的攻防演练，全都在你本地完成 —— 没有任何一滴数据会流出你的机器。</em></p>
+<p><em>源码老家 GitHub: <a href="https://github.com/good-night-oppie/bene">github.com/good-night-oppie/bene</a></em></p>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/tutorials/t07-regression-guard.md" target="_blank" rel="noopener noreferrer">docs/tutorials/t07-regression-guard.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>
 </div>

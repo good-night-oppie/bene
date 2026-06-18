@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Code Generation as a BENE Capability — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — Code Generation as a BENE Capability" />
+<title>将代码生成 (Code Generation) 作为 BENE 的核心能力 — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — 将代码生成 (Code Generation) 作为 BENE 的核心能力" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -205,12 +205,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a class="cur" href="codegen.html">codegen</a>
 <a href="dashboard.html">dashboard</a>
 <a href="deployment.html">deployment</a>
+<a href="examples.html">examples</a>
 <a href="integrating-bene.html">integrating-bene</a>
 <a href="mcp-integration.html">mcp-integration</a>
 <a href="memory.html">memory</a>
 <a href="meta-harness.html">meta-harness</a>
 <a href="philosophy.html">philosophy</a>
-<a href="primitive-review-cycle.html">primitive-review-cycle</a>
 <a href="probe-authoring.html">probe-authoring</a>
 <a href="schema.html">schema</a>
 <a href="shared-log.html">shared-log</a>
@@ -219,14 +219,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <h4>Recipes</h4>
 <a href="recipes/atomic-completion.html">atomic-completion</a>
 <h4>Design and claims</h4>
-<a href="design/BENE2-DESIGN.html">BENE2-DESIGN</a>
-<a href="design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
-<a href="design/KERNEL-SPEC.html">KERNEL-SPEC</a>
-<a href="design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
-<h4>Evidence and research</h4>
-<a href="research/GAP-AUDIT.html">GAP-AUDIT</a>
-<a href="research/SYNTHESIS.html">SYNTHESIS</a>
-<a href="research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<a href="design/architecture-diagrams.html">architecture-diagrams</a>
 <h4>Benchmarks and gates</h4>
 <a href="benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
 <a href="benchmarks/PREREG.html">PREREG</a>
@@ -244,71 +237,72 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
 <h4>Case studies</h4>
 <a href="case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
-<h4>Infrastructure</h4>
-<a href="infra/DNS.html">DNS</a></aside>
+<a href="case-studies/cs03-multi-agent-arena.html">cs03-multi-agent-arena</a>
+<a href="case-studies/cs04-trace-rag-other-memory.html">cs04-trace-rag-other-memory</a>
+<a href="case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="index.html">docs</a> / codegen.md</div>
-<h1 id="code-generation-as-a-bene-capability">Code Generation as a BENE Capability</h1>
-<p><strong>Status:</strong> Proposed direction. Not implemented. See validation experiment at the end of this document.</p>
+<h1 id="code-generation-bene">将代码生成 (Code Generation) 作为 BENE 的核心能力</h1>
+<p><strong>状态：</strong> 提案方向，尚未实装。请参考本文档末尾的验证性实验。</p>
 <hr />
-<h2 id="what-this-proposes">What this proposes</h2>
-<p>A future BENE capability: take a task description and emit a complete, working implementation that uses BENE's runtime abstractions as its target intermediate representation.</p>
-<p>This is not a new feature in the abstract sense. It is a recombination of existing BENE capabilities (CCR, skills, meta-harness, trace-based RAG, VFS isolation, checkpoints) pointed at one user experience: <strong>let users describe long-running tasks in business terms; let BENE write the parts that require Temporal and distributed-systems expertise</strong>.</p>
+<h2 id="_1">这份提案想干嘛</h2>
+<p>BENE 的一项未来能力：吃进一段任务描述，然后直接吐出一套完整、能跑的实现代码 —— 并且这套代码会精准地使用 BENE 的运行时抽象层作为它的目标中间表示 (IR, Intermediate Representation)。</p>
+<p>在抽象意义上，这并不是个什么横空出世的新功能。它只是把现有的 BENE 积木（CCR、技能系统、元引擎、基于调用链的 RAG、VFS 结界、存盘快照）拼起来，去死磕一种极致的用户体验：<strong>让用户只用大白话聊业务逻辑；让 BENE 去徒手捏那些折磨人的 Temporal 底层和分布式系统代码。</strong></p>
 <hr />
-<h2 id="why-this-matters">Why this matters</h2>
-<p>Most BENE use cases (parallel agent swarms, checkpoint/restore, SQL audit, meta-harness search) do not require their consumers to know Temporal, signal_with_start, or workflow determinism. They use the local SQLite path. See <a href="use-cases.html">use-cases.md</a>.</p>
-<p>A small but growing class of consumers — entity actors, long-running stateful workflows, time-bounded buckets, request coalescers — does need the <code>bene/temporal/</code> backend. The first such consumer in production is the burst aggregator in triage-rag's L3 pipeline.</p>
-<p>For these consumers, the path from "I have a problem" to "I have working durable code" is steep:</p>
+<h2 id="_2">为什么这事生死攸关</h2>
+<p>大多数拿 BENE 去干活的人（不管是拉起特种兵军团、逆转时空读档、拿 SQL 查水表、还是跑元引擎进化），压根就不需要知道 Temporal、<code>signal_with_start</code> 是什么鬼，或者去关心什么劳什子的工作流确定性约束 (determinism)。他们拿本地的 SQLite 就能玩得很嗨。详情去看 <a href="use-cases.html">用例地图 (use-cases.md)</a>。</p>
+<p>但是，有一小撮但在不断壮大的核心玩家 —— 那些搞实体 Actor (entity actors)、跑持久化状态工作流、攒基于时间窗的水桶 (time-bounded buckets)、做请求收敛去重 (request coalescers) 的人 —— 是真刀真枪地需要把手伸进 <code>bene/temporal/</code> 引擎里的。生产环境里的第一个苦逼吃螃蟹者，就是 triage-rag 项目 L3 管道里的那个突发警报聚合器 (burst aggregator)。</p>
+<p>对于这帮人来说，从 "我有个业务需求" 到 "我写出了一段能扛住炸机的持久化代码" 之间，横着一道令人绝望的天堑：</p>
 <ol>
-<li>Understand Temporal concepts (Workflow, Activity, TaskQueue, RetryPolicy)</li>
-<li>Understand determinism constraints</li>
-<li>Understand signal/query/start semantics</li>
-<li>Hand-write 50+ lines of plumbing for what is conceptually one entity</li>
+<li>得生啃 Temporal 的概念大山 (Workflow, Activity, TaskQueue, RetryPolicy)</li>
+<li>得搞懂确定性 (determinism) 约束到底是个什么反人类的东西</li>
+<li>得摸透 signal/query/start 这三把板斧的语义</li>
+<li>为了这一个在概念上极其简单的玩意，得徒手糊 50 多行的下水管道代码 (plumbing)</li>
 </ol>
-<p>Codegen flattens this curve.</p>
+<p>代码生成 (Codegen) 就是为了把这条天堑给夷平的。</p>
 <hr />
-<h2 id="the-three-layer-hide-strategy">The three-layer hide strategy</h2>
+<h2 id="_3">藏头露尾的三层架构</h2>
 <table>
 <thead>
 <tr>
-<th>Layer</th>
-<th>Owner</th>
-<th>Hides</th>
-<th>Exposes</th>
+<th>层次</th>
+<th>归谁管</th>
+<th>替你藏了什么恶心东西</th>
+<th>露给你看什么</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>L1: Abstraction</strong></td>
-<td><code>bene/temporal/</code> maintainers</td>
-<td>Race safety, replay safety, idempotency invariants</td>
-<td>High-level verbs (<code>start_or_signal</code>, <code>query</code>, <code>signal</code>)</td>
+<td><strong>L1: 抽象层</strong></td>
+<td><code>bene/temporal/</code> 的维护者</td>
+<td>竞态安全 (Race safety)、重放安全 (replay safety)、幂等性死律</td>
+<td>高级原语 (<code>start_or_signal</code>, <code>query</code>, <code>signal</code>)</td>
 </tr>
 <tr>
-<td><strong>L2: Codegen</strong></td>
-<td>BENE generator + skills</td>
-<td>Workflow class skeleton, activity registration, retry policies, test scaffolds</td>
-<td>Generated code with business-logic placeholders</td>
+<td><strong>L2: 生成层</strong></td>
+<td>BENE 生成器 + 技能系统 (skills)</td>
+<td>工作流的骨架、Activity 注册、重试策略、测试脚手架</td>
+<td>塞满了业务逻辑占位符的生成代码</td>
 </tr>
 <tr>
-<td><strong>L3: Business logic</strong></td>
-<td>User</td>
-<td>(nothing — this is theirs)</td>
-<td>Domain rules: signature function, dedup logic, what counts as a duplicate</td>
+<td><strong>L3: 业务逻辑层</strong></td>
+<td>你 (用户)</td>
+<td>（啥也不藏 —— 这是你的地盘）</td>
+<td>领域规则：具体的函数逻辑、去重策略、到底什么才算是一个 "重复" 事件</td>
 </tr>
 </tbody>
 </table>
-<p>Each layer hides what its consumer should not have to think about. Each layer exposes what the consumer should think about.</p>
-<p><strong>Why both L1 and L2 are needed, not one or the other:</strong></p>
+<p>每一层都在死死捂住它的下游不该操心的事情，同时把下游该操心的事情赤裸裸地暴露出来。</p>
+<p><strong>为什么 L1 和 L2 缺一不可：</strong></p>
 <ul>
-<li>Without L1, generated code is raw Temporal SDK. Users cannot read it safely, cannot modify it without learning Temporal, cannot get framework upgrades. This is the Yeoman-template trap: every project forks at generation time.</li>
-<li>Without L2, every consumer hand-writes 50 lines of wrapper. The abstraction is useful but unused.</li>
-<li>With both, users write 5 lines of business logic. The generator writes the boilerplate using stable verbs. The abstraction layer absorbs the unprecedented.</li>
+<li>没了 L1，生成的代码就是一坨赤裸裸的 Temporal SDK 原生调用。你根本看不懂这堆天书、不敢在不懂 Temporal 的情况下瞎改、甚至连框架升级都别想沾边。这就是所谓的 Yeoman 模板陷阱：每一次生成，就是一次与主线代码的分道扬镳。</li>
+<li>没了 L2，每个用它的人都得徒手去手写那 50 行的包装纸。抽象层虽然好用，但没人去用。</li>
+<li>两者合璧，用户只要专心写那 5 行业务逻辑。生成器会用一套极其稳定的原语去帮你把恶心的胶水代码全糊好。抽象层负责把那些史无前例的坑全给填了。</li>
 </ul>
 <hr />
-<h2 id="codegen-targets-the-ir-not-raw-temporal">Codegen targets the IR, not raw Temporal</h2>
-<p>The boundary plan's primitives (<code>start_or_signal</code>, <code>business_idempotency_key</code>, <code>side_effect_label</code>) are not just runtime conveniences. They are the <strong>target intermediate representation</strong> for the codegen layer.</p>
-<p>Generated code looks like this:</p>
+<h2 id="ir-temporal">它的靶子是中间表示 (IR)，绝不是裸写的 Temporal</h2>
+<p>在边界设计文档里的那些基础原语 (<code>start_or_signal</code>, <code>business_idempotency_key</code>, <code>side_effect_label</code>) 绝对不是什么只为了运行时少写两行代码的语法糖。它们是专门为代码生成层定制的<strong>目标中间表示 (IR)</strong>。</p>
+<p>它吐出来的代码长这样：</p>
 <div class="codehilite"><pre><span></span><code><span class="n">handle</span> <span class="o">=</span> <span class="k">await</span> <span class="n">runtime</span><span class="o">.</span><span class="n">start_or_signal</span><span class="p">(</span>
     <span class="n">spec</span><span class="o">=</span><span class="n">BurstBucketSpec</span><span class="p">(</span><span class="n">bucket_id</span><span class="o">=</span><span class="n">bucket_id</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="n">delta_burst</span><span class="p">),</span>
     <span class="n">signal_name</span><span class="o">=</span><span class="s2">&quot;event&quot;</span><span class="p">,</span>
@@ -316,7 +310,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <span class="p">)</span>
 </code></pre></div>
 
-<p>Not this:</p>
+<p>绝不会是这种画风：</p>
 <div class="codehilite"><pre><span></span><code><span class="n">client</span> <span class="o">=</span> <span class="k">await</span> <span class="n">temporal_client</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
 <span class="k">try</span><span class="p">:</span>
     <span class="n">handle</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">start_workflow</span><span class="p">(</span>
@@ -331,59 +325,59 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <span class="k">await</span> <span class="n">handle</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="s2">&quot;event&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;event_id&quot;</span><span class="p">:</span> <span class="n">event</span><span class="o">.</span><span class="n">id</span><span class="p">})</span>
 </code></pre></div>
 
-<p>The first is readable, modifiable, and survives framework upgrades. The second is what every consumer hand-writes today.</p>
+<p>第一种你能像看大白话一样看懂、能放心改、框架升级了它照样能跑。第二种就是你现在每天都在苦逼手敲的那堆东西。</p>
 <hr />
-<h2 id="composition-with-existing-bene-capabilities">Composition with existing BENE capabilities</h2>
+<h2 id="bene">怎么把 BENE 现有的破铜烂铁拼成神装</h2>
 <table>
 <thead>
 <tr>
-<th>BENE capability</th>
-<th>Role in codegen</th>
+<th>BENE 现有能力</th>
+<th>在代码生成里扮演什么角色</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Meta-harness</strong></td>
-<td>Evolves the "task description → architecture decision" mapping</td>
+<td><strong>元引擎 (Meta-harness)</strong></td>
+<td>专门负责去进化那套 "任务描述 → 架构决策" 的映射关系</td>
 </tr>
 <tr>
-<td><strong>Skills system</strong></td>
-<td>Stores reusable code templates ("entity actor scaffold," "scheduled job scaffold")</td>
+<td><strong>技能系统 (Skills system)</strong></td>
+<td>存着那些可复用的骨架模板 ("实体 Actor 脚手架", "定时任务脚手架")</td>
 </tr>
 <tr>
-<td><strong>Trace-based RAG</strong></td>
-<td>Retrieves "how was the last similar consumer implemented" — generation grounded in proven traces, not invented from prompt alone</td>
+<td><strong>基于调用链的 RAG</strong></td>
+<td>跑去数据库里捞 "上次那个长得差不多的玩意是怎么干的" —— 让生成的代码脚踏实地踩在被验证过的实盘记录上，而不是纯靠大模型的脑补</td>
 </tr>
 <tr>
 <td><strong>CCR + Claude</strong></td>
-<td>The actual code-writing engine</td>
+<td>真正坐在那里疯狂敲键盘的干活苦力</td>
 </tr>
 <tr>
-<td><strong>Boundary plan abstractions</strong></td>
-<td>The target IR; the verbs the generator emits</td>
+<td><strong>边界抽象原语</strong></td>
+<td>它的终极靶心 (IR)；也是生成器唯一被允许吐出的动词</td>
 </tr>
 <tr>
-<td><strong>VFS isolation</strong></td>
-<td>Each generation attempt gets its own sandbox; failed attempts don't pollute the project</td>
+<td><strong>VFS 结界</strong></td>
+<td>每一波生成都在自己的沙盒里试毒；写崩了的废稿绝对不会弄脏你的主库</td>
 </tr>
 <tr>
-<td><strong>Checkpoints</strong></td>
-<td>Regenerate-and-roll-back is cheap; alternative generations can be diffed</td>
+<td><strong>快照 (Checkpoints)</strong></td>
+<td>不爽就一键删档重写；你甚至能把几次不同思路的产物拿来做 diff</td>
 </tr>
 </tbody>
 </table>
-<p>This is consistent with the philosophy of "harnesses should evolve, models should not." Codegen is itself a harness; meta-harness can evolve it over time.</p>
+<p>这就极其符合 "必须靠进化引擎 (harnesses) 吃饭，而不是去赌大模型运气" 的核心信条。代码生成本身就是一个引擎；而元引擎会随着时间慢慢把它盘出包浆来。</p>
 <hr />
-<h2 id="honest-constraints">Honest constraints</h2>
+<h2 id="_4">别装逼，有这几条硬伤</h2>
 <ol>
-<li><strong>Temporal code is OOD for current LLMs.</strong> Determinism, replay safety, signal vs query semantics — these run counter to how most async code is written. First-pass generation needs test feedback loops to converge.</li>
-<li><strong>Generated code requires marker-based ownership.</strong> Once a user modifies generated code, regenerating risks overwriting. The generator must emit <code>BUSINESS_LOGIC_BEGIN</code> / <code>BUSINESS_LOGIC_END</code> markers and preserve their contents on regenerate.</li>
-<li><strong>Abstractions must land before codegen has a target.</strong> This prerequisite is now met: the runtime boundary primitives (<code>start_or_signal</code>, <code>submit_side_effect</code>, <code>SideEffectLabel</code>, <code>BusinessIdempotencyKey</code>, <code>CostEstimate</code>) plus <code>LocalRuntime</code> and <code>TemporalRuntime</code> are implemented in <code>bene/runtime/</code> and <code>bene/temporal/runtime_impl.py</code>, so the IR has a real execution target. The remaining gap is the L2 codegen pass itself (e.g. the <code>EntityActor</code> base class), not its dependencies.</li>
-<li><strong>Codegen is not a substitute for understanding.</strong> If a user never reads the generated code, they cannot debug it when production breaks. The L2 hide is "you didn't have to write it," not "you don't have to know it."</li>
+<li><strong>Temporal 代码早就超出了现在 LLM 的智商边界。</strong> 确定性 (Determinism)、重放安全、信号 vs 查询的语义偏差 —— 这些破规矩跟这世界上绝大多数人写异步代码的习惯是完全背道而驰的。第一把吐出来的代码绝对是废品，必须靠一轮轮的测试反馈把它抽到及格。</li>
+<li><strong>生成的代码必须打死标记 (marker)。</strong> 一旦用户进去改了那些自动生成的代码，下次再生成时就极容易把他们的心血给抹了。生成器必须极其老实地打上 <code>BUSINESS_LOGIC_BEGIN</code> 和 <code>BUSINESS_LOGIC_END</code> 的路标，并在重新生成时死死护住这两块路标中间的东西。</li>
+<li><strong>抽象层没落地，生成器就是个瞎子。</strong> 这个前置条件现在已经扫清了：运行时的边界原语 (<code>start_or_signal</code>, <code>submit_side_effect</code>, <code>SideEffectLabel</code>, <code>BusinessIdempotencyKey</code>, <code>CostEstimate</code>) 以及 <code>LocalRuntime</code> 和 <code>TemporalRuntime</code> 已经在 <code>bene/runtime/</code> 和 <code>bene/temporal/runtime_impl.py</code> 里实装了，IR 有了能真正落地的靶子。现在剩下的唯一缺口是 L2 的生成层本身 (比如那个 <code>EntityActor</code> 基类)，而不是它依赖的地基。</li>
+<li><strong>代码生成救不了不学无术。</strong> 如果用户这辈子都没去扫一眼那些生成的代码，等生产环境炸机时他们就只能干瞪眼。L2 这层遮羞布盖住的是 "你不用亲手去写这段苦力活"，而不是 "你可以对它一无所知"。</li>
 </ol>
 <hr />
-<h2 id="future-l2-capabilities-post-ir-stabilization">Future L2 capabilities (post-IR-stabilization)</h2>
-<p>The first codegen experiment (2026-05-04, l3 burst aggregator) revealed that generated code can be IR-clean for the <strong>activity layer</strong> but still leaks Temporal decorators in the <strong>workflow class</strong>:</p>
+<h2 id="l2-ir">未来的 L2 战斧 (等 IR 彻底不折腾了再说)</h2>
+<p>第一次跑去趟这浑水 (2026-05-04，在 L3 警报聚合器上做实验) 后，我们被狠狠打脸了：生成的代码在 <strong>Activity 层面</strong> 上能做到对 IR 的绝对纯净，但是在 <strong>工作流类 (workflow class)</strong> 层面，还是无可救药地漏出了一堆 Temporal 专属的装饰器：</p>
 <div class="codehilite"><pre><span></span><code><span class="nd">@workflow</span><span class="o">.</span><span class="n">defn</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">BurstBucketWorkflow</span><span class="p">:</span>
     <span class="nd">@workflow</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;event&quot;</span><span class="p">)</span>
@@ -394,10 +388,10 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">BurstBucketSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span> <span class="o">...</span>
 </code></pre></div>
 
-<p>A consumer reading this file still encounters <code>@workflow.defn</code>, <code>@workflow.signal</code>, etc. The IR hides Temporal from the <em>caller</em> of the entity actor, not from the <em>reader of the workflow definition file</em>.</p>
-<p>The L2 codegen layer should provide a declarative <code>EntityActor</code> base class that generates the workflow class from a spec:</p>
+<p>当一个用它的人点开这个文件时，还是会猝不及防地撞上 <code>@workflow.defn</code>, <code>@workflow.signal</code> 这堆鬼画符。IR 只是在实体 Actor 的<strong>调用方</strong>面前藏起了 Temporal 的影子，却没能在<strong>工作流定义的阅读者</strong>面前遮住底裤。</p>
+<p>L2 生成层应该直接甩出一个极度清爽的声明式 <code>EntityActor</code> 基类，然后靠着你的声明，去背地里把那个极其恶心的工作流类给糊出来：</p>
 <div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BurstBucket</span><span class="p">(</span><span class="n">EntityActor</span><span class="p">[</span><span class="n">BurstBucketSpec</span><span class="p">]):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Declared shape; codegen + EntityActor base produce the @workflow.defn class.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;只声明形状；靠代码生成 + EntityActor 基类去生出那个带 @workflow.defn 的类。&quot;&quot;&quot;</span>
 
     <span class="nd">@signal_handler</span><span class="p">(</span><span class="s2">&quot;event&quot;</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">on_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="n">BurstEventPayload</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">BucketState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BucketState</span><span class="p">:</span>
@@ -412,46 +406,40 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
     <span class="n">lifecycle</span> <span class="o">=</span> <span class="n">SleepThenClose</span><span class="p">(</span><span class="n">ttl_field</span><span class="o">=</span><span class="s2">&quot;ttl&quot;</span><span class="p">)</span>
 </code></pre></div>
 
-<p>The base class generates the <code>@workflow.defn</code> class, wires up signal/query/run methods, enforces determinism (no I/O in handlers), and produces typed query descriptors automatically. Consumers never see <code>@workflow.*</code> decorators.</p>
-<p>This is <strong>not part of the boundary plan IR</strong> — it is a generator + base-class layer on top. Tracked here as a future direction; will be designed once the IR is stable and at least 2 entity-actor consumers exist (the second pulling on the abstraction is the test of whether <code>EntityActor</code> is well-shaped).</p>
+<p>这个基类会在背地里去糊那个带 <code>@workflow.defn</code> 的类、把信号/查询/运行方法全接好、像典狱长一样拿警棍逼着你去遵守确定性原则 (绝不准在 handler 里搞 I/O 操作)，然后自动生出极其丝滑的带类型查询描述符。用它的人这辈子都见不到 <code>@workflow.*</code> 这种脏东西。</p>
+<p>这<strong>不属于边界计划 IR 的范畴</strong> —— 这是在它头顶上又盖了一层生成器和基类。这里只是把它当成未来的方向插个眼；等到 IR 彻底稳如死狗、并且我们至少踩过 2 个实体 Actor 落地场景 (第二个吃螃蟹的人才是检验 <code>EntityActor</code> 形状对不对的唯一真理) 之后，再来操刀设计它。</p>
 <hr />
-<h2 id="validation-experiment">Validation experiment</h2>
-<p>A first experiment to test whether codegen-into-IR is viable.</p>
-<p><strong>Run 1 (2026-05-04):</strong> Consumer was the burst aggregator from triage-rag's L3 pipeline.</p>
+<h2 id="validation-experiment">拿真刀真枪去验一验 (Validation experiment)</h2>
+<p>这是为了试探 "对着 IR 吐代码" 到底靠不靠谱而做出的第一次试水。</p>
+<p><strong>第一次趟雷 (2026-05-04):</strong> 小白鼠是 triage-rag L3 管道里的突发警报聚合器 (burst aggregator)。</p>
 <ul>
-<li><strong>Generated artifacts:</strong> produced internally, run against a private downstream consumer — the burst-aggregator activity + tests (~339 + 419 LOC). Those artifacts are not public; the conclusion they drove (the <code>submit_side_effect</code> gap) is verifiable in-repo at <code>bene/runtime/local.py</code> + <code>bene/temporal/runtime_impl.py</code>.</li>
-<li><strong>Pass criteria results:</strong></li>
-<li>✓ Activities (<code>should_advise</code>, <code>post_advisory</code>) readable in &lt;5 min by non-Temporal engineer</li>
-<li>⚠ Workflow class still leaks <code>@workflow.*</code> decorators (motivates <code>EntityActor</code> base — see "Future L2 capabilities" above)</li>
-<li>✓ −35 LOC vs raw Temporal SDK in the two activities</li>
-<li>✓ Tests cover cold-start race, replay safety, tumbling-window boundary, business idempotency</li>
-<li>
-<p>✓ Two business-logic sections per activity, marker-delimited</p>
-</li>
-<li>
-<p><strong>What the experiment caught (most valuable output):</strong> the IR as originally specified included <code>business_idempotency_key</code> and <code>SideEffectLabel</code> as concepts but <strong>no atomic verb for the check-then-write pattern</strong>. The consumer had to invent <code>runtime.check_side_effect</code> + <code>runtime.record_side_effect</code> on the spot — a guaranteed TOCTOU race on activity retry. This surfaced the <code>submit_side_effect</code> gap, now implemented (<code>bene/runtime/local.py</code>, <code>bene/runtime/handle.py</code>, <code>bene/temporal/runtime_impl.py</code>). Without writing real generated code, the gap would have shipped to production.</p>
-</li>
-<li>
-<p><strong>Insight on what IR forces vs what it allows:</strong> the consumer reported that <code>business_idempotency_key</code> as a <em>named concept</em> forced confrontation of "what is business identity here?" — producing a two-shape result (non-burst uses <code>(post_advisory, testrun_id, jira_ticket_key)</code>, burst uses <code>(post_advisory, bucket_id, seed_ticket_key)</code>) that a hand-writer using Temporal's <code>workflow_id</code> would likely have missed. This is the canonical example of capability-unlock convenience: the abstraction makes a class of bug structurally unrepresentable, not just easier to avoid.</p>
-</li>
+<li><strong>吐出来的战利品：</strong> 在内部打磨出来的，然后直接扔给了一个没有开源的下游服务去跑 —— 那是一个聚合器 activity 外加一整套测试 (大约 339 行代码 + 419 行测试)。虽然代码没开源，但它活生生逼出来的那一条血泪教训 (也就是那个要命的 <code>submit_side_effect</code> 缺口) 是可以去开源仓库里的 <code>bene/runtime/local.py</code> + <code>bene/temporal/runtime_impl.py</code> 查实锤的。</li>
+<li><strong>能不能过及格线：</strong></li>
+<li>✓ Activities (<code>should_advise</code>, <code>post_advisory</code>) 让完全不懂 Temporal 的老哥在 5 分钟内就看懂了</li>
+<li>⚠ 工作流类里还是特么漏着一堆 <code>@workflow.*</code> (这就逼着我们去搞了上面提到的那个 <code>EntityActor</code> 基类)</li>
+<li>✓ 在那两个 activity 里，比起活生生去敲裸装的 Temporal SDK，生生抠掉了 35 行代码</li>
+<li>✓ 测试用例死死咬住了那些最要命的冷启动竞态、重放安全、滑动时间窗边界、以及业务逻辑层面的幂等</li>
+<li>✓ 每个 activity 里极其规整地划分了两块业务逻辑区，而且都有路标 (marker) 死死守着</li>
+<li><strong>这波试水试出来最要命的破绽：</strong> 最初设计的 IR 里虽然有 <code>business_idempotency_key</code> (业务幂等键) 和 <code>SideEffectLabel</code> (副作用标签) 这些高大上的概念，但<strong>压根就没给那个最核心的 "检查-然后-写入" (check-then-write) 动作提供一个原子操作</strong>。那个倒霉的业务方只能被逼得在现场用 <code>runtime.check_side_effect</code> 拼上 <code>runtime.record_side_effect</code> —— 这在 activity 遇到重试的时候，绝对是个 100% 会炸的 TOCTOU (Time-of-check to time-of-use) 竞态灾难。这也硬生生逼出了那个 <code>submit_side_effect</code> 原语，并且现在已经落地了 (<code>bene/runtime/local.py</code>, <code>bene/runtime/handle.py</code>, <code>bene/temporal/runtime_impl.py</code>)。如果不是硬着头皮去让生成器吐一次真实代码，这个巨坑绝对会被完好无损地端上生产环境去炸掉。</li>
+<li><strong>抽象层能逼死什么，又能容忍什么：</strong> 业务方跑来吐槽，说把 <code>business_idempotency_key</code> 包装成一个<em>必须被点名道姓的概念</em>，硬生生逼着他们直面了那个极其哲学的拷问："在这个破场景里，到底什么才算是一个活生生的业务实体？" —— 这直接逼出了两套截然不同的骨架 (平时用 <code>(post_advisory, testrun_id, jira_ticket_key)</code>，大爆发时用 <code>(post_advisory, bucket_id, seed_ticket_key)</code>)。如果换做是一个直接徒手敲 Temporal <code>workflow_id</code> 的老哥，绝对两眼一摸黑就错过了这种细分。这就是这种 "极度克制的抽象" 最大的杀伤力：它不是让你少踩几个坑，而是让某一类愚蠢的 bug 在结构上连诞生的资格都没有。</li>
 </ul>
-<p>Future runs should target a second entity-actor consumer (request coalescer, conversation actor) to test whether the IR generalizes beyond the burst-aggregator shape.</p>
+<p>下次的试水，必须去抓第二只实体 Actor 来当小白鼠 (比如请求去重器、或者是对话引擎 actor)，去看看这套 IR 是不是真的能在离开了警报聚合器这个温室之后，照样能极其稳健地泛化铺开。</p>
 <hr />
-<h2 id="what-this-is-not">What this is not</h2>
+<h2 id="_5">别对它有什么不切实际的幻想</h2>
 <ul>
-<li><strong>Not a code-generation framework competing with Cursor or Copilot.</strong> Codegen here is an internal capability for BENE consumers, not a general-purpose tool.</li>
-<li><strong>Not a replacement for the boundary plan abstractions.</strong> Codegen targets them; it does not replace them.</li>
-<li><strong>Not a goal to make Temporal disappear.</strong> Some consumers will still want to write Temporal directly. Codegen is an opt-in path for the common cases.</li>
-<li><strong>Not on the critical path for any current consumer.</strong> The boundary plan primitives ship first. Codegen is a layer that can be added later, validated against real consumer needs.</li>
+<li><strong>它不是跑来抢 Cursor 或者 Copilot 饭碗的自动补全框架。</strong> 这里的代码生成只是 BENE 玩家关起门来自己用的一把特制兵器，绝不是什么包打天下的万金油。</li>
+<li><strong>它绝不是用来取代那套边界抽象原语的。</strong> 它是以这些原语为靶子去射击的；不是来掀它们桌子的。</li>
+<li><strong>它从来没想过要把 Temporal 彻底挫骨扬灰。</strong> 总有那么几个极其硬核的变态，就是喜欢光着膀子去生敲 Temporal。代码生成只是给 90% 的正常人铺设的一条选装捷径。</li>
+<li><strong>它绝不应该卡住任何现行业务的脖子。</strong> 边界计划的那些基础原语必须先落地。代码生成是一层随时可以之后再盖上去的顶楼，可以在真实的业务需求上慢慢去磨。</li>
 </ul>
 <hr />
-<h2 id="see-also">See also</h2>
+<h2 id="_6">顺藤摸瓜</h2>
 <ul>
-<li><a href="philosophy.html">philosophy.md</a> — Why BENE is structured around evolving harnesses</li>
-<li><a href="skills.html">skills.md</a> — How reusable patterns are stored and retrieved</li>
-<li><a href="meta-harness.html">meta-harness.md</a> — How BENE evolves harness strategies</li>
-<li><a href="use-cases.html">use-cases.md</a> — The current BENE use-case landscape (mostly parallel-agent shapes; entity-actor is the new direction codegen would serve)</li>
-<li><code>bene/runtime/handle.py</code> (runtime protocol) + <code>bene/runtime/core.py</code> (boundary DTOs) — what the IR codegen targets</li>
+<li><a href="philosophy.html">核心哲学 (philosophy.md)</a> — 扒一扒为什么 BENE 把身家性命全押在引擎 (harnesses) 的进化上</li>
+<li><a href="skills.html">技能库 (skills.md)</a> — 那些能抄的作业和套路到底藏在哪，以及怎么把它们掏出来</li>
+<li><a href="meta-harness.html">元引擎 (meta-harness.md)</a> — 看看 BENE 是怎么让引擎本身产生变异和进化的</li>
+<li><a href="use-cases.html">用例地图 (use-cases.md)</a> — BENE 现有的落地版图 (目前大头全在并行特种兵并发上；实体 Actor 才是代码生成这把刀真正要切进去的新蛋糕)</li>
+<li><code>bene/runtime/handle.py</code> (运行时协议) + <code>bene/runtime/core.py</code> (边界 DTO) — 去看看 IR 的靶子到底长什么样</li>
 </ul>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/codegen.md" target="_blank" rel="noopener noreferrer">docs/codegen.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>

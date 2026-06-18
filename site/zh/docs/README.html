@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>BENE Documentation — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — BENE Documentation" />
+<title>BENE 文档 — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — BENE 文档" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -205,12 +205,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="codegen.html">codegen</a>
 <a href="dashboard.html">dashboard</a>
 <a href="deployment.html">deployment</a>
+<a href="examples.html">examples</a>
 <a href="integrating-bene.html">integrating-bene</a>
 <a href="mcp-integration.html">mcp-integration</a>
 <a href="memory.html">memory</a>
 <a href="meta-harness.html">meta-harness</a>
 <a href="philosophy.html">philosophy</a>
-<a href="primitive-review-cycle.html">primitive-review-cycle</a>
 <a href="probe-authoring.html">probe-authoring</a>
 <a href="schema.html">schema</a>
 <a href="shared-log.html">shared-log</a>
@@ -219,14 +219,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <h4>Recipes</h4>
 <a href="recipes/atomic-completion.html">atomic-completion</a>
 <h4>Design and claims</h4>
-<a href="design/BENE2-DESIGN.html">BENE2-DESIGN</a>
-<a href="design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
-<a href="design/KERNEL-SPEC.html">KERNEL-SPEC</a>
-<a href="design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
-<h4>Evidence and research</h4>
-<a href="research/GAP-AUDIT.html">GAP-AUDIT</a>
-<a href="research/SYNTHESIS.html">SYNTHESIS</a>
-<a href="research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<a href="design/architecture-diagrams.html">architecture-diagrams</a>
 <h4>Benchmarks and gates</h4>
 <a href="benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
 <a href="benchmarks/PREREG.html">PREREG</a>
@@ -244,242 +237,243 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
 <h4>Case studies</h4>
 <a href="case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
-<h4>Infrastructure</h4>
-<a href="infra/DNS.html">DNS</a></aside>
+<a href="case-studies/cs03-multi-agent-arena.html">cs03-multi-agent-arena</a>
+<a href="case-studies/cs04-trace-rag-other-memory.html">cs04-trace-rag-other-memory</a>
+<a href="case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="index.html">docs</a> / README.md</div>
-<h1 id="bene-documentation">BENE Documentation</h1><div class="demo-embed"><div class="frame"><div class="dots"><i></i><i></i><i></i></div><img src="../../assets/demos/demo-keyless.gif" alt="Demo — keyless first value: bene init &amp;&amp; bene demo --no-ui, 0.3s, recorded live against bene-main HEAD." loading="lazy" onerror="this.closest('.demo-embed').style.display='none'"></div><p>Demo — keyless first value: bene init &amp;&amp; bene demo --no-ui, 0.3s, recorded live against bene-main HEAD.</p></div>
-<p>Run a swarm of AI agents on your own machine, watch every move, and roll back anything they break.</p>
+<h1 id="bene">BENE 文档</h1><div class="demo-embed"><div class="frame"><div class="dots"><i></i><i></i><i></i></div><img src="../assets/demos/demo-keyless.gif" alt="Demo — keyless first value: bene init &amp;&amp; bene demo --no-ui, 0.3s, recorded live against bene-main HEAD." loading="lazy" onerror="this.closest('.demo-embed').style.display='none'"></div><p>Demo — keyless first value: bene init &amp;&amp; bene demo --no-ui, 0.3s, recorded live against bene-main HEAD.</p></div>
+<p>在本地机器上运行一组 AI agent 蜂群，监测它们的一举一动，并能随时回滚任何被它们搞砸的操作。</p>
 <blockquote>
-<p><strong>Every agent's files, every event, every checkpoint — one SQLite file you can <code>cp</code>. Nothing hides in a cloud.</strong></p>
+<p><strong>每个 agent 的文件、每一次事件、每一个 checkpoint —— 全部记录在一个你可以直接 <code>cp</code> 复制的 SQLite 文件里。没有潜藏的云端依赖。</strong></p>
 </blockquote>
-<p>BENE (Breeding-program Evolutionary Nexus for Engrams) gives each agent a private filesystem, automatic checkpoints, a live dashboard, and an audit trail you can query.</p>
+<p>BENE (Breeding-program Evolutionary Nexus for Engrams) 为每个 agent 分配专属的私有文件系统，提供自动 checkpoint 机制、实时看板，以及一份完全支持 SQL 查询的审计追踪（audit trail）。</p>
 <hr />
-<h2 id="from-clone-to-demo">From clone to demo</h2>
+<h2 id="clone-demo">极速起步：从 clone 到 demo</h2>
 <div class="codehilite"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/good-night-oppie/bene.git<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>bene
 uv<span class="w"> </span>sync
-uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>setup<span class="w">       </span><span class="c1"># configure models, init database, install MCP server</span>
-uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>demo<span class="w">        </span><span class="c1"># see it in action — no API keys needed</span>
+uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>setup<span class="w">       </span><span class="c1"># 配置模型，初始化数据库，安装 MCP server</span>
+uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>demo<span class="w">        </span><span class="c1"># 观看运行效果 —— 完全不需要 API key</span>
 </code></pre></div>
 
 <hr />
-<h2 id="drive-it-from-your-editor">Drive it from your editor</h2>
-<p>After <code>uv run bene setup</code>, Claude Code, Cursor, and other MCP clients can drive BENE in plain language:</p>
-<div class="codehilite"><pre><span></span><code>with bene, review my payments module — security agent and test-writing agent in parallel
+<h2 id="_1">从编辑器中直接驱动</h2>
+<p>运行 <code>uv run bene setup</code> 后，Claude Code、Cursor 以及其他任何 MCP client 都可以用自然语言直接驱动 BENE：</p>
+<div class="codehilite"><pre><span></span><code>with bene, 帮我 review payments 模块 —— 让安全 agent 和测试 agent 并行工作
 </code></pre></div>
 
-<div class="codehilite"><pre><span></span><code>with bene, refactor auth.py — implement, test, and document in parallel
+<div class="codehilite"><pre><span></span><code>with bene, 重构 auth.py —— 并行执行实现、测试和文档更新
 </code></pre></div>
 
-<div class="codehilite"><pre><span></span><code>with bene, show me all agents that failed in the last run and what errors they hit
+<div class="codehilite"><pre><span></span><code>with bene, 找出上次运行中所有失败的 agent，并展示它们遭遇了什么错误
 </code></pre></div>
 
-<p>Client setup and the full 37 MCP tools: <a href="mcp-integration.html">MCP Integration</a>.</p>
+<p>客户端配置以及全部 37 个 MCP tools 的清单，请见：<a href="mcp-integration.html">MCP 整合方案</a>。</p>
 <hr />
-<h2 id="how-it-works">How it works</h2>
-<p><strong>Virtual filesystem (VFS)</strong> — each agent works in a private filesystem stored inside the database. No agent can read another's files: isolation is a SQL predicate (<code>WHERE agent_id = ?</code>), not a convention.</p>
-<p><strong>Checkpoint</strong> — one agent's files plus KV state, frozen at a chosen moment. Restore in milliseconds; diffing two shows what changed. More in <a href="checkpoints.html">Checkpoints</a>.</p>
-<p><strong>Audit trail</strong> — reads, writes, tool calls, state changes, lifecycle events: each lands in the <code>events</code> table as one append-only row, queryable in SQL. Layout: <a href="schema.html">Schema</a>.</p>
-<p><strong>Tier router</strong> — the Difficulty-Aware Routing by Tier router matches each task to a model tier: trivial work runs on a local 7B, hard work on a 70B or Claude. Internals: <a href="architecture.html">Architecture</a>.</p>
-<p><strong>Single <code>.db</code> file</strong> — no server, no cloud account. One SQLite file to <code>cp</code> for backup, open in any SQLite tool, or hand to a teammate.</p>
+<h2 id="_2">核心机制</h2>
+<p><strong>虚拟文件系统 (VFS)</strong> —— 每个 agent 都在数据库内的私有文件系统中工作。没有任何 agent 能越权读取其他 agent 的文件：隔离性是由底层的 SQL 约束（<code>WHERE agent_id = ?</code>）来保证的，而不是靠代码约定。</p>
+<p><strong>Checkpoint (快照)</strong> —— 将单个 agent 的文件和 KV 状态冻结在特定时刻。毫秒级恢复；对两个 checkpoint 进行 diff 即可精准掌控变动。详见 <a href="checkpoints.html">Checkpoints</a>。</p>
+<p><strong>审计追踪 (Audit trail)</strong> —— 文件读写、tool 调用、状态变更、生命周期事件：每一次动作都作为一条不可篡改的（append-only）记录写入 <code>events</code> 表，随时可以用 SQL 查询。表结构设计：<a href="schema.html">Schema 数据库大纲</a>。</p>
+<p><strong>Tier 路由器</strong> —— 难度感知路由（Difficulty-Aware Routing by Tier）负责将任务分配给合适的模型层级：琐碎的工作交给本地 7B 模型，复杂的硬核任务则路由给 70B 模型或 Claude。内部原理：<a href="architecture.html">架构解析</a>。</p>
+<p><strong>单 <code>.db</code> 文件存储</strong> —— 没有独立的服务进程，不需要配置云账号。仅靠一个 SQLite 文件，你就可以通过 <code>cp</code> 进行备份，用任意 SQLite 工具打开检视，或者直接发给你的队友。</p>
 <hr />
-<h2 id="pick-a-guide-by-job">Pick a guide by job</h2>
+<h2 id="_3">场景导航</h2>
 <table>
 <thead>
 <tr>
-<th>When you want to…</th>
-<th>Guide</th>
-<th>What you get</th>
+<th>你的需求...</th>
+<th>指南</th>
+<th>内容概要</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Watch live</td>
-<td><a href="dashboard.html">Dashboard</a></td>
-<td>Gantt timeline of agent activity, per-agent inspector, live events, multi-project views</td>
+<td>实时观测</td>
+<td><a href="dashboard.html">Dashboard 看板</a></td>
+<td>Agent 活动的甘特图，单 agent 探查器，实时事件流，多项目视图</td>
 </tr>
 <tr>
-<td>Script it</td>
-<td><a href="cli-reference.html">CLI Reference</a></td>
-<td>Every command and every flag, documented</td>
+<td>编写脚本</td>
+<td><a href="cli-reference.html">CLI 参考手册</a></td>
+<td>每一个命令、每一个 flag 的详尽说明</td>
 </tr>
 <tr>
-<td>Undo mistakes</td>
-<td><a href="checkpoints.html">Checkpoints</a></td>
-<td>Snapshot and restore, diff two checkpoints, auto-checkpointing, storage behavior</td>
+<td>撤销错误</td>
+<td><a href="checkpoints.html">Checkpoints 机制</a></td>
+<td>状态快照与回滚，对比两次 checkpoint，自动 checkpoint 策略及存储原理</td>
 </tr>
 <tr>
-<td>Share memory</td>
-<td><a href="memory.html">Cross-Agent Memory</a></td>
-<td>FTS5-searchable memory shared across agents and sessions</td>
+<td>共享记忆</td>
+<td><a href="memory.html">跨 Agent Memory</a></td>
+<td>在不同 agent 和不同 session 间共享支持 FTS5 检索的记忆</td>
 </tr>
 <tr>
-<td>Reuse skills</td>
-<td><a href="skills.html">Skill Library</a></td>
-<td>Shared procedural skill templates, FTS5-searchable, usage-tracked</td>
+<td>复用技能</td>
+<td><a href="skills.html">Skill 技能库</a></td>
+<td>共享支持 FTS5 检索的程序化技能模板，并跟踪使用情况</td>
 </tr>
 <tr>
-<td>Coordinate decisions</td>
-<td><a href="shared-log.html">Shared Log</a></td>
-<td>LogAct protocol: declare intent, vote, decide</td>
+<td>协同决策</td>
+<td><a href="shared-log.html">Shared Log 共享日志</a></td>
+<td>LogAct 协议：声明意图 (intent) → 投票 (vote) → 决断 (decide)</td>
 </tr>
 <tr>
-<td>Tune the harness</td>
-<td><a href="meta-harness.html">Meta-Harness</a></td>
-<td>Automated search over prompts and strategies</td>
+<td>调优 harness</td>
+<td><a href="meta-harness.html">Meta-Harness 演化搜寻</a></td>
+<td>对 prompt 和执行策略的自动化参数搜寻</td>
 </tr>
 <tr>
-<td>Borrow a pattern</td>
-<td><a href="use-cases.html">Use Cases</a></td>
-<td>Code-review swarms, parallel refactors, self-healing agents, post-mortems, incident response, ML research</td>
+<td>借鉴模式</td>
+<td><a href="use-cases.html">应用场景 (Use Cases)</a></td>
+<td>Code-review 蜂群，并行重构，自愈合 agent，事后复盘，事故响应，ML 研究</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="proof-tutorials-and-case-studies">Proof: tutorials and case studies</h2>
-<p><strong>Component-deep</strong>:</p>
+<h2 id="_4">验证：教程与案例分析</h2>
+<p><strong>组件深度解析</strong>：</p>
 <table>
 <thead>
 <tr>
-<th>Tutorial</th>
-<th>Focus</th>
+<th>教程</th>
+<th>核心焦点</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a href="tutorials/t11-local-agents-vllm.html">t11 — Local Agents with vLLM</a></td>
-<td>Zero-cost, auditable local multi-agent stack — vLLM + Tier + Claude Code MCP</td>
+<td><a href="tutorials/t11-local-agents-vllm.html">t11 — 基于 vLLM 的本地 Agent</a></td>
+<td>零成本、可审计的本地多 agent 栈 —— vLLM + Tier 路由 + Claude Code MCP</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Full walkthroughs</strong> (complete operational stories):</p>
+<p><strong>完整工作流演练</strong> (端到端的实战场景)：</p>
 <table>
 <thead>
 <tr>
-<th>Tutorial</th>
-<th>Scenario</th>
+<th>教程</th>
+<th>实战场景</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a href="tutorials/t00-bene-e2e-walkthrough.html">t00 — End-to-End Walkthrough</a></td>
-<td>Start here. Spawn → run → checkpoint → audit → restore → export</td>
+<td><a href="tutorials/t00-bene-e2e-walkthrough.html">t00 — 端到端完整演练</a></td>
+<td><strong>从此开始</strong>。生成 → 运行 → checkpoint → 审计 → 恢复 → 导出</td>
 </tr>
 <tr>
-<td><a href="tutorials/t01-bene-meta-harness.html">t01 — Meta-Harness 48% to 83%</a></td>
-<td>Automated prompt-strategy search in 15 iterations, $0.14</td>
+<td><a href="tutorials/t01-bene-meta-harness.html">t01 — Meta-Harness: 胜率从 48% 提升至 83%</a></td>
+<td>15 轮自动化 prompt 及策略搜寻，总花费 $0.14</td>
 </tr>
 <tr>
-<td><a href="tutorials/t02-e2e-self-healing.html">t02 — End-to-End Self-Healing</a></td>
-<td>Wrong-fix detection, surgical rollback, root cause from audit trail</td>
+<td><a href="tutorials/t02-e2e-self-healing.html">t02 — 端到端的自我愈合</a></td>
+<td>错误修复检测，外科手术式回滚，基于审计日志的根因分析</td>
 </tr>
 <tr>
-<td><a href="tutorials/t03-security-swarm.html">t03 — Security Swarm</a></td>
-<td>4 parallel auditors, SQL findings aggregation</td>
+<td><a href="tutorials/t03-security-swarm.html">t03 — 安全审计蜂群</a></td>
+<td>4 个审计 agent 并行工作，使用 SQL 聚合发现的安全隐患</td>
 </tr>
 <tr>
-<td><a href="tutorials/t04-migration-rollback.html">t04 — Migration Rollback</a></td>
-<td>2M-row backfill anomaly, 0.3s surgical rollback</td>
+<td><a href="tutorials/t04-migration-rollback.html">t04 — 数据库迁移回滚</a></td>
+<td>200万行数据回填异常应对，0.3秒极速回滚</td>
 </tr>
 <tr>
-<td><a href="tutorials/t05-incident-response.html">t05 — Incident Response</a></td>
-<td>12-second root-cause from event journal SQL</td>
+<td><a href="tutorials/t05-incident-response.html">t05 — 生产事故响应</a></td>
+<td>基于 SQL 事件日志的 12 秒根因定位</td>
 </tr>
 <tr>
-<td><a href="tutorials/t06-ml-research-lab.html">t06 — ML Research Lab</a></td>
-<td>4 hypothesis agents overnight, SQL-comparable results</td>
+<td><a href="tutorials/t06-ml-research-lab.html">t06 — ML 研究实验室</a></td>
+<td>4 个负责验证假设的 agent 彻夜运行，通过 SQL 对比最终结果</td>
 </tr>
 <tr>
-<td><a href="tutorials/t07-regression-guard.html">t07 — Regression Guard</a></td>
-<td>Model swap blocked, Meta-Harness restores baseline</td>
+<td><a href="tutorials/t07-regression-guard.html">t07 — 衰退防御 (Regression Guard)</a></td>
+<td>拦截失败的模型替换，Meta-Harness 自动回滚到基线状态</td>
 </tr>
 <tr>
-<td><a href="tutorials/t08-hundred-agents-scale.html">t08 — 100-Agent Scale</a></td>
-<td>847 agents at scale, hub coordination, 2.45M tokens saved</td>
+<td><a href="tutorials/t08-hundred-agents-scale.html">t08 — 100 Agent 规模化运行</a></td>
+<td>847 个 agent 规模化部署，hub 协调机制，节省 245 万 token</td>
 </tr>
 <tr>
-<td><a href="tutorials/t10-ci-overnight-bene-swarm.html">t10 — Self-Healing CI Overnight</a></td>
-<td>Regression gate, auto-fix, review and refactor swarms in GitHub Actions</td>
+<td><a href="tutorials/t10-ci-overnight-bene-swarm.html">t10 — CI 环境中的彻夜自愈</a></td>
+<td>GitHub Actions 中的衰退拦截、自动修复、以及代码 review 与重构蜂群</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Case studies</strong> (real Oppie engagements):</p>
+<p><strong>真实案例研究</strong> (Oppie 实际战役复盘)：</p>
 <table>
 <thead>
 <tr>
-<th>Case study</th>
-<th>Result</th>
+<th>案例</th>
+<th>成果</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a href="case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02 — Self-Healing CI</a></td>
-<td>Multi-agent CI design, insights, supply-chain practices, cross-team influence</td>
+<td><a href="case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02 — 持续集成 (CI) 自愈</a></td>
+<td>多 agent CI 架构设计、核心洞察、软件供应链实践及跨团队影响力</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="example-scripts">Example scripts</h2>
-<p>In <code>examples/</code> at the repo root:</p>
+<h2 id="_5">示例脚本</h2>
+<p>位于仓库根目录的 <code>examples/</code> 下：</p>
 <ul>
-<li><code>library_basics.py</code> — VFS operations, no LLMs involved</li>
-<li><code>code_review_swarm.py</code> — 4 review agents in parallel</li>
-<li><code>parallel_refactor.py</code> — implement, test, document simultaneously</li>
-<li><code>self_healing_agent.py</code> — checkpoint, auto-restore on a failed run</li>
-<li><code>autonomous_research_lab.py</code> — N hypothesis agents, results compared in SQL</li>
-<li><code>meta_harness_*.py</code> — prompt and strategy optimization, automated</li>
+<li><code>library_basics.py</code> — 演示基础 VFS 操作，不接入 LLM</li>
+<li><code>code_review_swarm.py</code> — 4 个 review agent 并行工作</li>
+<li><code>parallel_refactor.py</code> — 并行执行代码实现、测试和文档更新</li>
+<li><code>self_healing_agent.py</code> — 自动在失败运行时触发 checkpoint 恢复</li>
+<li><code>autonomous_research_lab.py</code> — 启动 N 个假设验证 agent，最后通过 SQL 对比输出结果</li>
+<li><code>meta_harness_*.py</code> — 自动化的 prompt 和执行策略寻优</li>
 </ul>
 <hr />
-<h2 id="look-it-up">Look it up</h2>
+<h2 id="_6">查阅资料</h2>
 <table>
 <thead>
 <tr>
-<th>Reference</th>
-<th>What you get</th>
+<th>参考手册</th>
+<th>内容概要</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a href="schema.html">Schema</a></td>
-<td>The 11 SQLite tables — every column, every index</td>
+<td><a href="schema.html">Schema 数据库大纲</a></td>
+<td>全景拆解 11 张 SQLite 表 —— 包含每一个字段和索引</td>
 </tr>
 <tr>
-<td><a href="architecture.html">Architecture</a></td>
-<td>Subsystems, data movement, design-decision reasoning</td>
+<td><a href="architecture.html">架构解析 (Architecture)</a></td>
+<td>系统划分、数据流转机制，以及设计背后的权衡与推演</td>
 </tr>
 <tr>
-<td><a href="deployment.html">Deployment</a></td>
-<td>Setting up vLLM, production config, Docker</td>
+<td><a href="deployment.html">部署指南 (Deployment)</a></td>
+<td>vLLM 配置、生产环境设置、Docker 容器化</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="build-it-into-your-agent">Build it into your agent</h2>
+<h2 id="agent">融入你自己的 Agent</h2>
 <table>
 <thead>
 <tr>
-<th>Guide</th>
-<th>What you get</th>
+<th>指南</th>
+<th>内容概要</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a href="integrating-bene.html">Integrating BENE</a></td>
-<td>The honest map: what's turnkey vs what you wire yourself</td>
+<td><a href="integrating-bene.html">集成 BENE</a></td>
+<td>一份坦诚的地图：什么是开箱即用的，什么需要你自己手写连线</td>
 </tr>
 <tr>
-<td><a href="probe-authoring.html">Probe authoring</a></td>
-<td>Write a kill gate that can actually fail, then wire it into CI with <code>bene probe run --json</code></td>
+<td><a href="probe-authoring.html">Probe (探针) 开发</a></td>
+<td>编写真正能失效拦截的 kill gate，然后通过 <code>bene probe run --json</code> 接入 CI</td>
 </tr>
 <tr>
-<td><a href="recipes/atomic-completion.html">Atomic completion recipe</a></td>
-<td>Exactly-once, ghost-free completion on a plain SQLite/JSONL log — no Temporal dependency</td>
+<td><a href="recipes/atomic-completion.html">原子化补全方案 (Atomic Completion)</a></td>
+<td>基于纯 SQLite/JSONL 日志实现的 Exactly-once（精确一次）、无幽灵执行的补全机制 —— 无需引入 Temporal</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="why-its-built-this-way">Why it's built this way</h2>
-<p><a href="philosophy.html">Design Philosophy</a> explains why BENE adopts published research instead of inventing its own, what qualifies a technique for integration, and what comes next.</p>
+<h2 id="_7">设计哲学</h2>
+<p><a href="philosophy.html">设计哲学 (Design Philosophy)</a> 解释了 BENE 为什么选择采纳已发表的研究成果而不是重复造轮子，一项技术需要达到什么标准才会被采纳整合，以及系统的下一步演进方向。</p>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/README.md" target="_blank" rel="noopener noreferrer">docs/README.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>
 </div>

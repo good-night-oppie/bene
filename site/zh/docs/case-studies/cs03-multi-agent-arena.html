@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>A Competitive Coding Arena on BENE: Design at the Substrate Layer — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — A Competitive Coding Arena on BENE: Design at the Substrate Layer" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+:root { --bg:#F0EEE8; --surface:#EDE9E4; --border:#CFCCC8; --ink:#1F1D1C; --mute:#62666D; --accent:#EE6018; --gold:#B46A35; --term-bg:#332E2B; --term-fg:#EDE9E4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 Geist,ui-sans-serif,system-ui,sans-serif; }
+a { color:var(--gold); text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent); text-underline-offset:3px; }
+a:hover { color:var(--accent); }
+.top { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+.top-in { max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+.brand { font-family:Geist,ui-sans-serif,sans-serif; font-weight:700; letter-spacing:.12em; color:var(--ink); text-decoration:none; }
+.top a.nav { color:var(--mute); text-decoration:none; font-size:14px; }
+.top a.nav:hover { color:var(--accent); }
+.wrap { max-width:1200px; margin:0 auto; padding:24px; display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; }
+aside.sb { position:sticky; top:80px; align-self:start; max-height:calc(100vh - 100px); overflow-y:auto; font-size:13.5px; border-left:1px solid var(--border); padding-left:16px; }
+.sb h4 { margin:18px 0 6px; font:600 11px/1 "Geist Mono",ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+.sb a { display:block; padding:3px 0; color:var(--mute); text-decoration:none; }
+.sb a:hover { color:var(--accent); }
+.sb a.cur { color:var(--ink); font-weight:600; }
+main { min-width:0; max-width:760px; }
+main h1 { font-family:Geist,ui-sans-serif,sans-serif; font-size:2.1rem; line-height:1.2; margin:.2em 0 .5em; }
+main h2 { font-family:Geist,ui-sans-serif,sans-serif; font-size:1.45rem; margin-top:2em; border-bottom:1px solid var(--border); padding-bottom:.35em; }
+main h3 { font-size:1.12rem; margin-top:1.7em; }
+main img { max-width:100%; border:1px solid var(--border); border-radius:8px; }
+main table { border-collapse:collapse; width:100%; font-size:14.5px; display:block; overflow-x:auto; }
+main th, main td { border:1px solid var(--border); padding:8px 12px; text-align:left; vertical-align:top; }
+main th { background:var(--surface); font-weight:600; }
+main blockquote { margin:1em 0; padding:.2em 1.2em; border-left:3px solid var(--accent); color:var(--mute); background:var(--surface); border-radius:0 4px 4px 0; }
+main :not(pre) > code { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:.08em .35em; font:.86em "Geist Mono",ui-monospace,monospace; }
+.codehilite, main pre { background:var(--term-bg); color:var(--term-fg); border-radius:6px; padding:16px 18px; overflow-x:auto; font:13.5px/1.55 "Geist Mono",ui-monospace,monospace; }
+.codehilite pre, pre code { background:none; padding:0; margin:0; border:none; }
+.demo-embed { margin:20px 0 28px; }
+.demo-embed .frame { background:var(--term-bg); border-radius:6px; padding:14px; }
+.demo-embed .dots { display:flex; gap:6px; margin-bottom:10px; }
+.demo-embed .dots i { width:10px; height:10px; border-radius:50%; background:#3a3344; }
+.demo-embed img { border:none; border-radius:6px; display:block; width:100%; }
+.demo-embed p { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:8px 2px 0; }
+.crumbs { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-bottom:8px; }
+.crumbs a { color:var(--mute); }
+.src { font:12.5px "Geist Mono",ui-monospace,monospace; margin-top:48px; padding-top:16px; border-top:1px solid var(--border); color:var(--mute); }
+footer.ft { border-top:1px solid var(--border); margin-top:40px; }
+footer.ft .in { max-width:1200px; margin:0 auto; padding:24px; font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.idx-group h2 { font-family:Geist,ui-sans-serif,sans-serif; border:none; margin-top:1.6em; }
+.idx-group ul { list-style:none; padding:0; margin:.4em 0; }
+.idx-group li { padding:6px 0; border-bottom:1px dashed var(--border); }
+.idx-group .path { font:11.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-left:8px; }
+/* Mobile overrides — kept at the end so source order beats base rules.
+   Earlier this rule sat between base rules and got overridden by a later
+   `aside.sb { position:sticky }`, leaving the sidebar stuck on top of
+   main content on phones. */
+@media (max-width: 860px) {
+  .wrap { grid-template-columns:1fr; gap:24px; padding:16px; }
+  aside.sb { position:static; max-height:none; border-left:none; border-bottom:1px solid var(--border); padding-left:0; padding-bottom:16px; font-size:13px; }
+  .sb h4 { margin:12px 0 4px; }
+  main { max-width:none; }
+  main h1 { font-size:1.6rem; }
+  main h2 { font-size:1.2rem; }
+  main h3 { font-size:1.05rem; }
+  .top-in { padding:0 16px; gap:14px; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #49483e }
+.codehilite { background: #272822; color: #F8F8F2 }
+.codehilite .c { color: #959077 } /* Comment */
+.codehilite .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.codehilite .esc { color: #F8F8F2 } /* Escape */
+.codehilite .g { color: #F8F8F2 } /* Generic */
+.codehilite .k { color: #66D9EF } /* Keyword */
+.codehilite .l { color: #AE81FF } /* Literal */
+.codehilite .n { color: #F8F8F2 } /* Name */
+.codehilite .o { color: #FF4689 } /* Operator */
+.codehilite .x { color: #F8F8F2 } /* Other */
+.codehilite .p { color: #F8F8F2 } /* Punctuation */
+.codehilite .ch { color: #959077 } /* Comment.Hashbang */
+.codehilite .cm { color: #959077 } /* Comment.Multiline */
+.codehilite .cp { color: #959077 } /* Comment.Preproc */
+.codehilite .cpf { color: #959077 } /* Comment.PreprocFile */
+.codehilite .c1 { color: #959077 } /* Comment.Single */
+.codehilite .cs { color: #959077 } /* Comment.Special */
+.codehilite .gd { color: #FF4689 } /* Generic.Deleted */
+.codehilite .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F8F8F2 } /* Generic.Error */
+.codehilite .gh { color: #F8F8F2 } /* Generic.Heading */
+.codehilite .gi { color: #A6E22E } /* Generic.Inserted */
+.codehilite .go { color: #66D9EF } /* Generic.Output */
+.codehilite .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #959077 } /* Generic.Subheading */
+.codehilite .gt { color: #F8F8F2 } /* Generic.Traceback */
+.codehilite .kc { color: #66D9EF } /* Keyword.Constant */
+.codehilite .kd { color: #66D9EF } /* Keyword.Declaration */
+.codehilite .kn { color: #FF4689 } /* Keyword.Namespace */
+.codehilite .kp { color: #66D9EF } /* Keyword.Pseudo */
+.codehilite .kr { color: #66D9EF } /* Keyword.Reserved */
+.codehilite .kt { color: #66D9EF } /* Keyword.Type */
+.codehilite .ld { color: #E6DB74 } /* Literal.Date */
+.codehilite .m { color: #AE81FF } /* Literal.Number */
+.codehilite .s { color: #E6DB74 } /* Literal.String */
+.codehilite .na { color: #A6E22E } /* Name.Attribute */
+.codehilite .nb { color: #F8F8F2 } /* Name.Builtin */
+.codehilite .nc { color: #A6E22E } /* Name.Class */
+.codehilite .no { color: #66D9EF } /* Name.Constant */
+.codehilite .nd { color: #A6E22E } /* Name.Decorator */
+.codehilite .ni { color: #F8F8F2 } /* Name.Entity */
+.codehilite .ne { color: #A6E22E } /* Name.Exception */
+.codehilite .nf { color: #A6E22E } /* Name.Function */
+.codehilite .nl { color: #F8F8F2 } /* Name.Label */
+.codehilite .nn { color: #F8F8F2 } /* Name.Namespace */
+.codehilite .nx { color: #A6E22E } /* Name.Other */
+.codehilite .py { color: #F8F8F2 } /* Name.Property */
+.codehilite .nt { color: #FF4689 } /* Name.Tag */
+.codehilite .nv { color: #F8F8F2 } /* Name.Variable */
+.codehilite .ow { color: #FF4689 } /* Operator.Word */
+.codehilite .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.codehilite .w { color: #F8F8F2 } /* Text.Whitespace */
+.codehilite .mb { color: #AE81FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #AE81FF } /* Literal.Number.Float */
+.codehilite .mh { color: #AE81FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #AE81FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #AE81FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #E6DB74 } /* Literal.String.Affix */
+.codehilite .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.codehilite .sc { color: #E6DB74 } /* Literal.String.Char */
+.codehilite .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #E6DB74 } /* Literal.String.Doc */
+.codehilite .s2 { color: #E6DB74 } /* Literal.String.Double */
+.codehilite .se { color: #AE81FF } /* Literal.String.Escape */
+.codehilite .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.codehilite .si { color: #E6DB74 } /* Literal.String.Interpol */
+.codehilite .sx { color: #E6DB74 } /* Literal.String.Other */
+.codehilite .sr { color: #E6DB74 } /* Literal.String.Regex */
+.codehilite .s1 { color: #E6DB74 } /* Literal.String.Single */
+.codehilite .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.codehilite .bp { color: #F8F8F2 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #A6E22E } /* Name.Function.Magic */
+.codehilite .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.codehilite .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.codehilite .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.codehilite .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.codehilite .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.codehilite { background: var(--term-bg) !important; }
+</style>
+
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <a class="brand" href="../../../index.html">BENE</a>
+  <a class="nav" href="../../../index.html">Landing</a>
+  <a class="nav" href="../index.html">文档索引</a>
+  <a class="nav" href="../../../SKILL.md" target="_blank" rel="noopener noreferrer" title="把 BENE 交给你的 agent，一个 URL">SKILL.md ↗</a>
+  <button class="nav copy-llms" data-llms-url="../../../llms.txt" data-copied-label="✓ 已复制" data-opened-label="↗ 已打开" title="把 llms.txt 索引拷到剪贴板 — 粘贴进你 agent 的 context">复制 llms.txt</button>
+  <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="GitHub"><svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="vertical-align:text-bottom"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg></a>
+  <a class="nav" href="../../../docs/case-studies/cs03-multi-agent-arena.html" title="Switch to English" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">EN</a>
+</div></div>
+<div class="zh-banner" style="background:rgba(238,96,24,.07);border-bottom:1px solid rgba(238,96,24,.2);padding:12px 24px;font-size:13px;line-height:1.5;color:rgb(var(--muted))"><strong style="color:rgb(var(--text))">本页中文版正在按照 4-book methodology 翻译（Mom Test / Pressfield / Zinsser / Dicks）—— 不放 AI 翻译稿。</strong> 下方是英文原文，点上方 <a href="../../../docs/case-studies/cs03-multi-agent-arena.html" style="color:rgb(var(--accent));text-decoration:underline">EN</a> 直接到英文页面， 或在 <a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer" style="color:rgb(var(--accent));text-decoration:underline">Discussions</a> 里贡献翻译。</div>
+<script>
+(function() {
+  document.querySelectorAll('button.copy-llms').forEach(function(btn) {
+    var original = btn.textContent;
+    btn.addEventListener('click', function() {
+      var url = btn.getAttribute('data-llms-url');
+      fetch(url, { cache: 'no-cache' })
+        .then(function(r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.text(); })
+        .then(function(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).then(function() {
+              btn.textContent = btn.getAttribute('data-copied-label') || '✓ copied';
+              setTimeout(function() { btn.textContent = original; }, 2200);
+            });
+          }
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        })
+        .catch(function() {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        });
+    });
+  });
+})();
+</script>
+<div class="wrap">
+<aside class="sb"><h4>Start, operate, recover</h4>
+<a href="../README.html">README</a>
+<a href="../architecture.html">architecture</a>
+<a href="../checkpoints.html">checkpoints</a>
+<a href="../cli-reference.html">cli-reference</a>
+<a href="../codegen.html">codegen</a>
+<a href="../dashboard.html">dashboard</a>
+<a href="../deployment.html">deployment</a>
+<a href="../examples.html">examples</a>
+<a href="../integrating-bene.html">integrating-bene</a>
+<a href="../mcp-integration.html">mcp-integration</a>
+<a href="../memory.html">memory</a>
+<a href="../meta-harness.html">meta-harness</a>
+<a href="../philosophy.html">philosophy</a>
+<a href="../probe-authoring.html">probe-authoring</a>
+<a href="../schema.html">schema</a>
+<a href="../shared-log.html">shared-log</a>
+<a href="../skills.html">skills</a>
+<a href="../use-cases.html">use-cases</a>
+<h4>Recipes</h4>
+<a href="../recipes/atomic-completion.html">atomic-completion</a>
+<h4>Design and claims</h4>
+<a href="../design/architecture-diagrams.html">architecture-diagrams</a>
+<h4>Benchmarks and gates</h4>
+<a href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
+<a href="../benchmarks/PREREG.html">PREREG</a>
+<h4>Tutorial playbooks</h4>
+<a href="../tutorials/t00-bene-e2e-walkthrough.html">t00-bene-e2e-walkthrough</a>
+<a href="../tutorials/t01-bene-meta-harness.html">t01-bene-meta-harness</a>
+<a href="../tutorials/t02-e2e-self-healing.html">t02-e2e-self-healing</a>
+<a href="../tutorials/t03-security-swarm.html">t03-security-swarm</a>
+<a href="../tutorials/t04-migration-rollback.html">t04-migration-rollback</a>
+<a href="../tutorials/t05-incident-response.html">t05-incident-response</a>
+<a href="../tutorials/t06-ml-research-lab.html">t06-ml-research-lab</a>
+<a href="../tutorials/t07-regression-guard.html">t07-regression-guard</a>
+<a href="../tutorials/t08-hundred-agents-scale.html">t08-hundred-agents-scale</a>
+<a href="../tutorials/t10-ci-overnight-bene-swarm.html">t10-ci-overnight-bene-swarm</a>
+<a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
+<h4>Case studies</h4>
+<a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
+<a class="cur" href="../case-studies/cs03-multi-agent-arena.html">cs03-multi-agent-arena</a>
+<a href="../case-studies/cs04-trace-rag-other-memory.html">cs04-trace-rag-other-memory</a>
+<a href="../case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
+<main>
+<div class="crumbs"><a href="../index.html">docs</a> / case-studies/cs03-multi-agent-arena.md</div>
+<h1 id="a-competitive-coding-arena-on-bene-design-at-the-substrate-layer">A Competitive Coding Arena on BENE: Design at the Substrate Layer</h1>
+<p><em>Engineering · 2026-06</em></p>
+<hr />
+<h2 id="context">Context</h2>
+<p>Put several coding agents in a room, hand them the same real engineering task,
+and score who did it best. Simple to say; brutal to run honestly. The moment a
+result decides a ranking, every weakness in your substrate becomes an exploit: an
+agent that can see a competitor's files, a score with no receipt, a win that
+can't be reproduced, a leaderboard that quietly trusts the agent's own claim.</p>
+<p>This case study describes the <strong>substrate-layer design</strong> for that kind of arena —
+the load-bearing decisions, in the abstract. It is the <em>pattern</em>, not any one
+product's implementation; the application logic here is pseudo-code on purpose.
+What it shows is why a competitive multi-agent platform wants something like BENE
+underneath, and how the four guarantees fall out of the primitives.</p>
+<h2 id="problem-framing">Problem framing</h2>
+<p>An arena is an adversarial environment by construction. To run one where the
+ranking means something, the substrate — not the application — has to guarantee
+four things:</p>
+<ul>
+<li><strong>Isolation.</strong> A competitor must not read or write another's workspace.</li>
+<li><strong>Auditability.</strong> Every scored action needs a durable, tamper-evident receipt.</li>
+<li><strong>Reproducibility.</strong> Any result must be re-runnable to settle a dispute.</li>
+<li><strong>Accumulated memory.</strong> The platform should get smarter across matches without
+  leaking one match's secrets into another.</li>
+</ul>
+<p>If any of these lives in application code, an agent (or a bug) will eventually
+route around it. They belong in the substrate.</p>
+<h2 id="design">Design</h2>
+<p>Each guarantee maps to one BENE primitive. The arena code stays small because the
+hard parts are the engine's job.</p>
+<table>
+<thead>
+<tr>
+<th>Arena need</th>
+<th>BENE primitive</th>
+<th>Why it holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Isolation</td>
+<td>per-agent VFS, SQL-scoped by <code>agent_id</code></td>
+<td>an entrant's own <code>fs_*</code> tools stay in its namespace (add an OS sandbox + restricted tools for adversarial code — see below)</td>
+</tr>
+<tr>
+<td>Auditability</td>
+<td>append-only event journal + execution traces</td>
+<td>every action is a row (append-only by convention; hash-chain for tamper-evidence if the DB is writable)</td>
+</tr>
+<tr>
+<td>Reproducibility</td>
+<td>checkpoint / restore / diff</td>
+<td>re-run a match's BENE state from a snapshot (not external side effects)</td>
+</tr>
+<tr>
+<td>Accumulated memory</td>
+<td>engrams + trace retrieval</td>
+<td>learn across matches; the kernel retrievers don't filter by agent, so scope hits yourself</td>
+</tr>
+</tbody>
+</table>
+<h3 id="isolation-sealed-rooms-one-file">Isolation — sealed rooms, one file</h3>
+<p>Each competitor runs as an isolated agent. The engine scopes an agent's own
+<code>fs_*</code> tools by <code>agent_id</code>, so an entrant's reads and writes stay in its
+namespace. This is logical isolation in one file — for <strong>adversarial</strong> entrants,
+pair it with an OS sandbox and a restricted tool set: the default runner allows
+<code>shell_exec</code>, and the operator-facing <code>query</code>/<code>agent_read</code> tools take an explicit
+<code>agent_id</code>, so neither is a hard cross-agent boundary on its own.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bene</span>
+
+<span class="n">arena</span> <span class="o">=</span> <span class="n">Bene</span><span class="p">(</span><span class="s2">&quot;arena.db&quot;</span><span class="p">)</span>            <span class="c1"># one auditable file for the whole tournament</span>
+<span class="k">for</span> <span class="n">competitor</span> <span class="ow">in</span> <span class="n">entrants</span><span class="p">:</span>         <span class="c1"># pseudo-code: your entrant list</span>
+    <span class="n">arena</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">competitor</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">PROBLEM</span><span class="p">)</span>   <span class="c1"># each gets a sealed workspace</span>
+<span class="c1"># competitor A&#39;s own fs_* tools never resolve to competitor B&#39;s /solution.py</span>
+</code></pre></div>
+
+<h3 id="auditability-the-receipt-is-the-row">Auditability — the receipt is the row</h3>
+<p>Scoring reads from the journal, never from the agent's self-report. The log is
+append-only <em>by application convention</em> — for an arena where an entrant or
+operator can write the SQLite file, add real tamper-evidence (a hash-chain over
+rows, or an append-only store outside the contestant's reach) before treating a
+receipt as unforgeable:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># pseudo-code: derive the score from recorded events, not from what the agent said</span>
+<span class="n">events</span> <span class="o">=</span> <span class="n">arena</span><span class="o">.</span><span class="n">events</span><span class="p">(</span><span class="n">agent_id</span><span class="o">=</span><span class="n">competitor</span><span class="p">)</span>        <span class="c1"># the durable trace</span>
+<span class="n">score</span>  <span class="o">=</span> <span class="n">rubric</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>                            <span class="c1"># deterministic over recorded facts</span>
+</code></pre></div>
+
+<p>A coordination decision (who advanced, who was disqualified) is itself logged
+through the shared-log protocol, so the bracket has the same audit trail the
+matches do:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene.shared_log</span><span class="w"> </span><span class="kn">import</span> <span class="n">SharedLog</span>
+<span class="n">log</span> <span class="o">=</span> <span class="n">SharedLog</span><span class="p">(</span><span class="n">arena</span><span class="o">.</span><span class="n">conn</span><span class="p">)</span>
+<span class="n">log</span><span class="o">.</span><span class="n">intent</span><span class="p">(</span><span class="s2">&quot;advance winners of round 1&quot;</span><span class="p">)</span>
+<span class="n">log</span><span class="o">.</span><span class="n">vote</span><span class="p">(</span><span class="n">intent_id</span><span class="p">,</span> <span class="n">approve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">log</span><span class="o">.</span><span class="n">decide</span><span class="p">(</span><span class="n">intent_id</span><span class="p">)</span>                              <span class="c1"># durable, ordered, replayable</span>
+</code></pre></div>
+
+<h3 id="reproducibility-disputes-settled-by-replay">Reproducibility — disputes settled by replay</h3>
+<p>Before each scored step the arena checkpoints; a contested result is re-run from
+the snapshot rather than argued about:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">cp</span> <span class="o">=</span> <span class="n">arena</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">(</span><span class="n">competitor</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;pre-grade&quot;</span><span class="p">)</span>
+<span class="c1"># ...grade...</span>
+<span class="n">arena</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="n">competitor</span><span class="p">,</span> <span class="n">checkpoint</span><span class="o">=</span><span class="n">cp</span><span class="p">)</span>           <span class="c1"># rewinds BENE VFS + state</span>
+</code></pre></div>
+
+<p><code>restore</code> rewinds the agent's BENE-managed VFS and key-value state. Steps that
+reached <em>outside</em> BENE — a model call, <code>shell_exec</code>, network or host-filesystem
+side effects — aren't replayed, so a re-run is deterministic only to the extent
+the contested work stayed inside the substrate.</p>
+<h3 id="accumulated-memory-smarter-across-matches-sealed-within-one">Accumulated memory — smarter across matches, sealed within one</h3>
+<p>Finished matches leave traces that become engrams. A future match should
+retrieve <em>lessons</em> (what tends to fail a gate), not raw workspaces — but scope
+that retrieval explicitly: the kernel retrievers filter by <code>agent_id</code> only when
+<em>recording</em> the query, so pass the match/agent scope into retrieval (or curate
+which engrams are shared) rather than assuming cross-match reads are sealed by
+default.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">arena</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="s2">&quot;common failure modes on refactor tasks&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h2 id="insights">Insights</h2>
+<ul>
+<li><strong>Push the guarantees down.</strong> Every property an arena needs to be <em>fair</em> is a
+  property the substrate can enforce and the application cannot be trusted to.
+  Isolation-by-SQL-scope and receipts-by-append-only-log are not features you
+  bolt on; they are the reason to have a substrate at all.</li>
+<li><strong>The score is a query, not a claim.</strong> Deriving rankings from the recorded
+  journal — never from an agent's self-report — is what makes a leaderboard
+  defensible.</li>
+<li><strong>One file is an operational gift.</strong> The whole tournament is a single SQLite
+  database: copy it for a backup, diff it for an audit, hand it to the next shift
+  with zero state reconstruction.</li>
+</ul>
+<h2 id="what-to-take-from-this">What to take from this</h2>
+<p>You do not need an arena to want these four properties — any serious multi-agent
+system does. The arena just refuses to let you fake them. Build on a substrate
+that makes isolation, auditability, reproducibility, and memory the <em>default</em>,
+and the application on top stays small, honest, and replayable.</p>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/case-studies/cs03-multi-agent-arena.md" target="_blank" rel="noopener noreferrer">docs/case-studies/cs03-multi-agent-arena.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+</main>
+</div>
+<footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>
+<a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer">Building something on bene? Open a Discussion.</a></div></footer>
+</body>
+</html>
