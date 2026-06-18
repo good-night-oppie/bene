@@ -3076,7 +3076,11 @@ def observe_ensure(ctx, compose: str | None, host: str | None, config: str):
 
     obs_cfg = _observability_config(config)
     config_host = obs_cfg.get("host") if isinstance(obs_cfg, dict) else None
-    target = host or os.environ.get("LANGFUSE_HOST") or config_host or DEFAULT_HOST
+    # Mirror the langfuse adapter's resolution (`cfg.get("host") or LANGFUSE_HOST`
+    # in bene/observe/langfuse.py): explicit --host wins, then the configured
+    # host, then the env fallback — so ensure probes the SAME backend the runner
+    # sends traces to, and a stale LANGFUSE_HOST can't mask an unhealthy config host.
+    target = host or config_host or os.environ.get("LANGFUSE_HOST") or DEFAULT_HOST
     try:
         result = ensure(compose, host=target, config=obs_cfg)
     except SelfHostError as exc:
