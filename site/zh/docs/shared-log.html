@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>共享日志总线 (Shared Log) — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — 共享日志总线 (Shared Log)" />
+<title>Shared Log — 中文索引 / 翻译中</title>
+<meta name="description" content="BENE 0.2.0 文档 — Shared Log" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -242,36 +242,36 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="index.html">docs</a> / shared-log.md</div>
-<h1 id="shared-log">共享日志总线 (Shared Log)</h1>
-<p>在任何 agent 动手之前，先把决议拿出来公投。shared log 允许 bene 的 agents 在采取行动前拉起提案、投票表决并最终拍板执行或流产 —— 而这一切的共识过程，全被当成日志行硬生生砸进 <code>bene.db</code> 里。没有额外的协调进程，没有消息队列 Broker，也绝不走网络。</p>
+<h1 id="shared-log">Shared Log</h1>
+<p>Put an action up for a vote before any agent runs it. The shared log lets bene agents propose work, approve or veto it, and commit or abort — all as rows appended to <code>bene.db</code>. No coordinator process, no broker, no network.</p>
 <blockquote>
-<p><strong>先共识，后动手 —— 而且共识过程的每一步，全是你能直接查底细的数据库行。</strong></p>
+<p><strong>Agents agree before they act — and every step of the agreement is a row you can query.</strong></p>
 </blockquote>
-<p>这套协议的内核就是 LogAct，源自 2026 年 Meta 的一篇论文，具体致谢见底部的 <a href="#血脉渊源-lineage">血脉渊源 (Lineage)</a>。</p>
+<p>The protocol is LogAct, from a 2026 Meta paper, credited in <a href="#lineage">Lineage</a>.</p>
 <hr />
-<h2 id="_1">攒起你的第一场公投</h2>
-<p>三个 agent，一项动议，一局因为分歧而正确触发动机流产的投票：</p>
+<h2 id="run-your-first-vote">Run your first vote</h2>
+<p>Three agents, one proposal, a split vote that correctly aborts:</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bene</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bene.shared_log</span><span class="w"> </span><span class="kn">import</span> <span class="n">SharedLog</span>
 
 <span class="n">bene</span> <span class="o">=</span> <span class="n">Bene</span><span class="p">(</span><span class="s2">&quot;project.db&quot;</span><span class="p">)</span>
 <span class="n">log</span>  <span class="o">=</span> <span class="n">SharedLog</span><span class="p">(</span><span class="n">bene</span><span class="o">.</span><span class="n">conn</span><span class="p">)</span>
 
-<span class="c1"># 阶段 1: Agent A 昭告天下它想干嘛</span>
+<span class="c1"># Stage 1: Agent A declares intent</span>
 <span class="n">intent_id</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">intent</span><span class="p">(</span>
     <span class="n">agent_id</span><span class="o">=</span><span class="s2">&quot;agent-A&quot;</span><span class="p">,</span>
     <span class="n">action</span><span class="o">=</span><span class="s2">&quot;Delete all checkpoints older than 7 days&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="c1"># 阶段 2: 同僚们举手</span>
+<span class="c1"># Stage 2: Peers vote</span>
 <span class="n">log</span><span class="o">.</span><span class="n">vote</span><span class="p">(</span><span class="s2">&quot;agent-B&quot;</span><span class="p">,</span> <span class="n">intent_id</span><span class="p">,</span> <span class="n">approve</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Matches retention policy.&quot;</span><span class="p">)</span>
 <span class="n">log</span><span class="o">.</span><span class="n">vote</span><span class="p">(</span><span class="s2">&quot;agent-C&quot;</span><span class="p">,</span> <span class="n">intent_id</span><span class="p">,</span> <span class="n">approve</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Need to verify first.&quot;</span><span class="p">)</span>
 
-<span class="c1"># 阶段 3: 开票并下达决议</span>
-<span class="n">summary</span>  <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">tally</span><span class="p">(</span><span class="n">intent_id</span><span class="p">)</span>   <span class="c1"># VoteSummary(intent_id=1, approve=1, reject=1, abstain=0, votes=[...]) (passed 是个 @property)</span>
+<span class="c1"># Stage 3: Tally and decide</span>
+<span class="n">summary</span>  <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">tally</span><span class="p">(</span><span class="n">intent_id</span><span class="p">)</span>   <span class="c1"># VoteSummary(intent_id=1, approve=1, reject=1, abstain=0, votes=[...]) (passed is a @property)</span>
 <span class="n">decision</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">decide</span><span class="p">(</span><span class="n">intent_id</span><span class="p">,</span> <span class="n">agent_id</span><span class="o">=</span><span class="s2">&quot;agent-A&quot;</span><span class="p">)</span>
 
-<span class="c1"># 阶段 4: 落锤执行或是当场作废</span>
+<span class="c1"># Stage 4: Commit or abort</span>
 <span class="k">if</span> <span class="n">decision</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;passed&quot;</span><span class="p">]:</span>
     <span class="n">log</span><span class="o">.</span><span class="n">commit</span><span class="p">(</span><span class="s2">&quot;agent-A&quot;</span><span class="p">,</span> <span class="n">intent_id</span><span class="p">,</span> <span class="n">summary</span><span class="o">=</span><span class="s2">&quot;Removed 47 checkpoints.&quot;</span><span class="p">)</span>
 <span class="k">else</span><span class="p">:</span>
@@ -279,18 +279,18 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </code></pre></div>
 
 <hr />
-<h2 id="_2">一场提案的生老病死</h2>
-<p>每一个协调共识动作，都逃不出这四个生命周期阶段：</p>
-<div class="codehilite"><pre><span></span><code>Stage 1: Intent (起意) — 肇事 agent 大声嚷嚷它准备干什么
-Stage 2: Vote (投票)   — 同僚们在时间窗口内投出赞成或否决票
-Stage 3: Decision (决议) — 记票后将生杀大权记录在案
-Stage 4: Commit / Abort (落锤 / 弃绝) — 实际行动，要么干了，要么拉倒
+<h2 id="how-a-proposal-resolves">How a proposal resolves</h2>
+<p>Every coordination act belongs to one of four stages:</p>
+<div class="codehilite"><pre><span></span><code>Stage 1: Intent  — agent broadcasts what it plans to do
+Stage 2: Vote    — peers approve or reject within a time window
+Stage 3: Decision— outcome recorded after vote tally
+Stage 4: Commit / Abort — action taken or cancelled
 </code></pre></div>
 
-<p>每个阶段都会在日志尾部夯实一条记录，并带有一个毫无缝隙且单调递增的 <code>position</code>。这意味着只要你重播日志，谁挑的头、谁跳出来反对以及为什么反对，全能像看录像带一样完美还原。</p>
+<p>Each stage lands as one appended row with a gapless, monotonic <code>position</code>, so replaying the log reconstructs who proposed what, who objected, and why.</p>
 <hr />
-<h2 id="_3">拿它锁死那些搞破坏的操作</h2>
-<p>别把共识当成口头协议，把它变成一个死硬的前置安全门 (Gate)：达不到赞成票阈值，这扇门宁可憋死也绝不放行。</p>
+<h2 id="gate-a-destructive-action">Gate a destructive action</h2>
+<p>Make consensus a hard precondition rather than a convention: a gate that refuses to execute until approvals meet its threshold.</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene.shared_log</span><span class="w"> </span><span class="kn">import</span> <span class="n">SharedLog</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">SafetyGate</span><span class="p">:</span>
@@ -312,138 +312,138 @@ Stage 4: Commit / Abort (落锤 / 弃绝) — 实际行动，要么干了，要�
         <span class="k">return</span> <span class="kc">False</span>
 </code></pre></div>
 
-<p>想看活的代码？去跑 <a href="../../examples/safety_voting.py">examples/safety_voting.py</a>。</p>
+<p>Runnable version: <a href="../../examples/safety_voting.py">examples/safety_voting.py</a>.</p>
 <hr />
-<h2 id="_4">在黑框框里直接盯梢总线</h2>
-<p>不需要写半行 Python 代码，直接在终端里盯着看、加滤网、数人头：</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># 抓取最近 20 条事记</span>
+<h2 id="watch-the-log-from-the-terminal">Watch the log from the terminal</h2>
+<p>Tail, filter, and count entries without writing any Python:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Show last 20 entries</span>
 uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>log<span class="w"> </span>tail
 
-<span class="c1"># 只盯着特定类型的事件看</span>
+<span class="c1"># Filter by type</span>
 uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>log<span class="w"> </span>tail<span class="w"> </span>--type<span class="w"> </span>intent<span class="w"> </span>--n<span class="w"> </span><span class="m">10</span>
 
-<span class="c1"># 只盯着某个特务 agent 看</span>
+<span class="c1"># Filter by agent</span>
 uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>log<span class="w"> </span>tail<span class="w"> </span>--agent<span class="w"> </span>&lt;agent_id&gt;
 
-<span class="c1"># 拉出一份总线活跃度审计报表</span>
+<span class="c1"># Log statistics</span>
 uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>log<span class="w"> </span>ls
 
-<span class="c1"># 强行吐出 JSON 以便接上 JQ 处理</span>
+<span class="c1"># JSON output</span>
 uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>--json<span class="w"> </span>log<span class="w"> </span>tail<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.[] | select(.type == &quot;decision&quot;)&#39;</span>
 </code></pre></div>
 
 <hr />
-<h2 id="claude-code">在 Claude Code 里调动总线</h2>
-<p>五把 MCP 专武，直接把这套协议暴露给了 Claude Code 或者任何 MCP 客户端：</p>
-<div class="codehilite"><pre><span></span><code>shared_log_intent  — 宣告起意 (阶段 1)
-shared_log_vote    — 丢出选票 (阶段 2)
-shared_log_decide  — 盖章决议 (阶段 3)
-shared_log_append  — 强行挂载 commit/result/abort/policy/mail 记录
-shared_log_read    — 翻阅这本流水账
+<h2 id="drive-it-from-claude-code">Drive it from Claude Code</h2>
+<p>Five MCP tools expose the protocol to Claude Code or any MCP client:</p>
+<div class="codehilite"><pre><span></span><code>shared_log_intent  — broadcast intent (Stage 1)
+shared_log_vote    — cast a vote (Stage 2)
+shared_log_decide  — record decision (Stage 3)
+shared_log_append  — append commit/result/abort/policy/mail
+shared_log_read    — read entries from the log
 </code></pre></div>
 
 <hr />
-<h2 id="python">在 Python 里玩转总线</h2>
-<h3 id="_5">提案，开票，决议</h3>
-<div class="codehilite"><pre><span></span><code><span class="c1"># 阶段 1</span>
+<h2 id="call-it-from-python">Call it from Python</h2>
+<h3 id="propose-tally-decide">Propose, tally, decide</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Stage 1</span>
 <span class="n">intent_id</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">intent</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 
-<span class="c1"># 阶段 2</span>
+<span class="c1"># Stage 2</span>
 <span class="n">entry</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">vote</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">intent_id</span><span class="p">,</span> <span class="n">approve</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 
-<span class="c1"># 先偷瞄一眼票数但不盖章</span>
+<span class="c1"># Check tally without committing</span>
 <span class="n">summary</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">tally</span><span class="p">(</span><span class="n">intent_id</span><span class="p">)</span>
 <span class="c1"># summary.approve, summary.reject, summary.passed</span>
 
-<span class="c1"># 阶段 3 (随便你调几次，极其安全)</span>
+<span class="c1"># Stage 3 (idempotent)</span>
 <span class="n">decision</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">decide</span><span class="p">(</span><span class="n">intent_id</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">)</span>
 <span class="c1"># decision.payload == {&quot;passed&quot;: True, &quot;approve&quot;: 2, &quot;reject&quot;: 0, &quot;abstain&quot;: 0}</span>
 </code></pre></div>
 
-<h3 id="_6">收场：干了、算了、或者抛出战果</h3>
+<h3 id="close-out-commit-abort-result">Close out: commit, abort, result</h3>
 <div class="codehilite"><pre><span></span><code><span class="n">commit</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">commit</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">intent_id</span><span class="p">,</span> <span class="n">summary</span><span class="o">=</span><span class="s2">&quot;Done.&quot;</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="p">{})</span>
 <span class="n">abort</span>  <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">abort</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">ref_id</span><span class="o">=</span><span class="n">intent_id</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Vetoed.&quot;</span><span class="p">)</span>
 <span class="n">result</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">result</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">ref_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;accuracy&quot;</span><span class="p">:</span> <span class="mf">0.87</span><span class="p">})</span>
 </code></pre></div>
 
-<h3 id="_7">铁血规矩和飞鸽传书</h3>
-<div class="codehilite"><pre><span></span><code><span class="c1"># 立下铁规矩 (人类或者上位 supervisor 可以强行注射进去)</span>
+<h3 id="standing-rules-and-agent-mail">Standing rules and agent mail</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Standing rule (supervisor can inject these)</span>
 <span class="n">log</span><span class="o">.</span><span class="n">policy</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="s2">&quot;Never delete production data without 2 approvals.&quot;</span><span class="p">)</span>
 
-<span class="c1"># 异步给其他 agent 塞小纸条</span>
+<span class="c1"># Async agent-to-agent message</span>
 <span class="n">log</span><span class="o">.</span><span class="n">mail</span><span class="p">(</span><span class="n">from_agent</span><span class="p">,</span> <span class="n">to_agent</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Hey, can you handle task X?&quot;</span><span class="p">,</span> <span class="n">ref_id</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
-<h3 id="_8">录像重播，加滤镜，抽丝剥茧</h3>
-<div class="codehilite"><pre><span></span><code><span class="c1"># 顺着某个指针往后拉出所有的流水</span>
+<h3 id="replay-filter-thread">Replay, filter, thread</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># All entries from a position</span>
 <span class="n">entries</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">since_position</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 
-<span class="c1"># 加滤镜</span>
+<span class="c1"># Filter</span>
 <span class="n">entries</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;intent&quot;</span><span class="p">,</span> <span class="n">agent_id</span><span class="o">=</span><span class="s2">&quot;agent-A&quot;</span><span class="p">)</span>
 
-<span class="c1"># 按照时间顺手抓取最后 N 条</span>
+<span class="c1"># Last N entries in chronological order</span>
 <span class="n">entries</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">tail</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
 
-<span class="c1"># 抽丝剥茧：把一条提案连同后续所有缠在上面的选票和决议全拽出来</span>
+<span class="c1"># Thread: root entry + all entries referencing it</span>
 <span class="n">entries</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">thread</span><span class="p">(</span><span class="n">root_id</span><span class="o">=</span><span class="n">intent_id</span><span class="p">)</span>
 </code></pre></div>
 
-<h3 id="_9">霸王硬上弓</h3>
-<p>嫌没有趁手的皮套？直接自己硬敲：</p>
+<h3 id="append-anything">Append anything</h3>
+<p>No dedicated helper? Write the row directly:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">entry</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;result&quot;</span><span class="p">,</span> <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="s2">&quot;value&quot;</span><span class="p">},</span> <span class="n">ref_id</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
 <hr />
-<h2 id="_10">这些名头到底都是些什么货色</h2>
-<p>一共 8 种事件类型，包揽了整个协议的 4 个阶段，还白送你两个额外的协调手段：</p>
+<h2 id="what-each-row-means">What each row means</h2>
+<p>Eight entry types cover the protocol stages plus two coordination extras:</p>
 <table>
 <thead>
 <tr>
-<th>种类</th>
-<th>宿命</th>
+<th>Type</th>
+<th>Purpose</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>intent</code></td>
-<td>宣告一起即将发生的行动计划 (LogAct 阶段 1)</td>
+<td>Declare a planned action (LogAct Stage 1)</td>
 </tr>
 <tr>
 <td><code>vote</code></td>
-<td>针对某起宣告投出赞同或反对票 (阶段 2)</td>
+<td>Approve or reject an intent (Stage 2)</td>
 </tr>
 <tr>
 <td><code>decision</code></td>
-<td>计票后拍板的最终决议 (阶段 3)</td>
+<td>Outcome after vote tally (Stage 3)</td>
 </tr>
 <tr>
 <td><code>commit</code></td>
-<td>宣告破门并顺利执行了行动 (阶段 4)</td>
+<td>Successful action taken (Stage 4)</td>
 </tr>
 <tr>
 <td><code>result</code></td>
-<td>终局产出物或者战利品</td>
+<td>Final output or artifact</td>
 </tr>
 <tr>
 <td><code>abort</code></td>
-<td>提案被打回，或是行动宣告破产流产</td>
+<td>Intent or action cancelled</td>
 </tr>
 <tr>
 <td><code>policy</code></td>
-<td>悬在头顶的铁律，通常由上位者或人类强行注入</td>
+<td>Standing rule injected by supervisor or human</td>
 </tr>
 <tr>
 <td><code>mail</code></td>
-<td>粗暴的 agent-to-agent 异步飞鸽传书</td>
+<td>Direct async message agent-to-agent</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="_11">一张表，零服务</h2>
-<p>整个重型的协同层，被彻底压扁塞进了你的 bene 数据库里的这一张表里：</p>
+<h2 id="one-table-no-service">One table, no service</h2>
+<p>The entire coordination layer is this table inside your bene database:</p>
 <div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">shared_log</span><span class="w"> </span><span class="p">(</span>
 <span class="w">    </span><span class="n">log_id</span><span class="w">      </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="n">AUTOINCREMENT</span><span class="p">,</span>
-<span class="w">    </span><span class="k">position</span><span class="w">    </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">   </span><span class="c1">-- 绝对单调递增，无缝隙</span>
+<span class="w">    </span><span class="k">position</span><span class="w">    </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">   </span><span class="c1">-- monotonic, gapless</span>
 <span class="w">    </span><span class="k">type</span><span class="w">        </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">agent_id</span><span class="w">    </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">ref_id</span><span class="w">      </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">shared_log</span><span class="p">(</span><span class="n">log_id</span><span class="p">),</span>
@@ -452,26 +452,26 @@ shared_log_read    — 翻阅这本流水账
 <span class="p">);</span>
 </code></pre></div>
 
-<p>还是那句话，没有任何一滴数据走出了你的机器：不用单独拉起什么守护进程，不用监听任何端口。直接一把 <code>cp</code> 拷走这个 <code>.db</code> 文件，你就连带着把每一张提案、每一张选票以及每一记落锤的铁证全考走了。</p>
+<p>Nothing leaves your machine: no service to run, no port to open. <code>cp</code> the <code>.db</code> file and you carry away the complete ordered history of every proposal, vote, and decision.</p>
 <hr />
-<h2 id="_12">去看真正的火拼现场</h2>
-<p>四个阶段外加所有条目的真枪实弹端到端演练，全在这里：<a href="../../examples/shared_log_coordination.py">examples/shared_log_coordination.py</a>。</p>
+<h2 id="see-the-whole-flow">See the whole flow</h2>
+<p>Every stage and every entry type, end to end: <a href="../../examples/shared_log_coordination.py">examples/shared_log_coordination.py</a>.</p>
 <hr />
-<h2 id="lineage">血脉渊源 (Lineage)</h2>
-<p>这套架构设计的正统血脉是 <strong>LogAct: Enabling Agentic Reliability via Shared Logs</strong> — Balakrishnan, Shi, Lu, Goel, Baral, Lyu, Dredze (Meta, 2026), <a href="https://arxiv.org/abs/2604.07988">arXiv:2604.07988</a>。</p>
-<p>bene 毫刀不改地继承了原论文里的核心精华：</p>
+<h2 id="lineage">Lineage</h2>
+<p>The design follows <strong>LogAct: Enabling Agentic Reliability via Shared Logs</strong> — Balakrishnan, Shi, Lu, Goel, Baral, Lyu, Dredze (Meta, 2026), <a href="https://arxiv.org/abs/2604.07988">arXiv:2604.07988</a>.</p>
+<p>From the paper, bene keeps:</p>
 <ul>
-<li>将一条只能追加 (append-only) 的 log 捧为整个协同网的唯一真相源 (ground truth)</li>
-<li>严守 intent → vote → decision 这三段论的安全闸门</li>
-<li>严密的位置定序 (position-ordering) 机制，强制逼迫所有的并发 agent 咽下一模一样的历史事件流</li>
-<li>保留 <code>policy</code> 记录类别，死守人类随时可以介入干预的通道</li>
+<li>a single append-only log as the coordination ground truth</li>
+<li>the three-stage intent → vote → decision safety loop</li>
+<li>position-ordering, so concurrent agents see one history</li>
+<li><code>policy</code> entries as the human-in-the-loop channel</li>
 </ul>
-<p>但 bene 也在以下这些地方扯起了自己的反旗：</p>
+<p>Where bene departs:</p>
 <ul>
-<li>我们的 log 就是一张跑在 WAL 模式下的 SQLite 表，而不是什么他妈的连在网线上的远端服务。</li>
-<li>在 LogAct 的五大金刚之外，我们私自塞进了两个新种族：<code>policy</code> 和 <code>mail</code>。</li>
-<li>我们搓了个 <code>thread()</code> 外挂，让你能一键把沾了边的一整串审计黑产全顺藤摸瓜拽出来。</li>
-<li>在这里，<code>agent_id</code> 是一等公民，被死死地焊进了整个 bene agent 的生命周期底座里。</li>
+<li>the log is a SQLite table in WAL mode, not a networked log service</li>
+<li>two entry types beyond LogAct's core five: <code>policy</code> and <code>mail</code></li>
+<li>a <code>thread()</code> helper gathering an intent's whole audit trail</li>
+<li><code>agent_id</code> is first-class, wired into the bene agent lifecycle</li>
 </ul>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/shared-log.md" target="_blank" rel="noopener noreferrer">docs/shared-log.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>

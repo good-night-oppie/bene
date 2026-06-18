@@ -248,7 +248,7 @@ def page(
         toggle_label = "EN"
         toggle_title = "Switch to English"
         html_lang = "zh-CN"
-        title_suffix = "BENE 文档"
+        title_suffix = "中文索引 / 翻译中"
         meta_desc = f"BENE 0.2.0 文档 — {html.escape(title)}"
         nav_landing = "Landing"
         nav_idx = "文档索引"
@@ -498,7 +498,7 @@ def build() -> None:
     )
 
     zh_index_body = (
-        "<h1>BENE 文档</h1>"
+        "<h1>中文索引 / 翻译中</h1>"
         f"<p><strong>翻译进行中。</strong>共 {len(entries)} 个文档，源在 <code>docs/</code>。"
         "本站采用 4-book methodology（Mom Test / Pressfield / Zinsser / Dicks）逐页翻译——不放 AI 翻译稿。"
         "下方每个条目点开是英文原文，顶部 nav 的 <code>EN</code> 按钮直接回到对应的英文页面。"
@@ -511,7 +511,7 @@ def build() -> None:
         page(
             Path("index.md"),
             zh_index_body,
-            "BENE 文档",
+            "中文索引 / 翻译中",
             False,
             is_index=True,
             lang="zh",

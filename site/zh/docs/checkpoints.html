@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Checkpoints — 专给 Agent 吃的后悔药 — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — Checkpoints — 专给 Agent 吃的后悔药" />
+<title>Checkpoints — undo for agents — 中文索引 / 翻译中</title>
+<meta name="description" content="BENE 0.2.0 文档 — Checkpoints — undo for agents" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -242,44 +242,44 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="index.html">docs</a> / checkpoints.md</div>
-<h1 id="checkpoints-agent">Checkpoints — 专给 Agent 吃的后悔药</h1>
-<p>在让 agent 去碰那些高风险脏活之前，先给它打个 checkpoint。万一搞砸了，只需敲一行 restore 命令就能满血复活，再也不用含泪从头开始重建状态。bene 支持随时将 agent 的全部脑容量和文件资产无损冻结；你可以把时间线拨回任意一个坐标，或者直接拿两个坐标进行贴身比对。</p>
+<h1 id="checkpoints-undo-for-agents">Checkpoints — undo for agents</h1>
+<p>Checkpoint an agent before risky work, and a failed run costs one restore command instead of a rebuild. bene captures full agent state on demand; rewind to any capture, or diff two.</p>
 <blockquote>
-<p><strong>一行代码存档，一行代码读档，一行代码对比 —— 跨越时空的整条履历，全攥在你电脑里的那唯一一个 SQLite 文件里。</strong></p>
+<p><strong>One call to save, one to rewind, one to diff — all history in one SQLite file on your machine.</strong></p>
 </blockquote>
 <hr />
-<h2 id="_1">冻结一个已知稳妥的状态</h2>
+<h2 id="save-a-known-good-state">Save a known-good state</h2>
 <div class="codehilite"><pre><span></span><code><span class="n">cp</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;before-migration&quot;</span><span class="p">)</span>
 </code></pre></div>
 
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>checkpoint<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>--label<span class="w"> </span><span class="s2">&quot;before-migration&quot;</span>
 </code></pre></div>
 
-<p>每拍下一次快照，就会死死钉住以下内容：</p>
+<p>Each snapshot records:</p>
 <ul>
-<li>VFS 里的每一份文件，全按内容寻址打成了 blob 引用 —— 绝对不存半点冗余字节。</li>
-<li>通过 <code>db.set_state(...)</code> 写入大脑的每一把 KV 钥匙。</li>
-<li>冻结时刻的精确时间戳，以及你随手贴上去的任何 metadata。</li>
+<li>every VFS file, as content-addressable blob references — no duplicate bytes</li>
+<li>every key written through <code>db.set_state(...)</code></li>
+<li>its timestamp, plus any metadata you attach</li>
 </ul>
-<p>这种快照机制记的是 blob 指针而不是文件拷贝，所以大胆放开手脚去存，权当免费。</p>
-<h3 id="_2">自动化快照机制</h3>
-<p><code>ClaudeCodeRunner</code> 自带求生本能，每熬过 <code>checkpoint_interval</code> 指定的轮次 (默认是 10)，就会自动打点存档:</p>
+<p>Snapshots write blob pointers, not file copies, so take them freely.</p>
+<h3 id="automatic-snapshots">Automatic snapshots</h3>
+<p><code>ClaudeCodeRunner</code> checkpoints itself every <code>checkpoint_interval</code> iterations (10 by default):</p>
 <div class="codehilite"><pre><span></span><code><span class="c1"># bene.yaml</span>
 <span class="nt">ccr</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">checkpoint_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
 </code></pre></div>
 
 <hr />
-<h2 id="_3">逆转一场灾难级的失控</h2>
-<p>随时随地倒转时间轴，回到过去的某个定格点：</p>
+<h2 id="rewind-a-bad-run">Rewind a bad run</h2>
+<p>Roll back to any capture:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">db</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">checkpoint_id</span><span class="p">)</span>
 </code></pre></div>
 
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>restore<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>--checkpoint<span class="w"> </span>&lt;checkpoint-id&gt;
 </code></pre></div>
 
-<p>恢复操作底层走的是纯净的 SQL —— bene 会直接暴力重写这个 agent 名下的文件记录行和状态行 —— 因此不管时空畸变有多严重，落地都只在毫秒之间，且绝不会波及其他任何 agent，数据也永远锁死在你的物理机里。</p>
-<p>你应该养成的肌肉记忆是：打好快照，放手去搏，见势不妙，立马回滚。</p>
+<p>Restore is pure SQL — bene rewrites the agent's file rows and state rows — so it lands in milliseconds however much changed, touches no other agent, and never leaves your machine.</p>
+<p>The habit worth building: snapshot, attempt, roll back on failure.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">cp</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;pre-migration&quot;</span><span class="p">)</span>
 <span class="k">try</span><span class="p">:</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ccr</span><span class="o">.</span><span class="n">run_agent</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="s2">&quot;Migrate schema to v3&quot;</span><span class="p">)</span>
@@ -289,24 +289,24 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </code></pre></div>
 
 <hr />
-<h2 id="_4">扒开细节看看究竟动了哪</h2>
-<p>把两个时空坐标拿来当面对质：</p>
+<h2 id="see-what-changed">See what changed</h2>
+<p>Diff any two captures:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">diff</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">diff_checkpoints</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">checkpoint_id_a</span><span class="p">,</span> <span class="n">checkpoint_id_b</span><span class="p">)</span>
 </code></pre></div>
 
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>diff<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>--from<span class="w"> </span>&lt;checkpoint-id-A&gt;<span class="w"> </span>--to<span class="w"> </span>&lt;checkpoint-id-B&gt;
 </code></pre></div>
 
-<p>每一份比对战报都会赤裸裸地交代：</p>
+<p>Each diff reports:</p>
 <ul>
-<li><strong>无中生有 (Files added)</strong> — 那些只在快照 B 里冒出来的路径。</li>
-<li><strong>毁尸灭迹 (Files removed)</strong> — 曾经活在 A 里，但在 B 里灰飞烟灭的。</li>
-<li><strong>改头换面 (Files modified)</strong> — 路径没变，但是两边捏着的 SHA-256 指纹对不上号的。</li>
-<li><strong>篡改记忆 (State changed)</strong> — KV 脑容量里那些新增的、丢掉的、或是被塞了新值的键。</li>
-<li><strong>暗度陈仓 (Tool calls between)</strong> — 夹在这两个时空快照之间偷偷调用的 tool。</li>
+<li><strong>Files added</strong> — paths that exist only in snapshot B</li>
+<li><strong>Files removed</strong> — there in A, gone in B</li>
+<li><strong>Files modified</strong> — the same path with a different SHA-256 on each side</li>
+<li><strong>State changed</strong> — KV keys gained, dropped, or given new values</li>
+<li><strong>Tool calls between</strong> — calls made between the two captures</li>
 </ul>
-<p>一份典型的出战报告长这样 —— 顶上是一个由路径和状态把守的表格 (不显示文件体积)，紧跟着是被扒光的 state 变更以及 tool-call 账单：</p>
-<div class="codehilite"><pre><span></span><code>            文件战损报告 (File Changes)
+<p>A typical report — a table keyed by path and status (no file sizes), then the state and tool-call sections:</p>
+<div class="codehilite"><pre><span></span><code>           File Changes
 ┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
 ┃ Status     ┃ Path               ┃
 ┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
@@ -315,7 +315,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 │ REMOVED    │ /src/auth_legacy.py│
 └────────────┴────────────────────┘
 
-           记忆篡改记录 (State Changes)
+          State Changes
 ┏━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Status     ┃ Key      ┃ Value                        ┃
 ┡━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -323,7 +323,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 │ MODIFIED   │ status   │ &quot;in-progress&quot; -&gt; &quot;complete&quot;  │
 └────────────┴──────────┴──────────────────────────────┘
 
-      快照夹缝里的工具调用 (Tool Calls Between Checkpoints)
+      Tool Calls Between Checkpoints
 ┏━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━┓
 ┃ Tool      ┃ Status  ┃ Duration ┃ Tokens ┃
 ┡━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━┩
@@ -331,21 +331,21 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 └───────────┴─────────┴──────────┴────────┘
 </code></pre></div>
 
-<p>如果哪个环节岁月静好毫无动静，终端会直接甩你一句 <code>No state changes</code> (记忆未曾变动) 或是 <code>No tool calls between checkpoints</code> (夹缝中并无调用)。</p>
-<p>如果你加上了 <code>--json</code> 标志，这堆东西就会乖乖被打进一份机器友好的包裹里：<code>{"files": {"added": [...], "removed": [...], "modified": [...]}, "state": {"added": {...}, "removed": {...}, "modified": {...}}, "tool_calls": [...]}</code>。</p>
-<h3 id="_5">让两种方案互殴</h3>
-<p>给两种解题思路各打一张快照，然后把它们拉回现实来打擂台：</p>
+<p>When a section is empty, the console outputs <code>No state changes</code> or <code>No tool calls between checkpoints</code>.</p>
+<p>With <code>--json</code>, the same diff comes back as <code>{"files": {"added": [...], "removed": [...], "modified": [...]}, "state": {"added": {...}, "removed": {...}, "modified": {...}}, "tool_calls": [...]}</code>.</p>
+<h3 id="compare-two-attempts">Compare two attempts</h3>
+<p>Snapshot each approach, then diff them:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">cp_a</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;approach-A&quot;</span><span class="p">)</span>
-<span class="c1"># ... 放出方案 A 的恶犬 ...</span>
+<span class="c1"># ... run approach A ...</span>
 <span class="n">cp_b</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;approach-B&quot;</span><span class="p">)</span>
 
-<span class="c1"># 对薄公堂</span>
+<span class="c1"># Compare</span>
 <span class="n">diff</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">diff_checkpoints</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">cp_a</span><span class="p">,</span> <span class="n">cp_b</span><span class="p">)</span>
 </code></pre></div>
 
 <hr />
-<h2 id="_6">翻找时空存根</h2>
-<p>把一个 agent 兜里揣着的所有快照票根全抖搂出来：</p>
+<h2 id="find-a-capture">Find a capture</h2>
+<p>List an agent's captures:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">cps</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">list_checkpoints</span><span class="p">(</span><span class="n">agent_id</span><span class="p">)</span>
 <span class="c1"># [{&quot;checkpoint_id&quot;: &quot;01K...&quot;, &quot;label&quot;: &quot;before-migration&quot;, &quot;created_at&quot;: &quot;...&quot;}]</span>
 </code></pre></div>
@@ -354,33 +354,33 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 bene<span class="w"> </span>--json<span class="w"> </span>checkpoints<span class="w"> </span>&lt;agent-id&gt;
 </code></pre></div>
 
-<h3 id="_7">给快照钉上墓志铭</h3>
-<p>label 只是个简短的名号；但 metadata 可以塞进长篇大论的注解 —— 比如测试战报、触发它的罪魁祸首、或者是留给后人的遗言：</p>
+<h3 id="annotate-a-snapshot">Annotate a snapshot</h3>
+<p>Labels name a capture; metadata explains it — test results, triggers, notes:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">cp</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;v2-attempt&quot;</span><span class="p">)</span>
 
-<span class="c1"># Bene 的 facade 外壳只吃一个短平快的 label。想要塞入硬核的 metadata，你需要直接绕开它去找底层 manager 办事：</span>
+<span class="c1"># The Bene facade takes just a label. For rich metadata, call the manager directly:</span>
 <span class="c1"># db.checkpoints.create(agent_id, label=&quot;v2-attempt&quot;, metadata={</span>
-<span class="c1">#     &quot;notes&quot;: &quot;全盘切换到了 JWT — 干掉了基于 session 的老掉牙认证&quot;,</span>
+<span class="c1">#     &quot;notes&quot;: &quot;Switched to JWT — session-based auth removed&quot;,</span>
 <span class="c1">#     &quot;test_results&quot;: {&quot;passed&quot;: 14, &quot;failed&quot;: 0},</span>
-<span class="c1">#     &quot;triggered_by&quot;: &quot;CI 流水线第 428 号战役&quot;,</span>
+<span class="c1">#     &quot;triggered_by&quot;: &quot;CI pipeline run #428&quot;,</span>
 <span class="c1"># })</span>
 </code></pre></div>
 
-<p>这堆私货会在 <code>bene checkpoints &lt;agent-id&gt;</code> 以及 Dashboard 的 Checkpoints 标签页里昭告天下。</p>
+<p>It shows up in <code>bene checkpoints &lt;agent-id&gt;</code> and the dashboard's Checkpoints tab.</p>
 <hr />
-<h2 id="_8">这堆快照究竟吃掉我多少硬盘？</h2>
-<p>几乎就是个零头。真正重头的文件血肉全部只在 blob 库里躺着唯一一份 (有 SHA-256 钥匙锁着，外加 zstd 压缩伺候)；区区一个 checkpoint 不过就是一撮干瘪的指针。两份相似度高达 95% 的快照，并排站在一起占用的空间几乎等同于一份。</p>
-<p>想要无情火化掉那些再也没有快照认领的孤魂野鬼 blobs？</p>
-<div class="codehilite"><pre><span></span><code><span class="n">db</span><span class="o">.</span><span class="n">blobs</span><span class="o">.</span><span class="n">gc</span><span class="p">()</span>  <span class="c1"># 毫不留情地铲除所有 ref_count 归 0 的 blob</span>
+<h2 id="what-snapshots-cost">What snapshots cost</h2>
+<p>Almost nothing. File bodies live once in the blob store (SHA-256 keys, zstd compression); a checkpoint is just pointers. Two captures sharing 95% of their files cost barely more than one.</p>
+<p>Reclaim blobs nothing references anymore:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">db</span><span class="o">.</span><span class="n">blobs</span><span class="o">.</span><span class="n">gc</span><span class="p">()</span>  <span class="c1"># removes blobs whose ref_count has dropped to 0</span>
 </code></pre></div>
 
 <hr />
-<h2 id="_9">连锅端走换台机器接着跑</h2>
-<p>将一个 agent 导出会连带着把它名下所有的快照一起塞进一个极度便携的文件里：</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># 连锅端出整个 agent 的祖宗十八代 (当然包含了它所有的 checkpoints)</span>
+<h2 id="move-it-to-another-machine">Move it to another machine</h2>
+<p>Exporting an agent carries all its checkpoints in one portable file:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Export the entire agent (includes all checkpoints)</span>
 bene<span class="w"> </span><span class="nb">export</span><span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>-o<span class="w"> </span>agent-snapshot.db
 
-<span class="c1"># 换台机器，当场复活</span>
+<span class="c1"># On another machine</span>
 bene<span class="w"> </span>import<span class="w"> </span>agent-snapshot.db
 </code></pre></div>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/checkpoints.md" target="_blank" rel="noopener noreferrer">docs/checkpoints.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>

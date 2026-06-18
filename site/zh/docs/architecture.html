@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>BENE 架构解析 — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — BENE 架构解析" />
+<title>BENE Architecture — 中文索引 / 翻译中</title>
+<meta name="description" content="BENE 0.2.0 文档 — BENE Architecture" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -242,29 +242,29 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="index.html">docs</a> / architecture.md</div>
-<h1 id="bene">BENE 架构解析</h1>
-<p>BENE 为每个 agent 提供私有文件系统、可回放的事件轨迹（event trail），以及清晰可查的模型路由路径 —— 所有这一切都运行在由同一个 SQLite 后端支撑的 runtime 中。</p>
+<h1 id="bene-architecture">BENE Architecture</h1>
+<p>BENE gives each agent a private filesystem, a replayable event trail, and a model route that can be inspected from one SQLite-backed runtime.</p>
 <blockquote>
-<p><strong>当你要追踪一个来自 MCP 或 CLI 的请求，看它如何穿过 agent 执行层，最终落入可以被复制、查询、checkpoint 甚至恢复的数据库中时，本页面就是你的地图。</strong></p>
+<p><strong>Use this page to trace a request from MCP or CLI input, through agent execution, into the database you can copy, query, checkpoint, and restore.</strong></p>
 </blockquote>
-<p>这套架构只承担三项工作：保持 agent 状态便携 (portable)，保持 agent 动作隔离 (isolated)，保持模型执行过程透明 (understandable)。下方的章节编排契合了运维者典型的 debug 路径：首先看请求流，其次看存储状态，最后看承载和保护状态的各个子系统。</p>
+<p>The architecture has three jobs: keep agent state portable, keep agent work isolated, and keep model execution understandable. The sections below follow the path an operator usually debugs: first the request flow, then the stored state, then the subsystems that move and protect it.</p>
 <hr />
-<h2 id="_1">目录</h2>
+<h2 id="table-of-contents">Table of Contents</h2>
 <ol>
-<li><a href="#数据流转-data-flow">数据流转 (Data Flow)</a></li>
-<li><a href="#系统全景-system-overview">系统全景 (System Overview)</a></li>
-<li><a href="#runtime-与可观测性边界-runtime-and-observability-boundary">Runtime 与可观测性边界 (Runtime And Observability Boundary)</a></li>
-<li><a href="#vfs-引擎-vfs-engine">VFS 引擎 (VFS Engine)</a></li>
-<li><a href="#隔离模型-isolation-model">隔离模型 (Isolation Model)</a></li>
-<li><a href="#ccr-执行循环-ccr-execution-loop">CCR 执行循环 (CCR Execution Loop)</a></li>
-<li><a href="#tier-路由器-tier-router">Tier 路由器 (Tier Router)</a></li>
-<li><a href="#mcp-server-整合-mcp-server-integration">MCP Server 整合 (MCP Server Integration)</a></li>
-<li><a href="#设计哲学-design-philosophy">设计哲学 (Design Philosophy)</a></li>
+<li><a href="#data-flow">Data Flow</a></li>
+<li><a href="#system-overview">System Overview</a></li>
+<li><a href="#runtime-and-observability-boundary">Runtime And Observability Boundary</a></li>
+<li><a href="#vfs-engine">VFS Engine</a></li>
+<li><a href="#isolation-model">Isolation Model</a></li>
+<li><a href="#ccr-execution-loop">CCR Execution Loop</a></li>
+<li><a href="#tier-router">Tier Router</a></li>
+<li><a href="#mcp-server-integration">MCP Server Integration</a></li>
+<li><a href="#design-philosophy">Design Philosophy</a></li>
 </ol>
 <hr />
-<h2 id="data-flow">数据流转 (Data Flow)</h2>
-<p>当你需要弄清 "当 client 启动一个 agent 时到底发生了什么" 时，从这里看起。请求从 MCP server 或 CLI 进入，在 <code>Bene</code> 核心层中生成一个 agent，将执行权移交给 Claude Code Runner (CCR)，然后在返回结果前，记录每一次有意义的状态跃迁。</p>
-<h3 id="mcp-client-model">完整请求流 (MCP Client 到 Model)</h3>
+<h2 id="data-flow">Data Flow</h2>
+<p>Start here when you need to answer "what happens when a client starts an agent?" The request enters through the MCP server or CLI, creates an agent in <code>Bene</code>, hands execution to the Claude Code Runner, and records every meaningful transition before returning the result.</p>
+<h3 id="complete-request-flow-mcp-client-to-model">Complete Request Flow (MCP Client to Model)</h3>
 <div class="codehilite"><pre><span></span><code>Claude Code                BENE MCP Server              BENE Core
     |                           |                           |
     |-- agent_spawn(task) -----&gt;|                           |
@@ -275,15 +275,15 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
     |                           |                           |
     |                           |   +-- CCR Loop ----------+|
     |                           |   |                       |
-    |                           |   |  构建 system prompt     |
-    |                           |   |  设定 state             |
+    |                           |   |  Build system prompt  |
+    |                           |   |  Set state            |
     |                           |   |       |               |
     |                           |   |       v               |
-    |                           |   |  Tier 路由器            |
+    |                           |   |  Tier Router          |
     |                           |   |   |                   |
-    |                           |   |   | classify() 分类    |
-    |                           |   |   | 选择 model          |
-    |                           |   |   | 压缩 context        |
+    |                           |   |   | classify()        |
+    |                           |   |   | select model      |
+    |                           |   |   | compress context  |
     |                           |   |   |       |           |
     |                           |   |   |       v           |
     |                           |   |   |  VLLMClient       |
@@ -291,19 +291,19 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
     |                           |   |   |  completions      |
     |                           |   |   |       |           |
     |                           |   |   |       v           |
-    |                           |   |   |  vLLM 实例         |
-    |                           |   |   |  (本地 GPU)        |
+    |                           |   |   |  vLLM Instance    |
+    |                           |   |   |  (local GPU)      |
     |                           |   |   |       |           |
     |                           |   |   |&lt;------+           |
     |                           |   |   |                   |
-    |                           |   |  解析 response         |
-    |                           |   |  执行 tool calls       |
-    |                           |   |  记录日志到 tool_calls  |
-    |                           |   |  记录日志到 events      |
-    |                           |   |  更新 state            |
-    |                           |   |  自动 checkpoint       |
+    |                           |   |  Parse response       |
+    |                           |   |  Execute tool calls   |
+    |                           |   |  Log to tool_calls    |
+    |                           |   |  Log to events        |
+    |                           |   |  Update state         |
+    |                           |   |  Auto-checkpoint      |
     |                           |   |       |               |
-    |                           |   |  [循环 或 结束]         |
+    |                           |   |  [loop or done]       |
     |                           |   +-- End Loop -----------+
     |                           |                           |
     |                           |&lt;-- result ----------------|
@@ -311,8 +311,8 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
     |                           |                           |
 </code></pre></div>
 
-<p>这张图是你排查故障的最快路径。如果 <code>agent_spawn</code> 返回了但 agent 状态没变，去查 CCR；如果 CCR 跑起来了但没收到模型回复，查 Tier 路由器和 vLLM client；如果模型回复了但文件看上去不对，去查该 agent 的 <code>tool_calls</code>、<code>events</code> 以及 checkpoints。</p>
-<h3 id="sqlite-schema">静态数据分布 (SQLite Schema)</h3>
+<p>That diagram is the fastest way to localize failures. If <code>agent_spawn</code> returns but the agent never changes state, inspect CCR. If CCR is active but no model response lands, inspect the Tier router and vLLM client. If the model responds but files look wrong, inspect <code>tool_calls</code>, <code>events</code>, and checkpoints for the agent.</p>
+<h3 id="data-at-rest-sqlite-schema">Data at Rest (SQLite Schema)</h3>
 <div class="codehilite"><pre><span></span><code>+------------------+      +------------------+
 |     agents       |      |      blobs       |
 |------------------|      |------------------|
@@ -379,24 +379,24 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
                           +------------------+
 </code></pre></div>
 
-<p>所有承载可变数据的表都以 <code>agent_id</code> 划定边界；所有的文件内容都通过 <code>content_hash</code> 进行寻址；所有的 checkpoint 都直接锚定到同一条事件流 (event stream) 中。正是这种设计，让整个 runtime 只需要一个 <code>.db</code> 文件就能运转。</p>
-<h3 id="concurrency-model">并发模型 (Concurrency Model)</h3>
+<p>Every table that holds mutable agent work is scoped by <code>agent_id</code>; every file body is addressed by <code>content_hash</code>; every checkpoint points back into the same event stream. That is why one <code>.db</code> file is enough to carry the runtime.</p>
+<h3 id="concurrency-model">Concurrency Model</h3>
 <div class="codehilite"><pre><span></span><code>Thread 1 (Agent A)         Thread 2 (Agent B)        Thread 3 (Agent C)
        |                          |                          |
        v                          v                          v
   thread-local conn          thread-local conn          thread-local conn
        |                          |                          |
-       +----------- SQLite WAL mode (并发读) ---------------+
+       +----------- SQLite WAL mode (concurrent reads) -----+
        |                          |                          |
        v                          v                          v
-  写入 (串行)                读取 (并发)                读取 (并发)
+  Write (serialized)        Read (concurrent)        Read (concurrent)
 </code></pre></div>
 
-<p>SQLite WAL 模式允许海量并发读，但写操作串行。BENE 通过 <code>threading.local()</code> 为每个线程分配独立连接来配合这一点，同时 CCR 的信号量 (semaphore) 对活跃的 agent 循环进行了熔断控制，以防并行任务耗尽资源。<code>busy_timeout</code> 机制使得在抛出错误前，数据库锁争用的重试时间可长达 30000ms (30秒)。</p>
+<p>SQLite WAL mode permits many readers while writes serialize. BENE pairs that with one SQLite connection per thread through <code>threading.local()</code>, and the CCR semaphore caps active agent loops so parallel work does not become resource exhaustion. <code>busy_timeout</code> gives write contention up to 30000ms (30s) before surfacing an error.</p>
 <hr />
-<h2 id="system-overview">系统全景 (System Overview)</h2>
-<p>BENE 是界定 agent 工作的 runtime 边界。外部 client 直接和 CLI 或 MCP server 对话；agent 循环则依赖 CCR 和 Tier 路由器；而所有持久化的状态都扎根于 <code>Bene</code> 核心层及其底层 SQLite。</p>
-<div class="codehilite"><pre><span></span><code>                      外部客户端
+<h2 id="system-overview">System Overview</h2>
+<p>BENE is the runtime boundary around agent work. External clients talk to the CLI or MCP server; agent loops use CCR and the Tier router; durable state lands in <code>Bene</code> and its SQLite-backed stores.</p>
+<div class="codehilite"><pre><span></span><code>                     External Clients
                     (Claude Code, CLI)
                            |
                            v
@@ -408,7 +408,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
               v                  v
      +----------------+  +----------------+
      |      CCR       |  |     Tier       |
-     | 执行循环        |-&gt;|    路由器     |---&gt; vLLM 实例组
+     | Execution Loop |-&gt;|    Router      |---&gt; vLLM Instances
      | (bene.ccr)     |  | (bene.router)  |     (httpx)
      +-------+--------+  +----------------+
              |
@@ -430,288 +430,289 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
      +------------------------------------------+
 </code></pre></div>
 
-<p><strong>包名:</strong> <code>bene</code>
-<strong>CLI 入口:</strong> <code>bene</code> (定义在 <code>bene.cli.main:cli</code>)
-<strong>配置文件:</strong> <code>bene.yaml</code></p>
-<p>整个系统最核心的对象是 <code>Bene</code> (实现在 <code>bene/core.py</code>)。它将 Blob 存储区、事件日志、checkpoint 管理器、虚拟文件系统以及状态存储组合在了一起。Runner 和 MCP server 直接调用这个核心组件，而不是自己去重复造轮子搞一套持久化。</p>
-<h2 id="runtime-runtime-and-observability-boundary">Runtime 与可观测性边界 (Runtime And Observability Boundary)</h2>
-<p>BENE 是 runtime 本身。KAOS 则是围绕这个 runtime 提供的可观测层。在设计集成方案或编写文档时，请务必保持这条界线足够清晰。</p>
-<p>BENE 掌握着执行权和持久化状态：agent 身份、VFS 文件、checkpoints、tool-call 记录、记忆体 (engrams)、跨局 memory、技能库 (skills)、Shared-log 决策、探针 (probes)、信任分 (trust) 以及晋升门禁 (promotion gates)。任何对 agent 工作状态的改变，都必须通过 BENE 的 API、CLI 或 MCP server 进入，以此确保底层的 SQLite runtime 永远是绝对的单一事实来源 (source of truth)。</p>
-<p>KAOS 从这条边界之外进行观测、报警和推敲 (nudge)。它可以去抓取 tmux 屏幕、汇总 agent 状态、探测停滞的会话、监控日志并报告漏洞，但它绝不能演变成第二套 runtime、隐匿的状态仓库或者另外一条晋升通道。如果 KAOS 发现了某种必须被保留下来的事实，请通过 BENE 的 memory、engrams、shared log 或 issue 将其写入 BENE。</p>
-<p>运作铁律非常简单：</p>
-<div class="codehilite"><pre><span></span><code>BENE = 运行环境、状态管理、门禁拦截、历史回放
-KAOS = 外部观测、监控系统、保姆机制、偏差侦测
+<p><strong>Package:</strong> <code>bene</code>
+<strong>CLI entry point:</strong> <code>bene</code> (defined in <code>bene.cli.main:cli</code>)
+<strong>Configuration file:</strong> <code>bene.yaml</code></p>
+<p>The core object is <code>Bene</code>, implemented in <code>bene/core.py</code>. It composes a blob store, event journal, checkpoint manager, virtual filesystem, and state store. The runner and MCP server call into that core rather than owning their own persistence.</p>
+<h2 id="runtime-and-observability-boundary">Runtime And Observability Boundary</h2>
+<p>BENE is the runtime. KAOS is observability around that runtime. Keep that split sharp when designing integrations or writing docs.</p>
+<p>BENE owns execution and durable state: agent identity, VFS files, checkpoints, tool-call records, engrams, memory, skills, shared-log decisions, probes, trust, and promotion gates. Anything that changes an agent's working state should enter through BENE APIs, the CLI, or the MCP server so the SQLite runtime remains the source of truth.</p>
+<p>KAOS observes, alerts, and nudges from outside that boundary. It may scrape tmux, summarize agent status, detect stalled sessions, watch logs, and report gaps, but it should not become a second runtime, hidden state store, or alternate promotion path. If KAOS discovers a fact that must persist, write it back through BENE memory, engrams, shared log, or a tracked issue.</p>
+<p>The operating rule is simple:</p>
+<div class="codehilite"><pre><span></span><code>BENE = runtime, state, gates, replay
+KAOS = observability, monitoring, babysitting, gap detection
 </code></pre></div>
 
-<p>这种分离保证了 BENE 永远是可复现的 (reproducible)，而 KAOS 永远是可替代的 (replaceable)。即使 KAOS 宕机离线，任意一次执行也理应能仅靠 <code>bene.db</code> 还原；同时，任何一次 KAOS 警报，都必须能指向一条可验证底层状态的 BENE 命令或记录。</p>
+<p>That separation keeps BENE reproducible and KAOS replaceable. A run should still be inspectable from <code>bene.db</code> if KAOS is offline, and a KAOS alert should always point to a BENE command or record that verifies the underlying state.</p>
 <hr />
-<h2 id="vfs-vfs-engine">VFS 引擎 (VFS Engine)</h2>
-<p>当你想知道 agent 到底写了什么、它看到的是哪个版本的文件，或者需要回滚到哪个 checkpoint 才能救场时，调用 VFS 引擎。它在 SQLite 之上提供了一套完整的文件、KV state、tool-call 跟踪以及 checkpoint/恢复 机制。</p>
-<h3 id="sqlite">SQLite 核心配置</h3>
-<div class="codehilite"><pre><span></span><code><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA journal_mode=WAL&quot;</span><span class="p">)</span>    <span class="c1"># 预写式日志</span>
-<span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA foreign_keys=ON&quot;</span><span class="p">)</span>      <span class="c1"># 引用完整性</span>
-<span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA busy_timeout=30000&quot;</span><span class="p">)</span>   <span class="c1"># 遭遇锁争用时重试30秒</span>
+<h2 id="vfs-engine">VFS Engine</h2>
+<p>Use the VFS engine when you need to know what an agent wrote, what version of a file it saw, or which checkpoint can recover a bad turn. It provides files, KV state, tool-call tracking, and checkpoint/restore on top of SQLite.</p>
+<h3 id="sqlite-configuration">SQLite Configuration</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA journal_mode=WAL&quot;</span><span class="p">)</span>    <span class="c1"># Write-Ahead Logging</span>
+<span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA foreign_keys=ON&quot;</span><span class="p">)</span>      <span class="c1"># Referential integrity</span>
+<span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA busy_timeout=30000&quot;</span><span class="p">)</span>   <span class="c1"># 30s retry on lock contention</span>
 <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA wal_autocheckpoint=100&quot;</span><span class="p">)</span>
 </code></pre></div>
 
-<p>这几条 pragma 构成了数据库的契约：WAL 模式应对海量读操作并发，foreign keys 守住关系边界，30秒重试窗口消化数据库写入时的锁竞争。</p>
-<h3 id="thread-safety">线程安全 (Thread Safety)</h3>
-<p>通过 <code>threading.local()</code> 为每个 worker 线程独立分配一个 SQLite 连接。这既遵循了 SQLite 的连接池管理铁律，又使得各个独立的 agent 循环能够并行狂奔。</p>
+<p>Those pragmas are the database contract: WAL for concurrent readers, foreign keys for referential integrity, and a 30s retry window for lock contention.</p>
+<h3 id="thread-safety">Thread Safety</h3>
+<p>Each worker thread gets a separate SQLite connection. That keeps SQLite's connection rules simple while letting independent agent loops run in parallel.</p>
 <div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Bene</span><span class="p">:</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;bene.db&quot;</span><span class="p">,</span> <span class="n">compression</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;zstd&quot;</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_local</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">local</span><span class="p">()</span>
-        <span class="c1"># 每个线程通过 _get_conn() 拿自己的连接</span>
+        <span class="c1"># Each thread gets its own connection via _get_conn()</span>
 </code></pre></div>
 
-<h3 id="blob">内容寻址的 Blob 存储</h3>
-<p><code>bene/blobs.py</code> 依靠 SHA-256 哈希值来落盘文件字节。不同 agent 写入的相同内容会被自动去重；<code>ref_count</code> 负责追踪活体引用；<code>store()</code> 执行压缩并写入，<code>retrieve()</code> 执行解压并吐出数据；默认以等级 3 运行 zstd 压缩；最后，<code>gc()</code> 会清理掉 <code>ref_count &lt;= 0</code> 的废弃 blob。</p>
-<div class="codehilite"><pre><span></span><code>文件写入流：
+<h3 id="content-addressable-blob-store">Content-Addressable Blob Store</h3>
+<p><code>bene/blobs.py</code> stores file bytes by SHA-256 hash. Identical content is deduplicated across agents, <code>ref_count</code> tracks live references, <code>store()</code> compresses and saves bytes, <code>retrieve()</code> returns decompressed bytes, zstd compression runs at level 3 by default, and <code>gc()</code> removes blobs with <code>ref_count &lt;= 0</code>.</p>
+<div class="codehilite"><pre><span></span><code>File Write Flow:
 
-   内容字节
-        |
-        v
-   计算 SHA-256 -----&gt; 去 blobs 表查是否存在?
-        |                    |            |
-        |                   存在         不存在
-        |                    |            |
-        |              ref_count += 1   压缩 (zstd)
-        |                    |            |
-        |                    |        INSERT blob
-        |                    |            |
-        +--------------------+------------+
-        |
-        v
-   INSERT 到 files 表
-   (agent_id, path, content_hash, size, version)
+  content bytes
+       |
+       v
+  SHA-256 hash -----&gt; exists in blobs table?
+       |                    |            |
+       |                   YES           NO
+       |                    |            |
+       |              ref_count += 1   compress (zstd)
+       |                    |            |
+       |                    |        INSERT blob
+       |                    |            |
+       +--------------------+------------+
+       |
+       v
+  INSERT into files table
+  (agent_id, path, content_hash, size, version)
 </code></pre></div>
 
-<h3 id="_2">版本化文件系统</h3>
-<p>只要有文件写入，系统就会切出一个新版本。覆盖同一路径实际上是软删除（<code>deleted = 1</code>）旧的行数据而不抹掉实体，这不仅保留了该文件的变更历史，还给 checkpoint 的回溯留了底。<code>file_history(agent_id, path)</code> 可以抽出整个版本链。文件路径统一经 <code>PurePosixPath</code> 规格化，只要向某目录里塞了嵌套文件，父目录就会顺带自动创建。</p>
-<h3 id="event-journal">事件日志 (Event Journal)</h3>
-<p><code>bene/events.py</code> 是一条不可变 (append-only) 的流，完整记录生命周期、文件系统变动、状态更改、tool 执行、checkpoint 落地、警告甚至错误事件。这串流水可以用 agent、<code>event_type</code>、时间范围以及游标做筛选。</p>
+<h3 id="versioned-file-system">Versioned File System</h3>
+<p>File writes create new versions. Replacing a path soft-deletes the previous row (<code>deleted = 1</code>) without erasing it, which keeps file history available and gives checkpoint restore something to revive. <code>file_history(agent_id, path)</code> returns the version trail. Paths are normalized with <code>PurePosixPath</code>, and parent directories are created as nested files arrive.</p>
+<h3 id="event-journal">Event Journal</h3>
+<p><code>bene/events.py</code> is the append-only log for lifecycle, filesystem, state, tool, checkpoint, warning, and error events. It can be filtered by agent, <code>event_type</code>, time range, and pagination window.</p>
 <table>
 <thead>
 <tr>
-<th>Event Type 事件类型</th>
-<th>触发时机</th>
+<th>Event Type</th>
+<th>Trigger</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>agent_spawn</code></td>
-<td>Agent 诞生</td>
+<td>Agent created</td>
 </tr>
 <tr>
 <td><code>agent_pause</code> / <code>agent_resume</code></td>
-<td>生命周期转换</td>
+<td>Lifecycle transitions</td>
 </tr>
 <tr>
 <td><code>agent_kill</code> / <code>agent_complete</code> / <code>agent_fail</code></td>
-<td>生命周期终结</td>
+<td>Terminal states</td>
 </tr>
 <tr>
 <td><code>file_read</code> / <code>file_write</code> / <code>file_delete</code></td>
-<td>文件系统动作</td>
+<td>Filesystem operations</td>
 </tr>
 <tr>
 <td><code>state_change</code></td>
-<td>KV 状态变化</td>
+<td>KV state modifications</td>
 </tr>
 <tr>
 <td><code>tool_call_start</code> / <code>tool_call_end</code></td>
-<td>工具执行起止边界</td>
+<td>Tool execution boundaries</td>
 </tr>
 <tr>
 <td><code>checkpoint_create</code> / <code>checkpoint_restore</code></td>
-<td>Checkpoint 动作</td>
+<td>Checkpoint operations</td>
 </tr>
 <tr>
 <td><code>error</code> / <code>warning</code></td>
-<td>运行时诊断抛出的异常</td>
+<td>Runtime diagnostics</td>
 </tr>
 </tbody>
 </table>
-<p>每条记录都有一个全局排序的 <code>event_id</code>，一个发起操作的 <code>agent_id</code>，一个事件类型标识，携带具体数据的 JSON payload，以及带毫秒级精度的 ISO 8601 时间戳。</p>
-<h3 id="checkpoint">Checkpoint / 状态恢复</h3>
-<p><code>bene/checkpoints.py</code> 的 checkpoint 一次打包锁定三样东西：当前有效的文件清单快照 <code>(path, content_hash, version)</code>，该 agent 下的所有 KV 状态，以及当前时间节点对应的事件水位线 (event watermark)。恢复 (Restore) 动作则首先软删除现存的所有文件，再把清单里的文件拉回来或者解除软删除，然后用状态快照去覆盖该 agent 现在的状态。对两个不同的 checkpoint 执行 diff，即可抽出两次事件水位线之间的所有文件变更、状态更迭以及产生的 tool calls。</p>
+<p>Every record has a globally ordered <code>event_id</code>, the acting <code>agent_id</code>, an event type, JSON payload, and ISO 8601 timestamp with millisecond precision.</p>
+<h3 id="checkpoint-restore">Checkpoint / Restore</h3>
+<p>A checkpoint captures three things in <code>bene/checkpoints.py</code>: the live file manifest <code>(path, content_hash, version)</code>, all KV state for that agent, and the event watermark at checkpoint time. Restore soft-deletes the current files, restores or un-deletes files from the manifest, and replaces the agent's state snapshot. Diffing two checkpoints reports file changes, state changes, and tool calls between their event watermarks.</p>
 <hr />
-<h2 id="isolation-model">隔离模型 (Isolation Model)</h2>
-<p>BENE 的隔离级别从数据库特性起步，如果跑在 Linux 上甚至能上升到系统进程级别。默认情况下运行的是逻辑隔离 (Logical isolation)；如果环境支持挂载和 cgroup，<code>bene/isolation.py</code> 还可以调动 FUSE 将其实体化。</p>
-<h3 id="tier-1-">Tier 1 -- 逻辑隔离 (默认)</h3>
-<p>逻辑隔离通过将每一个 VFS 动作牢牢绑定在单一 <code>agent_id</code> 下面发挥作用。<code>LogicalIsolation</code> 把 <code>Bene</code> 给包装起来，调用者在每次调方法时甚至都不用显式传 agent ID，系统在下头就帮你卡死边界了。</p>
+<h2 id="isolation-model">Isolation Model</h2>
+<p>BENE's isolation starts as a database property and can be raised to an OS property on Linux. The default is logical isolation; <code>bene/isolation.py</code> also contains the FUSE path for environments that can support mounts and cgroups.</p>
+<h3 id="tier-1-logical-isolation-default">Tier 1 -- Logical Isolation (Default)</h3>
+<p>Logical isolation binds every VFS operation to one <code>agent_id</code>. <code>LogicalIsolation</code> wraps <code>Bene</code> so callers do not pass arbitrary agent IDs at each method call.</p>
 <div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LogicalIsolation</span><span class="p">:</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">afs</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>  <span class="c1"># 边界已框死</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">afs</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>  <span class="c1"># always scoped</span>
 </code></pre></div>
 
-<p>这个层级的隔离零额外运行时开销，通吃 Windows、macOS 和 Linux，它完全依靠类似 <code>WHERE agent_id = ?</code> 的 SQL 判断将各个命名空间锁死。</p>
-<h3 id="tier-2-fuse-linux">Tier 2 -- FUSE + 命名空间隔离 (仅限 Linux)</h3>
-<p>如果进程的确需要一种普通的文件系统视角，<code>IsolatedAgentProcess</code> 可以直接把 agent VFS 挂载到 <code>/tmp/bene/&lt;agent_id&gt;</code>，用 <code>unshare</code> 把进程扔进自己的 Linux mount 命名空间，并能顺手利用 cgroups v2 扣上诸如 <code>memory.max</code> 和 <code>cpu.weight</code> 之类的配额枷锁。</p>
-<div class="codehilite"><pre><span></span><code>Tier 2 隔离栈：
+<p>That tier has no extra runtime overhead, works on Windows, macOS, and Linux, and relies on SQL predicates such as <code>WHERE agent_id = ?</code> to keep namespaces separate.</p>
+<h3 id="tier-2-fuse-namespace-isolation-linux-only">Tier 2 -- FUSE + Namespace Isolation (Linux Only)</h3>
+<p>When a process needs a normal filesystem view, <code>IsolatedAgentProcess</code> can mount the agent VFS at <code>/tmp/bene/&lt;agent_id&gt;</code>, put the process in its own Linux mount namespace with <code>unshare</code>, and optionally apply cgroups v2 controls such as <code>memory.max</code> and <code>cpu.weight</code>.</p>
+<div class="codehilite"><pre><span></span><code>Tier 2 Isolation Stack:
 
   +-------------------+
-  | Agent 进程         |
+  | Agent Process      |
   +-------------------+
-  | Mount 命名空间     |  &lt;-- unshare(CLONE_NEWNS)
+  | Mount Namespace    |  &lt;-- unshare(CLONE_NEWNS)
   +-------------------+
-  | FUSE 挂载点        |  &lt;-- /tmp/bene/&lt;agent_id&gt;
+  | FUSE Mount         |  &lt;-- /tmp/bene/&lt;agent_id&gt;
   +-------------------+
-  | Bene VFS 引擎      |
+  | Bene VFS Engine |
   +-------------------+
-  | SQLite WAL        |
+  | SQLite WAL         |
   +-------------------+
-  | cgroups v2        |  &lt;-- memory.max, cpu.weight
+  | cgroups v2         |  &lt;-- memory.max, cpu.weight
   +-------------------+
 </code></pre></div>
 
-<p><strong>触发前置条件：</strong></p>
+<p><strong>Requirements:</strong></p>
 <ul>
-<li>必须是 Linux (<code>platform.system() == "Linux"</code>)。</li>
-<li>需安装 <code>fusepy</code> 依赖库 —— <code>pip install bene</code> 然后执行 <code>uv sync --extra fuse</code> 激活 FUSE 能力。</li>
-<li>执行该命令的用户须具有 root 权限或对应的命名空间/cgroup 操作权限。</li>
+<li>Linux only (<code>platform.system() == "Linux"</code>).</li>
+<li><code>fusepy</code> package — <code>pip install bene</code> then <code>uv sync --extra fuse</code> from a clone for the FUSE extra.</li>
+<li>Root or appropriate capabilities for namespace/cgroup operations.</li>
 </ul>
-<h3 id="_3">隔离工厂类</h3>
-<p><code>create_isolation()</code> 负责根据配置文件拍板决定用哪一层的隔离：</p>
+<h3 id="isolation-factory">Isolation Factory</h3>
+<p><code>create_isolation()</code> chooses the tier from configuration:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">isolation</span> <span class="o">=</span> <span class="n">create_isolation</span><span class="p">(</span><span class="n">afs</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
-<span class="c1"># 产出 LogicalIsolation 或者是 IsolatedAgentProcess</span>
+<span class="c1"># Returns LogicalIsolation or IsolatedAgentProcess</span>
 </code></pre></div>
 
 <hr />
-<h2 id="ccr-ccr-execution-loop">CCR 执行循环 (CCR Execution Loop)</h2>
-<p>位于 <code>bene/ccr/runner.py</code> 的 Claude Code Runner 承载着长寿命的 agent 执行循环。它把任务包装成 system prompt，把模型请求交给 Tier 路由器分发，直接执行需要执行的工具操作，把每一次观察打进存储层，并周期性 checkpoint 切片。</p>
-<h3 id="loop-architecture">循环架构 (Loop Architecture)</h3>
+<h2 id="ccr-execution-loop">CCR Execution Loop</h2>
+<p>The Claude Code Runner in <code>bene/ccr/runner.py</code> is the long-running agent loop. It turns a task into a system prompt, routes model calls through Tier, executes requested tools, persists observations, and checkpoints progress.</p>
+<h3 id="loop-architecture">Loop Architecture</h3>
 <div class="codehilite"><pre><span></span><code>                  +------------------+
                   |   Task (prompt)  |
                   +--------+---------+
                            |
                            v
               +------------------------+
-              | 构建 System Prompt     |
-              | (融合 agent context与  |
-              |   工具声明)           |
+              |  Build System Prompt   |
+              |  (agent context +      |
+              |   tool descriptions)   |
               +----------+-------------+
                          |
             +============+============+
-            |     核心 CCR 循环        |
-            | (受限至 max_iterations)  |
+            |     MAIN CCR LOOP       |
+            |  (up to max_iterations) |
             |                         |
             |  +-------------------+  |
-            |  |  1. 规划 (PLAN)   |  |
-            |  |  经 Tier 路由     |  |
-            |  |  获取模型回复      |  |
+            |  |  1. PLAN          |  |
+            |  |  Route via Tier   |  |
+            |  |  Get model resp.  |  |
             |  +---------+---------+  |
             |            |            |
             |            v            |
             |  +-------------------+  |
-            |  |  2. 执行 (ACT)    |  |
-            |  |  执行 tool calls  |  |
-            |  |  (如有)           |  |
+            |  |  2. ACT           |  |
+            |  |  Execute tool     |  |
+            |  |  calls (if any)   |  |
             |  +---------+---------+  |
             |            |            |
             |            v            |
             |  +-------------------+  |
-            |  |  3. 观察 (OBSERVE)|  |
-            |  |  把结果追加进回话 |  |
-            |  |  检查结束标识     |  |
+            |  |  3. OBSERVE       |  |
+            |  |  Append results   |  |
+            |  |  to conversation  |  |
+            |  |  Check for done   |  |
             |  +---------+---------+  |
             |            |            |
-            |   [未结? 进入下轮循环] |
+            |   [not done? loop]      |
             +============+============+
                          |
                          v
                   +--------------+
-                  |    结果       |
+                  |   Result     |
                   +--------------+
 </code></pre></div>
 
-<h3 id="_4">步进拆解</h3>
+<h3 id="step-by-step">Step-by-Step</h3>
 <ol>
-<li>首先把 agent 状态拧成 <code>running</code>，从自身身份标识、可用工具以及具体的任务文本拼出 system prompt，最后把初始化的对话上下文记录在 agent 状态中。</li>
-<li>规划层 (Plan) 把对话推给 Tier 路由器，路由将其归类并分派对应的 vLLM 模型。</li>
-<li>执行层 (Act) 依据模型指令通过 <code>ToolRegistry</code> 执行，状态流从 <code>pending</code> 过渡到 <code>running</code>，最后将结果 <code>success</code>/<code>error</code> 记录进 <code>tool_calls</code>。</li>
-<li>观察层 (Observe) 把拿到的结果作为一环拼合回会话历史，累加迭代次数和心跳，倘若模型直接扔出不带工具调用的 <code>end_turn</code> 则终止循环。</li>
-<li>自动 checkpoint 每经过 <code>checkpoint_interval</code>（默认10）个迭代回合就会切出一张快照。</li>
+<li>Initialization sets the agent status to <code>running</code>, builds a system prompt from identity, tools, and task text, and stores the starting conversation in agent state.</li>
+<li>Plan sends the conversation to the Tier router, which classifies the request and chooses a vLLM model.</li>
+<li>Act executes any requested tool calls through <code>ToolRegistry</code>, recording <code>pending</code> -&gt; <code>running</code> -&gt; <code>success</code>/<code>error</code> state in <code>tool_calls</code>.</li>
+<li>Observe appends tool results back into the conversation, updates iteration count and heartbeat, and stops when the model returns <code>end_turn</code> without tool calls.</li>
+<li>Auto-checkpoint creates a snapshot every <code>checkpoint_interval</code> iterations; the default interval is 10.</li>
 </ol>
-<h3 id="_5">终止条件</h3>
-<p>正常结束、遭遇 <code>timeout_seconds</code>、耗尽 <code>max_iterations</code>，以及迭代间歇期间查实其处于 <code>killed</code> 状态或者因为 <code>paused</code> 状态陷入等待恢复唤醒的休眠。</p>
-<h3 id="_6">并发执行能力</h3>
-<p><code>ClaudeCodeRunner.run_parallel()</code> 用 <code>asyncio.gather()</code> 和一个容量信号量来并发推举 agent。默认 <code>max_parallel_agents</code> 阈值卡在 8。</p>
-<h3 id="tool-registry">工具登记处 (Tool Registry)</h3>
-<p><code>bene/ccr/tools.py</code> 统管所有内置和定制的工具定义。所有 <code>fs_</code> 和 <code>state_</code> 开头的内建工具都能默认拿到活跃的 <code>agent_id</code> 以框定命名空间内的操作范围。下面列出核心 <code>fs_</code>/<code>state_</code>/<code>shell</code> 工具集；在部分内部部署中，<code>tools.py</code> 还能直接搭载一个翻译内部 Jira URL 为 NFS 存储挂载路径的 <code>squirrel_localpath</code>。</p>
+<h3 id="termination-conditions">Termination Conditions</h3>
+<p>The loop stops on normal completion, <code>timeout_seconds</code>, <code>max_iterations</code>, a <code>killed</code> status observed between iterations, or a <code>paused</code> status that makes the loop sleep until resume.</p>
+<h3 id="parallel-execution">Parallel Execution</h3>
+<p><code>ClaudeCodeRunner.run_parallel()</code> runs agents with <code>asyncio.gather()</code> and a semaphore. The default <code>max_parallel_agents</code> value is 8.</p>
+<h3 id="tool-registry">Tool Registry</h3>
+<p><code>bene/ccr/tools.py</code> owns built-in and custom tool definitions. Built-in <code>fs_</code> and <code>state_</code> tools receive the active <code>agent_id</code> automatically so their operations stay inside the caller's namespace. The table below lists the core <code>fs_</code>/<code>state_</code>/<code>shell</code> tools; <code>tools.py</code> also registers a <code>squirrel_localpath</code> helper (translates internal/Jira URLs to NFS paths) that an internal deployment may keep or de-register.</p>
 <table>
 <thead>
 <tr>
-<th>Tool (工具)</th>
-<th>功能描述</th>
+<th>Tool</th>
+<th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>fs_read</code></td>
-<td>从该 agent VFS 读文件</td>
+<td>Read a file from the agent's VFS</td>
 </tr>
 <tr>
 <td><code>fs_write</code></td>
-<td>向文件写内容</td>
+<td>Write content to a file</td>
 </tr>
 <tr>
 <td><code>fs_ls</code></td>
-<td>列出目录成分</td>
+<td>List directory contents</td>
 </tr>
 <tr>
 <td><code>fs_delete</code></td>
-<td>删除一个文件</td>
+<td>Delete a file</td>
 </tr>
 <tr>
 <td><code>fs_mkdir</code></td>
-<td>新建目录</td>
+<td>Create a directory</td>
 </tr>
 <tr>
 <td><code>state_get</code></td>
-<td>读取 KV 状态值</td>
+<td>Read a KV state value</td>
 </tr>
 <tr>
 <td><code>state_set</code></td>
-<td>设定 KV 状态值</td>
+<td>Write a KV state value</td>
 </tr>
 <tr>
 <td><code>shell_exec</code></td>
-<td>开个 shell 跑命令 (带超时)</td>
+<td>Execute a shell command (with timeout)</td>
 </tr>
 </tbody>
 </table>
-<p>直接调用 <code>ccr.register_tool(ToolDefinition(...))</code> 就能添加客制化的工具。</p>
+<p>Custom tools are added with <code>ccr.register_tool(ToolDefinition(...))</code>.</p>
 <hr />
-<h2 id="tier-tier-router">Tier 路由器 (Tier Router)</h2>
-<p><code>bene/router/tier.py</code> 中的 Tier 路由器就是模型分发层。它会给每一个进来的推理请求贴上 <code>trivial</code>、<code>moderate</code>、<code>complex</code> 或 <code>critical</code> 标签，对应派单至不同段位的模型组，必要时对 context 发动缩骨功，要是调用崩了还会启动退场补救（fallback）。</p>
-<h3 id="_7">架构透视</h3>
-<div class="codehilite"><pre><span></span><code>   入站请求
+<h2 id="tier-router">Tier Router</h2>
+<p>The Tier router in <code>bene/router/tier.py</code> is the model-dispatch layer. It labels each inference request as <code>trivial</code>, <code>moderate</code>, <code>complex</code>, or <code>critical</code>, routes to the configured model tier, compresses context when needed, and falls back when a model call fails.</p>
+<h3 id="architecture">Architecture</h3>
+<div class="codehilite"><pre><span></span><code>  Incoming Request
   (messages, tools)
         |
         v
   +-------------------+
-  |    分类任务        |
+  |    Classify Task   |
   |                    |
   |  +--------------+  |
-  |  | 依靠LLM的    |  |  (首选，走 classifier_model)
-  |  | 分类器        |  |
+  |  | LLM-based    |  |  (preferred, uses classifier_model)
+  |  | Classifier   |  |
   |  +------+-------+  |
   |         |          |
-  |    [遭遇失败时]     |
+  |    [on failure]    |
   |         |          |
   |  +------v-------+  |
-  |  | 启发式        |  |  (回退防线，走正则+计分)
-  |  | 分类器        |  |
+  |  | Heuristic    |  |  (fallback, regex + scoring)
+  |  | Classifier   |  |
   |  +--------------+  |
   +--------+-----------+
            |
            v
-  分类裁决结果
+  Classification Result
   (trivial | moderate | complex | critical)
            |
            v
   +-------------------+
-  | 路由表             |
+  | Routing Table      |
   | trivial   -&gt; 7B    |
   | moderate  -&gt; 32B   |
   | complex   -&gt; 70B   |
@@ -720,32 +721,32 @@ KAOS = 外部观测、监控系统、保姆机制、偏差侦测
            |
            v
   +-------------------+
-  | Context压缩器      |
-  | (如有启用)         |
+  | Context Compressor |
+  | (if enabled)       |
   +--------+----------+
            |
            v
   +-------------------+
   |   VLLMClient      |
-  |   (原生 httpx)    |
+  |   (raw httpx)     |
   |   POST /v1/chat/  |
   |   completions     |
   +-------------------+
 </code></pre></div>
 
-<p>Tier 实打实是个原生支持 vLLM 的级联（cascade）路由器。这里的每一个内部零件，它的设计都有据可查，直接脱胎于某篇已发表的核心论文 —— 请翻阅本节最末的 <a href="#论文血统考-research-lineage">论文血统考 (Research Lineage)</a>。直言不讳点出技术渊源，而不将其包装成某个玄学的自创术语，就是要让后面的工程师在需要翻新某个部件时，能有迹可循顺着家族树直接切出最新的论文。</p>
-<h3 id="task-classification">任务定级 (Task Classification)</h3>
-<p><code>bene/router/classifier.py</code> 里的 <code>LLMClassifier</code> 会向类似于 <code>qwen2.5-coder-7b</code> 的微型模型扔一段温度设在 0 绝对冷静的判定 prompt。模型应当仅吐出 <code>trivial / moderate / complex / critical</code> 其中之一。即使夹了点废话或大写，正则也能把它摘出来；这步要是扑街了，直接掉头去找启发式分类器救场。LLM 决策这一路，给出的置信度 (confidence) 被钉死在 0.85。</p>
-<p>这种玩法 —— 让温度为 0 的微型模型充当判定探头去指挥路由，正是继承了 RouteLLM 论文中描述的 <code>causal_llm</code> 变体（<a href="https://arxiv.org/abs/2406.18665">Ong et al. 2024</a>）。</p>
-<p>同在 <code>bene/router/classifier.py</code> 的 <code>HeuristicClassifier</code> 采用三段式正则评分：</p>
+<p>Tier is a vLLM-native cascade router. Each subsystem implements a mechanic that traces directly to a published paper — see <a href="#research-lineage">Research Lineage</a> at the end of this section. Naming the design choices honestly (rather than hiding them behind a brand) lets readers swap in newer variants from the same family when they want to.</p>
+<h3 id="task-classification">Task Classification</h3>
+<p><code>bene/router/classifier.py: LLMClassifier</code> sends a temperature-0 classification prompt to a small model such as <code>qwen2.5-coder-7b</code>. The desired response is one word from <code>trivial / moderate / complex / critical</code>; parsing tolerates uppercase and extra text, and errors fall back to the heuristic path. LLM classifications use fixed confidence 0.85.</p>
+<p>This pattern — prompting a small LLM at temperature 0 to act as a classifier head whose single-token output gates dispatch — descends from RouteLLM's <code>causal_llm</code> variant (<a href="https://arxiv.org/abs/2406.18665">Ong et al. 2024</a>).</p>
+<p><code>bene/router/classifier.py: HeuristicClassifier</code> scores the task text with three pattern sets:</p>
 <ul>
-<li><code>COMPLEX_PATTERNS</code>：诸如重构、架构设计、安全审计、迁移、分布式等重型词，每个命中记 +3.0 分。</li>
-<li><code>MODERATE_PATTERNS</code>：编写、建函数、搞测试、修 bug 等活计，命中记 +1.5 分。</li>
-<li><code>TRIVIAL_PATTERNS</code>：排版、改名、标注释、修笔误、导依赖等杂务，每个倒扣 -1.0 分。</li>
+<li><code>COMPLEX_PATTERNS</code>: refactor, architect, security, migration, distributed, etc. (+3.0 score each)</li>
+<li><code>MODERATE_PATTERNS</code>: implement, create function, write test, fix bug, etc. (+1.5 each)</li>
+<li><code>TRIVIAL_PATTERNS</code>: format, rename, comment, typo, import, etc. (-1.0 each)</li>
 </ul>
-<p>它还会对堆了 50K 字符上下的上下文叠加 +2.0 分，超过 20K 叠加 +1.0，工具总数如果冲上 11+ 加 +1.0，对冗长的任务说明段则视字数加权（&gt;500 字符加 +1.0，&gt;200 加 +0.5）。综合裁定：总分 &gt;= 5.0 划归 critical，&gt;= 3.0 划归 complex，&gt;= 1.0 归为 moderate，再低于这个门槛统统按 trivial 处置。置信度被框定为 <code>min(0.9, 0.5 + |score| * 0.1)</code>。</p>
-<h3 id="routing-table">路由表挂载 (Routing Table)</h3>
-<p>整张路况表全都寄存在 <code>bene.yaml</code> 配置的各个模型 <code>use_for</code> 参数里：</p>
+<p>It also adds +2.0 for context above 50K chars, +1.0 for context above 20K chars, +1.0 for more than 10 tools (11+), and a two-tier bonus for task descriptions (+1.0 for &gt;500 chars, +0.5 for &gt;200 chars). Scores map to &gt;= 5.0 critical, &gt;= 3.0 complex, &gt;= 1.0 moderate, otherwise trivial. Confidence is <code>min(0.9, 0.5 + |score| * 0.1)</code>.</p>
+<h3 id="routing-table">Routing Table</h3>
+<p>The routing table comes from each model's <code>use_for</code> list in <code>bene.yaml</code>:</p>
 <div class="codehilite"><pre><span></span><code><span class="nt">models</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">qwen2.5-coder-7b</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">use_for</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">trivial</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">code_completion</span><span class="p p-Indicator">]</span>
@@ -755,86 +756,86 @@ KAOS = 外部观测、监控系统、保姆机制、偏差侦测
 <span class="w">    </span><span class="nt">use_for</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">complex</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">critical</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">planning</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-<p>遇到尚未圈定的复杂度，直接甩给 <code>fallback_model</code> 兜底。如果在 agent 级别硬性指明了 <code>force_model</code>，一切分类裁决一概免除。</p>
-<p>这种基于离散区间的层级调度，比连续打分的黑盒模型在逻辑上更逼近 AutoMix (<a href="https://arxiv.org/abs/2310.12963">Aggarwal, Madaan et al. 2023</a>) 与 Hybrid LLM (<a href="https://arxiv.org/abs/2404.14618">Ding et al. 2024</a>) 的核心思想。其中，Hybrid LLM 是这套双档变体的直系机理鼻祖；Tier 只不过是将这种 2 档位路由拓展成了 4 档。</p>
-<h3 id="context-context-compression">Context 上下文折叠 (Context Compression)</h3>
-<p><code>bene/router/context.py</code> 的 <code>ContextCompressor</code> 按照大致 1个 token 顶 4个英文字符来粗估体量。它直接对超长 tool 输出下狠手：超出 2000 字符的一律剁掉中段，仅保留头 1000 与尾 500 个字符，中间接上一段 <code>[truncated]</code>（数据已截断）标记。接着在保留头端系统指令和末端最后 8 条消息 (<code>PRESERVE_RECENT</code>) 不动摇的前提下，把中间堆积的一大坨陈年旧账提纯汇总；若最后仍不满足选定模型 <code>max_context</code> 容量的 85%，那就对中间部分继续抽血压缩。</p>
-<p>这种 "头尾原封保留，把夹心的旧历史挤压成附体指令重新贴回系统 message" 的折叠手段，发端于 MemGPT (<a href="https://arxiv.org/abs/2310.08560">Packer et al. 2023</a>) 和 <em>Recursively Summarizing Enables Long-Term Dialogue Memory in LLMs</em> (<a href="https://arxiv.org/abs/2308.15022">Wang et al. 2023</a>)。目前的工程实现则严格向 Anthropic 产品化落地版本的 <code>/compact</code> 手法看齐（对应的 Claude API 参数就是 <code>compact-2026-01-12</code>）。</p>
-<h3 id="vllm-vllm-client">vLLM 发射器 (vLLM Client)</h3>
-<p><code>bene/router/vllm_client.py</code> 仅仅是一段短小精悍的异步 HTTP client，拒绝裹入任何厚重的外部 SDK。它仅仅在需要呼叫时才拉起 <code>httpx.AsyncClient</code> 执行 <code>POST {base_url}/chat/completions</code>，把与 OpenAI 规格对齐的一堆参数 (<code>model</code>, <code>messages</code>, <code>temperature</code>, <code>max_tokens</code>, <code>tools</code>, <code>tool_choice</code>) 扔给端口。拿到原生 JSON 后原原本本填装进 <code>ChatCompletion</code>、<code>ChatChoice</code>、<code>ChatMessage</code> 还有 <code>Usage</code> 这套数据结构里去。最终开放一个 <code>close()</code> 提供回收接口，并且设了 120秒 的默认 timeout 阈值。</p>
-<h3 id="retry-and-fallback">弹射与补救 (Retry and Fallback)</h3>
-<p>对于掉线的模型呼叫，路由器会启动不超过 <code>max_retries</code> 设定的拉锯战；默认是 1（即单发不补枪）。如果非后备模型一直调不通，后续会直接切成指定的 fallback 模型重新走单。</p>
-<h3 id="research-lineage">论文血统考 (Research Lineage)</h3>
+<p>Any uncovered complexity level uses <code>fallback_model</code>. An agent-level <code>force_model</code> skips classification entirely.</p>
+<p>The discrete-tier dispatch (rather than learning a continuous score) most closely matches AutoMix (<a href="https://arxiv.org/abs/2310.12963">Aggarwal, Madaan et al. 2023</a>) and Hybrid LLM (<a href="https://arxiv.org/abs/2404.14618">Ding et al. 2024</a>). Hybrid LLM is the closest mechanical ancestor of the binary version of this dispatch; Tier generalizes it from 2 tiers to 4.</p>
+<h3 id="context-compression">Context Compression</h3>
+<p><code>ContextCompressor</code> in <code>bene/router/context.py</code> estimates tokens at roughly 4 characters per token, truncates long tool outputs above 2000 characters to the first 1000 plus last 500 characters with a <code>[truncated]</code> marker, drops middle messages while preserving the system message and the last 8 messages (PRESERVE_RECENT), summarizing everything in between, then trims more aggressively if the context still does not fit. It targets 85% of the selected model's <code>max_context</code>.</p>
+<p>The "summarize the middle into a synthetic system message, preserve recent messages verbatim" pattern descends from MemGPT (<a href="https://arxiv.org/abs/2310.08560">Packer et al. 2023</a>) and <em>Recursively Summarizing Enables Long-Term Dialogue Memory in LLMs</em> (<a href="https://arxiv.org/abs/2308.15022">Wang et al. 2023</a>). The implementation is faithful to Anthropic's productized <code>/compact</code> mechanism (Claude API beta <code>compact-2026-01-12</code>).</p>
+<h3 id="vllm-client">vLLM Client</h3>
+<p><code>bene/router/vllm_client.py</code> is a small async HTTP client, not an SDK wrapper. It lazily creates an <code>httpx.AsyncClient</code>, calls <code>POST {base_url}/chat/completions</code>, sends OpenAI-compatible fields (<code>model</code>, <code>messages</code>, <code>temperature</code>, <code>max_tokens</code>, <code>tools</code>, <code>tool_choice</code>), parses raw JSON into typed dataclasses (<code>ChatCompletion</code>, <code>ChatChoice</code>, <code>ChatMessage</code>, <code>Usage</code>), and exposes <code>close()</code> for cleanup. The default timeout is 120s.</p>
+<h3 id="retry-and-fallback">Retry and Fallback</h3>
+<p>The router retries failed model calls up to <code>max_retries</code>; the default is 1 (a single attempt, no retry). If a non-fallback model keeps failing, later attempts switch to the configured fallback model.</p>
+<h3 id="research-lineage">Research Lineage</h3>
 <table>
 <thead>
 <tr>
-<th>子模块</th>
-<th>最核心论文</th>
-<th>考据短评</th>
+<th>Subsystem</th>
+<th>Closest paper</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>级联路由 (先用便宜的顶不住再上贵的)</td>
+<td>Cascade routing (cheap-first → escalate)</td>
 <td><em>FrugalGPT</em>, Chen, Zaharia, Zou (Stanford 2023) — <a href="https://arxiv.org/abs/2305.05176">arXiv:2305.05176</a></td>
-<td>LLM 级联祖师爷级论文。阶梯表就是 FrugalGPT "LLM cascade" 思想的最佳注脚。</td>
+<td>The foundational LLM-cascade paper. The tier table is FrugalGPT's "LLM cascade" pattern.</td>
 </tr>
 <tr>
-<td>基于难度评估的调度</td>
+<td>Difficulty-classifier-driven dispatch</td>
 <td><em>Hybrid LLM</em>, Ding et al. (Microsoft 2024) — <a href="https://arxiv.org/abs/2404.14618">arXiv:2404.14618</a></td>
-<td>Tier 直系血统宗家。Tier 将论文里的 2 层路由平滑展开为 4 层。</td>
+<td>The closest mechanical ancestor of Tier. Tier generalizes its 2-tier router to 4 tiers.</td>
 </tr>
 <tr>
-<td>微缩 LLM 充当分类裁决首脑</td>
+<td>LLM-as-classifier head</td>
 <td><em>RouteLLM</em> (<code>causal_llm</code> variant), Ong et al. (UC Berkeley + Anyscale + LMSYS, 2024) — <a href="https://arxiv.org/abs/2406.18665">arXiv:2406.18665</a></td>
-<td>"由小模型吐出定级标签" 的机制脱胎于此。</td>
+<td>The "small LLM emits a routing label" pattern descends from this paper.</td>
 </tr>
 <tr>
-<td>多层级离散瀑布分类</td>
+<td>Multi-tier discrete cascade</td>
 <td><em>AutoMix</em>, Aggarwal, Madaan et al. (CMU + Google 2023) — <a href="https://arxiv.org/abs/2310.12963">arXiv:2310.12963</a></td>
-<td>把连续难度区间砍成四个具象离散段位的最近参考。</td>
+<td>Closest precedent for the 4-bucket discretization of difficulty.</td>
 </tr>
 <tr>
-<td>滚轴式汇总上下文收拢</td>
-<td><em>MemGPT</em>, Packer et al. (UC Berkeley 2023) — <a href="https://arxiv.org/abs/2310.08560">arXiv:2310.08560</a>, 以及 <em>Recursively Summarizing</em>, Wang et al. (CAS 2023) — <a href="https://arxiv.org/abs/2308.15022">arXiv:2308.15022</a></td>
-<td>system-message 缝合历史旧账手法发端。本代码块属于 Anthropic <code>/compact</code> 落地版手法的复现。</td>
+<td>Rolling-summary context compression</td>
+<td><em>MemGPT</em>, Packer et al. (UC Berkeley 2023) — <a href="https://arxiv.org/abs/2310.08560">arXiv:2310.08560</a>, and <em>Recursively Summarizing</em>, Wang et al. (CAS 2023) — <a href="https://arxiv.org/abs/2308.15022">arXiv:2308.15022</a></td>
+<td>The system-message continuation pattern. Anthropic's <code>/compact</code> is the engineering instantiation that the code targets.</td>
 </tr>
 </tbody>
 </table>
 <blockquote>
-<p><strong>针对之前命名的一点澄清</strong>。该路由此前曾经取名为 <em>Tier</em> (全称所谓 "Generalized Execution Planning &amp; Allocation")。这个缩写完全是后期生凑出来的，在以上任何直系血统论文中毫无踪迹，而且偏偏还和另一篇主攻 prompt 优化而跟路由八竿子打不着的叫 <em>Tier: Reflective Prompt Evolution Can Outperform Reinforcement Learning</em> (<a href="https://arxiv.org/abs/2507.19457">Agrawal et al. 2025</a>) 论文撞名了。<strong>Tier</strong> 作为现名更精准地点出了系统到底在干嘛，也方便代码审读者顺藤摸瓜回溯正宗的技术出处。</p>
+<p><strong>Note on the previous name.</strong> This router was previously called <em>Tier</em> ("Generalized Execution Planning &amp; Allocation"). That acronym was reverse-engineered, was not present in any of the actual ancestor papers above, and collided with the unrelated <em>Tier: Reflective Prompt Evolution Can Outperform Reinforcement Learning</em> (<a href="https://arxiv.org/abs/2507.19457">Agrawal et al. 2025</a>) which is a prompt optimizer, not a router. <strong>Tier</strong> describes what the code mechanically does and lets readers trace the design back to its actual lineage.</p>
 </blockquote>
 <hr />
-<h2 id="mcp-server-mcp-server-integration">MCP Server 整合 (MCP Server Integration)</h2>
-<p>MCP Server 是 Claude Code 以及所有兼容 MCP 协议的系统跟 BENE 打交道的专属通道。它的底层逻辑是：把操作口子抛出去，但核心执行和存储依然必须烂在 <code>Bene</code> 和 <code>ClaudeCodeRunner</code> 的肚子里。</p>
-<p>这个装载于 <code>bene/mcp/server.py</code> 的 MCP server 使用 <code>mcp</code> 原生 Python 包打造，开放双重传输模式：</p>
+<h2 id="mcp-server-integration">MCP Server Integration</h2>
+<p>The MCP server is the surface used by Claude Code and any other MCP-capable client. It exposes BENE operations while keeping implementation state in <code>Bene</code> and <code>ClaudeCodeRunner</code>.</p>
+<p>The MCP server (<code>bene/mcp/server.py</code>) is implemented using the <code>mcp</code> Python package and supports two transport modes:</p>
 <ul>
-<li><strong>stdio 标准输入输出</strong>: 专门给 Claude Code 这种贴身肉搏的直连进程用。</li>
-<li><strong>SSE 通道</strong>: 基于 Starlette + uvicorn，把 Server-Sent Events 套上 HTTP 推向外部网络。</li>
+<li><strong>stdio</strong>: For direct process integration (used by Claude Code).</li>
+<li><strong>SSE</strong>: For HTTP-based integration via Server-Sent Events (uses Starlette + uvicorn).</li>
 </ul>
-<p>这个服务把足足 37 个 tool，归进了 9 大范畴（生命周期管理、VFS文件读写、Checkpoints、信息检索、蜂群编排、Meta-Harness调校、Memory检索、Shared Log协议、Skills库）；并且上述所有接口，每一条都能不偏不倚地精准对应回 <code>Bene</code>、<code>ClaudeCodeRunner</code>、<code>MetaHarnessSearch</code> 乃至底下那个抗造的协作存储堆栈上。想抄全部的图谱底牌，请移步 <a href="mcp-integration.html">mcp-integration.md</a>。</p>
-<h3 id="server">Server 点火挂载</h3>
+<p>The server exposes 37 tools across 9 categories (Lifecycle, VFS, Checkpoints, Query, Orchestration, Meta-Harness, Memory, Shared Log, Skills) that map directly to <code>Bene</code>, <code>ClaudeCodeRunner</code>, <code>MetaHarnessSearch</code>, and the durable coordination stores. See <a href="mcp-integration.html">mcp-integration.md</a> for the complete tool reference.</p>
+<h3 id="server-initialization">Server Initialization</h3>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene.mcp.server</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_server</span>
 
 <span class="n">mcp_server</span> <span class="o">=</span> <span class="n">init_server</span><span class="p">(</span><span class="n">afs</span><span class="p">,</span> <span class="n">ccr</span><span class="p">)</span>
-<span class="c1"># afs: 初始化完毕的 Bene 实例</span>
-<span class="c1"># ccr: 初始化完毕的 ClaudeCodeRunner 实例</span>
+<span class="c1"># afs: Bene instance</span>
+<span class="c1"># ccr: ClaudeCodeRunner instance</span>
 </code></pre></div>
 
-<p><code>init_server()</code> 接过实例后，便将这套由 <code>Bene</code> 与 <code>ClaudeCodeRunner</code> 共同缔造的核心参考指针，直接铺平到所有 tool 执行回调函数的底下。</p>
+<p><code>init_server()</code> sets the module-level <code>Bene</code> and <code>ClaudeCodeRunner</code> references used by all tool handlers.</p>
 <hr />
-<h2 id="design-philosophy">设计哲学 (Design Philosophy)</h2>
-<p>下列这组刚性铁律，直接解释了这套 runtime 为什么最终长成这幅摸样。</p>
-<h3 id="single-file-portability">单文件便携 (Single-file portability)</h3>
-<p>把所有的 agent 文件、私有状态、刀光剑影的 tool-call 记录、日志时间轴以及 checkpoints，全数砸进一个单纯的 <code>.db</code> 文件。所谓迁徙，那就是一句单纯到无聊的 <code>cp bene.db backup.db</code>；而你手边随便一把轻量级的 SQLite 小凿子，就能将这内部全盘剖析。</p>
-<h3 id="ai-sdk-zero-ai-sdk-dependencies">对 AI SDK 说不 (Zero AI SDK dependencies)</h3>
-<p>BENE 有意拉黑一切诸如 <code>openai</code>、<code>litellm</code> 以及 <code>dspy</code> 这类繁杂的套件依赖。vLLM 底层的分发动作，只是端端正正靠一个剥得精光的 <code>httpx</code>，直白地甩给能看懂 OpenAI 通信规范的 <code>/v1/chat/completions</code> API 去处理；斩断包袱，防止这些沉重的周边套件发生飘移并把这套朴素的整合方案拖进兼容性深渊。</p>
-<h3 id="isolation-by-default">默认就是隔离的 (Isolation by default)</h3>
-<p>所有的文件碰触和底层查询都在开头硬核挂载了一个 <code>agent_id</code> 的紧箍咒。这种隔绝机制不再是所谓的君子协定；如果某些数据真的不允许一个 agent 越界摸到，那它甚至连相应的 API 探测口子都直接被隐身掉。</p>
-<h3 id="append-only-auditability">审计账本坚如磐石 (Append-only auditability)</h3>
-<p>不管什么动作 —— 读书、画写、涂销、状态易帜、呼唤神龙般地切工具、下 checkpoint 的死钩子、从生到死的演替、亮起黄灯或抛出红灯错误，全盘追加刻进事件底座，永不抹灭。到头来就留存出一条时间轨迹的化石，随你回放翻看。</p>
-<h3 id="composition-over-inheritance">拼装才是正义 (Composition over inheritance)</h3>
-<p><code>Bene</code> 攥死存储，不假于人；<code>ClaudeCodeRunner</code> 分派路由去使唤 <code>TierRouter</code>；哪怕 MCP 服务在最上层，也是规矩地指派它俩充当代理；彼此绝不因为一厢情愿去走什么子类扩展的邪路。任何一个部件，摘除了都是完整独立的存在。</p>
+<h2 id="design-philosophy">Design Philosophy</h2>
+<p>These constraints explain why the runtime is shaped the way it is.</p>
+<h3 id="single-file-portability">Single-file portability</h3>
+<p>Agent files, state, tool-call logs, event history, and checkpoints live in one <code>.db</code> file. Copying the runtime is a normal file copy such as <code>cp bene.db backup.db</code>, and SQLite tooling can inspect it directly.</p>
+<h3 id="zero-ai-sdk-dependencies">Zero AI SDK dependencies</h3>
+<p>BENE deliberately avoids <code>openai</code>, <code>litellm</code>, and <code>dspy</code>. vLLM traffic uses raw <code>httpx</code> requests to the OpenAI-compatible <code>/v1/chat/completions</code> endpoint, reducing dependency drift and keeping the integration surface plain.</p>
+<h3 id="isolation-by-default">Isolation by default</h3>
+<p>Every filesystem operation and database query carries an <code>agent_id</code> boundary. Cross-agent data is not hidden by convention; it is absent from the API surface used by normal agent work.</p>
+<h3 id="append-only-auditability">Append-only auditability</h3>
+<p>Reads, writes, deletes, state changes, tool calls, checkpoints, lifecycle changes, warnings, and errors are appended to the event journal. The result is a chronological record that can be queried after the run.</p>
+<h3 id="composition-over-inheritance">Composition over inheritance</h3>
+<p><code>Bene</code> owns persistence components; <code>ClaudeCodeRunner</code> delegates routing to <code>TierRouter</code>; the MCP server delegates to both. Each part can be tested or replaced without subclassing the others.</p>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/architecture.md" target="_blank" rel="noopener noreferrer">docs/architecture.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>
 </div>

@@ -169,14 +169,14 @@ const GapDemo = ({ gif, caption }) => (
 // ─── Nav ────────────────────────────────────────────────────────────
 const Nav = ({ theme, setTheme }) => {
   const links = [
-    { id: 'gap', label: '01 Gap' },
-    { id: 'contract', label: '02 Contract' },
-    { id: 'comparison', label: '03 Integrates' },
-    { id: 'proof', label: '04 Proof' },
-    { id: 'recipes', label: '05 Recipes' },
-    { id: 'architecture', label: '06 Arch' },
-    { id: 'limits', label: '07 Limits' },
-    { id: 'lore', label: '08 Lore' },
+    { id: 'gap', label: '01 痛点' },
+    { id: 'contract', label: '02 契约' },
+    { id: 'comparison', label: '03 接入' },
+    { id: 'proof', label: '04 证据' },
+    { id: 'recipes', label: '05 菜谱' },
+    { id: 'architecture', label: '06 架构' },
+    { id: 'limits', label: '07 限制' },
+    { id: 'lore', label: '08 渊源' },
   ];
   const scrollTo = (id) => {
     const el = document.getElementById(id);
@@ -265,8 +265,8 @@ const Hero = () => (
         <span>SQLite</span>
       </div>
       <h1 className="font-display text-[clamp(44px,8vw,120px)] font-semibold tracking-[-0.025em] leading-[1.05] mb-6 lg:mb-8 max-w-5xl xl:max-w-6xl">
-        eval「评测」给上一个 prompt 打了高分。<br />
-        <span className="text-bene-muted">它还是把线上带沟里了。</span>
+        eval 给上一个 prompt 打了高分。<br />
+        <span className="text-bene-muted">它还是造成了线上事故。</span>
       </h1>
       <p className="text-xl md:text-2xl lg:text-3xl xl:text-4xl text-bene-muted max-w-3xl lg:max-w-4xl xl:max-w-5xl leading-snug mb-12 lg:mb-16">
         写给已经在线上跑过 LangGraph、CrewAI、AutoGen 的工程师：你们最清楚，eval 跑通是一回事，真拦住一次上线翻车，完全是另一回事。
@@ -274,11 +274,11 @@ const Hero = () => (
       <div className="grid md:grid-cols-2 gap-12 items-start mb-16">
         <div>
           <p className="text-lg leading-relaxed mb-6">
-            事故后第二天凌晨 3 点，oncall 用 sqlite3 打开 <code className="text-bene-text">bene.db</code>，把 agent「智能体」每一次 retry「重试」留下的 engram「记忆轨迹」翻了一遍。那道放过烂 prompt 的 locked probe「锁定探针」还在，连它当时怎么判的都能查。{' '}
+            事故后第二天凌晨 3 点，oncall 用 sqlite3 打开 <code className="text-bene-text">bene.db</code>，把 agent 每一次 retry 留下的 engram「记忆轨迹」翻了一遍。那道放过退化 prompt 的 locked probe 还在，连它当时怎么判的都能查。{' '}
             <span className="text-bene-text font-medium">不用进厂商门户，也不用盯着还在转圈的仪表盘。</span>
           </p>
           <p className="text-sm text-bene-muted leading-relaxed font-mono">
-            下一次上线，先过这道 gate「关卡」。<code className="text-bene-text">promote()</code> 拿不到 sha256-locked probe 的 ACCEPT「通过结论」，就直接抛 <code className="text-bene-text">PromotionBlocked</code>；CI 撞上这个 exception「异常」，流程当场停住。agent 想更好，可以用 <code className="text-bene-text">bene mh search</code> 自己繁育新 strategy——但照样得撞这道锁，没有第二条路。这一把不管赢还是输，都落进 <code className="text-bene-text">bene.db</code>，成为下一轮的输入。
+            下一次上线，必须先过这道 gate。<code className="text-bene-text">promote()</code> 拿不到 sha256-locked probe 的 ACCEPT，就直接抛 <code className="text-bene-text">PromotionBlocked</code>；CI 遇到这个 exception 流程当场停住。agent 想变强，可以跑 <code className="text-bene-text">bene mh search</code> 寻找新 strategy——但照样得过这道锁，没有捷径。这一把不管赢还是输，执行记录都落进 <code className="text-bene-text">bene.db</code>，成为下一轮的输入。
           </p>
         </div>
         <div className="flex flex-col gap-3">
@@ -336,21 +336,21 @@ const TheGap = () => (
       <Card className="md:col-span-6 h-full">
         <h3 className="font-mono text-bene-accent mb-4">卡点 2：跨 agent 的记忆，得带 provenance「溯源」</h3>
         <p className="text-bene-muted leading-relaxed">
-          对话历史、单个 agent 的 memory block「记忆块」现在都不稀奇。真正少见的是 engram：有类型、有 provenance 链路，还分 5 tier「层级」。三个月后换一个 agent grep「检索」进来，仍然知道这段东西从哪来、凭什么信。BENE 每次 run 默认就把每轮交互写成这种 engram。
+          对话历史、单个 agent 的 memory block 现在都不稀奇。真正少见的是 engram：有类型、有 provenance「溯源」链路，还分 5 档 tier。三个月后换一个 agent grep 进来，仍然知道这段数据从哪来、凭什么信。BENE 每次 run 默认就把每轮交互写成这种 engram。
         </p>
         <GapDemo gif="gap-2-engram.gif" caption="bene query 直接打开 demo db：tier 分布 + 每个 tier 的样例 title。trace / episodic / strategic 都在，provenance 强制入库。" />
       </Card>
       <Card className="md:col-span-6 h-full">
         <h3 className="font-mono text-bene-accent mb-4">卡点 3：autonomy「自主等级」不能靠 YAML 一行放飞</h3>
         <p className="text-bene-muted leading-relaxed">
-          很多 autonomy flag「自主开关」躺在 config「配置」里，打开很快，忘掉更快。BENE 把四个 signal「信号」合成 [0,1] 的 trust score「信任分」；想拿 L4，必须写 <code className="text-bene-text">granted_by='human:&lt;name&gt;'</code>，少一个字 API「接口」就抛错。提权这条链路能查、能审——不是 YAML 改一行就算数。
+          很多 autonomy flag「自主开关」躺在 config 里，打开很快，忘掉更快。BENE 把四个 signal 合成 [0,1] 的 trust score；想拿最高权限 L4，必须写 <code className="text-bene-text">granted_by='human:&lt;name&gt;'</code>，少一个字 API 就抛错。提权这条链路能查、能审——不是 YAML 改一行就算数。
         </p>
         <GapDemo gif="gap-3-trust.gif" caption="bene trust <agent> 当场吐出 4 个 signal + composite。每一个值都从 audit trail 里算出来，不是 config 里写死的。" />
       </Card>
       <Card className="md:col-span-12 h-full">
         <h3 className="font-mono text-bene-accent mb-4">卡点 4：source of truth「事实来源」最好就是磁盘上一个文件</h3>
         <p className="text-bene-muted leading-relaxed">
-          凌晨 3 点出了 incident「事故」，你想查当时到底上线了哪个 prompt。你要的是磁盘上一个能打开的文件，不是一个还在转圈的仪表盘。BENE 的 <code className="text-bene-text">bene.db</code> 就是这个文件：cp、rsync、diff、sqlite3 直接打开，都行。
+          凌晨 3 点出了 incident，你想查当时到底上线了哪个 prompt。你要的是磁盘上一个能打开的文件，不是一个还在转圈的仪表盘。BENE 的 <code className="text-bene-text">bene.db</code> 就是这个文件：cp、rsync、diff、sqlite3 直接打开，都行。
         </p>
         <GapDemo gif="gap-4-sqlite.gif" caption="ls -la 看到一个真实的文件 + 4 行 python 直接 SELECT engrams。不需要 client library，不需要门户。" />
       </Card>
@@ -364,9 +364,9 @@ const TheGap = () => (
 // ─── 02 · The Contract ──────────────────────────────────────────────
 const Contract = () => {
   const inv = [
-    { n: '1', t: 'agent 之间，不会莫名其妙串了状态', d: '每个 agent 自带一份 SQLite-backed 的 VFS「虚拟文件系统」，能 diff、能 restore。跨 agent 想读数据，先显式声明；跨 agent 想拍板，必须走 SharedLog「共享日志」的 intent → vote → decide。隔离写在结构里——不靠运维半夜补 ACL。' },
+    { n: '1', t: 'agent 之间，不会莫名其妙串了状态', d: '每个 agent 自带一份 SQLite-backed 的 VFS「虚拟文件系统」，能 diff、能 restore。跨 agent 想读数据，先显式声明；跨 agent 想拍板，必须走 SharedLog 的 intent → vote → decide。隔离写在结构里——不靠运维半夜补 ACL。' },
     { n: '2', t: '下一个 agent 进场，grep 一把就知道上一个学到了啥', d: '默认每次 run 都落 5 tier 的带类型 engram（想关可以按 run 关掉）：trace 0、episodic 1、semantic 2、procedural 3、strategic 4。promote 只写新结论，不动源数据。provenance 强制入库，少一个字段都过不了。' },
-    { n: '3', t: '烂 prompt 别想着跑过 eval 就溜上线', d: "任何想 evolve 的东西，先过一道 sha256-locked probe。spec 一动，直接拒。连 baseline 都打不穿的 gate，只配注册成 VOID，没资格拿 ACCEPT。verdict 也会写成 engram，三个月后翻出来，还能复盘当时为啥放行。" },
+    { n: '3', t: '退化的 prompt 无法凭 eval 高分直接上线', d: "任何想 evolve 的东西，先过一道 sha256-locked probe。spec 一动，直接拒。连 baseline 都打不穿的 gate，只配注册成 VOID，没资格拿 ACCEPT。verdict 也会写成 engram，三个月后翻出来，还能复盘当时为啥放行。" },
     { n: '4', t: 'L4 这一档，只能由人按名字签发', d: "四个 signal 合成 [0,1] 区间的 composite「合成分」。想拿 L4，granted_by 必须写 human:<name>，不然 API 当场抛错。没有自动晋升——任何配置都绕不过这个 human 签名。" },
   ];
   return (
@@ -399,13 +399,13 @@ const Comparison = () => {
   const recipes = [
     { n: 'LangGraph',     r: '把 node 的输出顺手包成 engram；下一次 graph 跑起来之前，candidate prompt 必过 promote() 这道闸。' },
     { n: 'CrewAI',        r: 'crew.kickoff() → 一批 engram；新的 role config 只在 probe ACCEPT 之后才允许 promote。' },
-    { n: 'AutoGen',       r: 'on_message hook → engram；跨 agent 的决策走 SharedLog；probe 守住 conversational hand-off「对话交接」。' },
+    { n: 'AutoGen',       r: 'on_message hook → engram；跨 agent 的决策走 SharedLog；probe 守住 conversational hand-off。' },
     { n: 'smolagents',    r: '你的 loop 一行不改；engram + probe 在底下跑，agent body 完全不动。' },
     { n: 'DSPy',          r: '把 DSPy.compile 出来的产物注册成 candidate；五行 probe 对着你定的 metric 跑；promote() 直接替掉 deploy.py。' },
     { n: 'Letta',         r: '把 Letta 的 memory block 映射成 tier-2 engram；跨 agent 复用全走 probe + gate。' },
   ];
   const adds = [
-    '烂 prompt 不会因为 eval 分数高就溜上线',
+    '退化的 prompt 无法凭 eval 高分直接上线',
     '出了 incident，能查上一个 agent 学到了什么、当时为啥放行',
     '两个 agent 不会莫名其妙串了状态——隔离写在结构里，不靠运维补 ACL',
     '跨 agent 拍板走一条路，事后能查谁提的、谁投了、最后怎么定的',
@@ -418,7 +418,7 @@ const Comparison = () => {
       <Kicker number="03" title="贴在现有 stack 下面" />
       <h2 className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold mb-6 lg:mb-8">现在跑的 agent 框架不用换。BENE 在下面加一份 SQLite。</h2>
       <p className="text-lg lg:text-xl xl:text-2xl text-bene-muted max-w-3xl lg:max-w-4xl xl:max-w-5xl leading-relaxed mb-12">
-        LangGraph、CrewAI，或者别的你已经在用的 orchestration「编排层」——继续用。BENE 贴在它下面：graph、agent、provider 都不动；run 的过程里，engram、gate、trust signal 会写进 bene.db。
+        LangGraph、CrewAI，或者别的你已经在用的 orchestration——继续用。BENE 贴在它下面：graph、agent、provider 都不动；run 的过程里，engram、gate、trust signal 会写进 bene.db。
       </p>
       <div className="border border-bene-dim bg-bene-surface p-6 mb-16">
         <h3 className="font-mono text-bene-accent text-sm mb-4">BENE 在下面替你管这几件</h3>

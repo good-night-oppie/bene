@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>手写一刀致命的探针 (Authoring a probe) — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — 手写一刀致命的探针 (Authoring a probe)" />
+<title>Authoring a probe — 中文索引 / 翻译中</title>
+<meta name="description" content="BENE 0.2.0 文档 — Authoring a probe" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -242,46 +242,63 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="index.html">docs</a> / probe-authoring.md</div>
-<h1 id="authoring-a-probe">手写一刀致命的探针 (Authoring a probe)</h1>
-<p><strong>探针 (probe)</strong> 就是一道提前注册好、拿哈希锁死、绝不准半路篡改的击杀闸门 (kill gate)。它里面定义了一个指标 (metric)、一个比较符 (comparison) 和一根红线 (threshold)；当受审对象越过红线时，它就 <strong>放行 (passes)</strong>，一旦跌破红线，它就会毫不留情地 <strong>就地击杀 (kills)</strong>。</p>
-<p>探针跑完后，只会吐出三种判决：</p>
+<h1 id="authoring-a-probe">Authoring a probe</h1>
+<p>A <strong>probe</strong> is a pre-registered, hash-locked kill gate. It names a metric, a
+comparison, and a threshold; it <strong>passes</strong> when a subject satisfies the gate and
+<strong>kills</strong> otherwise. A probe run returns one of three verdicts:</p>
 <ul>
-<li><strong>晋升 (ACCEPT)</strong> — 毫发无损；受审对象扛住了每一道闸门。</li>
-<li><strong>枪毙 (REJECT)</strong> — 至少死在了一道闸门上；说明代码越改越烂 (regressed)。</li>
-<li><strong>废弃 (VOID)</strong> — 探针本身是个永远不会翻车的假测试 (inadmissible)，或者它要测的那个指标根本就没取到；这次测试不作数，绝对不能当成过关。</li>
+<li><strong>ACCEPT</strong> — no gate killed; the subject cleared every gate.</li>
+<li><strong>REJECT</strong> — at least one gate killed; the subject regressed.</li>
+<li><strong>VOID</strong> — the probe is <em>inadmissible</em> or its metric is unobservable; the run
+  is inconclusive, not a pass.</li>
 </ul>
-<p>我们搞这套极其变态的刑具，唯一的目的就是去逮住那些 "明明绿了但代码依然是死的" 的假测试。这篇指南会教你到底该怎么写出真正能杀人的探针，外加两个能把它直接焊死在 CI 流水线上的 CLI 指令。</p>
-<h2 id="_1">铁律：连输都输不掉的测试，根本不配叫测试</h2>
-<p>当你调用 <code>register()</code> 注册一个探针时，BENE 会极其冷血地执行一次 <strong>可采纳性自证 (admissibility self-test)</strong>：它会让基线数据 (baseline) 自己和自己打一架 (也就是进步为零的情况)。如果连这都触发不了探针的击杀，说明这个探针是个不管喂什么屎都会判绿的废物 —— BENE 会当场给它打上 <code>inadmissible</code> (不可采纳) 的耻辱印记，以后哪怕你强行跑它，它也只会吐出 <strong>VOID</strong>，这辈子都不可能给你发 ACCEPT。</p>
-<p>这颗解药，专门用来对付那种极其经典、但每次都能把系统坑死的代码：</p>
-<div class="codehilite"><pre><span></span><code><span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">session_id_propagated</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>   <span class="c1"># 不管是 True 还是 False 它都是绿的</span>
+<p>The whole point is to catch the bug a green test misses. This guide is the rule
+for authoring probes that can actually do that, plus the two CLI commands that
+make the gate CI-wirable.</p>
+<h2 id="the-one-rule-a-gate-you-cannot-fail-is-not-a-gate">The one rule: a gate you cannot fail is not a gate</h2>
+<p>When you <code>register()</code> a probe, BENE runs an <strong>admissibility self-test</strong>: it
+evaluates the baseline against <em>itself</em> (zero improvement). If no gate kills that
+identity candidate, the probe can never kill anything — it is registered
+<code>inadmissible</code>, and running it returns <strong>VOID</strong>, never ACCEPT.</p>
+<p>This is the antidote to the recurring failure mode behind most green-but-dead
+tests:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">session_id_propagated</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>   <span class="c1"># passes for True AND False</span>
 </code></pre></div>
 
-<p>上面这句废话只是在检查数据的<strong>长相 (shape)</strong>，它压根不管事情到底办成了没。如果环境坏了，那个值悄无声息地变成了 <code>False</code>，这句测试依然绿得发亮。如果把它写成探针，因为基线数据本身长得就像个布尔值，所以它连基线都杀不死 —— 系统会当场判定它为 <code>inadmissible</code>，把这颗糖衣炮弹直接没收。</p>
-<h2 id="_2">能把带病代码一刀砍死的，才是好刀</h2>
-<p>一个真正合格的探针，必须是一把 <strong>能把已知的烂代码一刀砍死</strong> 的快刀。常见的造刀方法就两种：</p>
+<p>That assertion checks the <em>shape</em> of a value, not whether anything happened. A
+broken environment (propagation silently <code>False</code>) sails through. Expressed as a
+probe, a shape gate the baseline already satisfies registers <code>inadmissible</code> —
+BENE refuses it instead of giving you false assurance.</p>
+<h2 id="buggy-incumbent-must-fail">Buggy-incumbent-must-fail</h2>
+<p>An admissible probe is one a <strong>known-bad incumbent fails</strong>. There are two correct
+shapes:</p>
 <ol>
-<li><strong>跟健康的基线对切 (相对值)。</strong> 给闸门打上 <code>relative_to_baseline: true</code> 的烙印，然后去比 <code>(当前得分 − 基线得分)</code> 是不是越过了一个正数的容忍度。这时候如果是原封不动地拿基线来测，进步分是零，探针就会当场击杀 → 证明这刀能杀人，可采纳。</li>
-</ol>
-<p><code>python
+<li><strong>Relative to a healthy baseline.</strong> Mark the gate <code>relative_to_baseline: true</code>
+   and compare <code>(subject − baseline)</code> against a positive margin. An unchanged
+   candidate shows zero improvement and is killed → admissible.
+   <code>python
    {"name": "quality_improves", "metric": "quality", "op": "&gt;=",
-    "threshold": 0.05, "relative_to_baseline": True}   # 基线 = 一次健康的满分跑酷</code></p>
-<ol start="2">
-<li><strong>拿带病的基线当靶子 (绝对值)。</strong> 直接设一条绝对的红线，而那条红线是 <strong>带病</strong> 的基线绝对跨不过去的。</li>
-</ol>
-<p><code>python
+    "threshold": 0.05, "relative_to_baseline": True}   # baseline = a healthy run</code></li>
+<li><strong>Absolute against a broken baseline.</strong> Use an absolute threshold the <em>broken</em>
+   incumbent fails.
+   <code>python
    {"name": "propagated", "metric": "propagated_true", "op": "&gt;=",
-    "threshold": 1.0}                                   # 基线 = 那个链路全断、分数为 0 的垃圾环境</code></p>
-<h3 id="_3">不可采纳 → 直接废除的踩雷区</h3>
-<p>最容易踩进去的坑，就是拿 <strong>健康</strong> 的基线去定一条绝对红线：</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># 极其脑残的写法 — 会被打上 inadmissible，然后每次都给你悄无声息地返回 VOID</span>
+    "threshold": 1.0}                                   # baseline = the broken (0) env</code></li>
+</ol>
+<h3 id="the-inadmissiblevoid-footgun">The inadmissible→VOID footgun</h3>
+<p>The naive absolute gate against a <em>healthy</em> baseline is the trap:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># WRONG — registers inadmissible, silently VOIDs every run</span>
 <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;no_regression&quot;</span><span class="p">,</span> <span class="s2">&quot;metric&quot;</span><span class="p">:</span> <span class="s2">&quot;errors&quot;</span><span class="p">,</span> <span class="s2">&quot;op&quot;</span><span class="p">:</span> <span class="s2">&quot;&lt;=&quot;</span><span class="p">,</span>
- <span class="s2">&quot;threshold&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;relative_to_baseline&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>        <span class="c1"># 一个健康的基线 errors 已经是 0 了 → 直接过关 → 永远杀不了人</span>
+ <span class="s2">&quot;threshold&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;relative_to_baseline&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>        <span class="c1"># a clean baseline has 0 errors → passes → can&#39;t fail</span>
 </code></pre></div>
 
-<p>因为基线 (0 个错) 本来就满足 <code>errors &lt;= 0</code>，所以这个闸门在自证环节连一滴血都放不出来 → 判定为不可采纳 → VOID。想填这个坑，要么老老实实去拿健康的基线比相对值 (<code>errors</code> 绝不能 <em>变多</em>)，要么去拿那个真带着 bug 的基线来设绝对红线。</p>
-<h2 id="python">注册探针 (只能用 Python)</h2>
-<p>因为探针那个评估函数 (<code>evaluate_fn</code>) 的工作是把一坨极其复杂的受审对象嚼碎，吐出一个形如 <code>{metric: number}</code> 的字典，这玩意根本没法序列化进终端命令行里，所以注册这事只能在 Python 里办：</p>
+<p>The baseline (0 errors) already passes <code>errors &lt;= 0</code>, so the gate kills nothing
+on the identity run → inadmissible → VOID. Fix it by going relative to the
+healthy baseline (<code>errors</code> must not <em>increase</em>) or absolute against a baseline
+that actually has the bug.</p>
+<h2 id="register-a-probe-python">Register a probe (Python)</h2>
+<p>A probe's <code>evaluate_fn</code> maps a subject object to a <code>{metric: number}</code> dict, so
+registration is a Python step (the callable can't be serialized into the CLI):</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bene</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bene.kernel</span><span class="w"> </span><span class="kn">import</span> <span class="n">EngramStore</span><span class="p">,</span> <span class="n">ensure_v2</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bene.kernel.eval</span><span class="w"> </span><span class="kn">import</span> <span class="n">Probe</span>
@@ -295,13 +312,17 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <span class="n">b</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </code></pre></div>
 
-<p>调用 <code>register()</code> 的瞬间，系统会把这个闸门规格洗干净、用 sha256 上一把死锁、当场拉出去跑可采纳性自证、然后把这套规格和耻辱印记一起死死拍进数据库。以后谁要是敢偷偷改规格，运行时直接赏你一个 <code>LockTamperError</code> (篡改锁死异常) —— 想改题偷偷重考？门都没有。</p>
-<h2 id="cibene-probe-run-json">把探针焊进 CI：<code>bene probe run --json</code></h2>
-<p><code>bene probe run</code> 会把那套锁死的规格拖出来、验完哈希锁、拿 JSON 文件喂进指标里过堂、把判决结果写进案底，并且 <strong>只要结果是 REJECT 或 VOID 就直接抛出非零退出码 (non-zero exit)</strong>，让流水线瞬间红灯：</p>
+<p><code>register()</code> canonicalizes the gate spec, seals it under a sha256 lock, runs the
+admissibility self-test, and stores the result. An edited spec refuses to run
+later (<code>LockTamperError</code>) — no retune-and-rerun.</p>
+<h2 id="run-it-in-ci-bene-probe-run-json">Run it in CI: <code>bene probe run --json</code></h2>
+<p><code>bene probe run</code> loads the locked spec, verifies the lock, evaluates the gates
+against metrics supplied as JSON files, persists the verdict, and <strong>exits
+non-zero on REJECT or VOID</strong> so a pipeline can gate on it:</p>
 <div class="codehilite"><pre><span></span><code><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{&quot;quality&quot;: 1.0}&#39;</span><span class="w"> </span>&gt;<span class="w"> </span>subject.json
 <span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{&quot;quality&quot;: 0.0}&#39;</span><span class="w"> </span>&gt;<span class="w"> </span>baseline.json
 
-<span class="c1"># 受审对象进步了 1.0 (&gt;= 0.05 的红线) -&gt; 准许晋升 (ACCEPT)，退出码 0</span>
+<span class="c1"># Subject improves by 1.0 (&gt;= 0.05 margin) -&gt; ACCEPT, exit 0</span>
 bene<span class="w"> </span>--json<span class="w"> </span>probe<span class="w"> </span>run<span class="w"> </span>quality-probe<span class="w"> </span>--subject<span class="w"> </span>subject.json<span class="w"> </span>--baseline<span class="w"> </span>baseline.json
 </code></pre></div>
 
@@ -317,7 +338,7 @@ bene<span class="w"> </span>--json<span class="w"> </span>probe<span class="w"> 
 <span class="p">}</span>
 </code></pre></div>
 
-<p>要是受审对象敢没越过红线，直接 REJECT，退出码不是零：</p>
+<p>A subject that does not clear the margin REJECTs and exits non-zero:</p>
 <div class="codehilite"><pre><span></span><code><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{&quot;quality&quot;: 0.0}&#39;</span><span class="w"> </span>&gt;<span class="w"> </span>flat.json
 bene<span class="w"> </span>--json<span class="w"> </span>probe<span class="w"> </span>run<span class="w"> </span>quality-probe<span class="w"> </span>--subject<span class="w"> </span>flat.json<span class="w"> </span>--baseline<span class="w"> </span>baseline.json<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;build failed (exit </span><span class="nv">$?</span><span class="s2">)&quot;</span>
 </code></pre></div>
@@ -334,10 +355,12 @@ bene<span class="w"> </span>--json<span class="w"> </span>probe<span class="w"> 
 <span class="p">}</span>
 </code></pre></div>
 
-<p>把 <code>bene probe run … --json</code> 直接塞进 CI 的一个步骤里就行：<code>REJECT → 退出码炸了 → 编译失败</code>。</p>
-<h2 id="bene-probe-ls-check-admissible">绝杀那些杀不死人的假探针：<code>bene probe ls --check-admissible</code></h2>
-<p>如果有个探针侥幸躲过了作者的眼睛，它会被默默打上 <code>inadmissible</code> 的烙印，然后每次跑都默默吐 VOID —— 虽然没搞出假绿灯，但这种沉默极其致命。把它揪出来在 CI 里游街：</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># 只要库里藏着任何一个不可采纳的探针，直接抛出非零退出码炸机</span>
+<p>Wire <code>bene probe run … --json</code> straight into a CI step: <code>REJECT → non-zero exit
+→ build fails</code>.</p>
+<h2 id="guard-against-cant-fail-probes-bene-probe-ls-check-admissible">Guard against can't-fail probes: <code>bene probe ls --check-admissible</code></h2>
+<p>A probe that slipped past the authoring rule registers <code>inadmissible</code> and then
+VOIDs silently — useless, but not loud about it. Make it loud in CI:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Exit non-zero if ANY registered probe is inadmissible</span>
 bene<span class="w"> </span>--json<span class="w"> </span>probe<span class="w"> </span>ls<span class="w"> </span>--check-admissible
 </code></pre></div>
 
@@ -348,9 +371,14 @@ bene<span class="w"> </span>--json<span class="w"> </span>probe<span class="w"> 
 <span class="p">}</span>
 </code></pre></div>
 
-<p>所有探针都合格时返回 0，只要查出一个杀不死人的假探针，不但非零退出，还会把罪魁祸首的名字吐出来。把它跟你的测试步骤跑在一起，绝不允许任何一句空话在这里骗过关。</p>
-<h2 id="the-lighthouse-trace-probe">案发现场复盘：灯塔链路探针 (the lighthouse trace probe)</h2>
-<p>去看 <a href="../../examples/lighthouse_trace_probe.py"><code>examples/lighthouse_trace_probe.py</code></a>，里面完完整整地重现了 <code>isinstance(..., bool)</code> 坑死全场的那一幕。那个看长相的闸门会被当场剥夺考试资格打成 VOID，而那个一刀见血的 <code>propagated_true &gt;= 1</code> 闸门，则极其精准地把坏环境一枪崩了，然后给修好的环境发了张绿卡：</p>
+<p>Exit 0 when every probe is admissible, non-zero (with the offenders listed) when
+any can't fail. Run it alongside your test gate so a no-op probe can never give
+false assurance.</p>
+<h2 id="worked-example-the-lighthouse-trace-probe">Worked example: the lighthouse trace probe</h2>
+<p><a href="../../examples/lighthouse_trace_probe.py"><code>examples/lighthouse_trace_probe.py</code></a>
+reproduces the <code>isinstance(..., bool)</code> footgun end-to-end. A shape gate registers
+inadmissible → VOID, while a falsifiable <code>propagated_true &gt;= 1</code> gate REJECTs the
+broken environment and ACCEPTs the fix:</p>
 <div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/lighthouse_trace_probe.py
 </code></pre></div>
 
@@ -363,12 +391,12 @@ bene<span class="w"> </span>--json<span class="w"> </span>probe<span class="w"> 
 PASS-31 reproduced: shape gate VOID, broken REJECT, fixed ACCEPT ✓
 </code></pre></div>
 
-<h2 id="_4">顺藤摸瓜</h2>
+<h2 id="see-also">See also</h2>
 <ul>
-<li><a href="../../examples/lighthouse_trace_probe.py"><code>examples/lighthouse_trace_probe.py</code></a> — 那个能直接跑起来的铁证。</li>
-<li><a href="cli-reference.html">CLI 指令大黄页 (cli-reference.md)</a> — 这里有这几个指令的所有变态参数。</li>
-<li><a href="integrating-bene.html">接入 BENE (integrating-bene.md)</a> — 去看看评测闸门在系统的那五个生命周期里到底卡在哪一层。</li>
-<li><a href="architecture.html">深层架构 (architecture.md)</a> — 去扒一扒那个上过哈希锁的击杀闸门，以及底下的印记底座到底长啥样。</li>
+<li><a href="../../examples/lighthouse_trace_probe.py"><code>examples/lighthouse_trace_probe.py</code></a> — the runnable proof.</li>
+<li><a href="cli-reference.html">CLI reference</a> — every command and flag.</li>
+<li><a href="integrating-bene.html">Integrating BENE</a> — where the eval gate sits among the five stages.</li>
+<li><a href="architecture.html">Architecture</a> — the hash-locked kill gate and the engram substrate.</li>
 </ul>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/probe-authoring.md" target="_blank" rel="noopener noreferrer">docs/probe-authoring.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>在 BENE 上搭一座对抗式编程竞技场：底座层的设计 (A Competitive Coding Arena on BENE: Design at the Substrate Layer) — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — 在 BENE 上搭一座对抗式编程竞技场：底座层的设计 (A Competitive Coding Arena on BENE: Design at the Substrate Layer)" />
+<title>A Competitive Coding Arena on BENE: Design at the Substrate Layer — 中文索引 / 翻译中</title>
+<meta name="description" content="BENE 0.2.0 文档 — A Competitive Coding Arena on BENE: Design at the Substrate Layer" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -242,100 +242,143 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="../index.html">docs</a> / case-studies/cs03-multi-agent-arena.md</div>
-<h1 id="bene-a-competitive-coding-arena-on-bene-design-at-the-substrate-layer">在 BENE 上搭一座对抗式编程竞技场：底座层的设计 (A Competitive Coding Arena on BENE: Design at the Substrate Layer)</h1>
+<h1 id="a-competitive-coding-arena-on-bene-design-at-the-substrate-layer">A Competitive Coding Arena on BENE: Design at the Substrate Layer</h1>
 <p><em>Engineering · 2026-06</em></p>
 <hr />
-<h2 id="context">背景 (Context)</h2>
-<p>把几个编程 agent 关进同一间屋子，丢给它们同一道真实的工程任务，再评出谁干得最漂亮。说起来简单，真要诚实地跑起来却凶险无比。一旦某个结果开始左右排名，你底座（substrate）里的每一处软肋都会变成一个能被钻的空子：一个能偷看对手文件的 agent、一个没有凭据的分数、一场没法复现的胜利、一张悄悄就采信了 agent 自我陈述的榜单。</p>
-<p>本案例讲的就是这类竞技场的<strong>底座层设计</strong>——抽象层面上那几个真正吃重的决策。它讲的是<em>模式</em>，而非某个具体产品的实现；这里的应用逻辑是故意写成伪代码的。它要说清的是：一个对抗式的多 agent 平台，为什么底下想要 BENE 这样的东西，以及那四条保证是如何从原语（primitive）里自然长出来的。</p>
-<h2 id="problem-framing">问题拆解 (Problem framing)</h2>
-<p>竞技场天生就是个对抗环境。要让一场比赛跑出来的排名真有分量，就必须由底座——而不是应用——来兜住这四件事：</p>
+<h2 id="context">Context</h2>
+<p>Put several coding agents in a room, hand them the same real engineering task,
+and score who did it best. Simple to say; brutal to run honestly. The moment a
+result decides a ranking, every weakness in your substrate becomes an exploit: an
+agent that can see a competitor's files, a score with no receipt, a win that
+can't be reproduced, a leaderboard that quietly trusts the agent's own claim.</p>
+<p>This case study describes the <strong>substrate-layer design</strong> for that kind of arena —
+the load-bearing decisions, in the abstract. It is the <em>pattern</em>, not any one
+product's implementation; the application logic here is pseudo-code on purpose.
+What it shows is why a competitive multi-agent platform wants something like BENE
+underneath, and how the four guarantees fall out of the primitives.</p>
+<h2 id="problem-framing">Problem framing</h2>
+<p>An arena is an adversarial environment by construction. To run one where the
+ranking means something, the substrate — not the application — has to guarantee
+four things:</p>
 <ul>
-<li><strong>隔离 (Isolation)。</strong> 一个选手绝不能读写另一个选手的工作区。</li>
-<li><strong>可审计 (Auditability)。</strong> 每一个被计分的动作，都得有一条持久、可验证防篡改的凭据。</li>
-<li><strong>可复现 (Reproducibility)。</strong> 任何结果都必须能重跑一遍，用来了结争议。</li>
-<li><strong>沉淀记忆 (Accumulated memory)。</strong> 平台应当一局比一局更聪明，同时绝不把某一局的机密泄进另一局。</li>
+<li><strong>Isolation.</strong> A competitor must not read or write another's workspace.</li>
+<li><strong>Auditability.</strong> Every scored action needs a durable, tamper-evident receipt.</li>
+<li><strong>Reproducibility.</strong> Any result must be re-runnable to settle a dispute.</li>
+<li><strong>Accumulated memory.</strong> The platform should get smarter across matches without
+  leaking one match's secrets into another.</li>
 </ul>
-<p>这几条里只要有任何一条落在应用代码里，迟早会有一个 agent（或者一个 bug）把它绕过去。它们的归宿是底座。</p>
-<h2 id="design">设计 (Design)</h2>
-<p>每条保证都对应一个 BENE 原语。竞技场代码能保持精简，正是因为那些硬骨头交给了引擎去啃。</p>
+<p>If any of these lives in application code, an agent (or a bug) will eventually
+route around it. They belong in the substrate.</p>
+<h2 id="design">Design</h2>
+<p>Each guarantee maps to one BENE primitive. The arena code stays small because the
+hard parts are the engine's job.</p>
 <table>
 <thead>
 <tr>
-<th>竞技场的诉求</th>
-<th>BENE 原语</th>
-<th>为什么成立</th>
+<th>Arena need</th>
+<th>BENE primitive</th>
+<th>Why it holds</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>隔离</td>
-<td>per-agent VFS，以 <code>agent_id</code> 做 SQL 作用域</td>
-<td>选手自己的 <code>fs_*</code> 工具只在它自己的命名空间里活动（对抗式代码需另加 OS 沙箱 + 受限工具集——见下文）</td>
+<td>Isolation</td>
+<td>per-agent VFS, SQL-scoped by <code>agent_id</code></td>
+<td>an entrant's own <code>fs_*</code> tools stay in its namespace (add an OS sandbox + restricted tools for adversarial code — see below)</td>
 </tr>
 <tr>
-<td>可审计</td>
-<td>append-only 事件日志 + 执行轨迹</td>
-<td>每个动作都是一行（按约定只追加；若 DB 可写，用哈希链兜防篡改）</td>
+<td>Auditability</td>
+<td>append-only event journal + execution traces</td>
+<td>every action is a row (append-only by convention; hash-chain for tamper-evidence if the DB is writable)</td>
 </tr>
 <tr>
-<td>可复现</td>
+<td>Reproducibility</td>
 <td>checkpoint / restore / diff</td>
-<td>从快照重跑一局的 BENE 状态（不含外部副作用）</td>
+<td>re-run a match's BENE state from a snapshot (not external side effects)</td>
 </tr>
 <tr>
-<td>沉淀记忆</td>
-<td>记忆轨迹（engram）+ 轨迹检索</td>
-<td>跨局学习；kernel 的检索器不按 agent 过滤，作用域得你自己框死</td>
+<td>Accumulated memory</td>
+<td>engrams + trace retrieval</td>
+<td>learn across matches; the kernel retrievers don't filter by agent, so scope hits yourself</td>
 </tr>
 </tbody>
 </table>
-<h3 id="isolation-sealed-rooms-one-file">隔离——密封小黑屋，一个文件搞定 (Isolation — sealed rooms, one file)</h3>
-<p>每个选手都跑成一个隔离的 agent。引擎按 <code>agent_id</code> 给 agent 自己的 <code>fs_*</code> 工具划定作用域，于是选手的读写都被锁死在自己的命名空间里。这是一个文件里实现的逻辑隔离——对付<strong>对抗式</strong>选手，还得配上一层 OS 沙箱和一套受限工具集：默认 runner 是放行 <code>shell_exec</code> 的，而面向运维方的 <code>query</code> / <code>agent_read</code> 工具吃的是显式传入的 <code>agent_id</code>，所以单论它俩，谁都算不上一道硬的跨 agent 边界。</p>
+<h3 id="isolation-sealed-rooms-one-file">Isolation — sealed rooms, one file</h3>
+<p>Each competitor runs as an isolated agent. The engine scopes an agent's own
+<code>fs_*</code> tools by <code>agent_id</code>, so an entrant's reads and writes stay in its
+namespace. This is logical isolation in one file — for <strong>adversarial</strong> entrants,
+pair it with an OS sandbox and a restricted tool set: the default runner allows
+<code>shell_exec</code>, and the operator-facing <code>query</code>/<code>agent_read</code> tools take an explicit
+<code>agent_id</code>, so neither is a hard cross-agent boundary on its own.</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bene</span>
 
-<span class="n">arena</span> <span class="o">=</span> <span class="n">Bene</span><span class="p">(</span><span class="s2">&quot;arena.db&quot;</span><span class="p">)</span>            <span class="c1"># 整场赛事就一个可审计的文件</span>
-<span class="k">for</span> <span class="n">competitor</span> <span class="ow">in</span> <span class="n">entrants</span><span class="p">:</span>         <span class="c1"># 伪代码：你的参赛名单</span>
-    <span class="n">arena</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">competitor</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">PROBLEM</span><span class="p">)</span>   <span class="c1"># 每人分到一个密封工作区</span>
-<span class="c1"># 选手 A 自己的 fs_* 工具永远解析不到选手 B 的 /solution.py</span>
+<span class="n">arena</span> <span class="o">=</span> <span class="n">Bene</span><span class="p">(</span><span class="s2">&quot;arena.db&quot;</span><span class="p">)</span>            <span class="c1"># one auditable file for the whole tournament</span>
+<span class="k">for</span> <span class="n">competitor</span> <span class="ow">in</span> <span class="n">entrants</span><span class="p">:</span>         <span class="c1"># pseudo-code: your entrant list</span>
+    <span class="n">arena</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">competitor</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">PROBLEM</span><span class="p">)</span>   <span class="c1"># each gets a sealed workspace</span>
+<span class="c1"># competitor A&#39;s own fs_* tools never resolve to competitor B&#39;s /solution.py</span>
 </code></pre></div>
 
-<h3 id="auditability-the-receipt-is-the-row">可审计——凭据就是那一行记录 (Auditability — the receipt is the row)</h3>
-<p>计分只从日志里读，绝不读 agent 的自我陈述。这条日志的只追加是<em>靠应用层约定</em>做到的——如果在你的竞技场里，某个选手或运维方有权写那个 SQLite 文件，那就在把凭据当作不可伪造之前，先加上真正的防篡改手段（对行做哈希链，或者把只追加存储放到选手够不着的地方）：</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># 伪代码：从记录下来的事件推导分数，而不是从 agent 自己的说法</span>
-<span class="n">events</span> <span class="o">=</span> <span class="n">arena</span><span class="o">.</span><span class="n">events</span><span class="p">(</span><span class="n">agent_id</span><span class="o">=</span><span class="n">competitor</span><span class="p">)</span>        <span class="c1"># 那条持久的轨迹</span>
-<span class="n">score</span>  <span class="o">=</span> <span class="n">rubric</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>                            <span class="c1"># 在已记录的事实上确定性地算分</span>
+<h3 id="auditability-the-receipt-is-the-row">Auditability — the receipt is the row</h3>
+<p>Scoring reads from the journal, never from the agent's self-report. The log is
+append-only <em>by application convention</em> — for an arena where an entrant or
+operator can write the SQLite file, add real tamper-evidence (a hash-chain over
+rows, or an append-only store outside the contestant's reach) before treating a
+receipt as unforgeable:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># pseudo-code: derive the score from recorded events, not from what the agent said</span>
+<span class="n">events</span> <span class="o">=</span> <span class="n">arena</span><span class="o">.</span><span class="n">events</span><span class="p">(</span><span class="n">agent_id</span><span class="o">=</span><span class="n">competitor</span><span class="p">)</span>        <span class="c1"># the durable trace</span>
+<span class="n">score</span>  <span class="o">=</span> <span class="n">rubric</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>                            <span class="c1"># deterministic over recorded facts</span>
 </code></pre></div>
 
-<p>谁晋级、谁被取消资格——这类协调决策本身也通过 shared-log 协议落了日志，于是赛程表（bracket）和那些比赛享有同一条审计轨迹：</p>
+<p>A coordination decision (who advanced, who was disqualified) is itself logged
+through the shared-log protocol, so the bracket has the same audit trail the
+matches do:</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene.shared_log</span><span class="w"> </span><span class="kn">import</span> <span class="n">SharedLog</span>
 <span class="n">log</span> <span class="o">=</span> <span class="n">SharedLog</span><span class="p">(</span><span class="n">arena</span><span class="o">.</span><span class="n">conn</span><span class="p">)</span>
 <span class="n">log</span><span class="o">.</span><span class="n">intent</span><span class="p">(</span><span class="s2">&quot;advance winners of round 1&quot;</span><span class="p">)</span>
 <span class="n">log</span><span class="o">.</span><span class="n">vote</span><span class="p">(</span><span class="n">intent_id</span><span class="p">,</span> <span class="n">approve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">log</span><span class="o">.</span><span class="n">decide</span><span class="p">(</span><span class="n">intent_id</span><span class="p">)</span>                              <span class="c1"># 持久、有序、可回放</span>
+<span class="n">log</span><span class="o">.</span><span class="n">decide</span><span class="p">(</span><span class="n">intent_id</span><span class="p">)</span>                              <span class="c1"># durable, ordered, replayable</span>
 </code></pre></div>
 
-<h3 id="reproducibility-disputes-settled-by-replay">可复现——争议靠回放了断 (Reproducibility — disputes settled by replay)</h3>
-<p>每一步计分之前，竞技场先打个 checkpoint；有争议的结果是从快照重跑，而不是靠嘴仗：</p>
+<h3 id="reproducibility-disputes-settled-by-replay">Reproducibility — disputes settled by replay</h3>
+<p>Before each scored step the arena checkpoints; a contested result is re-run from
+the snapshot rather than argued about:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">cp</span> <span class="o">=</span> <span class="n">arena</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">(</span><span class="n">competitor</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;pre-grade&quot;</span><span class="p">)</span>
-<span class="c1"># ...打分...</span>
-<span class="n">arena</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="n">competitor</span><span class="p">,</span> <span class="n">checkpoint</span><span class="o">=</span><span class="n">cp</span><span class="p">)</span>           <span class="c1"># 回滚 BENE VFS + 状态</span>
+<span class="c1"># ...grade...</span>
+<span class="n">arena</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="n">competitor</span><span class="p">,</span> <span class="n">checkpoint</span><span class="o">=</span><span class="n">cp</span><span class="p">)</span>           <span class="c1"># rewinds BENE VFS + state</span>
 </code></pre></div>
 
-<p><code>restore</code> 回滚的是 agent 由 BENE 托管的 VFS 和 KV 状态。那些伸到 BENE <em>外面</em>的步骤——一次模型调用、<code>shell_exec</code>、网络或宿主文件系统的副作用——是不会被回放的，所以一次重跑能确定到什么程度，取决于有争议的那部分工作有多大比例留在底座之内。</p>
-<h3 id="accumulated-memory-smarter-across-matches-sealed-within-one">沉淀记忆——跨局更聪明，单局内封死 (Accumulated memory — smarter across matches, sealed within one)</h3>
-<p>打完的比赛会留下轨迹，这些轨迹会沉淀成记忆轨迹（engram）。后面的比赛该检索的是<em>经验教训</em>（什么样的做法容易卡在某道闸门上），而不是原始工作区——但这个检索的作用域得你自己显式框死：kernel 的检索器只在<em>记录</em>这次查询时才按 <code>agent_id</code> 过滤，所以请把比赛/agent 的作用域传进检索里（或者手工挑选哪些记忆轨迹是共享的），别想当然地以为跨局读取默认就是封死的。</p>
+<p><code>restore</code> rewinds the agent's BENE-managed VFS and key-value state. Steps that
+reached <em>outside</em> BENE — a model call, <code>shell_exec</code>, network or host-filesystem
+side effects — aren't replayed, so a re-run is deterministic only to the extent
+the contested work stayed inside the substrate.</p>
+<h3 id="accumulated-memory-smarter-across-matches-sealed-within-one">Accumulated memory — smarter across matches, sealed within one</h3>
+<p>Finished matches leave traces that become engrams. A future match should
+retrieve <em>lessons</em> (what tends to fail a gate), not raw workspaces — but scope
+that retrieval explicitly: the kernel retrievers filter by <code>agent_id</code> only when
+<em>recording</em> the query, so pass the match/agent scope into retrieval (or curate
+which engrams are shared) rather than assuming cross-match reads are sealed by
+default.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">arena</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="s2">&quot;common failure modes on refactor tasks&quot;</span><span class="p">)</span>
 </code></pre></div>
 
-<h2 id="insights">洞察 (Insights)</h2>
+<h2 id="insights">Insights</h2>
 <ul>
-<li><strong>把保证往下沉。</strong> 一座竞技场要做到<em>公平</em>所需的每一条性质，都是底座能强制、而应用不可被信任去兜的性质。隔离靠 SQL 作用域、凭据靠 append-only 日志——这些都不是你事后拧上去的功能；它们恰恰就是你为什么要有一层底座的理由。</li>
-<li><strong>分数是一次查询，不是一句声明。</strong> 排名是从落了盘的日志里推出来的——绝不取自 agent 的自我陈述——这才是一张榜单经得起推敲的根本。</li>
-<li><strong>单文件是运维上的恩赐。</strong> 整场赛事就是一个 SQLite 数据库：复制它就是备份，diff 它就是审计，把它交给下一班人就不用重建任何状态。</li>
+<li><strong>Push the guarantees down.</strong> Every property an arena needs to be <em>fair</em> is a
+  property the substrate can enforce and the application cannot be trusted to.
+  Isolation-by-SQL-scope and receipts-by-append-only-log are not features you
+  bolt on; they are the reason to have a substrate at all.</li>
+<li><strong>The score is a query, not a claim.</strong> Deriving rankings from the recorded
+  journal — never from an agent's self-report — is what makes a leaderboard
+  defensible.</li>
+<li><strong>One file is an operational gift.</strong> The whole tournament is a single SQLite
+  database: copy it for a backup, diff it for an audit, hand it to the next shift
+  with zero state reconstruction.</li>
 </ul>
-<h2 id="what-to-take-from-this">你该从这里带走什么 (What to take from this)</h2>
-<p>你不必非得有一座竞技场，才会想要这四条性质——任何一个正经的多 agent 系统都想要。竞技场只不过是不允许你把它们装样子糊弄过去而已。在一个把隔离、可审计、可复现、记忆都做成<em>默认</em>的底座上去搭，上面那层应用就能保持精简、诚实、可回放。</p>
+<h2 id="what-to-take-from-this">What to take from this</h2>
+<p>You do not need an arena to want these four properties — any serious multi-agent
+system does. The arena just refuses to let you fake them. Build on a substrate
+that makes isolation, auditability, reproducibility, and memory the <em>default</em>,
+and the application on top stays small, honest, and replayable.</p>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/case-studies/cs03-multi-agent-arena.md" target="_blank" rel="noopener noreferrer">docs/case-studies/cs03-multi-agent-arena.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>
 </div>

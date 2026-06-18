@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>在 0.3 秒内，把一场搞砸的数据库迁移连根拔起 — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — 在 0.3 秒内，把一场搞砸的数据库迁移连根拔起" />
+<title>Roll Back a Bad Migration in 0.3 Seconds — 中文索引 / 翻译中</title>
+<meta name="description" content="BENE 0.2.0 文档 — Roll Back a Bad Migration in 0.3 Seconds" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -242,19 +242,19 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="../index.html">docs</a> / tutorials/t04-migration-rollback.md</div>
-<h1 id="03">在 0.3 秒内，把一场搞砸的数据库迁移连根拔起</h1>
-<p>跑高危迁移操作，手边得备着一颗后悔药：当一场涉及 200 万行的补数据 (backfill) 操作在半截腰尿了裤子时，只需一条指令，0.31 秒内抹平一切灾难，而且隔壁的其他 agent 连个喷嚏都不会打。</p>
+<h1 id="roll-back-a-bad-migration-in-03-seconds">Roll Back a Bad Migration in 0.3 Seconds</h1>
+<p>Run a risky migration with an undo button: when a 2-million-row backfill went bad mid-stream, one command erased the damage in 0.31 seconds, and no other agent noticed.</p>
 <blockquote>
-<p><strong>在雷区前拍个快照，意味着一场 200 万行的翻车事故，能被压缩成 0.31 秒的起死回生。</strong></p>
+<p><strong>One checkpoint before the risky phase turns a 2-million-row mistake into a 0.31-second fix.</strong></p>
 </blockquote>
-<p><em>第一阶段完工后拍个快照；第二阶段的补数据在跑到第 847,412 行时，因为异常的 NULL 值自己踩了急刹；耗时 0.3 秒完成回滚；其他跑数据分析的 agent 丝毫不受影响。</em></p>
-<h2 id="_1">先看疗效：一键时光倒流</h2>
-<p>在 agent 自己踩下急刹车之前，这波补数据操作已经往 <code>subscription_tier</code> 里灌了 64,412 个要命的 NULL 空值。抢救的手段非常朴实无华，就是对着之前贴好标签的快照敲一条命令：</p>
+<p><em>Checkpoint after phase 1; the phase-2 backfill pauses itself on a NULL anomaly at row 847,412; restore in 0.3s; analytics agents keep running.</em></p>
+<h2 id="start-with-the-payoff-the-restore">Start with the payoff: the restore</h2>
+<p>The backfill had written 64,412 bad NULLs into <code>subscription_tier</code> before the agent paused itself. Recovery was one command against a labeled checkpoint:</p>
 <div class="codehilite"><pre><span></span><code>bene restore migration-agent --label pre-backfill
 
-# 正在把 migration-agent 摁回快照点: pre-backfill
+# Restoring migration-agent to checkpoint: pre-backfill
 #
-# 抹平了以下改动:
+# Changes reverted:
 # --- migration/state.json
 # -  &quot;phase&quot;: &quot;backfill&quot;,
 # -  &quot;rows_processed&quot;: 847412,
@@ -264,12 +264,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 # +  &quot;rows_processed&quot;: 0,
 # +  &quot;status&quot;: &quot;ready_for_backfill&quot;
 #
-# 抢救完毕，耗时 0.31 秒
+# Restore complete in 0.31s
 </code></pre></div>
 
-<p>0.31 秒。这只 agent 的虚拟文件系统 (VFS) —— 也就是每个 bene agent 赖以生存的私有结界 —— 就这么干脆利落地回到了那个已知的安全节点；刚才第二阶段灌进去的所有脏水，仿佛从未存在过。接下来的内容，我们将带你复盘这条一键指令背后到底发生了什么。</p>
-<h2 id="_2">发车前的战术板</h2>
-<p>任务：给一张坐拥 200 万行数据的 <code>users</code> 表加个新列 <code>subscription_tier</code> —— 这列将决定每个用户能看啥不能看啥。计划分三步走，每走完一步打个快照，在最容易翻车的那步埋好异常探测雷达：</p>
+<p>0.31 seconds, and the agent's virtual filesystem (VFS) — the private workspace every bene agent runs in — is back at a known-good point; everything the failed phase wrote is gone. The rest of this page replays the run behind that one-liner.</p>
+<h2 id="the-plan-behind-the-run">The plan behind the run</h2>
+<p>The job: add <code>subscription_tier</code> — the column deciding what each user can access — to a <code>users</code> table of 2 million rows. Three phases, a checkpoint boundary after each, an anomaly check armed on the dangerous one:</p>
 <div class="codehilite"><pre><span></span><code><span class="c1"># migration/add_subscription_tier.py</span>
 
 <span class="n">PHASES</span> <span class="o">=</span> <span class="p">[</span>
@@ -298,117 +298,117 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <span class="p">]</span>
 </code></pre></div>
 
-<p>与此同时，有两只负责数据分析的 agent (<code>analytics-agent-1</code> 和 <code>analytics-agent-2</code>) 正在这张表里疯狂跑查询。但因为它们各自被关在不同的 VFS 里，从物理结构上就注定了它们绝对不可能被这边的乌烟瘴气波及。</p>
-<h2 id="_3">动数据前，先买保险</h2>
-<p>第一阶段是便宜且随时能反悔的 —— 一个根本不会动任何表数据的 <code>ALTER TABLE</code>。跑完它，然后给这个时空节点钉上一个标签：</p>
+<p>Two analytics agents, <code>analytics-agent-1</code> and <code>analytics-agent-2</code>, query this data throughout. Each owns a separate VFS, so interference is structurally impossible.</p>
+<h2 id="checkpoint-before-you-touch-data">Checkpoint before you touch data</h2>
+<p>Phase 1 is the cheap, reversible part — an <code>ALTER TABLE</code> that changes no rows. Run it, then pin the moment with a label:</p>
 <div class="codehilite"><pre><span></span><code>bene run migration-agent &quot;ALTER TABLE users ADD COLUMN subscription_tier VARCHAR(20)&quot;
 
-# [migration-agent] 表结构修改: 成功
-# [migration-agent] 即将进入第二阶段，共有 2,041,847 行数据等待更新
+# [migration-agent] schema change: SUCCESS
+# [migration-agent] 2,041,847 rows will be updated in Phase 2
 
 bene checkpoint migration-agent --label pre-backfill
 
-# 快照已生成: pre-backfill
-# 第一阶段战况: 表结构已刷入，尚未动任何数据
-# 时间戳: 2026-04-13T01:33:11Z
+# Checkpoint created: pre-backfill
+# Phase 1 state: schema applied, no data changes yet
+# Timestamp: 2026-04-13T01:33:11Z
 </code></pre></div>
 
-<p>这个标签就是你的全套保险。执行这番骚操作的是 <code>migration-agent</code>；接下来无论补数据阶段惹出多大的祸，只要一句 <code>bene restore migration-agent --label pre-backfill</code>，这只 agent 就会被生生拽回这个节点：表结构刚配好，一行数据都没碰，随时可以再来一把。</p>
-<h2 id="_4">补数据阶段：自己把自己给掐了</h2>
-<p>第二阶段开始按每批 10,000 行的吞吐量狂灌数据，同时异常雷达每隔 5 万行就会嗅探一下 NULL 值的比例。前面一路绿灯，直到冲到第 847,412 行：</p>
-<div class="codehilite"><pre><span></span><code>[backfill]  已处理 100,000 行  NULL 数量: 0      (0.0%)  ✓
-[backfill]  已处理 200,000 行  NULL 数量: 0      (0.0%)  ✓
-[backfill]  已处理 300,000 行  NULL 数量: 0      (0.0%)  ✓
-[backfill]  已处理 500,000 行  NULL 数量: 0      (0.0%)  ✓
-[backfill]  已处理 700,000 行  NULL 数量: 0      (0.0%)  ✓
-[backfill]  已处理 847,412 行  NULL 数量: 64,412 (7.6%)  ✗
+<p>That label is the whole insurance policy. The rollback actor is <code>migration-agent</code>; whatever the backfill does, <code>bene restore migration-agent --label pre-backfill</code> brings the agent back here: schema in place, zero rows changed, ready for another attempt.</p>
+<h2 id="the-backfill-stops-itself">The backfill stops itself</h2>
+<p>Phase 2 streams updates in 10,000-row batches while the anomaly check samples the NULL count every 50K rows. The log stays clean until row 847,412:</p>
+<div class="codehilite"><pre><span></span><code>[backfill]  100,000 rows processed  NULL count: 0      (0.0%)  ✓
+[backfill]  200,000 rows processed  NULL count: 0      (0.0%)  ✓
+[backfill]  300,000 rows processed  NULL count: 0      (0.0%)  ✓
+[backfill]  500,000 rows processed  NULL count: 0      (0.0%)  ✓
+[backfill]  700,000 rows processed  NULL count: 0      (0.0%)  ✓
+[backfill]  847,412 rows processed  NULL count: 64,412 (7.6%)  ✗
 
-警报：探明异常状况：NULL 率 7.6%，已击穿 0.0% 的安全红线
-预期: subscription_tier 列里应该有 0 个 NULL
-实测: 在处理完的 847,412 行里，足足有 64,412 个 NULL
+ANOMALY DETECTED: NULL rate 7.6% exceeds threshold 0.0%
+Expected: 0 NULLs in subscription_tier
+Got:      64,412 NULLs out of 847,412 rows processed
 
-已强制熔断迁移操作。停止后续数据灌入。
+Migration PAUSED. No further rows updated.
 </code></pre></div>
 
-<p>没有哪个倒霉的 DBA 盯着屏幕。这只 agent 纯靠自己踩死了刹车 —— 因为 7.6% 的 NULL 比例，绝对不可能活着熬过第三阶段那个死盯 NOT NULL 约束的鬼门关。</p>
-<h2 id="_5">验尸报告早就写好了</h2>
-<p>在踩死刹车前，这只 agent 顺手在自己的 VFS 里留下了一份验尸报告。调出来看一眼，只需一条命令：</p>
+<p>No human watched for this. The agent froze the run on its own — a 7.6% NULL rate can never satisfy the NOT NULL constraint waiting in phase 3.</p>
+<h2 id="the-diagnosis-was-already-written">The diagnosis was already written</h2>
+<p>Before pausing, the agent left a root-cause report in its own VFS. Reading it costs one command:</p>
 <div class="codehilite"><pre><span></span><code>bene read migration-agent /logs/anomaly.md
 
-## 异常报告: subscription_tier 爆出 7.6% 的 NULL 值
+## Anomaly Report: subscription_tier NULL at 7.6%
 
-发现第一个 NULL 值: user_id 8,042,183 (出自 205 批中的第 84 批)
-死状特征: 所有爆 NULL 的用户，注册时间全在 2021-03-15 之前
+First NULL detected: user_id 8,042,183 (batch 84 of 205)
+Pattern: All NULL users share a creation date before 2021-03-15
 
-死因追溯: 那些在 `subscriptions` 表建表之前就注册的远古老用户，
-在 `subscriptions` 表里压根就没有他们的名字。
-所以 JOIN 一把梭的时候，直接给这帮老兵塞了 NULL。
+Root cause: Legacy users who registered before the subscriptions
+table existed have no row in the `subscriptions` table.
+The JOIN returns NULL for these users.
 
-补救方案: 拿 COALESCE 糊一层，给找不到对应关系的用户强行塞个 &#39;free&#39;:
+Fix: Use COALESCE to default unmatched users to &#39;free&#39;:
   UPDATE users
   SET subscription_tier = COALESCE(s.tier, &#39;free&#39;)
   FROM subscriptions s
   WHERE users.id = s.user_id
 
-预估被波及的行数: 大概 156,000 名远古老兵 (注册早于 2021-03-15)
+Estimated affected rows: ~156,000 legacy users (pre-2021-03-15)
 </code></pre></div>
 
-<p>所有的 NULL 全都来自 2021-03-15 之前建号的用户 —— 这个时间点比 <code>subscriptions</code> 这张表出生的日子都早，JOIN 当然连个鬼都匹配不到。补救的方法，无非就是垫一层 <code>COALESCE</code>。</p>
-<h2 id="_6">洗心革面，重头再来</h2>
-<p>一键倒流 (就开头那条命令)，拍上 <code>COALESCE</code> 的兜底补丁，重新发车。还是原来的配方，还是原来的批次大小，结局截然不同：</p>
-<div class="codehilite"><pre><span></span><code>[backfill]  500,000 行   NULL 数量: 0  (0.0%)  ✓
-[backfill]  1,000,000 行 NULL 数量: 0  (0.0%)  ✓
-[backfill]  1,500,000 行 NULL 数量: 0  (0.0%)  ✓
-[backfill]  2,000,000 行 NULL 数量: 0  (0.0%)  ✓
-[backfill]  2,041,847 行 NULL 数量: 0  (0.0%)  ✓ 补全完毕
+<p>Every NULL belongs to an account created before 2021-03-15 — older than the <code>subscriptions</code> table itself, so the JOIN finds nothing to match. The repair is a single <code>COALESCE</code>.</p>
+<h2 id="a-clean-second-pass">A clean second pass</h2>
+<p>Restore (shown above), apply the <code>COALESCE</code> default, rerun. Same plan, same batch size, different ending:</p>
+<div class="codehilite"><pre><span></span><code>[backfill]  500,000 rows   NULL count: 0  (0.0%)  ✓
+[backfill]  1,000,000 rows NULL count: 0  (0.0%)  ✓
+[backfill]  1,500,000 rows NULL count: 0  (0.0%)  ✓
+[backfill]  2,000,000 rows NULL count: 0  (0.0%)  ✓
+[backfill]  2,041,847 rows NULL count: 0  (0.0%)  ✓ COMPLETE
 
 [phase 3]  ALTER TABLE users ALTER COLUMN subscription_tier SET NOT NULL
-[phase 3]  大功告成 — 2,041,847 行数据已被 NOT NULL 约束死死锁住
+[phase 3]  SUCCESS — constraint enforced on 2,041,847 rows
 
-迁移落锤。总耗时: 47 分钟 (算上了中途的翻车回滚和重新爬起来的时间)。
+Migration complete. Duration: 47m total (including rollback + retry).
 </code></pre></div>
 
-<p>墙上的时钟走了 47 分钟，翻车、抢救、通关，一把梭。</p>
-<h2 id="_7">亲眼查查这场爆炸的波及范围</h2>
-<p>隔离不能只停留在画大饼上，它是经得起你亲手扒开查验的。就在刚刚回滚落锤的那一瞬间，整个狼群的战况如下：</p>
+<p>47 minutes wall-clock, failed attempt and rollback included.</p>
+<h2 id="check-the-blast-radius-yourself">Check the blast radius yourself</h2>
+<p>Isolation is a claim you can verify, not a promise to trust. The fleet, immediately after the restore:</p>
 <div class="codehilite"><pre><span></span><code>bene ls
 
 # NAME                STATUS    UPTIME   EVENTS
-# migration-agent     restored  14m      847 (刚被抢救过)
+# migration-agent     restored  14m      847 (rollback applied)
 # analytics-agent-1   running   14m      1,204
 # analytics-agent-2   running   14m      983
 # dashboard-agent     running   14m      441
 </code></pre></div>
 
-<p>三个毫不相干的 agent，连一毫秒都没被打断过。每一只都在自己被 SQLite 锁死的结界里干活，所以那场弄到一半被强行掐断的脏数据迁移，对它们来说连个影子都没出现过 —— 而在回滚落锤之后，那些脏数据在这世上更是连灰都扬了。</p>
-<h2 id="_8">把整场战役再倒放一遍</h2>
-<p>拉出完整的流水账，你就能看到这条一镜到底的生死线 —— 空投、拍照、爆雷、抢救、打补丁、绿灯通关：</p>
-<div class="codehilite"><pre><span></span><code>时间      动作        所属战区            行数       NULL数   战况批注
+<p>Three unrelated agents, zero interruptions. Each works in its own SQLite-backed filesystem, so the migration's half-finished state was never visible to them — and after the restore it exists nowhere.</p>
+<h2 id="replay-the-whole-incident">Replay the whole incident</h2>
+<p>The full run reads back as one timeline — spawn, checkpoints, anomaly, restore, fix, clean finish:</p>
+<div class="codehilite"><pre><span></span><code>Time      Event       Phase               Rows       NULLs   Notes
 --------  ----------  ------------------  ---------  ------  --------------------------------
-01:33:08  spawn       —                   —          —       特种兵空投，系统唤醒
-01:33:11  checkpoint  pre-schema          0          0       贴标: pre-schema
-01:33:14  schema      schema_change       0          0       ALTER TABLE: 顺利落刀
-01:33:16  checkpoint  pre-backfill        0          0       贴标: pre-backfill
-01:33:18  backfill    backfill            847,412    64,412  爆雷: NULL 飙到了 7.6%
-01:34:01  restore     —                   0          0       强行摁回 pre-backfill (0.31s)
-01:34:04  fix         —                   —          —       掏出 COALESCE 缝针
-01:34:06  backfill    backfill            2,041,847  0       全量补齐: 0 NULL，全绿
-02:21:14  constraint  enforce_constraint  2,041,847  0       NOT NULL 镣铐锁死
-02:21:17  checkpoint  complete            2,041,847  0       全剧终，迁移落锤
+01:33:08  spawn       —                   —          —       agent initialized
+01:33:11  checkpoint  pre-schema          0          0       label: pre-schema
+01:33:14  schema      schema_change       0          0       ALTER TABLE: success
+01:33:16  checkpoint  pre-backfill        0          0       label: pre-backfill
+01:33:18  backfill    backfill            847,412    64,412  anomaly: 7.6% NULL
+01:34:01  restore     —                   0          0       restored to pre-backfill (0.31s)
+01:34:04  fix         —                   —          —       COALESCE applied to query
+01:34:06  backfill    backfill            2,041,847  0       full backfill: 0 NULLs
+02:21:14  constraint  enforce_constraint  2,041,847  0       NOT NULL enforced
+02:21:17  checkpoint  complete            2,041,847  0       migration complete
 </code></pre></div>
 
-<p>如果半道上没有那个卡脖子的探针，你接到第一波警报的时间绝对是第二天早上用户的口水淹没客诉的时候，那时脏数据早都漏到大盘上了。而现在，这堆脏东西连 agent 的沙盒都没能爬出来，并且抹平这场灾难，只花了 0.3 秒。</p>
-<h2 id="_9">顺藤摸瓜</h2>
+<p>Without the mid-stream check, your first signal is a user bug report the next morning, after corrupt values ship. With it, the bad rows never left one agent's workspace, and erasing them took 0.3 seconds.</p>
+<h2 id="keep-reading">Keep reading</h2>
 <ul>
-<li><a href="../checkpoints.html">核心部件指南：时空快照 (Checkpoints)</a></li>
-<li><a href="../use-cases.html#db-migration-rollback">破局战法：数据库回滚续命</a></li>
-<li><a href="../use-cases.html">破局战法 (Use Cases)</a> — 更多这种极限拉扯的骚操作</li>
-<li><a href="../architecture.html">架构设计：VFS 引擎底层扒皮</a></li>
-<li><a href="../README.html">README 首页</a> — 全景大局观和全套文档入口</li>
+<li><a href="../checkpoints.html">Component guide: Checkpoints</a></li>
+<li><a href="../use-cases.html#db-migration-rollback">Use case: DB Migration Rollback</a></li>
+<li><a href="../use-cases.html">Use Cases</a> — more patterns like this one</li>
+<li><a href="../architecture.html">Architecture: VFS engine</a></li>
+<li><a href="../README.html">README</a> — overview and full doc index</li>
 </ul>
 <hr />
-<p><em>bene 基于 MIT 协议开源，并且是个极端的 Local-first 原教旨主义者：你在这页上看到的每一条指令，全都在单机上跑完，绝对没有任何一滴数据被偷偷运输出去。</em></p>
-<p><em>源码老家 GitHub: <a href="https://github.com/good-night-oppie/bene">github.com/good-night-oppie/bene</a></em></p>
+<p><em>bene is MIT-licensed and local-first: every command on this page ran on one machine, and no data left it.</em></p>
+<p><em>GitHub: <a href="https://github.com/good-night-oppie/bene">github.com/good-night-oppie/bene</a></em></p>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/tutorials/t04-migration-rollback.md" target="_blank" rel="noopener noreferrer">docs/tutorials/t04-migration-rollback.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>
 </div>

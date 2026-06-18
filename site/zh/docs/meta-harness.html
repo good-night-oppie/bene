@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>演化脚手架 (Meta-Harness)：用搜索算法跑出一个最强脚手架 — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — 演化脚手架 (Meta-Harness)：用搜索算法跑出一个最强脚手架" />
+<title>Meta-Harness: Search Your Way to a Better Harness — 中文索引 / 翻译中</title>
+<meta name="description" content="BENE 0.2.0 文档 — Meta-Harness: Search Your Way to a Better Harness" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -242,36 +242,36 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="index.html">docs</a> / meta-harness.md</div>
-<h1 id="meta-harness">演化脚手架 (Meta-Harness)：用搜索算法跑出一个最强脚手架</h1>
-<p>给 bene 塞一份标注好的数据集，外加一套或几套初始的脚本 (Harness)，然后你就可以撒手去喝咖啡了：一个 AI Proposer 会死死盯着每一份执行流水，亲手改写 harness 代码，并且只有那些在你的数据上跑分确凿变高的变种代码，才会被留下来。</p>
+<h1 id="meta-harness-search-your-way-to-a-better-harness">Meta-Harness: Search Your Way to a Better Harness</h1>
+<p>Hand bene a labeled dataset and one or more starting harnesses, then walk away: an AI proposer studies every execution trace, writes improved harness code, and keeps only what measurably scores higher on your data.</p>
 <blockquote>
-<p><strong>只需敲一行命令，就能把平时靠人肉干的 "微调一下 prompt 然后重跑" 的低级循环，彻底拉升为一场有着严密测量、随时可断点续传、且全盘留底的自动化代码搜索战役。</strong></p>
+<p><strong>One command replaces "tweak the prompt and rerun" with a measured, resumable, fully recorded search.</strong></p>
 </blockquote>
-<p>bene 的这套玩法直接落地了 <a href="https://yoonholee.com/meta-harness/">Meta-Harness 论文 (arXiv:2603.28052)</a> 里的核心技术；关于出处和可跑的示范代码，去 <a href="#血脉渊源和实战靶场">血脉渊源和实战靶场</a> 找。在 bene 的世界观里，这被称作 "配种计划 (breeding program)" —— 一场极其考验耐心、跨越数个世代的、专门针对 harness 代码的达尔文式大筛选。</p>
+<p>bene implements the technique from the <a href="https://yoonholee.com/meta-harness/">Meta-Harness paper (arXiv:2603.28052)</a>; full citation and the reference artifact are listed under <a href="#sources-and-worked-examples">Sources and worked examples</a>. In bene's lore this is the breeding program — patient, multi-generation selection — applied to harness code.</p>
 <hr />
-<h2 id="_1">为什么搜索算法能把人肉调参按在地上摩擦？</h2>
-<p>你手里那套大模型是个黑盒，它是冻死的。你能掌控的，是外面套的那层脚手架 (Harness)：到底塞什么词进 prompt 里？捞哪些旧例子作弊？带多少上下文陪跑？光是脚手架好坏的差距，就能让同一个大模型在同一个任务上的表现拉开 <strong>6倍</strong> 的鸿沟。</p>
-<p>普通人想要把这 6 倍的性能抠出来，靠的是手工作坊式的死力气 —— 改改 prompt，眯着眼睛看看输出，然后再改改。而 Meta-Harness 的降维打击，就在于它把这套手工作业直接做成了全自动闭环。</p>
+<h2 id="why-a-search-beats-hand-tuning">Why a search beats hand-tuning</h2>
+<p>Your model is frozen. What you control is the harness: the code choosing what goes into the prompt, which examples get retrieved, how much context rides along. Across harnesses, the same model shows a <strong>6x</strong> spread in task performance.</p>
+<p>The usual way to claw back that 6x is artisanal — edit a prompt, eyeball the output, edit again. Meta-Harness turns that craft loop into a closed, automated one.</p>
 <hr />
-<h2 id="_2">打响你的第一枪</h2>
-<p>针对几个内置的数据集，你可以直接起步搜：</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># 文本分类战役</span>
+<h2 id="launch-your-first-search">Launch your first search</h2>
+<p>Seed searches run against built-in datasets:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Text classification</span>
 bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>text_classify<span class="w"> </span>-n<span class="w"> </span><span class="m">20</span><span class="w"> </span>-k<span class="w"> </span><span class="m">3</span>
 
-<span class="c1"># 外挂检索 (RAG) 的数学题</span>
+<span class="c1"># Math with retrieval</span>
 bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>math_rag<span class="w"> </span>-n<span class="w"> </span><span class="m">20</span><span class="w"> </span>-k<span class="w"> </span><span class="m">3</span>
 
-<span class="c1"># Agent 式的全自动编程</span>
+<span class="c1"># Agentic coding</span>
 bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>agentic_coding<span class="w"> </span>-n<span class="w"> </span><span class="m">10</span><span class="w"> </span>-k<span class="w"> </span><span class="m">2</span>
 </code></pre></div>
 
-<p>如果你想拿自己的私家数据集 (比如一份你司的 CSV 或者 JSONL 语料) 来跑，你需要走 Python API 里的 <code>get_benchmark</code> 接口 (去抄 <a href="#在-python-里发号施令">在 Python 里发号施令</a> 那节的作业)。</p>
-<p><code>-n</code> 限制的是搜索迭代轮数，<code>-k</code> 则限制每轮提议出的变种数量。想看全部的参数？去翻 <a href="#把所有开关列在同一处">把所有开关列在同一处</a>。</p>
+<p>To run a search with your own custom datasets (e.g. your own CSV or JSONL corpus), drive the search from Python using the <code>get_benchmark</code> API (see <a href="#drive-it-from-python">Drive it from Python</a>).</p>
+<p><code>-n</code> caps the iterations, <code>-k</code> the candidates proposed per iteration. The complete flag list lives in <a href="#every-flag-one-place">Every flag, one place</a>.</p>
 <hr />
-<h2 id="_3">扒开一场战役的五脏六腑</h2>
-<p>想要看懂这套杀戮机器是怎么运转的，最直观的办法就是拆解一场实战：教一个分类器去分发工单。</p>
-<h3 id="1">1. 你的弹药 (数据)</h3>
-<div class="codehilite"><pre><span></span><code><span class="c1"># 你的家底 —— 贴好标签的真实客诉工单</span>
+<h2 id="a-search-from-start-to-finish">A search from start to finish</h2>
+<p>The clearest way to see the machinery is to follow one concrete run: teaching a classifier to route support tickets.</p>
+<h3 id="1-your-data">1. Your data</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Your data — labeled support tickets</span>
 <span class="n">tickets</span> <span class="o">=</span> <span class="p">[</span>
     <span class="p">{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;I was charged twice this month&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;billing&quot;</span><span class="p">},</span>
     <span class="p">{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;API returns 500 errors on POST&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;technical&quot;</span><span class="p">},</span>
@@ -280,9 +280,9 @@ bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </s
 <span class="p">]</span>
 </code></pre></div>
 
-<h3 id="2-seeds">2. 你的火种 (Seeds)</h3>
-<p>Seeds 就是你的开局底牌 —— 针对这个任务最初始的几种解法。最少得塞一个；多塞几个能让 Proposer 有对冲对比的抓手，学得更快。</p>
-<p><strong>Seed 1 — 零样本盲狙</strong> (最糙的打法):</p>
+<h3 id="2-your-seeds">2. Your seeds</h3>
+<p>Seeds are your opening bids — distinct first attempts at the task. One is the minimum; several give the proposer contrast to learn from.</p>
+<p><strong>Seed 1 — Zero-shot</strong> (the bare minimum):</p>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">problem</span><span class="p">):</span>
     <span class="k">return</span> <span class="p">{</span>
         <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Classify this ticket: </span><span class="si">{</span><span class="n">problem</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">Category:&quot;</span><span class="p">,</span>
@@ -290,7 +290,7 @@ bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </s
     <span class="p">}</span>
 </code></pre></div>
 
-<p><strong>Seed 2 — Few-shot 硬塞</strong> (硬塞几个最近的案例进去):</p>
+<p><strong>Seed 2 — Few-shot</strong> (recent examples inlined):</p>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">problem</span><span class="p">):</span>
     <span class="n">examples</span> <span class="o">=</span> <span class="n">problem</span><span class="p">[</span><span class="s2">&quot;labeled_examples&quot;</span><span class="p">][</span><span class="o">-</span><span class="mi">4</span><span class="p">:]</span>
     <span class="n">example_block</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Ticket: </span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">Category: </span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">)</span>
@@ -300,9 +300,9 @@ bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </s
     <span class="p">}</span>
 </code></pre></div>
 
-<p><strong>Seed 3 — 智能检索</strong> (靠重叠词挑出最像的案例):</p>
+<p><strong>Seed 3 — Retrieval</strong> (nearest tickets by overlap):</p>
 <div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">problem</span><span class="p">):</span>
-    <span class="c1"># 算算词汇重合度，揪出最像的 5 张工单</span>
+    <span class="c1"># Score by word overlap, pick top 5 similar tickets</span>
     <span class="n">query_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">problem</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
     <span class="n">scored</span> <span class="o">=</span> <span class="p">[(</span><span class="nb">len</span><span class="p">(</span><span class="n">query_words</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">())),</span> <span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">problem</span><span class="p">[</span><span class="s2">&quot;labeled_examples&quot;</span><span class="p">]]</span>
     <span class="n">scored</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -310,99 +310,106 @@ bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </s
     <span class="o">...</span>
 </code></pre></div>
 
-<h3 id="3">3. 血肉磨盘转起来了</h3>
+<h3 id="3-the-loop">3. The loop</h3>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>support_tickets<span class="w"> </span>-n<span class="w"> </span><span class="m">10</span><span class="w"> </span>-k<span class="w"> </span><span class="m">2</span>
 </code></pre></div>
 
-<p>就敲下这行命令之后，机器深处会掀起一场怎样的腥风血雨：</p>
-<h4 id="0">第 0 轮 — 给初始火种称重</h4>
-<p>系统会当场拉起 3 个充当裁判的 evaluator agents，一个 seed 分配一个，全关在死磕的独立 VFS (虚拟文件系统) 小黑屋里：</p>
-<div class="codehilite"><pre><span></span><code>Agent: harness-01HXY1A...    (零样本那套)
-  /harness.py                  ← 脚手架源码本体
+<p>What that single command sets in motion:</p>
+<h4 id="iteration-0-scoring-the-seeds">Iteration 0 — scoring the seeds</h4>
+<p>Three evaluator agents come up, one per seed, each walled inside its own VFS:</p>
+<div class="codehilite"><pre><span></span><code>Agent: harness-01HXY1A...    (zero-shot seed)
+  /harness.py                  ← the harness source code
   /evaluation/scores.json      ← {&quot;accuracy&quot;: 0.45, &quot;context_cost&quot;: 20}
-  /evaluation/per_problem.jsonl ← 逐题明细
-...
-Agent: harness-01HXY1C...    (智能检索那套)
+  /evaluation/per_problem.jsonl ← per-ticket results
+
+Agent: harness-01HXY1B...    (few-shot seed)
+  /harness.py
+  /evaluation/scores.json      ← {&quot;accuracy&quot;: 0.63, &quot;context_cost&quot;: 85}
+  /evaluation/per_problem.jsonl
+
+Agent: harness-01HXY1C...    (retrieval seed)
   /harness.py
   /evaluation/scores.json      ← {&quot;accuracy&quot;: 0.70, &quot;context_cost&quot;: 120}
   /evaluation/per_problem.jsonl
 </code></pre></div>
 
-<p>跑完的分数全都会被汇入<strong>搜索档案馆 (Search Archive)</strong> 里，这个档案馆自己本身也是一个独立 agent 的 VFS 领地：</p>
+<p>Everything lands in the <strong>search archive</strong>, which is itself the VFS of a dedicated agent:</p>
 <div class="codehilite"><pre><span></span><code>Search Agent VFS:
   /config.json
   /seeds/seed_0.py, seed_1.py, seed_2.py
   /harnesses/
     01HXY1A.../source.py, scores.json, trace.jsonl, per_problem.jsonl, metadata.json
-    ...
+    01HXY1B.../source.py, scores.json, trace.jsonl, per_problem.jsonl, metadata.json
     01HXY1C.../source.py, scores.json, trace.jsonl, per_problem.jsonl, metadata.json
-  /pareto/frontier.json     ← 战报显示：目前检索那套方案占优
+  /pareto/frontier.json     ← retrieval seed is best so far
 </code></pre></div>
 
-<p>在每一份 harness 的案底目录下：</p>
+<p>Per harness directory:</p>
 <ul>
-<li><strong>source.py</strong> — 变种方案的源码</li>
-<li><strong>scores.json</strong> — 最终的汇总战绩 (准确率、上下文开销等)</li>
-<li><strong>trace.jsonl</strong> — 全景式的跑分流水：输入长啥样，标答是啥，生出的 prompt 啥样，AI 给的预测是啥，判题对不对，耗了几个 token。</li>
-<li><strong>per_problem.jsonl</strong> — 分题目的细粒度账单</li>
-<li><strong>metadata.json</strong> — 身世档案 (第几代、爹是谁、当时改它的 rationale 思路)</li>
+<li><strong>source.py</strong> — the candidate's code</li>
+<li><strong>scores.json</strong> — the aggregates (accuracy, context_cost, etc.)</li>
+<li><strong>trace.jsonl</strong> — a complete run record, with rich per-problem fields: an input preview, the expected answer, a prompt preview, the prediction, a correct boolean, and the context token count</li>
+<li><strong>per_problem.jsonl</strong> — itemized results, kept apart for fine-grained analysis</li>
+<li><strong>metadata.json</strong> — iteration number, parent harness, rationale</li>
 </ul>
-<p>这些 trace 文件才是真正的核心。在原论文的消融实验里，喂给 proposer 完整 trace 所带来的战力，能把那些只喂了干瘪得分或者缩水总结的 proposer 甩开足足 15 个百分点。</p>
-<h4 id="1-proposer">第 1 轮 — Proposer 开始狼吞虎咽</h4>
-<p>紧接着，bene 唤醒了一只极其凶悍的 <strong>Proposer Agent</strong>：它手里握着能够撬开整个档案馆大门的专属工具。</p>
+<p>Those trace files carry the search. In the paper's ablation, a proposer that reads raw traces beats one fed only scores or summaries by 15+ accuracy points.</p>
+<h4 id="iteration-1-the-proposer-reads-everything">Iteration 1 — the proposer reads everything</h4>
+<p>Next, bene starts a <strong>proposer agent</strong>: an LLM holding tools that open the whole archive.</p>
 <ul>
-<li><code>mh_ls_archive("/harnesses")</code> → 把那 3 个案底全拉出来看看</li>
-<li><code>mh_read_archive("/pareto/frontier.json")</code> → 看看榜单，发现检索流确实最能打</li>
-<li><code>mh_read_archive("/harnesses/01HXY1C.../trace.jsonl")</code> → 把第一名的做题流水一题题扒开看</li>
-<li><code>mh_grep_archive("word overlap")</code> → 一条正则，全档扫射</li>
+<li><code>mh_ls_archive("/harnesses")</code> → enumerates the 3 harness directories</li>
+<li><code>mh_read_archive("/pareto/frontier.json")</code> → confirms retrieval leads</li>
+<li><code>mh_read_archive("/harnesses/01HXY1C.../trace.jsonl")</code> → every attempt, problem by problem</li>
+<li><code>mh_read_archive("/harnesses/01HXY1A.../trace.jsonl")</code> → where zero-shot went wrong</li>
+<li><code>mh_grep_archive("word overlap")</code> → one regex, matched against the full archive</li>
 </ul>
-<p>靠着生啃流水，它把出了脉案：检索流虽然能干到 70% 登顶，但一旦遇到了同义不同词的表述就当场抓瞎 (比如 "账单出了笔神秘扣费" 和 "重复收费"，一个词都不重样，overlap 打分直接报零蛋)；而那套硬塞 few-shot 的方案，死穴在于最近塞进去的例子刚好避开了当前需要的正确分类。</p>
-<p>它大笔一挥，写下两副猛药：</p>
-<p><strong>Candidate 1 — 聚类强吃。</strong> 先把数据池按分类聚好，然后保证每个分类都硬抽出一个例子喂进去。
-<strong>Candidate 2 — 盲猜再查。</strong> 先不带例子裸跑一发猜个大概，拿着猜出来的分类去精准捞例子，最后拿着这些精准例子再跑第二遍做确认。</p>
-<p>它会拿着 <code>mh_submit_harness(source_code, rationale)</code> 把这两套代码丢出去。但在碰到测试集之前，代码必须得过两道鬼门关 (两级校验)：</p>
+<p>From the traces, a diagnosis forms: retrieval tops the board at 70% yet whiffs whenever phrasing drifts — "mysterious charge on my statement" shares no tokens with "charged twice", so overlap scoring finds nothing. Few-shot, meanwhile, stumbles whenever the last few examples happen to skip the needed category.</p>
+<p>Two fixes get drafted:</p>
+<p><strong>Candidate 1 — group by meaning.</strong> Cluster the labeled pool per category; show one exemplar from each.
+<strong>Candidate 2 — draft, then check.</strong> Classify once, retrieve examples matching that draft label, confirm or revise.</p>
+<p><code>mh_submit_harness(source_code, rationale)</code> accepts both, but nothing touches the benchmark until it clears <strong>two-stage validation</strong>:</p>
 <ol>
-<li><strong>AST 静检</strong> — 用 <code>ast.walk</code> 查验它是不是合法 Python，且有没有老老实实写明 <code>run()</code>。</li>
-<li><strong>跑通点火</strong> — 用一道题当靶子真刀真枪跑一遍，但凡报了异常直接毙掉。</li>
+<li><strong>AST check</strong> — the module must define <code>run()</code> using standard python syntax (parsed via <code>ast.walk</code> to find the function signature)</li>
+<li><strong>Smoke test</strong> — the module is imported and <code>run()</code> invoked on a sample problem; harnesses written as class methods or missing top-level function names fail here since <code>run</code> is not callable after import</li>
 </ol>
-<p>没跑通的残次品连上桌的资格都没有。</p>
-<div class="codehilite"><pre><span></span><code>跑完第一轮后的档案馆:
+<p>A candidate that fails either gate never runs.</p>
+<div class="codehilite"><pre><span></span><code>Search Archive after iteration 1:
   /harnesses/
-    01HXY1A.../  ← seed: 零样本    (acc=0.45)
-    ...
-    01HXY1C.../  ← seed: 检索流    (acc=0.70)
-    01HXY1D.../  ← 新方案: 聚类强吃 (acc=0.73)  ← 变强了！
-    01HXY1E.../  ← 新方案: 盲猜再查 (acc=0.80)  ← 新王登基！
+    01HXY1A.../  ← zero-shot seed    (acc=0.45)
+    01HXY1B.../  ← few-shot seed     (acc=0.63)
+    01HXY1C.../  ← retrieval seed    (acc=0.70)
+    01HXY1D.../  ← semantic grouping (acc=0.73)  ← new
+    01HXY1E.../  ← two-stage verify  (acc=0.80)  ← new, best!
+  /pareto/frontier.json  ← updated with new best
 </code></pre></div>
 
-<h4 id="2">第 2 轮 — 踩着新王的尸骨向上爬</h4>
-<p>再去翻新王 (盲猜再查流) 的翻车记录，它的软肋就暴露出来了：<strong>模棱两可的模糊工单</strong>。比如 "我想要降级套餐"，判给 account 没错，判给 billing 好像也对。而隔壁聚类方案的流水给它送来了灵感：如果把长得极像但分类截然不同的工单 (也就是对比样例，contrastive pair) 同时喂进去，大模型的火眼金睛立马就能拉满。</p>
-<p>于是，新一轮的变种出炉了：</p>
-<p><strong>Candidate 3 — 对比校验。</strong> 在第二遍校验时，故意塞一些长得像但分类不同的陷阱题进去。
-<strong>Candidate 4 — 标签预热。</strong> 直接在 prompt 开头，把所有分类跟一句话描述全甩给大模型。</p>
-<div class="codehilite"><pre><span></span><code>跑完第二轮后：
-  Candidate 3: acc=0.83, cost=150  ← 刷新了准确率天花板
-  Candidate 4: acc=0.77, cost=45   ← 准确率下降，但尼玛便宜了三倍！
-  Pareto 帕累托前沿：[Candidate 3 (霸榜准确率), Candidate 4 (霸榜开销)]
+<h4 id="iteration-2-mining-the-winners-failures">Iteration 2 — mining the winner's failures</h4>
+<p>Reading the new leader's traces exposes its soft spot: <strong>ambiguity</strong>. "I want to downgrade my plan" is defensible as account <em>or</em> billing. The semantic-grouping traces add a second clue — showing two near-identical tickets that carry different labels (a contrastive pair) sharpens the call.</p>
+<p>So the next proposals:</p>
+<p><strong>Candidate 3 — contrast the verification.</strong> During the check stage, pull tickets that look similar but live in <em>different</em> categories.
+<strong>Candidate 4 — prime the labels.</strong> Open the prompt with every category and a one-line description of each.</p>
+<div class="codehilite"><pre><span></span><code>After iteration 2:
+  Candidate 3: acc=0.83, cost=150  ← new best accuracy
+  Candidate 4: acc=0.77, cost=45   ← lower accuracy but 3x cheaper!
+  Pareto frontier: [Candidate 3 (best acc), Candidate 4 (best cost)]
 </code></pre></div>
 
-<h4 id="3-10">第 3 到 10 轮 — 复利的暴击</h4>
-<p>从此往后，proposer 算是开了天眼，每一轮都能俯瞰全局。它平时最爱耍的花招包括：</p>
+<h4 id="iterations-3-10-compounding-refinement">Iterations 3-10 — compounding refinement</h4>
+<p>From here on, every iteration gives the proposer the full history. Its typical moves:</p>
 <ul>
-<li>把前三甲拎出来，拆出那些立了大功的代码片段</li>
-<li>盯着翻车记录使劲看，找出至今没补上的漏网之鱼</li>
-<li>把原本毫无瓜葛的两套流派硬缝合在一起</li>
-<li>一刀切中要害，一次只修一个 bug，绝不无脑推翻重写</li>
+<li>pull up the top-3 sources and spot the shared ingredients</li>
+<li>walk failure traces to learn what still breaks</li>
+<li>splice winning ideas from separate lineages</li>
+<li>patch one failure mode at a time rather than rewriting wholesale</li>
 </ul>
-<p>为了约束它，bene 还在系统 prompt 里塞进了原论文摸索出来的三大军规：</p>
+<p>Its prompt encodes three habits lifted from the paper:</p>
 <ul>
-<li><strong>连跪后转保守 (Go additive)</strong> — 如果连着几轮都在退步，proposer 就会被锁死在 "只许加东西，不许碰老代码" 的保守模式，大幅压低风险。</li>
-<li><strong>控制变量法 (Change one variable)</strong> — 每个变种只许改一处地方，只有这样，分数的涨跌才能清清楚楚地算在那个改动头上。</li>
-<li><strong>溯源对比 (Compare across iterations)</strong> — 逼着它去翻旧账，搞清楚以前的改动到底是帮了倒忙还是真有奇效。</li>
+<li><strong>Go additive after losing streaks</strong> — consecutive regressions flip the proposer into add-only mode: new capability, existing code untouched, less risk</li>
+<li><strong>Change one variable</strong> — each candidate isolates a single difference, so credit assignment stays clean</li>
+<li><strong>Compare across iterations</strong> — results from earlier rounds get cross-referenced to separate the changes that helped from the ones that hurt</li>
 </ul>
-<p>bene 默认 <code>candidates_per_iteration</code> (每轮变种数) 设为 <strong>2</strong> (论文里是 3)；因为在工程实测中我们发现：集中火力少提几个变种，比无脑乱撒网的效果要更狠。</p>
-<h3 id="4">4. 战事结算</h3>
-<p>十轮绞肉战打完，系统会给你甩出一份结案报告：</p>
+<p>bene defaults <code>candidates_per_iteration</code> to <strong>2</strong> rather than 3; the paper measured that fewer, sharper proposals per iteration beat a wider spray.</p>
+<h3 id="4-the-scoreboard">4. The scoreboard</h3>
+<p>Ten iterations later, the loop reports:</p>
 <div class="codehilite"><pre><span></span><code>Meta-Harness Search Complete
   Search agent: 01HXY1234AB...
   Iterations: 10
@@ -413,73 +420,73 @@ Agent: harness-01HXY1C...    (智能检索那套)
   Best context_cost: 35.0000 (harness 01HXY1G...)
 </code></pre></div>
 
-<p>把登顶的那套代码拽出来看看：</p>
+<p>Pull up the winner:</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>inspect<span class="w"> </span>01HXY...<span class="w"> </span>01HXY1F...<span class="w"> </span>--db<span class="w"> </span>support-tickets.db
 </code></pre></div>
 
-<p>而且，既然整场战役的每一滴血都留在了 SQLite 里，那你的拷问就绝不止步于一个简单的 summary：</p>
-<div class="codehilite"><pre><span></span><code><span class="c1">-- 揪出所有青出于蓝而胜于蓝的变种，看看它们当时是怎么想的？</span>
+<p>And because the whole search sits in SQLite, your questions don't stop at the summary:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Which harnesses improved over their parents?</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">h</span><span class="p">.</span><span class="n">metadata</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;$.rationale&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">strategy</span><span class="p">,</span>
 <span class="w">       </span><span class="n">h</span><span class="p">.</span><span class="n">scores</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;$.accuracy&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">accuracy</span>
 <span class="k">FROM</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">accuracy</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
 
-<span class="c1">-- 这场大搜索到底烧了我多少 token？</span>
+<span class="c1">-- How much did the search cost in tokens?</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">token_count</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tool_calls</span><span class="p">;</span>
 
-<span class="c1">-- 第五轮的时候，那只 proposer 到底在抓瞎琢磨些什么鬼？</span>
-<span class="c1">-- (直接读 proposer 的原始会话记录)</span>
+<span class="c1">-- What did the proposer focus on in iteration 5?</span>
+<span class="c1">-- (read the proposer conversation)</span>
 </code></pre></div>
 
 <hr />
-<h2 id="_4">只有一个文件，查个底朝天</h2>
-<p>原版论文的代码，是往平坦的文件系统上一股脑乱拉屎。bene 把它搬到了自己极其洁癖的 VFS 引擎上，以下这几条，你随时可以自己验证：</p>
-<p><strong>物理隔离。</strong> 任何变种代码，全被关在自己私密的 VFS 小单间里执行。再恶毒的 bug 代码也休想染指档案馆，更不可能摸到隔壁兄弟的命脉。</p>
-<p><strong>快照锁死。</strong> 每轮开打前，系统的总状态会被强行打上 checkpoint 快照。要是 proposer 脑溢血或者评估跑到一半断了电，一句话就能时光倒流。</p>
-<p><strong>审计深水区。</strong> 读了哪个文件、写了什么、用了什么工具、改了什么状态，全被一字不漏地夯进 event 日志里。你能完美复原 proposer 当时到底看了啥才拍的大腿。</p>
-<p><strong>SQL 伺候。</strong> 把 grep 丢进垃圾桶吧；你可以用严丝合缝的 SQL 去拷问历史。谁用了 retrieval 流派？每轮烧了多少 token？准确率曲线到底长啥样？一发 query 就能给你答案。</p>
-<p><strong>极其便携。</strong> 所有的兵马 —— 代码、流水、甚至是 proposer 之间的碎碎念 —— 全部死死锁定在一个极其轻巧的 <code>.db</code> 文件里。把它甩给你的同事，他们就能拥有整场战役的所有因果。</p>
+<h2 id="one-file-fully-auditable">One file, fully auditable</h2>
+<p>The paper's reference code writes to a flat filesystem. bene runs the same algorithm on top of its VFS engine, and every claim below is one you can check yourself:</p>
+<p><strong>Isolation.</strong> Candidate code executes inside a private VFS. A buggy harness cannot reach the archive or a sibling's files.</p>
+<p><strong>Checkpoints.</strong> The search state is checkpointed ahead of each iteration. A crashed proposer or evaluation rolls back and continues.</p>
+<p><strong>Audit trail.</strong> Each read, each write, each tool call and state change lands in the event journal — you can reconstruct what the proposer examined, and why.</p>
+<p><strong>SQL.</strong> Skip the grepping; the entire history answers structured questions. Which candidates used retrieval? Token spend per iteration? The accuracy trajectory, round by round?</p>
+<p><strong>Portability.</strong> The complete search — code, traces, proposer conversations — lives in one local <code>.db</code> file. Hand that single file to a teammate and they have everything.</p>
 <hr />
-<h2 id="proposer">Proposer 到底能摸到啥？</h2>
-<p>四件，且仅有四件工具组成了 proposer 的爪牙：</p>
+<h2 id="what-the-proposer-can-touch">What the proposer can touch</h2>
+<p>Four archive tools — and only these — define the proposer's reach:</p>
 <table>
 <thead>
 <tr>
-<th>Tool (工具)</th>
-<th>用途</th>
+<th>Tool</th>
+<th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>mh_ls_archive(path)</code></td>
-<td>把档案馆里的陈列列出来</td>
+<td>List files and directories in the search archive</td>
 </tr>
 <tr>
 <td><code>mh_read_archive(path)</code></td>
-<td>强行读取档案馆里的某个死档 (源码、流水、分数)</td>
+<td>Read a specific file from the archive (source code, traces, scores)</td>
 </tr>
 <tr>
 <td><code>mh_grep_archive(pattern)</code></td>
-<td>把正则当成推土机，把档案馆里<strong>所有</strong>文件碾一遍 —— 极度适合跨代排查特定的死法，或是寻找某项祖传绝技</td>
+<td>Search across ALL files in the archive for a regex pattern — useful for finding which harnesses use a specific technique or which traces contain a failure mode</td>
 </tr>
 <tr>
 <td><code>mh_submit_harness(source, rationale)</code></td>
-<td>掷出新改的 harness 变种 (附带两级鬼门关校验)</td>
+<td>Submit a new harness candidate (goes through two-stage validation)</td>
 </tr>
 </tbody>
 </table>
-<p>到了后期，档案馆里挤满了各路先辈留下的代码残骸时，<code>mh_grep_archive</code> 的杀伤力就体现出来了：只要喂进去一条 <code>"word overlap"</code>, <code>"KeyError"</code> 或者 <code>"timeout"</code>，它就能瞬间劈开所有的文件，把跨代遗传的顽疾生生剥出来，根本不需要你去一个个死翻流水。</p>
+<p>Once the archive fills with harnesses in later iterations, <code>mh_grep_archive</code> earns its keep: a single regex — <code>"word overlap"</code>, <code>"KeyError"</code>, <code>"timeout"</code> — sweeps every stored file at once, surfacing a failure mode without paging through trace files one by one.</p>
 <hr />
-<h2 id="_5">死而复生 (断点续传)</h2>
-<p>系统崩盘、网络超时或是你手贱按了 Ctrl-C，都绝对毁不掉你跑了一半的战果。每一次试跑、每一条流水和不断外扩的帕累托前沿，早就写进了 <code>.db</code> 文件里。一句话，直接从上一次成功结算的世代接着往下打。</p>
-<h3 id="_6">在命令行里敲</h3>
-<div class="codehilite"><pre><span></span><code><span class="c1"># 从上次死掉的地方爬起来</span>
+<h2 id="recover-and-resume">Recover and resume</h2>
+<p>A crash, a timeout, or a Ctrl-C does not cost you the search. Every evaluation, trace, and the Pareto frontier already live in the <code>.db</code> file, so picking up at the last finished iteration is one command.</p>
+<h3 id="from-the-cli">From the CLI</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Resume from last completed iteration</span>
 bene<span class="w"> </span>mh<span class="w"> </span>resume<span class="w"> </span>&lt;search-agent-id&gt;
 
-<span class="c1"># 瞧瞧它到底卡在哪了</span>
+<span class="c1"># Check where it left off</span>
 bene<span class="w"> </span>mh<span class="w"> </span>status<span class="w"> </span>&lt;search-agent-id&gt;
 </code></pre></div>
 
-<h3 id="python">用 Python 唤醒</h3>
+<h3 id="from-python">From Python</h3>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bene</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bene.metaharness.search</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetaHarnessSearch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bene.metaharness.benchmarks</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_benchmark</span>
@@ -497,141 +504,141 @@ bene<span class="w"> </span>mh<span class="w"> </span>status<span class="w"> </s
 <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
 </code></pre></div>
 
-<h3 id="mcp">通过 MCP 唤醒</h3>
-<p>拥有 37 把专武的 MCP Server 同样也暴露出了一把 <code>mh_resume</code> 工具，只需塞一个参数就能让它诈尸：</p>
+<h3 id="over-mcp">Over MCP</h3>
+<p>The MCP server (37 tools total) also exposes <code>mh_resume</code>, which takes a single argument:</p>
 <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;search_agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span>
 <span class="p">}</span>
 </code></pre></div>
 
-<p>在唤醒时，bene 会从 search agent 的 VFS 档案馆里重新拼装出战局，找出最后跑完的那一轮，并一毫不差地继承原先的所有军令 —— 原本的 benchmark、原本的变种生成数、以及原本的优化指标，全都不变。</p>
+<p>On resume, bene rebuilds search state out of the archive in the search agent's VFS, finds the last iteration that completed, and proceeds under the original configuration — same benchmark, same candidate count, same objectives.</p>
 <hr />
-<h2 id="proposer-v020">任何破模型都能来当 Proposer (v0.2.0)</h2>
-<p>有的破模型 —— 比如挂着 <code>claude --print</code> 的那种 —— 脑子可能被门挤了，一辈子都不会老老实实吐结构化的 tool call，导致它们根本摸不到 <code>mh_submit_harness</code> 这把提交武器。bene 自动看穿了这一点并做了极客补偿：一旦系统发现某个 proposer 叨叨了半天却没有动用哪怕一件工具，bene 就会生生去扒它的回话记录，只要找到任何夹着 <code>def run()</code> 签名的 ```python 源码块，就会硬行把它当做变种拽进生产线，且一视同仁地接受同等的双重静检。</p>
-<p>无论你只会说大白话，还是深谙工具调用，这碗饭 bene 都喂得进你的嘴里。你一行配置都不用改。</p>
+<h2 id="any-provider-can-propose-v020">Any provider can propose (v0.2.0)</h2>
+<p>Some providers — <code>claude --print</code> among them — never emit structured tool calls, which puts <code>mh_submit_harness</code> out of their reach. bene compensates without being told to: if a proposer turn ends with zero tool submissions, the reply text is scanned for <code>``python blocks containing</code>def run()`, and each valid block enters the pipeline as a candidate, subject to the same full validation.</p>
+<p>Text-only or tool-capable, the proposer works either way. There is nothing to configure.</p>
 <hr />
-<h2 id="v020">压缩摘要，别撑死大模型 (v0.2.0)</h2>
-<p>每一轮，proposer 都必须强行消化掉前人留下的每一份 harness 源码、每一个冰冷的跑分和所有的执行流水。如果不做压缩，这至少要耗上 5-10 刀的 tool call；而要是摊上 <code>claude --print</code> 这种每轮都强行把前文回滚重播的家伙，它绝对会死在超时的路上。</p>
-<p>因此，bene 内置了一套<strong>高度结构化的档案馆压缩摘要 (archive digest)</strong>。它分三路走，每一种数据都能受到针对性的暴烈压缩：</p>
+<h2 id="keep-the-digest-small-v020">Keep the digest small (v0.2.0)</h2>
+<p>Each round, the proposer must absorb every prior harness, score, and trace. Done naively, that is 5-10 tool calls per iteration — and a provider like <code>claude --print</code> replays the full conversation on every call, which is how timeouts happen.</p>
+<p>So bene pre-assembles a structured <strong>archive digest</strong> built on three strategies, compressing each data type on its own terms:</p>
 <table>
 <thead>
 <tr>
-<th>数据门派</th>
-<th>压缩策略</th>
-<th>实际砍法</th>
+<th>Data type</th>
+<th>Strategy</th>
+<th>What happens</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>分数、头衔 (metadata)</td>
-<td>丝毫不拔 (Lossless)</td>
-<td>原汁原味 (本身体积就不大，而且全都是纯度极高的信号)</td>
+<td>Scores, metadata</td>
+<td>Lossless</td>
+<td>Kept as-is (small, 100% signal)</td>
 </tr>
 <tr>
-<td>源代码</td>
-<td>0-7 级：不剪；8-10 级：扒光</td>
-<td>绝对保证 proposer 永远能摸到代码</td>
+<td>Source code</td>
+<td>Lossless (levels 0-7), stripped (8-10)</td>
+<td>Proposer always sees the code</td>
 </tr>
 <tr>
-<td>分题流水</td>
-<td>结构化强吃</td>
-<td>只抽出具体的错误模式 (error patterns)，再挂载 N 个残骸现场</td>
+<td>Per-problem results</td>
+<td>Structured extraction</td>
+<td>Error patterns + N failure samples</td>
 </tr>
 <tr>
-<td>跑分日志 (Traces)</td>
-<td>暴力过滤</td>
-<td>答对的题直接滚，只保留答错或者爆炸的现场</td>
+<td>Traces</td>
+<td>Filtered</td>
+<td>Only errors/failures kept, correct problems dropped</td>
 </tr>
 <tr>
-<td>跨轮扯皮对话</td>
-<td>梯次褪色总结</td>
-<td>把远古的嘴炮浓缩，只保留近期的原话</td>
+<td>Proposer conversation</td>
+<td>Progressive summarization</td>
+<td>Old turns summarized, recent kept verbatim</td>
 </tr>
 </tbody>
 </table>
-<p>以下是 bene 用 8 道极其刁钻的测试题测出来的质量保留情况：</p>
-<div class="codehilite"><pre><span></span><code>Level  0 │ 3727 chars ( 节约 29%) │ 纯度=100%  │ 8/8 题全对
-Level  3 │ 2818 chars ( 节约 46%) │ 纯度=100%  │ 8/8 题全对
-Level  5 │ 2818 chars ( 节约 46%) │ 纯度=100%  │ 8/8 题全对  ← 这是默认档位
-Level  7 │ 1927 chars ( 节约 63%) │ 纯度=100%  │ 8/8 题全对
-Level 10 │  184 chars ( 节约 97%) │ 纯度=37.5% │ 3/8 题全对
+<p>Measured quality, using 8 diagnostic questions a proposer should be able to answer from the digest alone:</p>
+<div class="codehilite"><pre><span></span><code>Level  0 │ 3727 chars ( 29% saved) │ quality=100%  │ 8/8 questions answerable
+Level  3 │ 2818 chars ( 46% saved) │ quality=100%  │ 8/8 questions answerable
+Level  5 │ 2818 chars ( 46% saved) │ quality=100%  │ 8/8 questions answerable  ← default
+Level  7 │ 1927 chars ( 63% saved) │ quality=100%  │ 8/8 questions answerable
+Level 10 │  184 chars ( 97% saved) │ quality=37.5% │ 3/8 questions answerable
 </code></pre></div>
 
-<p>在砍到 7 级之前，100% 的纯信号都被保住了；但如果你作死拉到 10 级，信号的丢失就会像雪崩一样 (只能答对 3/8)。实际上，通过结构化抽取把错误模式硬核地提炼出来喂给它，效果<strong>反而比</strong>粗暴地把几万字的生肉流水全甩给它要好。</p>
-<p>在 <code>bene.yaml</code> 里一刀切地设置：</p>
+<p>While quality holds at 100% up to level 7, the ultra-compact level 10 has a clear trade-off, losing significant signal (answering only 3/8 questions). Pulling error patterns out into explicit structure turns out to feed the proposer <em>better</em> than the raw dumps did.</p>
+<p>Set the level globally in <code>bene.yaml</code>:</p>
 <div class="codehilite"><pre><span></span><code><span class="nt">search</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">compaction_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span><span class="w">  </span><span class="c1"># 0 (原汁原味) 飙到 10 (压缩到极致)</span>
+<span class="w">  </span><span class="nt">compaction_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span><span class="w">  </span><span class="c1"># 0 (full data) to 10 (maximum compression)</span>
 </code></pre></div>
 
-<p>或者在你的单次战役里微操：</p>
+<p>or for a single search:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">SearchConfig</span><span class="p">(</span><span class="n">benchmark</span><span class="o">=</span><span class="s2">&quot;text_classify&quot;</span><span class="p">,</span> <span class="n">compaction_level</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
 </code></pre></div>
 
 <hr />
-<h2 id="v020_1">五大领域，全部抗压测试通过 (v0.2.0)</h2>
-<p>把默认档位 (Level 5) 拉到分类题以外的领域去挨刀：</p>
+<h2 id="compaction-across-five-domains-v020">Compaction across five domains (v0.2.0)</h2>
+<p>The default level (5), tested beyond classification:</p>
 <table>
 <thead>
 <tr>
-<th>战场</th>
-<th>节约的显存上下文</th>
-<th>信号纯度</th>
+<th>Domain</th>
+<th>Context saved</th>
+<th>Quality retained</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Classification (分类)</td>
+<td>Classification</td>
 <td>46%</td>
 <td>100%</td>
 </tr>
 <tr>
-<td>Code Generation (写代码)</td>
+<td>Code Generation</td>
 <td>28%</td>
 <td>100%</td>
 </tr>
 <tr>
-<td>Research / RAG (搜索检索)</td>
+<td>Research / RAG</td>
 <td>25%</td>
 <td>100%</td>
 </tr>
 <tr>
-<td>Tool Calling (调工具)</td>
+<td>Tool Calling</td>
 <td>25%</td>
 <td>100%</td>
 </tr>
 <tr>
-<td>ML Training (跑模型)</td>
+<td>ML Training</td>
 <td>18%</td>
 <td>100%</td>
 </tr>
 </tbody>
 </table>
-<p>一旦你强行干到 10 级，每个领域都会遭到毁灭性的信号制裁，存活下来的质量只会剩下 25-37.5% 不等。</p>
+<p>At level 10, every domain pays a severe quality penalty as context is aggressively compressed, with quality dropping to 25–37.5% (Classification 37.5% / Code Generation 30% / Research &amp; RAG 33.3% / Tool Calling 37.5% / ML Training 25%).</p>
 <hr />
-<h2 id="coral-v020">CORAL：打破僵局的猛药 (v0.2.0)</h2>
-<p>任何搜索算法只要跑得足够久，都会像无头苍蝇一样绕着一根柱子打转：proposer 陷入了局部最优的死胡同，不停地掏出大同小异的微调破烂。CORAL (<a href="https://arxiv.org/abs/2604.01658">arXiv:2604.01658</a>) 祭出了三大杀招来冲破这种停滞天花板，而 bene 把这三招全部接了过来。</p>
-<h3 id="pivot">第一杀招 — 侦测停滞，逼它转向 (Pivot)</h3>
-<p>如果连续 <code>stagnation_threshold</code> 轮 (默认 3 轮) 没能刷新霸榜分数，送到 proposer 嘴边的下一份摘要就会拉起刺眼的横幅：</p>
+<h2 id="coral-getting-unstuck-v020">CORAL: getting unstuck (v0.2.0)</h2>
+<p>Left running long enough, any iterative search starts to circle: the proposer settles into a local optimum and keeps shipping variations of the same idea. CORAL (<a href="https://arxiv.org/abs/2604.01658">arXiv:2604.01658</a>) attacks that plateau on three fronts, and bene implements all three.</p>
+<h3 id="front-1-detect-stagnation-force-a-pivot">Front 1 — detect stagnation, force a pivot</h3>
+<p>Once <code>stagnation_threshold</code> consecutive iterations close without a new best (default 3), the next digest arrives carrying a banner:</p>
 <div class="codehilite"><pre><span></span><code>╔══════════════════════════════════════════════════════════════════╗
-║  必须转向 (PIVOT REQUIRED)  —  连跪=4  霸榜分=0.74               ║
+║  PIVOT REQUIRED  —  stagnant=4  best=0.74                        ║
 ║                                                                  ║
-║  已经被榨干的老路：                                              ║
-║    • 角色扮演 (工程师/审核者) — 天花板卡在 0.74                    ║
-║    • Few-shot 硬塞 — 每类塞 1-4 个，边际效应递减                    ║
-║    • 带对比用例的思维链 (CoT) — 摸到了天花板，但没法突破           ║
+║  Exhausted approaches:                                           ║
+║    • Role-playing (engineer/reviewer) — ceiling at 0.74          ║
+║    • Few-shot examples — 1-4 per class, diminishing returns       ║
+║    • CoT with contrast — matched best but did not improve         ║
 ║                                                                  ║
-║  强制任务：请拿出一套八竿子打不着的全新流派出来。                ║
+║  Required: propose an orthogonal direction.                      ║
 ╚══════════════════════════════════════════════════════════════════╝
 </code></pre></div>
 
-<p>想再混一个微调的变种？没门了。一旦看见这块 <code>PIVOT REQUIRED</code>，proposer 就必须连根拔起换一条截然不同的路线走。</p>
-<p>在 <code>bene.yaml</code> 调阈值：</p>
+<p>Another role-playing variant is no longer on the menu; once the digest says <code>PIVOT REQUIRED</code>, the proposer has to switch families of approach.</p>
+<p>Tune the thresholds in <code>bene.yaml</code>:</p>
 <div class="codehilite"><pre><span></span><code><span class="nt">search</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">stagnation_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span><span class="w">    </span><span class="c1"># 连吃 N 轮败仗后强行拔高</span>
-<span class="w">  </span><span class="nt">consolidation_every</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6</span><span class="w">     </span><span class="c1"># 每隔 K 轮把学到的花活收割进技能库</span>
+<span class="w">  </span><span class="nt">stagnation_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span><span class="w">    </span><span class="c1"># default 3 — pivot fires after N non-improving iters</span>
+<span class="w">  </span><span class="nt">consolidation_every</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6</span><span class="w">     </span><span class="c1"># default 5 — skills heartbeat every K iters</span>
 </code></pre></div>
 
-<p>或者在代码里：</p>
+<p>or per search:</p>
 <div class="codehilite"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">SearchConfig</span><span class="p">(</span>
     <span class="n">benchmark</span><span class="o">=</span><span class="s2">&quot;code_review&quot;</span><span class="p">,</span>
     <span class="n">stagnation_threshold</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
@@ -639,147 +646,147 @@ Level 10 │  184 chars ( 节约 97%) │ 纯度=37.5% │ 3/8 题全对
 <span class="p">)</span>
 </code></pre></div>
 
-<h3 id="_7">第二杀招 — 三层叠甲的记忆体</h3>
-<p>档案馆里会多出三个极其硬核的目录：</p>
+<h3 id="front-2-memory-in-three-layers">Front 2 — memory in three layers</h3>
+<p>Three structured directories join the search archive:</p>
 <table>
 <thead>
 <tr>
-<th>目录</th>
-<th>里头藏啥</th>
-<th>搞啥名堂</th>
+<th>Directory</th>
+<th>Contents</th>
+<th>Purpose</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>/attempts/</code></td>
-<td>每套方案的 <code>{id, 分数, 状态}</code> 缩水表</td>
-<td>方便 proposer 一眼扫穿，免得把源代码塞爆显存</td>
+<td><code>{id, scores, status}</code> per harness</td>
+<td>Fast proposer scanning without loading full source</td>
 </tr>
 <tr>
 <td><code>/notes/</code></td>
-<td>逐轮用 markdown 写下的血泪日记</td>
-<td>这堆日记会塞进下一轮摘要里，逼着 proposer 去反刍自己过去的推断</td>
+<td>Per-iteration markdown observations</td>
+<td>Injected into next digest so proposer builds on its own reasoning</td>
 </tr>
 <tr>
 <td><code>/skills/</code></td>
-<td>从日记里蒸馏出来的可复用绝技套路</td>
-<td>会被刻写进知识网 (knowledge agent) 里，拿去当未来的起步 seed</td>
+<td>Reusable patterns distilled from notes</td>
+<td>Persisted to knowledge agent — available as seeds for future searches</td>
 </tr>
 </tbody>
 </table>
-<p>哪怕是战役进行到一半，也能通过 MCP 直接刻下新学到的绝活：</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># 战役胶着时，Claude Code 可以随手记下：</span>
+<p>A skill can be written through MCP mid-session:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># From Claude Code during a search session</span>
 <span class="n">mh_write_skill</span><span class="p">(</span>
     <span class="n">search_agent_id</span><span class="o">=</span><span class="n">search_id</span><span class="p">,</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;two_step_decomposition&quot;</span><span class="p">,</span>
-    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;把分类强拆两步：先问 &#39;有错吗？&#39; 然后再定罪&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Split classification: &#39;correctness problem?&#39; then severity routing&quot;</span><span class="p">,</span>
     <span class="n">code_template</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">STEP 1 — 拆解: 有错吗 (yes/no), 波及范围有多大 (high/medium/low)</span>
-<span class="s2">STEP 2 — 定罪: yes+high → BLOCKER, yes → IMPORTANT...</span>
+<span class="s2">STEP 1 — Extract: correctness (yes/no), impact (high/medium/low)</span>
+<span class="s2">STEP 2 — Route: correctness=yes+high → BLOCKER, correctness=yes → IMPORTANT, etc.</span>
 <span class="s2">&quot;&quot;&quot;</span>
 <span class="p">)</span>
 </code></pre></div>
 
-<p>今天蒸出来的绝活，就是明天战役的火种。敲一句 <code>bene mh knowledge</code>，满载而归。</p>
-<h3 id="_8">第三杀招 — 群狼环伺，一个中心枢纽</h3>
-<p>把那只孤狼 proposer 踢走，在这个 benchmark 上直接拉起一个狼群。大家各有各的开局，并且每隔一段时间就在枢纽 (hub) 里碰头换情报：</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># 吹响群狼协同进化的号角 (MCP 或者 Python 都能玩)</span>
+<p>Today's distilled skill becomes tomorrow's seed. <code>bene mh knowledge</code> lists everything accumulated so far.</p>
+<h3 id="front-3-several-searchers-one-hub">Front 3 — several searchers, one hub</h3>
+<p>Instead of a lone searcher, spawn a population on the same benchmark, each starting somewhere different and trading discoveries through a hub:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Launch co-evolution (MCP tool or Python API)</span>
 mh_spawn_coevolution<span class="o">(</span><span class="nv">benchmark</span><span class="o">=</span><span class="s2">&quot;code_review&quot;</span>,<span class="w"> </span><span class="nv">n_agents</span><span class="o">=</span><span class="m">3</span><span class="o">)</span>
 </code></pre></div>
 
-<p>每只狼的生活极其规律：先在自己的小圈子里卷；每卷够 <code>hub_sync_interval</code> (默认 2) 轮，就跑去 hub 里碰个头；去扒一扒兄弟们最猛的 harness 和学到的绝活，全揣进自己的档案馆；接着这些泊来品就会堂而皇之地出现在你的帕累托前沿和下一轮的摘要里。</p>
-<div class="codehilite"><pre><span></span><code>Hub 的巢穴 (VFS):
-  /best_per_agent/agent_0/   ← 众狼上贡的极品
+<p>Per agent, the cycle is: run your own proposer loop; every <code>hub_sync_interval</code> iterations (default 2), sync with the hub; import peers' best harnesses and skills into your own archive; let the imports show up in your Pareto frontier and your next digest.</p>
+<div class="codehilite"><pre><span></span><code>Hub VFS:
+  /best_per_agent/agent_0/   ← best from each agent
   /best_per_agent/agent_1/
   /best_per_agent/agent_2/
-  /shared_skills/            ← 大家一起攒出的绝活库
-  /shared_attempts/          ← 所有狼的简明阵亡名单
+  /shared_skills/            ← skills any agent has written
+  /shared_attempts/          ← compact summaries from all agents
 </code></pre></div>
 
-<p>在这套 CORAL 战法中，群狼进化的突破频率比独狼直接高出了 <strong>3-10倍</strong>。有 36% 的突破性进展直接踩在了隔壁兄弟的肩膀上 —— 而这种站在巨人肩膀上的变种，有 17% 的概率能再次突破 (相比大盘只有可怜的 9%)。</p>
-<h3 id="_9">从黑框框里查状态抓技能</h3>
-<div class="codehilite"><pre><span></span><code><span class="c1"># 去扒一个正在跑的战役卡死了没</span>
+<p>In the CORAL paper, co-evolving agents improved <strong>3-10×</strong> more often than a single searcher. 36% of cross-agent attempts extended a peer's work directly — and those improved 17% of the time, against 9% overall.</p>
+<h3 id="status-and-skills-from-the-cli">Status and skills from the CLI</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Check stagnation state of a running search</span>
 bene<span class="w"> </span>mh<span class="w"> </span>status<span class="w"> </span>&lt;search-agent-id&gt;
-<span class="c1"># → stagnant_iterations: 3, last_pivot_at: iter 7 (连跪了三轮，上次被逼急了转向是在第七轮)</span>
+<span class="c1"># → stagnant_iterations: 3, last_pivot_at: iter 7</span>
 
-<span class="c1"># 端出所有 benchmark 上积攒出来的全套绝活</span>
+<span class="c1"># View accumulated skills across all benchmarks</span>
 bene<span class="w"> </span>mh<span class="w"> </span>knowledge
 
-<span class="c1"># 刻进去一条新绝活 (MCP 专武 `mh_write_skill` 也能干)</span>
-<span class="c1"># MCP 要传这个: { &quot;search_agent_id&quot;: &quot;&lt;id&gt;&quot;, &quot;name&quot;: &quot;two_step&quot;, &quot;description&quot;: &quot;...&quot;, &quot;code_template&quot;: &quot;...&quot; }</span>
+<span class="c1"># Write a skill (available via the MCP tool `mh_write_skill`)</span>
+<span class="c1"># The MCP tool accepts: { &quot;search_agent_id&quot;: &quot;&lt;id&gt;&quot;, &quot;name&quot;: &quot;two_step&quot;, &quot;description&quot;: &quot;...&quot;, &quot;code_template&quot;: &quot;...&quot; }</span>
 </code></pre></div>
 
-<h3 id="_10">一场被扒得连内裤都不剩的实战解析</h3>
-<p>这是一场只有 15 轮的代码评审大搜捕 (胜率从 48% 一路狂飙到 83%)，它把这三招全玩了一遍：</p>
+<h3 id="the-demo-decoded">The demo, decoded</h3>
+<p>A single 15-iteration code-review search (48%→83%) exercises every front:</p>
 <ul>
-<li>轮次 1-7 — 玩角色扮演和塞 few-shot 的套路，死活卡在 0.74 的烂泥潭里</li>
-<li>第 7 轮 — <code>stagnant_iters=4</code> 阈值引爆了 CORAL 死亡宣判，逼它转向</li>
-<li>第 8 轮 — 它交出了 "两步强拆法" (two-step decomposition)，一举刺破苍穹 (+0.04)</li>
-<li>第 10 轮 — 心跳机制启动，把这份功力当场刻写进知识网 agent 里</li>
-<li>第 10 轮 — two_step_attr_merged 横空出世，以 0.83 的傲人战绩结束战役</li>
+<li>Iterations 1-7 — role-play and few-shot variants stall at 0.74</li>
+<li>Iteration 7 — <code>stagnant_iters=4</code> trips the CORAL pivot</li>
+<li>Iteration 8 — a two-step decomposition clears the ceiling (+0.04)</li>
+<li>Iteration 10 — the consolidation heartbeat files skills to the knowledge agent</li>
+<li>Iteration 10 — two_step_attr_merged lands the final 0.83</li>
 </ul>
-<p><strong>总开销 $0.14，耗时 12 分钟，硬拔了 35 个点的准确率。</strong></p>
+<p><strong>$0.14, 12 minutes, 35-point improvement.</strong></p>
 <hr />
-<h2 id="v020_2">绝对能传给下一代的遗产 (v0.2.0)</h2>
-<p>这场战役打完就散？没这回事。那些赢下战争的 harness 会被统统充公，归入一个名叫 "bene-knowledge" 的常驻 agent 麾下。当你在同样的 benchmark 上拉起下一场战役时，这些祖宗留下的心血会被自动调出来，充当额外赠送的开局 seeds。</p>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>knowledge<span class="w">       </span><span class="c1"># 把所有 benchmark 攒下的绝活全部抖搂出来</span>
-bene<span class="w"> </span>mh<span class="w"> </span>lint<span class="w"> </span>&lt;id&gt;<span class="w">       </span><span class="c1"># 给档案馆做个全身体检</span>
-bene<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;TF-IDF&quot;</span><span class="w">    </span><span class="c1"># 拿着全文检索引擎，把所有 agent 挖地三尺</span>
-bene<span class="w"> </span>index<span class="w"> </span>&lt;agent-id&gt;<span class="w">   </span><span class="c1"># 给它建一份人类能直接点的 /index.md 导引</span>
+<h2 id="discoveries-that-carry-forward-v020">Discoveries that carry forward (v0.2.0)</h2>
+<p>A finished search no longer takes its lessons to the grave. Winning harnesses get filed under a persistent "bene-knowledge" agent, and the next search on that benchmark loads those discoveries as extra seeds — automatically.</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>knowledge<span class="w">       </span><span class="c1"># view discoveries by benchmark</span>
+bene<span class="w"> </span>mh<span class="w"> </span>lint<span class="w"> </span>&lt;id&gt;<span class="w">       </span><span class="c1"># health-check a search archive</span>
+bene<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;TF-IDF&quot;</span><span class="w">    </span><span class="c1"># full-text search across all agents</span>
+bene<span class="w"> </span>index<span class="w"> </span>&lt;agent-id&gt;<span class="w">   </span><span class="c1"># build navigable /index.md</span>
 </code></pre></div>
 
 <hr />
-<h2 id="benchmarks">随书附赠的考卷 (Benchmarks)</h2>
-<p>Meta-Harness 论文原版里跑出来的三大考卷，bene 全给你备好了加载器。头一回会从 HuggingFace 往下薅；只要下过了，它就会老老实实蹲在 <code>~/.cache/bene/datasets/</code> 里，从此断网也能跑。</p>
+<h2 id="benchmarks-from-the-paper">Benchmarks from the paper</h2>
+<p>Three published datasets used in the Meta-Harness paper ship with loaders. The first run downloads from HuggingFace; after that, the copy in <code>~/.cache/bene/datasets/</code> serves every run offline.</p>
 <table>
 <thead>
 <tr>
-<th>考卷代号</th>
-<th>枪栓 (Loader)</th>
-<th>到底是考啥的</th>
-<th>哪里搞来的</th>
+<th>Benchmark</th>
+<th>Loader</th>
+<th>Task</th>
+<th>Source</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>lawbench</code></td>
 <td><code>load_lawbench()</code></td>
-<td>枯燥的法律文书定性</td>
+<td>Legal text classification</td>
 <td>HuggingFace</td>
 </tr>
 <tr>
 <td><code>symptom2disease</code></td>
 <td><code>load_symptom2disease()</code></td>
-<td>听病情断绝症</td>
+<td>Medical symptom-to-disease mapping</td>
 <td>HuggingFace</td>
 </tr>
 <tr>
 <td><code>uspto_50k</code></td>
 <td><code>load_uspto50k()</code></td>
-<td>把化学反应分门别类</td>
+<td>Chemical reaction classification</td>
 <td>HuggingFace</td>
 </tr>
 </tbody>
 </table>
-<h3 id="_11">在终端敲出指令</h3>
-<p>由于论文里的三本神卷 (<code>lawbench</code>, <code>symptom2disease</code>, <code>uspto_50k</code>) 全给锁进了 Python API 里，它们不接客。要在终端体验，请翻牌内置的三本大卷：</p>
+<h3 id="from-the-cli_1">From the CLI</h3>
+<p>The three paper benchmarks (<code>lawbench</code>, <code>symptom2disease</code>, <code>uspto_50k</code>) are available via the Python API rather than direct CLI arguments. To run a search from the CLI, use one of the built-in benchmarks:</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>text_classify<span class="w"> </span>-n<span class="w"> </span><span class="m">20</span><span class="w"> </span>-k<span class="w"> </span><span class="m">3</span>
 bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>math_rag<span class="w"> </span>-n<span class="w"> </span><span class="m">20</span><span class="w"> </span>-k<span class="w"> </span><span class="m">3</span>
 bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>agentic_coding<span class="w"> </span>-n<span class="w"> </span><span class="m">10</span><span class="w"> </span>-k<span class="w"> </span><span class="m">2</span>
 </code></pre></div>
 
-<h3 id="python_1">用 Python 接盘</h3>
+<h3 id="from-python_1">From Python</h3>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene.metaharness.benchmarks.paper_datasets</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">load_lawbench</span><span class="p">,</span>
     <span class="n">load_symptom2disease</span><span class="p">,</span>
     <span class="n">load_uspto50k</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="c1"># 每抠一下扳机，就会送出一个随时可以扔进 MetaHarnessSearch 的 benchmark 对象</span>
+<span class="c1"># Each returns a benchmark object ready for MetaHarnessSearch</span>
 <span class="n">bench</span> <span class="o">=</span> <span class="n">load_lawbench</span><span class="p">()</span>
-<span class="c1"># 或者</span>
+<span class="c1"># or</span>
 <span class="n">bench</span> <span class="o">=</span> <span class="n">load_symptom2disease</span><span class="p">()</span>
-<span class="c1"># 又或者</span>
+<span class="c1"># or</span>
 <span class="n">bench</span> <span class="o">=</span> <span class="n">load_uspto50k</span><span class="p">()</span>
 
 <span class="n">search</span> <span class="o">=</span> <span class="n">MetaHarnessSearch</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">router</span><span class="p">,</span> <span class="n">bench</span><span class="p">,</span> <span class="n">SearchConfig</span><span class="p">(</span>
@@ -791,7 +798,7 @@ bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </s
 </code></pre></div>
 
 <hr />
-<h2 id="python_2">在 Python 里发号施令</h2>
+<h2 id="drive-it-from-python">Drive it from Python</h2>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bene</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bene.metaharness</span><span class="w"> </span><span class="kn">import</span> <span class="n">SearchConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bene.metaharness.search</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetaHarnessSearch</span>
@@ -805,7 +812,7 @@ bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </s
     <span class="n">benchmark</span><span class="o">=</span><span class="s2">&quot;text_classify&quot;</span><span class="p">,</span>
     <span class="n">max_iterations</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
     <span class="n">candidates_per_iteration</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-    <span class="n">objectives</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;+accuracy&quot;</span><span class="p">,</span> <span class="s2">&quot;-context_cost&quot;</span><span class="p">],</span> <span class="c1"># 既要命又要钱</span>
+    <span class="n">objectives</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;+accuracy&quot;</span><span class="p">,</span> <span class="s2">&quot;-context_cost&quot;</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">bench</span> <span class="o">=</span> <span class="n">get_benchmark</span><span class="p">(</span><span class="s2">&quot;text_classify&quot;</span><span class="p">,</span> <span class="n">dataset_path</span><span class="o">=</span><span class="s2">&quot;my_data.csv&quot;</span><span class="p">)</span>
@@ -818,54 +825,54 @@ bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </s
 </code></pre></div>
 
 <hr />
-<h2 id="_12">把所有开关列在同一处</h2>
-<div class="codehilite"><pre><span></span><code><span class="c1"># 鸣枪开打</span>
-bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>哪份考卷<span class="w"> </span>-n<span class="w"> </span>跑几轮<span class="w"> </span>-k<span class="w"> </span>每轮憋几个变种
-<span class="w">    </span>--proposer-model<span class="w"> </span>MODEL<span class="w">    </span><span class="c1"># 强行指定拿谁当 proposer</span>
-<span class="w">    </span>--eval-model<span class="w"> </span>MODEL<span class="w">        </span><span class="c1"># 强行指定拿谁当判卷官</span>
-<span class="w">    </span>--max-parallel<span class="w"> </span>N<span class="w">          </span><span class="c1"># 并发爆破</span>
-<span class="w">    </span>--eval-subset<span class="w"> </span>N<span class="w">           </span><span class="c1"># 切片抽查，图个快</span>
-<span class="w">    </span>--dry-run<span class="w">                 </span><span class="c1"># 只准碰开局 seed，摸个底就滚</span>
-<span class="w">    </span>--background<span class="w">              </span><span class="c1"># 一把甩给后台 worker</span>
+<h2 id="every-flag-one-place">Every flag, one place</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Start a search</span>
+bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>BENCHMARK<span class="w"> </span>-n<span class="w"> </span>ITERATIONS<span class="w"> </span>-k<span class="w"> </span>CANDIDATES
+<span class="w">    </span>--proposer-model<span class="w"> </span>MODEL<span class="w">    </span><span class="c1"># Force model for proposer</span>
+<span class="w">    </span>--eval-model<span class="w"> </span>MODEL<span class="w">        </span><span class="c1"># Force model for evaluation</span>
+<span class="w">    </span>--max-parallel<span class="w"> </span>N<span class="w">          </span><span class="c1"># Parallel evaluations</span>
+<span class="w">    </span>--eval-subset<span class="w"> </span>N<span class="w">           </span><span class="c1"># Subsample problems for speed</span>
+<span class="w">    </span>--dry-run<span class="w">                 </span><span class="c1"># Evaluate seeds only, report baseline</span>
+<span class="w">    </span>--background<span class="w">              </span><span class="c1"># Run as detached worker process</span>
 
-<span class="c1"># 把上次死掉的局强行救活，接着跑</span>
-bene<span class="w"> </span>mh<span class="w"> </span>resume<span class="w"> </span>那个死掉的搜索AGENT_ID
+<span class="c1"># Resume an interrupted search from last completed iteration</span>
+bene<span class="w"> </span>mh<span class="w"> </span>resume<span class="w"> </span>SEARCH_AGENT_ID
 
-<span class="c1"># 站在边上吃瓜盯梢</span>
-bene<span class="w"> </span>mh<span class="w"> </span>status<span class="w"> </span>正在跑的搜索AGENT_ID
+<span class="c1"># Monitor a running search</span>
+bene<span class="w"> </span>mh<span class="w"> </span>status<span class="w"> </span>SEARCH_AGENT_ID
 
-<span class="c1"># 看看帕累托金字塔尖</span>
-bene<span class="w"> </span>mh<span class="w"> </span>frontier<span class="w"> </span>正在跑的搜索AGENT_ID
+<span class="c1"># View the Pareto frontier</span>
+bene<span class="w"> </span>mh<span class="w"> </span>frontier<span class="w"> </span>SEARCH_AGENT_ID
 
-<span class="c1"># 抓某一个跑完的 harness 出来毒打</span>
-bene<span class="w"> </span>mh<span class="w"> </span>inspect<span class="w"> </span>搜索AGENT_ID<span class="w"> </span>指定的HARNESS_ID
+<span class="c1"># Inspect a specific harness</span>
+bene<span class="w"> </span>mh<span class="w"> </span>inspect<span class="w"> </span>SEARCH_AGENT_ID<span class="w"> </span>HARNESS_ID
 
-<span class="c1"># 给档案馆把个脉</span>
-bene<span class="w"> </span>mh<span class="w"> </span>lint<span class="w"> </span>搜索AGENT_ID
+<span class="c1"># Health-check a search archive</span>
+bene<span class="w"> </span>mh<span class="w"> </span>lint<span class="w"> </span>SEARCH_AGENT_ID
 
-<span class="c1"># 逛逛那座装满各路绝活的知识库</span>
+<span class="c1"># View persistent knowledge base</span>
 bene<span class="w"> </span>mh<span class="w"> </span>knowledge
 </code></pre></div>
 
 <hr />
-<h2 id="_13">血脉渊源和实战靶场</h2>
+<h2 id="sources-and-worked-examples">Sources and worked examples</h2>
 <ul>
-<li><strong>那篇造神论文:</strong> <a href="https://yoonholee.com/meta-harness/">Meta-Harness: Optimal LLM Harness Design through Evolutionary Search</a> (arXiv:2603.28052)</li>
-<li><strong>开山鼻祖的源码:</strong> <a href="https://github.com/stanford-iris-lab/meta-harness-tbench2-artifact">stanford-iris-lab/meta-harness-tbench2-artifact</a></li>
-<li><strong>缔造者们:</strong> Yoonho Lee, Roshen Nair, Qizheng Zhang, Kangwook Lee, Omar Khattab, Chelsea Finn (集结了 Stanford / KRAFTON / MIT 的众神)</li>
+<li><strong>The paper:</strong> <a href="https://yoonholee.com/meta-harness/">Meta-Harness: Optimal LLM Harness Design through Evolutionary Search</a> (arXiv:2603.28052)</li>
+<li><strong>Original code:</strong> <a href="https://github.com/stanford-iris-lab/meta-harness-tbench2-artifact">stanford-iris-lab/meta-harness-tbench2-artifact</a></li>
+<li><strong>Authors:</strong> Yoonho Lee, Roshen Nair, Qizheng Zhang, Kangwook Lee, Omar Khattab, Chelsea Finn (Stanford / KRAFTON / MIT)</li>
 </ul>
-<h3 id="_14">可以直接抄的靶场代码</h3>
-<p><strong>给工程师准备的硬核靶场:</strong></p>
+<h3 id="worked-examples">Worked examples</h3>
+<p><strong>Technical:</strong></p>
 <ul>
-<li><a href="../../examples/meta_harness_support_tickets.py">客服工单分流器</a> — 把上面扯了半天的实战全撸成了可执行的 Python，连自带的数据集都包好了</li>
-<li><a href="../../examples/meta_harness_math.py">拿 RAG 搞定数学题</a> — 看看到底什么样的外挂检索，才能喂饱解数学题的模型</li>
-<li><a href="../../examples/meta_harness_coding.py">把 Agent 的代码引擎拉爆</a> — 死磕一套极致的编程 agent 专属脚手架</li>
+<li><a href="../../examples/meta_harness_support_tickets.py">Support ticket classifier</a> — the walkthrough above as runnable code, custom dataset and benchmark included</li>
+<li><a href="../../examples/meta_harness_math.py">Math retrieval optimization</a> — which retrieval strategy serves math solving best</li>
+<li><a href="../../examples/meta_harness_coding.py">Agentic coding optimization</a> — tune the harness around a coding agent</li>
 </ul>
-<p><strong>给老板看能赚钱的靶场:</strong></p>
+<p><strong>Business workflows:</strong></p>
 <ul>
-<li><a href="../../examples/meta_harness_clv_prediction.py">盘一盘客户 LTV 生命周期价值</a> — 拿着流失预警，按分层给客户喂不同的 prompt，把 LTV 抠到骨头里</li>
-<li><a href="../../examples/meta_harness_crm_campaigns.py">群发 CRM 大字报</a> — 语气、CTA 还有客制化文案的千人千面大清洗</li>
-<li><a href="../../examples/meta_harness_fraud_detection.py">抓骗子 (反欺诈)</a> — 左手红线清单，右手对比样本，把查杀率和命中率直接干满</li>
+<li><a href="../../examples/meta_harness_clv_prediction.py">Customer Lifetime Value (CLV/LTV)</a> — segment-aware prompting and churn-first reasoning for CLV prediction</li>
+<li><a href="../../examples/meta_harness_crm_campaigns.py">CRM Campaign Messages</a> — tone, CTA, and personalization tuned for each segment of customers</li>
+<li><a href="../../examples/meta_harness_fraud_detection.py">Fraud Detection</a> — red-flag checklists and contrastive examples in service of recall and precision</li>
 </ul>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/meta-harness.md" target="_blank" rel="noopener noreferrer">docs/meta-harness.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>

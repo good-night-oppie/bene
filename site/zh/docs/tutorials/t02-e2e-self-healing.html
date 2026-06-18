@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>在 0.3 秒内拔掉 Agent 捅出的娄子，而且你的代码库连皮都不会破 — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — 在 0.3 秒内拔掉 Agent 捅出的娄子，而且你的代码库连皮都不会破" />
+<title>Undo an Agent&#x27;s Bad Fix in 0.3 Seconds, Repo Untouched — 中文索引 / 翻译中</title>
+<meta name="description" content="BENE 0.2.0 文档 — Undo an Agent&#x27;s Bad Fix in 0.3 Seconds, Repo Untouched" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -242,15 +242,15 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="../index.html">docs</a> / tutorials/t02-e2e-self-healing.md</div>
-<h1 id="03-agent">在 0.3 秒内拔掉 Agent 捅出的娄子，而且你的代码库连皮都不会破</h1>
-<p>这篇教程会教你如何放纵一只 agent 去做高危修复：亲眼看着它把事情搞砸，然后只把这只惹祸的 agent 一键回滚到作案前的清白之身 —— 而你本地的 git checkout，以及其他正在跑的 agent，连一根毛都不会掉。</p>
+<h1 id="undo-an-agents-bad-fix-in-03-seconds-repo-untouched">Undo an Agent's Bad Fix in 0.3 Seconds, Repo Untouched</h1>
+<p>This tutorial lets you give an agent a risky repair, watch the repair go wrong, and rewind that one agent to its pre-attempt state — while your checkout and every other running agent stay exactly as they were.</p>
 <blockquote>
-<p><strong>动手前先拍快照，意味着就算天塌下来，你付出的代价也只是一行回滚指令，而不是浪费掉你一整个早上的光阴。</strong></p>
+<p><strong>A checkpoint before each risky edit means a failed fix costs one command, not a lost morning.</strong></p>
 </blockquote>
-<p>你即将走完的实盘演练长这样：先遇到一个飘红的测试；接着一个看似合理的修复硬生生把 1 个红的搞成了 4 个；启动单 agent 局部回滚；让 agent 给自己写一份翻车验尸报告；最后掏出对的解法，一口气把整个套件打成 47 个绿灯。这里的每一条流水，全部来自于一次真实的抓轨：</p>
-<p><em>一镜到底的排障流水：放狗，拍快照，引发连环翻车 (从 1 挂到 4)，时光倒流，出具验尸报告，掏出正确补丁，47 绿通关。</em></p>
-<h2 id="_1">陷阱：一个飘红的用例，和一场即将到来的雪崩</h2>
-<p>一个支付服务刚经历了一场重构，把 <code>amount</code> 字段从 <code>float</code> 统改成了 <code>str</code>，说是为了保证 API 序列化的统一。结果 CI 跑出来，只挂了一个：</p>
+<p>The loop you will follow: one red test, a plausible fix that turns it into four, a per-agent restore, a root-cause report the agent wrote about itself, and the repair that takes the suite to 47 green. Every transcript comes from the recorded run:</p>
+<p><em>The whole loop in one take: spawn, checkpoint, cascade to 4 failures, restore, root-cause report, correct fix, 47 green.</em></p>
+<h2 id="the-trap-a-red-test-that-invites-a-cascade">The trap: a red test that invites a cascade</h2>
+<p>A payment service has just refactored its <code>amount</code> field from <code>float</code> to <code>str</code> to keep API serialization consistent. CI reports a single failure:</p>
 <div class="codehilite"><pre><span></span><code>FAILED tests/test_payment.py::test_payment_decimal_precision
 AssertionError: 10.00 != 10.0
 
@@ -260,44 +260,44 @@ Got:      10.0
 1 failed, 46 passed in 3.2s
 </code></pre></div>
 
-<p>精度 Bug 简直就是在勾引你去做类型强转，而类型强转，恰恰是所有雪崩的起点：<code>float</code>、<code>Decimal</code> 还有 <code>str</code>，它们各自在判等、舍入以及 JSON 化上，都有自己的一套脾气。在这里随手敲一行看似人畜无害的补丁，很容易就会把一个红灯超级加倍成四个 —— 最后让你满头大汗地去修你自己糊的屎，而不是修原来的 Bug。</p>
-<h2 id="_2">扎营：把这颗雷丢进沙盒里</h2>
-<p>放出去一只负责 QA (质量保障) 的 agent。这小子会领到一份整个支付服务的全量拷贝，而这份拷贝，死死地关在只属于它的、由 SQLite 撑腰的虚拟文件系统 (VFS) 里 —— 这是一个绝对物理隔离的黑盒，里面的爆炸绝对波及不到你本地的磁盘，也绝对伤不到它的兄弟 agent。</p>
+<p>Precision bugs invite type-juggling repairs, and type juggling is where cascades begin: <code>float</code>, <code>Decimal</code>, and <code>str</code> each have their own ideas about equality, rounding, and JSON. A plausible one-liner here can multiply a single red test into four — leaving you chasing your own repair instead of the bug.</p>
+<h2 id="set-up-give-the-failure-a-sandbox">Set up: give the failure a sandbox</h2>
+<p>Spawn a QA agent. It receives a full copy of the service inside its own SQLite-backed virtual filesystem (VFS) — a private workspace where breakage cannot reach your checkout or any sibling agent.</p>
 <div class="codehilite"><pre><span></span><code>bene spawn payment-qa --from ./payment-service
 
-# [payment-qa] agent 成功投放到战场  vfs_id=pqa-8f3a
-# [payment-qa] 开始跑 pytest...
+# [payment-qa] agent spawned  vfs_id=pqa-8f3a
+# [payment-qa] running pytest...
 
 FAILED tests/test_payment.py::test_payment_decimal_precision
   AssertionError: assert Decimal(&#39;10.00&#39;) == 10.0
 
   payment/models.py line 47:
-    return float(self.amount)  # ← 这就是重构后留下的那行屎
+    return float(self.amount)  # ← this line, post-refactor
 
 1 failed, 46 passed
 </code></pre></div>
 
-<p>现在，这颗飘红的雷被完完全全关进了 <code>payment-qa</code> 的 VFS 结界里。你硬盘上的东西，连个字节都没动。</p>
-<h2 id="agent-repo">买保险：拍快照，只拍 agent 的，不拍 repo 的</h2>
-<p>这小子登场后的第一个动作，不是动刀子，而是拍照。一个快照 (checkpoint)，就是在特定时间点上，把这只 agent 整个 VFS 里的身家性命全盘冻结。注意，这个结界只罩着 <code>payment-qa</code>，别人无权干涉。</p>
+<p>The red test now lives entirely inside <code>payment-qa</code>'s VFS. Nothing on your disk moved.</p>
+<h2 id="insure-first-checkpoint-the-agent-not-the-repo">Insure first: checkpoint the agent, not the repo</h2>
+<p>The agent's first action is not an edit — it is a snapshot. A checkpoint captures this one agent's full VFS at a moment in time, scoped to <code>payment-qa</code> and nobody else.</p>
 <div class="codehilite"><pre><span></span><code>bene checkpoint payment-qa --label pre-fix-attempt
 
-# 快照已生成: pre-fix-attempt
-# 冻结了多少个文件: 23
-# VFS 里的战况: 1 个红灯, 46 个绿灯
-# 时间戳: 2026-04-11T02:14:33Z
+# Checkpoint created: pre-fix-attempt
+# Files snapshotted: 23
+# VFS state: 1 test failing, 46 passing
+# Timestamp: 2026-04-11T02:14:33Z
 </code></pre></div>
 
-<p>23 个文件，外加那份确凿的战损底稿 (1 挂 46 过)，全部备案。如果等下这小子乱动手脚把事情搞砸了，所谓的 "抢救" 无非就是把这单只 agent 强行摁回到这个节点 —— 没有任何全局的 repo 重置，也不会有任何一颗流弹伤到其他正在半空飞行的 agent。</p>
-<h2 id="1-4">看着它作死：从 1 挂变成 4 挂</h2>
-<p>这小子的第一次尝试，跟大多数人类工程师的本能反应一模一样。断言里要的是 <code>Decimal('10.00')</code>；这字段不知道吐了个什么玩意出来；那就粗暴地套个 <code>float()</code> 强转，齐活。</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># payment/models.py — agent 的第一刀</span>
+<p>23 files, with the known-bad baseline (1 failing, 46 passing) on record. If the next edit goes sideways, recovery means returning this one agent to this label — no repo-wide reset, no collateral damage to agents mid-flight.</p>
+<h2 id="let-it-break-one-failure-becomes-four">Let it break: one failure becomes four</h2>
+<p>The first attempt is the one most engineers would reach for. The assertion wants <code>Decimal('10.00')</code>; the field returns something else; so coerce with <code>float()</code> and move on.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># payment/models.py — agent&#39;s first attempt</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_amount</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="o">-</span>   <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">amount</span>
-<span class="o">+</span>   <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">amount</span><span class="p">)</span>  <span class="c1"># 暴力洗成 float</span>
+<span class="o">+</span>   <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">amount</span><span class="p">)</span>  <span class="c1"># normalize to float</span>
 </code></pre></div>
 
-<p>在处理钱的时候，这种强转会直接粉碎掉单元测试死死守住的底线：<code>float(Decimal('10.00'))</code> 会被直接阉割成 <code>10.0</code>，小数点后两位的精度当场灰飞烟灭。原本只红 1 个的局，现在红了 4 个：</p>
+<p>For money, that coercion destroys the very property the test protects: <code>float(Decimal('10.00'))</code> comes back as <code>10.0</code>, two decimal places gone. Four tests now fail where one did:</p>
 <div class="codehilite"><pre><span></span><code>FAILED tests/test_payment.py::test_payment_decimal_precision
 FAILED tests/test_payment.py::test_payment_total_rounding
 FAILED tests/test_payment.py::test_invoice_line_items_sum
@@ -306,80 +306,80 @@ FAILED tests/test_payment.py::test_refund_partial_amount
 4 failed, 43 passed in 3.4s
 </code></pre></div>
 
-<p>雪崩开始了。如果你是在平时的 git 分支上干活，到这一步，大多数人已经开始在这堆烂摊子上往死里垒第二层屎了。</p>
-<h2 id="_3">抢救：一条指令，让它时光倒流</h2>
+<p>The cascade is live. On an ordinary branch this is where the second guess gets committed on top of the first.</p>
+<h2 id="recover-rewind-one-agent-in-one-command">Recover: rewind one agent in one command</h2>
 <div class="codehilite"><pre><span></span><code>bene restore payment-qa --label pre-fix-attempt
 
-# 正在把 payment-qa 摁回快照点: pre-fix-attempt
-# 时光倒流影响了 1 个文件: payment/models.py
+# Restoring payment-qa to checkpoint: pre-fix-attempt
+# Reverting 1 file: payment/models.py
 # @@ -44,7 +44,7 @@
 #  def get_amount(self):
 # -    return float(self.amount)
 # +    return self.amount
 #
-# 抢救完毕，耗时 0.04 秒
-# VFS 战况核实: 1 个红灯, 46 个绿灯 (已确认恢复到了作死前的清白之身)
+# Restore complete in 0.04s
+# VFS state: 1 test failing, 46 passing (pre-fix state confirmed)
 </code></pre></div>
 
-<p>整场回滚只花了 0.04 秒，并且用实打实的战报验明了正身：回到了 1 挂 46 过，跟拍照时分毫不差。就在这套骚操作上演的同时，隔壁那些跑集成测试的、写文档的、扫安全的 agent 兄弟们，全都在各自的轨道上岁月静好 —— 物理隔离的魔法是施加在 VFS 上的，而不是宿主机器的硬盘上。哪怕你同时拉起了 4 只 agent，其中一只哪怕自爆了又复活，其他 3 只连眼皮都不用眨一下。</p>
-<h2 id="git">哪里是 git 够不着的地方，哪里就是审计日志的主场</h2>
+<p>The restore finished in 0.04s and confirmed the baseline: back to 1 failing, 46 passing, exactly as checkpointed. Agents handling integration tests, documentation, and security scanning kept working through the entire rewind — isolation lives in the VFS rather than on the host filesystem, so with 4 agents up, one failing and recovering costs the other 3 nothing.</p>
+<h2 id="where-git-stops-and-the-journal-starts">Where git stops and the journal starts</h2>
 <table>
 <thead>
 <tr>
-<th>你靠手敲 git 能干嘛</th>
-<th>你靠 bene 快照能干嘛</th>
+<th>With git alone</th>
+<th>With a bene checkpoint</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>git reset --hard</code> 直接把整个代码库祖坟给刨了</td>
-<td><code>bene restore</code> 只会让那只惹祸 agent 的 VFS 时光倒流</td>
+<td><code>git reset --hard</code> rewinds the whole repository</td>
+<td><code>bene restore</code> rewinds one agent's VFS</td>
 </tr>
 <tr>
-<td><code>git log</code> 只能死板地记下人类敲过的 commit</td>
-<td>审计流水 (journal) 会把每一次对文件的下刀，连带前后跑出来的测试战报，像烙印一样死死咬在一起</td>
+<td><code>git log</code> records commits</td>
+<td>the event journal records each file write, paired with the test run around it</td>
 </tr>
 <tr>
-<td><code>git stash</code> 必须等你这个碳基生物想起来去敲</td>
-<td>所有的 agent 在动刀子前都会像膝跳反射一样自动拍快照</td>
+<td><code>git stash</code> waits for a human to type it</td>
+<td>agents checkpoint themselves ahead of each risky edit</td>
 </tr>
 <tr>
-<td><code>git bisect</code> 需要你苦逼地二分查找那个万恶之源</td>
-<td>一条 SQL，就能扒出这小子在 02:14:41 到底拉了哪泡屎，硬生生搞出了 3 个新红灯</td>
+<td><code>git bisect</code> hunts the breaking commit</td>
+<td>one SQL query shows what the agent did at 02:14:41 that produced 3 new failures</td>
 </tr>
 </tbody>
 </table>
-<h2 id="agent">验尸：让 agent 自己给自己写检讨</h2>
-<p>就在刚才那波智障操作翻车的时候，这只 agent 已经在它的 VFS 里老老实实写下了一份结构化的验尸报告。因为时光倒流这波操作只抹除了 <code>payment/models.py</code> 里的作案痕迹，所以这份报告被完好无损地保留了下来：</p>
+<h2 id="diagnose-the-agents-own-root-cause-report">Diagnose: the agent's own root-cause report</h2>
+<p>While the bad attempt was unraveling, the agent wrote a structured root-cause report into its VFS. The rewind reverted only <code>payment/models.py</code>, so the report is still there to read:</p>
 <div class="codehilite"><pre><span></span><code>bene read payment-qa /qa/failure_report.md
 
-## 翻车复盘报告: test_payment_decimal_precision
+## Failure Analysis: test_payment_decimal_precision
 
-案发源头：在做算钱这档子事时，精度丢了。
+Root cause: Precision loss in financial calculations.
 
-`amount` 字段本该用 `Decimal` 来保证绝对的算术精度。重构完以后，
-`models.py` 直接裸吐了这个字段的值，而它现在变成了一串字符 (&quot;10.00&quot;)。
-但单元测试那边，死死盯着要一个 Decimal(&#39;10.00&#39;)。
+The `amount` field uses `Decimal` for exact arithmetic. After the
+refactor, `models.py` returns the raw field value which is now a
+string (&quot;10.00&quot;). The test compares against Decimal(&#39;10.00&#39;).
 
-字符串 != Decimal。所以判等的时候直接被崩了。
+String != Decimal. The equality check fails.
 
-找死的操作：暴力转成 `float`，直接把尾数精度给扬了。
-float(&quot;10.00&quot;) == 10.0 — 小数点后两位当场失踪，更别提 float
-在海量运算下根本就不满足结合律。
+The wrong path: Converting to `float` loses mantissa precision.
+float(&quot;10.00&quot;) == 10.0 — two decimal places lost, and float
+arithmetic is not associative at scale.
 
-阳关大道：用 Decimal(str(amount)).quantize(Decimal(&#39;0.01&#39;))
-这么写既保住了精度，又生吃了字符串输入，还完美符合 IEEE 854 里关于
-金融算术那套比命还重的十进制规范。
+Correct path: Decimal(str(amount)).quantize(Decimal(&#39;0.01&#39;))
+This preserves precision, handles string input, and passes IEEE 854
+decimal arithmetic requirements for financial calculations.
 </code></pre></div>
 
-<p>证据确凿，签字画押：报告里点名了哪条路是绝路，点明了哪条路能活，并且只要数据库不删，这笔账随时能用 SQL 查出来。</p>
-<h2 id="_4">拔毒：祭出真解</h2>
-<p>顺着那份检讨书里给的阳关大道，重新落刀：</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># payment/models.py — 正确的解法</span>
+<p>Self-diagnosis, on the record: the report names the path that failed, names the path that will hold, and stays SQL-queryable for as long as the database exists.</p>
+<h2 id="repair-the-fix-that-holds">Repair: the fix that holds</h2>
+<p>Apply the path the report recommends:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># payment/models.py — correct fix</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">decimal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Decimal</span><span class="p">,</span> <span class="n">ROUND_HALF_UP</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">get_amount</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Decimal</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;吐出一个带 2 位精度死守的 Decimal。&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return amount as Decimal with 2dp precision.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">Decimal</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">amount</span><span class="p">))</span><span class="o">.</span><span class="n">quantize</span><span class="p">(</span>
         <span class="n">Decimal</span><span class="p">(</span><span class="s1">&#39;0.01&#39;</span><span class="p">),</span>
         <span class="n">rounding</span><span class="o">=</span><span class="n">ROUND_HALF_UP</span>
@@ -390,39 +390,39 @@ float(&quot;10.00&quot;) == 10.0 — 小数点后两位当场失踪，更别提 
 tests/test_payment.py::test_payment_total_rounding     PASSED
 tests/test_payment.py::test_invoice_line_items_sum     PASSED
 tests/test_payment.py::test_refund_partial_amount      PASSED
-... (剩下的 42 个也是绿的)
+... (42 more)
 
 47 passed in 3.1s
 </code></pre></div>
 
-<p>满门 47 口，全绿通关。连带刚才那波雪崩时被顺手活埋的 4 个，也一并活过来了。</p>
-<h2 id="sql">秋后算账：用 SQL 重播全场</h2>
-<p>上面这一出戏里的每一个动作，早就被死死钉在了 bene 的 SQLite 流水账里：</p>
-<div class="codehilite"><pre><span></span><code>时间点       动作        作案地点                 案底备注
+<p>47 of 47 green, including the four the cascade took down.</p>
+<h2 id="verify-after-the-fact-replay-it-from-sql">Verify after the fact: replay it from SQL</h2>
+<p>Each step above landed in bene's SQLite journal as it happened:</p>
+<div class="codehilite"><pre><span></span><code>Timestamp  Event       File                   Notes
 ---------  ----------  ---------------------  --------------------------------
-02:14:29   spawn       —                      agent 空投，VFS 结界生成
-02:14:31   tool_call   —                      跑了把 pytest: 1 挂, 46 过
-02:14:33   checkpoint  —                      贴标: pre-fix-attempt
-02:14:41   write       payment/models.py      第一次作案: 暴力套 float()
-02:14:43   tool_call   —                      又跑 pytest: 4 挂 — 雪崩了
-02:14:44   write       /qa/failure_report.md  验尸报告已出具，找出了死因
-02:14:45   restore     —                      时光倒流，强行摁回到 pre-fix-attempt
-02:14:52   write       payment/models.py      祭出 Decimal.quantize() 真解
-02:14:54   tool_call   —                      最后一把 pytest: 47 绿全通
+02:14:29   spawn       —                      agent created, VFS initialized
+02:14:31   tool_call   —                      pytest run: 1 fail, 46 pass
+02:14:33   checkpoint  —                      label: pre-fix-attempt
+02:14:41   write       payment/models.py      attempt: float() cast
+02:14:43   tool_call   —                      pytest: 4 fail — cascade
+02:14:44   write       /qa/failure_report.md  root cause diagnosed
+02:14:45   restore     —                      restored to pre-fix-attempt
+02:14:52   write       payment/models.py      Decimal.quantize() fix applied
+02:14:54   tool_call   —                      pytest: 47 pass
 </code></pre></div>
 
-<p>从 02:14:29 的空投进场，到 02:14:54 的全绿通关，下过的每一刀、每一次倒带、每一次拉起 pytest，全都被打上了时间戳，且全都能被 SQL 拷问。Git 历史只能告诉你哪几行代码变了；但这条流水账能扒出到底是哪一次红灯，逼着它写出了哪一坨屎。就算这套系统是在大半夜自己跑的，第二天你端着咖啡吃早饭的时候，照样能拿着这张表复盘全场 —— 细到连是哪一刀砍出了雪崩，又是哪一发指令把雪崩给吞了，都能看得清清楚楚。</p>
-<h2 id="_5">顺藤摸瓜</h2>
+<p>From the spawn at 02:14:29 to the green run at 02:14:54, every write, rewind, and pytest invocation is timestamped and queryable. Git history answers which lines changed; the journal answers which test run provoked which edit. If the loop ran overnight, this table reconstructs it at breakfast — down to the write that started the cascade and the restore that unwound it.</p>
+<h2 id="keep-going">Keep going</h2>
 <ul>
-<li><a href="../checkpoints.html">核心部件指南：时空快照 (Checkpoints)</a> — 扒光快照和回滚的底层骨架</li>
-<li><a href="../schema.html#events">审计流水表：events (事件表)</a> — 拿 SQL 去拷问你自己的流水账</li>
-<li><a href="../use-cases.html#end-to-end-self-healing-ci-worked-example">破局战法：全自动端到端自愈流水线 (Self-Healing CI)</a> — 这套绝活在战术板上的原档</li>
-<li><a href="../use-cases.html">破局战法 (Use Cases)</a> — 更多起死回生和运筹帷幄的套路</li>
-<li><a href="../README.html">README 首页</a> — 全套文档大地图</li>
+<li><a href="../checkpoints.html">Component guide: Checkpoints</a> — snapshot and restore mechanics in depth</li>
+<li><a href="../schema.html#events">Audit trail SQL: events table</a> — query the journal yourself</li>
+<li><a href="../use-cases.html#end-to-end-self-healing-ci-worked-example">Use case: End-to-end Self-Healing CI</a> — this pattern in the catalog</li>
+<li><a href="../use-cases.html">Use Cases</a> — more recovery and orchestration patterns</li>
+<li><a href="../README.html">README</a> — the full doc map</li>
 </ul>
 <hr />
-<p><em>bene 基于 MIT 协议开源，并且只在你的本地吃算力；没有任何一滴数据会被偷偷运走。</em></p>
-<p><em>源码老家 GitHub: <a href="https://github.com/good-night-oppie/bene">github.com/good-night-oppie/bene</a></em></p>
+<p><em>bene is MIT-licensed and runs entirely locally; nothing is sent anywhere.</em></p>
+<p><em>GitHub: <a href="https://github.com/good-night-oppie/bene">github.com/good-night-oppie/bene</a></em></p>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/tutorials/t02-e2e-self-healing.md" target="_blank" rel="noopener noreferrer">docs/tutorials/t02-e2e-self-healing.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>
 </div>

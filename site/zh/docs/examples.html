@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>示例画廊 — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — 示例画廊" />
+<title>Examples gallery — 中文索引 / 翻译中</title>
+<meta name="description" content="BENE 0.2.0 文档 — Examples gallery" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -242,190 +242,199 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="index.html">docs</a> / examples.md</div>
-<h1 id="_1">示例画廊</h1>
-<p>随 BENE 一起发布的、真实可跑的示例脚本，按各自演练的支柱分门别类。每一个都躺在仓库的 <a href="../../examples/"><code>examples/</code></a> 目录下。</p>
-<p><strong>分两类。</strong> <em>独立运行</em>（standalone）的示例针对一个全新的 <code>bene.db</code> 开跑，不依赖任何外部服务 —— 在一次干净的 <code>pip install bene</code> 之后，已验证能以 0 退出码收尾。<em>依赖模型</em>（model-backed）的示例要驱动一整套 agent 循环，得有一个配好的 model provider 兜底（一个本地 vLLM 端点，或者 <code>bene.yaml</code> 里的一把 API key）；这类下文都打了标记。</p>
-<p>随便挑一个，这样跑：</p>
-<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/&lt;name&gt;.py<span class="w">     </span><span class="c1"># 从源码仓库里跑</span>
+<h1 id="examples-gallery">Examples gallery</h1>
+<p>Real, runnable example scripts that ship with BENE, grouped by the pillar they
+exercise. Each lives under <a href="../../examples/"><code>examples/</code></a> in the repo.</p>
+<p><strong>Two kinds.</strong> <em>Standalone</em> examples run against a fresh <code>bene.db</code> with no
+external services — verified to exit 0 on a clean <code>pip install bene</code>.
+<em>Model-backed</em> examples drive an agent loop and need a configured model provider
+(a local vLLM endpoint or an API key in your <code>bene.yaml</code>); they are marked below.</p>
+<p>Run any of them with:</p>
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/&lt;name&gt;.py<span class="w">     </span><span class="c1"># from a source checkout</span>
 </code></pre></div>
 
 <blockquote>
-<p><code>examples/</code> 里的脚本只随源码仓库发布，<strong>并不</strong>塞进 PyPI 包里 —— 想跑就把仓库 clone 下来（或者单独拷一份脚本过去）。</p>
+<p>The <code>examples/</code> scripts ship with the source repo, <strong>not</strong> the PyPI package —
+clone the repo (or copy a script) to run them.</p>
 </blockquote>
-<h2 id="agent-vfs-per-agent-vfs-state">每 agent 一套 VFS 与状态 (Per-agent VFS &amp; state)</h2>
+<h2 id="per-agent-vfs-state">Per-agent VFS &amp; state</h2>
 <table>
 <thead>
 <tr>
-<th>示例</th>
-<th>演练了什么</th>
-<th>怎么跑</th>
+<th>Example</th>
+<th>What it shows</th>
+<th>Runs</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="../../examples/library_basics.py"><code>library_basics.py</code></a></td>
-<td><code>Bene</code> API 端到端走一遍：建 agent、读写每 agent 私有的 VFS、设状态、列清单。</td>
-<td>独立运行 ✓</td>
+<td>The <code>Bene</code> API end to end: create agents, write/read the per-agent VFS, set state, list.</td>
+<td>standalone ✓</td>
 </tr>
 <tr>
 <td><a href="../../examples/export_share.py"><code>export_share.py</code></a></td>
-<td>把单个 agent 导出成一个独立的 <code>.db</code>，再到别处导入 —— 单文件 Nexus 化身一件可随身携带的产物。</td>
-<td>独立运行</td>
+<td>Export one agent to a standalone <code>.db</code> and import it elsewhere — the single-file Nexus as a portable artifact.</td>
+<td>standalone</td>
 </tr>
 </tbody>
 </table>
-<h2 id="checkpoints-recovery">检查点与恢复 (Checkpoints &amp; recovery)</h2>
+<h2 id="checkpoints-recovery">Checkpoints &amp; recovery</h2>
 <table>
 <thead>
 <tr>
-<th>示例</th>
-<th>演练了什么</th>
-<th>怎么跑</th>
+<th>Example</th>
+<th>What it shows</th>
+<th>Runs</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="../../examples/post_mortem.py"><code>post_mortem.py</code></a></td>
-<td>事后复盘式调试：打 checkpoint、翻事件日志、再做 diff，揪出一次运行到底在哪里跑偏了。</td>
-<td>独立运行（参数：<code>&lt;database.db&gt; &lt;agent-id&gt;</code>）</td>
+<td>Post-mortem debugging: checkpoint, inspect the event journal, and diff to find where a run went wrong.</td>
+<td>standalone (args: <code>&lt;database.db&gt; &lt;agent-id&gt;</code>)</td>
 </tr>
 <tr>
 <td><a href="../../examples/self_healing_agent.py"><code>self_healing_agent.py</code></a></td>
-<td>一个 agent 在冒险动作前先打 checkpoint，失败就回滚恢复（那套 Litany 循环）。</td>
-<td>依赖模型</td>
+<td>An agent that checkpoints before a risky step and restores on failure (the Litany loop).</td>
+<td>model-backed</td>
 </tr>
 </tbody>
 </table>
-<h2 id="engram-agent-engrams-cross-agent-memory">Engram 与跨 agent 记忆 (Engrams &amp; cross-agent memory)</h2>
+<h2 id="engrams-cross-agent-memory">Engrams &amp; cross-agent memory</h2>
 <table>
 <thead>
 <tr>
-<th>示例</th>
-<th>演练了什么</th>
-<th>怎么跑</th>
+<th>Example</th>
+<th>What it shows</th>
+<th>Runs</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="../../examples/memory_search.py"><code>memory_search.py</code></a></td>
-<td>跨 agent 记忆库：一个 agent 写入知识，另一个 agent 把它捞出来。</td>
-<td>独立运行 ✓</td>
+<td>The cross-agent memory store: write knowledge from one agent, retrieve it from another.</td>
+<td>standalone ✓</td>
 </tr>
 </tbody>
 </table>
-<h2 id="eval-probe-kill-gates">评测探针击杀闸门 (Eval-probe kill-gates)</h2>
+<h2 id="eval-probe-kill-gates">Eval-probe kill-gates</h2>
 <table>
 <thead>
 <tr>
-<th>示例</th>
-<th>演练了什么</th>
-<th>怎么跑</th>
+<th>Example</th>
+<th>What it shows</th>
+<th>Runs</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="../../examples/lighthouse_trace_probe.py"><code>lighthouse_trace_probe.py</code></a></td>
-<td>一条可证伪探针（probe）端到端跑通：一道形状闸门（shape gate）登记为 <em>不予受理</em> → VOID，而一道可证伪闸门则把坏掉的运行打成 REJECT、把修好的版本打成 ACCEPT。整个跑在 <code>Bene(":memory:")</code> 上，自带一切、不依赖外物。</td>
-<td>独立运行 ✓</td>
+<td>A falsifiable probe end to end: a shape gate registers <em>inadmissible</em> → VOID, while a falsifiable gate REJECTs a broken run and ACCEPTs the fix. Self-contained on <code>Bene(":memory:")</code>.</td>
+<td>standalone ✓</td>
 </tr>
 </tbody>
 </table>
-<h2 id="shared-log-agent-shared-log-coordination-multi-agent">Shared-log 协同与多 agent (Shared-log coordination &amp; multi-agent)</h2>
+<h2 id="shared-log-coordination-multi-agent">Shared-log coordination &amp; multi-agent</h2>
 <table>
 <thead>
 <tr>
-<th>示例</th>
-<th>演练了什么</th>
-<th>怎么跑</th>
+<th>Example</th>
+<th>What it shows</th>
+<th>Runs</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="../../examples/shared_log_coordination.py"><code>shared_log_coordination.py</code></a></td>
-<td>那条只增不改的协同日志：跨 agent 的 intent → vote → decide → act 协议。</td>
-<td>独立运行 ✓</td>
+<td>The append-only coordination log: the intent → vote → decide → act protocol across agents.</td>
+<td>standalone ✓</td>
 </tr>
 <tr>
 <td><a href="../../examples/safety_voting.py"><code>safety_voting.py</code></a></td>
-<td>一道架在 shared log 之上、靠策略硬卡的安全闸门：冒险动作落地之前，先过人在环路（human-in-the-loop）加多 agent 共识这两道关。</td>
-<td>依赖模型</td>
+<td>A policy-enforced safety gate built on the shared log: human-in-the-loop + multi-agent consensus before a risky action.</td>
+<td>model-backed</td>
 </tr>
 <tr>
 <td><a href="../../examples/code_review_swarm.py"><code>code_review_swarm.py</code></a></td>
-<td>扇出一群 reviewer agent，靠 shared log 把各自的发现攒到一处。</td>
-<td>依赖模型</td>
+<td>A fan-out of reviewer agents coordinating findings over the shared log.</td>
+<td>model-backed</td>
 </tr>
 <tr>
 <td><a href="../../examples/parallel_refactor.py"><code>parallel_refactor.py</code></a></td>
-<td>一大批 agent 并行重构，各自隔离，结果再合流。</td>
-<td>依赖模型（示意性质 —— 读它就是为了抄那个套路）</td>
+<td>Many agents refactoring in parallel, each isolated, results merged.</td>
+<td>model-backed (illustrative — read it for the pattern)</td>
 </tr>
 </tbody>
 </table>
-<h2 id="meta-harness-evolutionary-meta-harness-search">演化式 meta-harness 搜索 (Evolutionary meta-harness search)</h2>
-<p><code>meta_harness_*</code> 这几个脚本，每一个都为一个不同的 benchmark 领域配种出一套 harness；全是依赖模型的（它们要跑一整套搜索循环）。它们共享同一副骨架 —— 播下一套 harness 火种，跨世代变异，再过一道击杀闸门（kill gate）探针把胜出者扶正。</p>
+<h2 id="evolutionary-meta-harness-search">Evolutionary meta-harness search</h2>
+<p>The <code>meta_harness_*</code> scripts each breed a harness for a different benchmark
+domain; all are model-backed (they run a search loop). They share one shape —
+seed a harness, mutate across generations, promote behind a kill-gated probe.</p>
 <table>
 <thead>
 <tr>
-<th>示例</th>
-<th>领域</th>
+<th>Example</th>
+<th>Domain</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="../../examples/meta_harness_coding.py"><code>meta_harness_coding.py</code></a></td>
-<td>agent 式编程</td>
+<td>agentic coding</td>
 </tr>
 <tr>
 <td><a href="../../examples/meta_harness_math.py"><code>meta_harness_math.py</code></a></td>
-<td>数学推理</td>
+<td>math reasoning</td>
 </tr>
 <tr>
 <td><a href="../../examples/meta_harness_support_tickets.py"><code>meta_harness_support_tickets.py</code></a></td>
-<td>客服工单分流</td>
+<td>support-ticket triage</td>
 </tr>
 <tr>
 <td><a href="../../examples/meta_harness_fraud_detection.py"><code>meta_harness_fraud_detection.py</code></a></td>
-<td>反欺诈</td>
+<td>fraud detection</td>
 </tr>
 <tr>
 <td><a href="../../examples/meta_harness_crm_campaigns.py"><code>meta_harness_crm_campaigns.py</code></a></td>
-<td>CRM 营销活动</td>
+<td>CRM campaigns</td>
 </tr>
 <tr>
 <td><a href="../../examples/meta_harness_clv_prediction.py"><code>meta_harness_clv_prediction.py</code></a></td>
-<td>CLV 客户生命周期价值预测</td>
+<td>CLV prediction</td>
 </tr>
 <tr>
 <td><a href="../../examples/autogenesis_heldout_loop.py"><code>autogenesis_heldout_loop.py</code></a></td>
-<td>留出集（held-out）晋升循环（闸门看不到测试集）</td>
+<td>held-out promotion loop (gate that can't see the test set)</td>
 </tr>
 </tbody>
 </table>
-<h2 id="research-labs">研究实验室 (Research labs)</h2>
+<h2 id="research-labs">Research labs</h2>
 <table>
 <thead>
 <tr>
-<th>示例</th>
-<th>演练了什么</th>
-<th>怎么跑</th>
+<th>Example</th>
+<th>What it shows</th>
+<th>Runs</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="../../examples/autonomous_research_lab.py"><code>autonomous_research_lab.py</code></a></td>
-<td>一套多 agent 的研究工作流，全部编排在同一个 BENE 数据库上。</td>
-<td>依赖模型</td>
+<td>A multi-agent research workflow orchestrated on one BENE database.</td>
+<td>model-backed</td>
 </tr>
 <tr>
 <td><a href="../../examples/multi_gpu_research.py"><code>multi_gpu_research.py</code></a></td>
-<td>把研究扇出到多个本地模型端点上跑。</td>
-<td>依赖模型</td>
+<td>Fan-out research across multiple local model endpoints.</td>
+<td>model-backed</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<p><em>独立运行的示例都已验证能针对一次干净安装以 0 退出码收尾；依赖模型的示例则需要在 <code>bene.yaml</code> 里配好一个 provider。来源：仓库里的 <code>examples/</code> 目录 —— 画廊里的链接会解析到 docs 站点上那份拷贝过来的脚本。</em></p>
+<p><em>Standalone examples are verified to exit 0 against a clean install; model-backed
+examples need a provider configured in <code>bene.yaml</code>. Source: <code>examples/</code> in the
+repo — the gallery links resolve to the copied scripts on the docs site.</em></p>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/examples.md" target="_blank" rel="noopener noreferrer">docs/examples.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>
 </div>
