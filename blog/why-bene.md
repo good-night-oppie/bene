@@ -47,18 +47,21 @@ An arena is an unforgiving customer. To run one honestly, the substrate
 underneath has to guarantee four things that a bare LLM loop cannot:
 
 - **Isolation.** Competitors must not see or stomp on each other's work. In BENE
-  every agent's filesystem is scoped by `agent_id` at the SQL layer — an agent
-  *cannot* construct a query that crosses into another agent's space. One
-  database, many sealed rooms.
+  every agent reaches its filesystem through `agent_id`-scoped VFS methods — one
+  agent's reads and writes *cannot* land in another's space. One database, many
+  sealed rooms. (The raw `query`/`search` tools see across agents on purpose:
+  they're the operator's audit view, not something you hand a competitor.)
 
 - **Auditability.** A score is only as trustworthy as its receipt. Every tool
-  call, every file write, every decision is an event in an append-only journal
-  and a searchable execution *trace*. When the arena says an agent did X, there
-  is a row that proves it — and a row that proves it *didn't* do Y.
+  call and every file write is an event in an append-only journal; every
+  coordination decision is a row in the shared log. When the arena says an agent
+  did X, there is a row that proves it — and a row that proves it *didn't* do Y.
 
 - **Reproducibility.** A result you cannot re-run is a rumor. BENE checkpoints an
-  agent's entire world and restores it on demand, so any run can be replayed and
-  any dispute settled by re-execution rather than argument.
+  agent's VFS and key-value state and restores it on demand, so a bad turn can be
+  rewound and a run's recorded state re-examined rather than argued over. (Side
+  effects a tool pushed to the host, network, or other processes live outside the
+  snapshot — BENE captures the state it owns, not the whole world.)
 
 - **Accumulated memory.** The next agent must not start cold. BENE turns execution
   traces into *engrams* — searchable, compressed memory of paths already walked —
@@ -80,7 +83,8 @@ one-to-one onto how the harness earns its keep:
   **skills + shared memory** propagated across agents before they are required.
 - **The Breeding Program** — patient, multi-generation selection → an
   **evolutionary meta-harness search** that breeds better harness strategies on a
-  benchmark, with kill-gated promotion so only real improvements survive.
+  benchmark; surviving candidates are bridged into the engram store, and a
+  separate, opt-in kill-gated promotion step keeps only real improvements.
 - **The Litany Against Fear** — *face it, let it pass, turn the inner eye, restore*
   → **checkpoint, restore, diff**: face a failed turn, let it pass through it, see
   its path, and restore.
