@@ -71,8 +71,22 @@ def test_ensure_brings_up_when_unhealthy():
 
 def test_docker_compose_cmd_errors_without_docker(monkeypatch):
     monkeypatch.setattr(selfhost.shutil, "which", lambda _name: None)
-    with pytest.raises(selfhost.SelfHostError, match="docker not found"):
+    with pytest.raises(selfhost.SelfHostError, match="docker compose not available"):
         selfhost.docker_compose_cmd()
+
+
+def test_docker_compose_cmd_uses_plugin_when_available(monkeypatch):
+    monkeypatch.setattr(selfhost.shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(selfhost, "_compose_plugin_available", lambda: True)
+    assert selfhost.docker_compose_cmd() == ["docker", "compose"]
+
+
+def test_docker_compose_cmd_falls_back_to_legacy_when_plugin_absent(monkeypatch):
+    # Docker CLI present but the Compose plugin is NOT — must fall back to the
+    # legacy docker-compose binary instead of returning a broken `docker compose`.
+    monkeypatch.setattr(selfhost.shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(selfhost, "_compose_plugin_available", lambda: False)
+    assert selfhost.docker_compose_cmd() == ["docker-compose"]
 
 
 def test_is_healthy_false_on_unreachable_host():
@@ -89,7 +103,7 @@ def test_cli_up_friendly_error_without_docker(monkeypatch):
     monkeypatch.setattr(selfhost.shutil, "which", lambda _name: None)
     res = CliRunner().invoke(cli, ["observe", "up"])
     assert res.exit_code == 1
-    assert "docker not found" in res.output
+    assert "docker compose not available" in res.output
 
 
 def test_cli_ensure_json_noop(monkeypatch):
