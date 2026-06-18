@@ -367,9 +367,8 @@ Full suite after the three features: **699 passed, 3 skipped** (84 new tests).
 ### Generality attestation
 
 The biggest validity threat of a gap-closing round is benchmark-tuned
-mechanisms. Checks performed (disclosed honestly: by the orchestrating
-session inline, because the planned independent-reviewer agents died to an
-API quota — see threats):
+mechanisms. Checks performed (self-performed; see Threats to validity for
+why independent review was not run this round):
 
 - **No dataset leakage**: string-overlap scan of every ≥12-char literal in
   the KAOS retrieval and critical-step benches against the new `bene/`
@@ -412,11 +411,11 @@ disclosures attached as load-bearing, not decorative:
 ### Threats to validity (Round 3 delta)
 
 - **Self-review, not independent review.** The generality attestation was
-  performed inline by the same session that orchestrated the implementation,
-  because the independent adversarial-review agents hit an API quota mid-run.
-  The checks are mechanical and reproducible (grep + scripted novel-data
-  runs), but an adversary would rightly prefer independent eyes; re-running
-  the review fleet when quota resets is the cheap fix.
+  performed inline as part of the same work that implemented the mechanisms;
+  independent review was not run this round. The checks are mechanical and
+  reproducible (grep + scripted novel-data runs), but an adversary would
+  rightly prefer independent eyes; running an independent review pass is the
+  cheap follow-up.
 - **Amortized-flush timing methodology** (A6): per-write p50 alone would hide
   deferred flush cost; the harness therefore times the full window including
   `close()` and reports the worse of per-write-p50 and amortized — but

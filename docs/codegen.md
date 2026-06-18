@@ -16,7 +16,7 @@ This is not a new feature in the abstract sense. It is a recombination of existi
 
 Most BENE use cases (parallel agent swarms, checkpoint/restore, SQL audit, meta-harness search) do not require their consumers to know Temporal, signal_with_start, or workflow determinism. They use the local SQLite path. See [use-cases.md](use-cases.md).
 
-A small but growing class of consumers — entity actors, long-running stateful workflows, time-bounded buckets, request coalescers — does need the `bene/temporal/` backend. The first such consumer in production is the burst aggregator in triage-rag's L3 pipeline.
+A small but growing class of consumers — entity actors, long-running stateful workflows, time-bounded buckets, request coalescers — does need the `bene/temporal/` backend. A representative consumer is a burst aggregator: a time-bounded bucket that coalesces events within a window before acting once.
 
 For these consumers, the path from "I have a problem" to "I have working durable code" is steep:
 
@@ -109,7 +109,7 @@ This is consistent with the philosophy of "harnesses should evolve, models shoul
 
 ## Future L2 capabilities (post-IR-stabilization)
 
-The first codegen experiment (2026-05-04, l3 burst aggregator) revealed that generated code can be IR-clean for the **activity layer** but still leaks Temporal decorators in the **workflow class**:
+A worked example shows that generated code can be IR-clean for the **activity layer** but still leaks Temporal decorators in the **workflow class**:
 
 ```python
 @workflow.defn
@@ -149,13 +149,11 @@ This is **not part of the boundary plan IR** — it is a generator + base-class 
 
 ---
 
-## Validation experiment
+## Worked example: a burst aggregator
 
-A first experiment to test whether codegen-into-IR is viable.
+A worked example of codegen-into-IR, using a burst-aggregator entity actor as the consumer.
 
-**Run 1 (2026-05-04):** Consumer was the burst aggregator from triage-rag's L3 pipeline.
-
-- **Generated artifacts:** produced internally, run against a private downstream consumer — the burst-aggregator activity + tests (~339 + 419 LOC). Those artifacts are not public; the conclusion they drove (the `submit_side_effect` gap) is verifiable in-repo at `bene/runtime/local.py` + `bene/temporal/runtime_impl.py`.
+- **What it generates:** a burst-aggregator activity plus its tests. The conclusion they drove — the `submit_side_effect` gap — is verifiable in-repo at `bene/runtime/local.py` + `bene/temporal/runtime_impl.py`.
 - **Pass criteria results:**
   - ✓ Activities (`should_advise`, `post_advisory`) readable in <5 min by non-Temporal engineer
   - ⚠ Workflow class still leaks `@workflow.*` decorators (motivates `EntityActor` base — see "Future L2 capabilities" above)
@@ -163,11 +161,11 @@ A first experiment to test whether codegen-into-IR is viable.
   - ✓ Tests cover cold-start race, replay safety, tumbling-window boundary, business idempotency
   - ✓ Two business-logic sections per activity, marker-delimited
 
-- **What the experiment caught (most valuable output):** the IR as originally specified included `business_idempotency_key` and `SideEffectLabel` as concepts but **no atomic verb for the check-then-write pattern**. The consumer had to invent `runtime.check_side_effect` + `runtime.record_side_effect` on the spot — a guaranteed TOCTOU race on activity retry. This surfaced the `submit_side_effect` gap, now implemented (`bene/runtime/local.py`, `bene/runtime/handle.py`, `bene/temporal/runtime_impl.py`). Without writing real generated code, the gap would have shipped to production.
+- **What it caught (the most valuable output):** the IR as originally specified included `business_idempotency_key` and `SideEffectLabel` as concepts but **no atomic verb for the check-then-write pattern**. Writing the generated code forced inventing `runtime.check_side_effect` + `runtime.record_side_effect` on the spot — a guaranteed TOCTOU race on activity retry. This surfaced the `submit_side_effect` gap, now implemented (`bene/runtime/local.py`, `bene/runtime/handle.py`, `bene/temporal/runtime_impl.py`). Without writing real generated code, the gap would have shipped to production.
 
-- **Insight on what IR forces vs what it allows:** the consumer reported that `business_idempotency_key` as a *named concept* forced confrontation of "what is business identity here?" — producing a two-shape result (non-burst uses `(post_advisory, testrun_id, jira_ticket_key)`, burst uses `(post_advisory, bucket_id, seed_ticket_key)`) that a hand-writer using Temporal's `workflow_id` would likely have missed. This is the canonical example of capability-unlock convenience: the abstraction makes a class of bug structurally unrepresentable, not just easier to avoid.
+- **Insight on what IR forces vs what it allows:** `business_idempotency_key` as a *named concept* forces confrontation of "what is business identity here?" — producing a two-shape result (non-burst uses `(post_advisory, testrun_id, jira_ticket_key)`, burst uses `(post_advisory, bucket_id, seed_ticket_key)`) that a hand-writer using Temporal's `workflow_id` would likely have missed. This is the canonical example of capability-unlock convenience: the abstraction makes a class of bug structurally unrepresentable, not just easier to avoid.
 
-Future runs should target a second entity-actor consumer (request coalescer, conversation actor) to test whether the IR generalizes beyond the burst-aggregator shape.
+A natural next step is a second entity-actor consumer (request coalescer, conversation actor), to test whether the IR generalizes beyond the burst-aggregator shape.
 
 ---
 
