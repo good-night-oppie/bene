@@ -92,7 +92,18 @@ def _compose(
 ) -> Path:
     file = resolve_compose(compose, config)
     cmd = (compose_cmd or docker_compose_cmd()) + ["-f", str(file), *action]
-    runner(cmd, check=True)
+    try:
+        runner(cmd, check=True)
+    except subprocess.CalledProcessError as exc:
+        # docker compose exited non-zero (daemon down, port in use, invalid
+        # compose file, …). Translate to SelfHostError so the CLI's friendly /
+        # --json error path handles it instead of dumping a raw traceback.
+        raise SelfHostError(
+            f"`{' '.join(cmd)}` failed (exit {exc.returncode}) — is the Docker daemon "
+            "running and the required ports free?"
+        ) from exc
+    except OSError as exc:
+        raise SelfHostError(f"could not run docker compose: {exc}") from exc
     return file
 
 

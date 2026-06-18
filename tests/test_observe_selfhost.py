@@ -18,6 +18,19 @@ def _record():
     return calls, (lambda cmd, **kw: calls.append(cmd))
 
 
+def test_compose_wraps_called_process_error_as_selfhost_error():
+    """A non-zero `docker compose` exit (daemon down, port in use, bad compose
+    file) must surface as SelfHostError so the CLI's friendly/JSON error path
+    handles it — not an unstructured CalledProcessError traceback. PR #54 review."""
+    import subprocess
+
+    def boom(cmd, **kw):
+        raise subprocess.CalledProcessError(returncode=1, cmd=cmd)
+
+    with pytest.raises(selfhost.SelfHostError, match="failed"):
+        selfhost.up(runner=boom, compose_cmd=FAKE_CMD)
+
+
 def test_bundled_compose_ships_and_resolves():
     assert selfhost.BUNDLED_COMPOSE.is_file()
     assert selfhost.resolve_compose() == selfhost.BUNDLED_COMPOSE
