@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Architecture diagrams — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — Architecture diagrams" />
+<title>架构图解 (Architecture diagrams) — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — 架构图解 (Architecture diagrams)" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -242,17 +242,10 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="../index.html">docs</a> / design/architecture-diagrams.md</div>
-<h1 id="architecture-diagrams">Architecture diagrams</h1>
-<p>Three pictures of how BENE fits together: the single-file <strong>Nexus</strong>, the
-<strong>engram compression ladder</strong>, and the <strong>autonomy ladder</strong>. Each diagram is the
-shape; the prose says what it's load-bearing for.</p>
-<h2 id="the-nexus-many-isolated-agents-one-file">The Nexus — many isolated agents, one file</h2>
-<p>Every agent has its own VFS, event journal, checkpoints, and traces — but they
-all live in <strong>one</strong> SQLite database. That single file is the Nexus: the join
-point for the whole swarm, and the thing you copy, diff, or check into git.
-(WAL mode keeps recent commits in a <code>bene.db-wal</code> sidecar until a checkpoint, so
-on a live process run a WAL checkpoint (or close) before copying only <code>bene.db</code>,
-or copy the <code>-wal</code>/<code>-shm</code> sidecars alongside it.)</p>
+<h1 id="architecture-diagrams">架构图解 (Architecture diagrams)</h1>
+<p>三张图，把 BENE 各部件怎么咬合到一起讲清楚：单文件的 <strong>Nexus</strong>、<strong>engram 压缩阶梯（engram compression ladder）</strong>，以及<strong>自主权阶梯（autonomy ladder）</strong>。图给的是骨架形状，正文则点明每张图到底在承担什么。</p>
+<h2 id="nexus-agent-the-nexus-many-isolated-agents-one-file">Nexus —— 一群隔离的 agent，一个文件 (The Nexus — many isolated agents, one file)</h2>
+<p>每个 agent 都有自己的 VFS、事件日志、checkpoint 和 trace（执行轨迹）—— 但它们全都活在<strong>同一个</strong> SQLite 数据库里。这个单一文件就是 Nexus：整个 agent 蜂群的汇聚点，也是你拿来复制、diff、提交进 git 的那个东西。（WAL 模式会把最近的提交先攒在 <code>bene.db-wal</code> 这个旁路文件里，直到触发一次 checkpoint；所以在进程还活着的时候，要么先跑一次 WAL checkpoint（或直接关库）再单拷 <code>bene.db</code>，要么把 <code>-wal</code>/<code>-shm</code> 两个旁路文件一起带走。）</p>
 <div class="mermaid">
 flowchart TB
     subgraph agents["Isolated agents (SQL-scoped by agent_id)"]
@@ -267,17 +260,9 @@ flowchart TB
     DB --> S["shared log · blobs · engrams"]
 </div>
 
-<p><em>Load-bearing:</em> an agent's own <code>fs_*</code> tools are scoped to its <code>agent_id</code>, so in
-normal operation "many agents, one file" doesn't mean agents stumble into each
-other. It is logical namespacing, not a hard authorization boundary — the
-operator surface (<code>Bene.read</code>/<code>query</code>, the <code>agent_read</code>/<code>agent_write</code> MCP tools)
-takes an explicit <code>agent_id</code> and can cross agents by design. The union is the
-audit surface.</p>
-<h2 id="the-engram-compression-ladder">The engram compression ladder</h2>
-<p>Execution traces are stored on a tiered ladder (0–4): raw at the bottom,
-progressively compressed summaries above. Retrieval searches the cheap high
-tiers first and drills into detail only on a hit — so memory stays searchable as
-the corpus grows.</p>
+<p><em>它撑住了什么：</em> 每个 agent 自己的 <code>fs_*</code> 工具都被钉死在它的 <code>agent_id</code> 范围内，所以正常跑起来时，"多 agent、一文件" 并不意味着 agent 们会互相串门撞车。这只是逻辑上的命名空间隔离，不是硬性的授权边界 —— 运维侧的接口（<code>Bene.read</code>/<code>query</code>，以及 <code>agent_read</code>/<code>agent_write</code> 这两个 MCP 工具）接受一个显式的 <code>agent_id</code>，按设计就是可以跨 agent 读写的。这片联合视图本身，就是审计面。</p>
+<h2 id="engram-the-engram-compression-ladder">engram 压缩阶梯 (The engram compression ladder)</h2>
+<p>执行 trace 按一条分层阶梯（0–4 级）存放：最底层是原始数据，越往上是压得越狠的摘要。检索时先扫便宜的高层，命中了再往下钻到细节 —— 这样语料越长越大，记忆也始终能搜得动。</p>
 <div class="mermaid">
 flowchart LR
     T0["Tier 0<br/>raw traces<br/>(every turn)"] --> T1["Tier 1<br/>granule summaries"]
@@ -288,12 +273,9 @@ flowchart LR
     Q -.-> T2
 </div>
 
-<p><em>Load-bearing:</em> capture is the default (every run drops a tier-0 trace), and the
-ladder is what keeps "remember everything" from becoming "scan everything."</p>
-<h2 id="the-autonomy-ladder-l0-l4">The autonomy ladder (L0 → L4)</h2>
-<p>Agents operate at a rung. Computed trust (four signals + a composite) raises the
-floor an agent is allowed to reach — but the top rung, autonomous promotion, is
-<strong>capped below L4 by the engine</strong> and only a human grant crosses it.</p>
+<p><em>它撑住了什么：</em> 捕获是默认行为（每跑一次都落一条 tier-0 trace），而这条阶梯就是让 "什么都记得住" 不至于退化成 "什么都得从头扫一遍" 的关键。</p>
+<h2 id="l0-l4-the-autonomy-ladder-l0-l4">自主权阶梯（L0 → L4） (The autonomy ladder (L0 → L4))</h2>
+<p>agent 在某一档（rung）上运行。计算出来的信任度（四路信号 + 一个综合分）会抬高某个 agent 允许够到的下限 —— 但最顶上那档，也就是自主晋升，被<strong>引擎硬性卡在 L4 之下</strong>，只有人类授权才能跨过去。</p>
 <div class="mermaid">
 flowchart TB
     L0["L0 · Observe"] --> L1["L1 · Suggest"]
@@ -304,14 +286,9 @@ flowchart TB
     Human["human grant<br/>(--by human:name)"] ==> L4
 </div>
 
-<p><em>Load-bearing:</em> autonomy is <em>earned</em> from observed behavior, not asserted.
-Shared-state actions live at <strong>L3</strong>; the top rung — <strong>L4</strong>, autonomous
-self-promotion — is the one that always requires a human grant.</p>
+<p><em>它撑住了什么：</em> 自主权是从观测到的实际行为里<em>挣</em>出来的，不是嘴上喊出来的。动到共享状态的动作落在 <strong>L3</strong>；而最顶上那档 —— <strong>L4</strong>，自主自我晋升 —— 永远绕不开一次人类授权。</p>
 <hr />
-<p><em>Diagrams are Mermaid; the docs site renders them inline. Grounded in
-<code>bene/kernel/harness/autonomy.py</code> (the L0–L4 labels), the engram tier model, and
-the single-file Nexus design. Source: edit this markdown, never the generated
-HTML.</em></p>
+<p><em>这些图都是 Mermaid，文档站会内联渲染。它们落在 <code>bene/kernel/harness/autonomy.py</code>（L0–L4 这套标签）、engram 分层模型，以及单文件 Nexus 的设计之上。源文件：改这份 markdown，永远别去动生成出来的 HTML。</em></p>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/design/architecture-diagrams.md" target="_blank" rel="noopener noreferrer">docs/design/architecture-diagrams.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>
 </div>
