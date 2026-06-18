@@ -242,7 +242,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="index.html">docs</a> / cli-reference.md</div>
-<h1 id="bene-cli-reference">BENE 命令行兵器谱 (CLI Reference)</h1><div class="demo-embed"><div class="frame"><div class="dots"><i></i><i></i><i></i></div><img src="../assets/demos/demo-litany.gif" alt="Demo — rewind a bad turn: an agent scaled replicas 3 → 0; checkpoint → diff → restore puts it back." loading="lazy" onerror="this.closest('.demo-embed').style.display='none'"></div><p>Demo — rewind a bad turn: an agent scaled replicas 3 → 0; checkpoint → diff → restore puts it back.</p></div>
+<h1 id="bene-cli-reference">BENE 命令行兵器谱 (CLI Reference)</h1><div class="demo-embed"><div class="frame"><div class="dots"><i></i><i></i><i></i></div><img src="../../assets/demos/demo-litany.gif" alt="Demo — rewind a bad turn: an agent scaled replicas 3 → 0; checkpoint → diff → restore puts it back." loading="lazy" onerror="this.closest('.demo-embed').style.display='none'"></div><p>Demo — rewind a bad turn: an agent scaled replicas 3 → 0; checkpoint → diff → restore puts it back.</p></div>
 <p>从黑框终端里一键拉起、盯梢、回滚并拷问你的 agent 狼群 —— 且所有的命令，全都死死咬住同一个本地的 <code>bene.db</code> 数据库文件。</p>
 <blockquote>
 <p><strong>如果你是从源码跑的：</strong> 刚跑完 <code>uv sync</code> 后，<code>bene</code> 这条命令是不会自动塞进你的 <code>PATH</code> 里的。所以，你要么在下面的每一条命令前面乖乖加上 <code>uv run</code> (比如 <code>uv run bene init</code>)，要么就老老实实 <code>source .venv/bin/activate</code> 一次激活环境，这样就能直接敲 <code>bene</code> 了。(当然，直接 <code>pip install bene</code> 也能解决烦恼。)</p>
