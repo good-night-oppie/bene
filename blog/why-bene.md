@@ -47,10 +47,11 @@ An arena is an unforgiving customer. To run one honestly, the substrate
 underneath has to guarantee four things that a bare LLM loop cannot:
 
 - **Isolation.** Competitors must not see or stomp on each other's work. In BENE
-  every agent reaches its filesystem through `agent_id`-scoped VFS methods — one
-  agent's reads and writes *cannot* land in another's space. One database, many
-  sealed rooms. (The raw `query`/`search` tools see across agents on purpose:
-  they're the operator's audit view, not something you hand a competitor.)
+  every agent's own `fs_*` tools are pinned to its `agent_id` — an agent's reads
+  and writes *cannot* land in another's space. One database, many sealed rooms.
+  (The operator surface — the raw `query`/`search` plus the `read`/`write`
+  MCP/CLI tools — takes an explicit `agent_id` and crosses agents by design: it's
+  the operator's view, not something you hand a competitor.)
 
 - **Auditability.** A score is only as trustworthy as its receipt. Every tool
   call and every file write is an event in an append-only journal; every
@@ -84,7 +85,8 @@ one-to-one onto how the harness earns its keep:
 - **The Breeding Program** — patient, multi-generation selection → an
   **evolutionary meta-harness search** that breeds better harness strategies on a
   benchmark; surviving candidates are bridged into the engram store, and a
-  separate, opt-in kill-gated promotion step keeps only real improvements.
+  separate, opt-in kill-gated promotion step keeps only real improvements on the
+  accuracy-style objectives the gate maximizes.
 - **The Litany Against Fear** — *face it, let it pass, turn the inner eye, restore*
   → **checkpoint, restore, diff**: face a failed turn, let it pass through it, see
   its path, and restore.
