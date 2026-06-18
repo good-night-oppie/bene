@@ -370,6 +370,13 @@ def build() -> None:
     if OUT.exists():
         shutil.rmtree(OUT)
     OUT.mkdir(parents=True)
+    # The zh-mirror tree lives outside OUT (site/zh/docs), so the rmtree above does
+    # not cover it. Wipe it too, or a re-run can leave STALE pages behind — e.g. an
+    # infra/ page that is now filtered out, or a doc that was deleted/renamed. Without
+    # this, deleting a source never removes its already-committed zh static page.
+    zh_docs_out = OUT.parent / "zh" / "docs"
+    if zh_docs_out.exists():
+        shutil.rmtree(zh_docs_out)
 
     # pygments css appended once into shared CSS (dark scheme on term background)
     global CSS
