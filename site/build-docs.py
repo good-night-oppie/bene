@@ -46,7 +46,6 @@ GROUPS = [
     ("Benchmarks and gates", "benchmarks"),
     ("Tutorial playbooks", "tutorials"),
     ("Case studies", "case-studies"),
-    ("Infrastructure", "infra"),
 ]
 
 # page (relpath without .md) -> (gif relative to site/assets, caption)
@@ -133,7 +132,13 @@ MD_CFG = {"codehilite": {"guess_lang": False, "noclasses": False}}
 
 
 def all_docs() -> list[Path]:
-    return sorted(DOCS.rglob("*.md"))
+    # `infra/` holds internal ops runbooks (DNS/registrar/1Password item names)
+    # that must NOT be published — they were relocated to ops/runbooks/ (2026-06-18).
+    # This filter is the safety net so anything dropped under docs/**/infra/ in
+    # future is never rendered to the public site.
+    return sorted(
+        p for p in DOCS.rglob("*.md") if "infra" not in p.relative_to(DOCS).parts
+    )
 
 
 def title_of(md_text: str, rel: Path) -> str:
