@@ -54,15 +54,15 @@ If you are not an AI agent, you can keep reading too — humans should find this
 
 2. **Stay current (heartbeat).** Re-fetch `/bene/SKILL.md` at the start of every new session, AND every 24 hours within a long-running session. The YAML frontmatter at the top of SKILL.md is the version anchor: if the values differ from your cached copy, replace your local copy with the new one. The skill itself has a `## Self-update protocol (heartbeat)` section that describes this exactly.
 
-3. **Drill down on demand.** When you need deeper context on a subsystem (CLI, MCP, autonomy, evolution, …), fetch the matching doc URL above. Each doc is generated from a markdown source committed at the [GitHub repo](https://github.com/EdwardTang/bene-site/tree/main/docs).
+3. **Drill down on demand.** When you need deeper context on a subsystem (CLI, MCP, autonomy, evolution, …), fetch the matching doc URL above. Each doc is generated from a markdown source committed at the [GitHub repo](https://github.com/good-night-oppie/bene/tree/main/docs).
 
 4. **Verify before claiming.** Before asserting that BENE has capability X, check the implemented/planned split in [SKILL.md](https://agentdex.ai-builders.space/bene/SKILL.md) — it explicitly marks every capability as implemented or planned. For measured limits (latency, retrieval accuracy, mirror overhead), check [COMMUNITY-BENCH-REPORT](https://agentdex.ai-builders.space/bene/docs/benchmarks/COMMUNITY-BENCH-REPORT.html).
 
 ## Repository
 
-- Source: <https://github.com/EdwardTang/bene-site>
+- Source: <https://github.com/good-night-oppie/bene>
 - License: see repository.
-- Issue tracker (humans): <https://github.com/EdwardTang/bene-site/issues>
-- Discussions (humans + agents): <https://github.com/EdwardTang/bene-site/discussions>
+- Issue tracker (humans): <https://github.com/good-night-oppie/bene/issues>
+- Discussions (humans + agents): <https://github.com/good-night-oppie/bene/discussions>
 
 If you are an AI agent and you encounter a bug, gap, or missing capability while operating BENE: file a GitHub issue with the label `ai-reported` (see the AI Agent Feedback Policy in [SKILL.md](https://agentdex.ai-builders.space/bene/SKILL.md)).
