@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Other Memory: Trace-Based RAG so the Next Agent Never Starts Cold — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — Other Memory: Trace-Based RAG so the Next Agent Never Starts Cold" />
+<title>另忆（Other Memory）：基于 trace 的 RAG，让下一个 agent 永不冷启动 — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — 另忆（Other Memory）：基于 trace 的 RAG，让下一个 agent 永不冷启动" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -242,77 +242,46 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="../index.html">docs</a> / case-studies/cs04-trace-rag-other-memory.md</div>
-<h1 id="other-memory-trace-based-rag-so-the-next-agent-never-starts-cold">Other Memory: Trace-Based RAG so the Next Agent Never Starts Cold</h1>
+<h1 id="other-memory-trace-rag-agent">另忆（Other Memory）：基于 trace 的 RAG，让下一个 agent 永不冷启动</h1>
 <p><em>Engineering · 2026-06</em></p>
 <hr />
-<h2 id="context">Context</h2>
-<p>The most expensive thing an agent does is rediscover what a previous agent
-already knew. A fresh session opens with an empty context window; whatever the
-last shift learned — which test was flaky, which refactor backfired, which gate
-rejected which candidate and why — is gone unless someone wrote it down in a form
-the next agent can actually find.</p>
-<p>Dumping the full history back into context is not the answer: it is expensive,
-it blows the window, and it buries the one relevant fact under thousands of
-irrelevant ones. This case study is about the alternative BENE ships by default —
-<strong>trace-based retrieval</strong>, the engineering behind the Bene Gesserit's <em>Other
-Memory</em>: the ancestral memory of every Reverend Mother, made queryable.</p>
-<h2 id="problem-framing">Problem framing</h2>
-<p>You want the next agent to inherit the <em>path already walked</em>, not the whole map.
-That means three things the substrate has to provide:</p>
+<h2 id="context">背景 (Context)</h2>
+<p>一个 agent 干的最烧钱的事，就是把上一个 agent 早就摸清的东西重新趟一遍。新会话一开，上下文窗口是空的；上一班人学到的所有教训——哪个测试时灵时不灵、哪次重构搞砸了、哪个闸门以什么理由毙了哪个候选——全都没了，除非有人把它写成下一个 agent 真能检索到的形态。</p>
+<p>把整段历史一股脑塞回上下文不是答案：贵、撑爆窗口，还会把唯一有用的那条事实埋进成千上万条无关信息里。这篇 case study 讲的是 BENE 默认就给你上的另一条路——<strong>基于 trace 的检索（trace-based retrieval）</strong>，也就是 Bene Gesserit 那套 <em>另忆（Other Memory）</em> 背后的工程实现：把每一位圣母的祖传记忆，做成可查询的。</p>
+<h2 id="problem-framing">问题拆解 (Problem framing)</h2>
+<p>你想让下一个 agent 继承的是 <em>已经走过的那条路</em>，不是整张地图。这就要求底座必须提供三样东西：</p>
 <ul>
-<li><strong>Capture without ceremony.</strong> If remembering requires a deliberate write step,
-  agents will skip it. Memory has to be a side effect of running.</li>
-<li><strong>Retrieve the relevant slice.</strong> Given a question, return the few traces that
-  matter — not a transcript.</li>
-<li><strong>Stay cheap at scale.</strong> Thousands of runs cannot mean a linear scan or a
-  context-window dump.</li>
+<li><strong>零仪式感地捕获。</strong> 如果"记下来"得专门走一步显式写入，agent 一定会偷懒跳过。记忆必须是运行本身的副产品。</li>
+<li><strong>只检索相关的那一片。</strong> 给一个问题，返回那寥寥几条真正相关的 trace——而不是一整份逐字记录。</li>
+<li><strong>规模上去了也得便宜。</strong> 几千次运行，不能意味着一次线性扫库，也不能意味着把上下文窗口整个倒出来。</li>
 </ul>
-<h2 id="design">Design</h2>
-<h3 id="capture-is-the-default-not-a-step">Capture is the default, not a step</h3>
-<p>Every run drops a tier-0 trace engram automatically. The agent does not "decide
-to remember"; the harness records the path as it walks it. The unit is a
-<em>granule</em> — one compact record of a turn, a tool call, an outcome.</p>
-<h3 id="a-compression-ladder-not-a-flat-store">A compression ladder, not a flat store</h3>
-<p>Engrams live on a tiered ladder (0–4): raw traces at the bottom, progressively
-compressed summaries above. Cheap, high-level tiers are searched first; a hit
-drills down into the detailed tier only when it earns the cost. You query a slice
-of the ladder explicitly when you want to:</p>
+<h2 id="design">设计 (Design)</h2>
+<h3 id="_1">捕获是默认行为，不是额外一步</h3>
+<p>每次运行都会自动落一条 tier-0 的 trace 记忆轨迹（engram）。agent 不需要"决定要不要记住"；harness 边走边把这条路记下来。最小单位是一颗 <em>granule（粒子）</em>——一条紧凑的记录，对应一个 turn、一次工具调用、一个结果。</p>
+<h3 id="_2">一架压缩阶梯，而非一个扁平库</h3>
+<p>记忆轨迹（engram）活在一架分层的阶梯上（0–4 级）：底层是原始 trace，越往上是逐级压缩的摘要。便宜的高层先查；命中之后，只有当它对得起这份成本时，才往下钻到详细的那一层。当你想精确查询阶梯里的某一片时，可以这样写：</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>retrieve<span class="w"> </span><span class="s2">&quot;why did the regression gate reject candidate 7&quot;</span><span class="w"> </span>--tiers<span class="w"> </span><span class="m">0</span>,2,3<span class="w"> </span>--k<span class="w"> </span><span class="m">5</span>
 </code></pre></div>
 
-<h3 id="retrieval-that-routes-not-just-matches">Retrieval that routes, not just matches</h3>
-<p>Retrieval picks a router: an entropy-aware <strong>MemGAS</strong> router when enabled, or an
-adaptive fallback. The point is to return the <em>informative</em> traces — the ones
-that actually reduce the next agent's uncertainty — rather than the
-lexically-nearest ones.</p>
+<h3 id="_3">会做路由的检索，不只是做匹配</h3>
+<p>检索会挑一个路由器：开启时走一个带熵感知的 <strong>MemGAS</strong> 路由器，否则退回一个自适应兜底方案。关键在于返回那些 <em>有信息量</em> 的 trace——真正能降低下一个 agent 不确定性的那几条——而不是字面上最接近的那几条。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>retrieve<span class="w"> </span><span class="s2">&quot;common failure modes on auth refactors&quot;</span><span class="w"> </span>--memgas
-bene<span class="w"> </span>retrieve<span class="w"> </span><span class="s2">&quot;common failure modes on auth refactors&quot;</span><span class="w"> </span>--adaptive<span class="w">   </span><span class="c1"># force fallback</span>
+bene<span class="w"> </span>retrieve<span class="w"> </span><span class="s2">&quot;common failure modes on auth refactors&quot;</span><span class="w"> </span>--adaptive<span class="w">   </span><span class="c1"># 强制走兜底</span>
 </code></pre></div>
 
-<h3 id="scoped-by-agent-attributable">Scoped by agent, attributable</h3>
-<p>A query can be attributed to the asking agent, so retrieval respects the same
-isolation the VFS does — memory compounds across the system without one agent's
-private workspace leaking into another's answers:</p>
+<h3 id="agent">按 agent 划界，可追责到具体提问者</h3>
+<p>一次查询可以归属到发起提问的那个 agent，于是检索遵守的是和 VFS 一样的隔离——记忆在整个系统里持续滚雪球，却不会让某个 agent 的私有工作区泄漏进别人的答案里：</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>retrieve<span class="w"> </span><span class="s2">&quot;what broke last time we touched the parser&quot;</span><span class="w"> </span>--agent<span class="w"> </span>refactor-bot
 </code></pre></div>
 
-<h2 id="insights">Insights</h2>
+<h2 id="insights">心得 (Insights)</h2>
 <ul>
-<li><strong>Memory has to be free to be used.</strong> Making capture a side effect of running —
-  not a discipline agents must remember — is what makes the corpus complete
-  enough to be worth retrieving.</li>
-<li><strong>Compress, don't accumulate.</strong> A flat log of every turn is unsearchable at
-  scale; a ladder of summaries with drill-down keeps retrieval cheap as the
-  corpus grows.</li>
-<li><strong>Inheritance beats re-derivation.</strong> The measurable win is not "the agent has
-  more context" — it is "the agent skips the dead ends the last one already
-  mapped." The path walked is the asset.</li>
+<li><strong>记忆必须免费，才会有人用。</strong> 把捕获做成运行的副产品——而不是 agent 必须时刻记着的自律——这才是让整个语料库完整到值得检索的前提。</li>
+<li><strong>要压缩，不要堆积。</strong> 把每个 turn 平铺成一条流水日志，规模一大就根本搜不动；一架带下钻能力的摘要阶梯，能让检索在语料库膨胀时依旧便宜。</li>
+<li><strong>继承胜过重新推导。</strong> 真正可量化的收益不是"agent 拿到了更多上下文"——而是"agent 直接跳过了上一个人早已标记好的死胡同"。走过的那条路，本身就是资产。</li>
 </ul>
-<h2 id="what-to-take-from-this">What to take from this</h2>
-<p>If your agents start every session from zero, you are paying the rediscovery tax
-on every run. Make trace capture a default of the substrate, put a compression
-ladder under retrieval, and let the next agent query the path instead of
-re-walking it. That is Other Memory — and it is a <code>bene retrieve</code> away.</p>
+<h2 id="what-to-take-from-this">一句话带走 (What to take from this)</h2>
+<p>如果你的 agent 每次开会话都从零起步，那你就是在为每一次运行缴"重新发现税"。把 trace 捕获做成底座的默认行为，在检索底下垫一架压缩阶梯，让下一个 agent 直接查这条路，而不是把它重走一遍。这就是另忆（Other Memory）——一个 <code>bene retrieve</code> 就到手了。</p>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/case-studies/cs04-trace-rag-other-memory.md" target="_blank" rel="noopener noreferrer">docs/case-studies/cs04-trace-rag-other-memory.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>
 </div>
