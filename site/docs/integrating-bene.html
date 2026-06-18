@@ -312,7 +312,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <li>~~<strong>Structured failure-metadata re-emit</strong>~~ — <strong>no longer needed.</strong> Until the 0.30 runner change, a consumer had to re-emit tool outcomes as engram metadata for <code>localize</code> to work on a live run. The runner now emits per-tool trace engrams itself, so real runs are localizable out of the box.</li>
 </ol>
 <h2 id="what-changed-in-the-030-kernel-pass">What changed in the 0.30 kernel pass</h2>
-<p>These are kernel-side fixes shipped to the runtime (the published package is still <code>0.2.0</code>; this section is the docs/landing framing for the change set):</p>
+<p>These are kernel-side fixes shipped to the runtime and included in the published <code>0.2.1</code> package:</p>
 <ul>
 <li><strong><code>bene failure localize</code> works on a real run</strong> — the runner emits a tier-0 trace engram per tool call (<code>tool_name</code> / <code>status</code> / <code>error_message</code>) at every completion path, so the "a run leaves engrams → localize finds where it went wrong" composition is exercised end-to-end, not just on hand-seeded test traces.</li>
 <li><strong><code>bene query</code> is read-only at the engine level</strong> — enforced by <code>PRAGMA query_only</code>, so a <code>WITH … DELETE</code> CTE or a comment-prefixed write can no longer slip past a keyword guard; a blocked write raises <code>PermissionError</code>.</li>
