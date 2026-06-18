@@ -350,7 +350,7 @@ bene<span class="w"> </span>--json<span class="w"> </span>probe<span class="w"> 
 
 <p>所有探针都合格时返回 0，只要查出一个杀不死人的假探针，不但非零退出，还会把罪魁祸首的名字吐出来。把它跟你的测试步骤跑在一起，绝不允许任何一句空话在这里骗过关。</p>
 <h2 id="the-lighthouse-trace-probe">案发现场复盘：灯塔链路探针 (the lighthouse trace probe)</h2>
-<p>去看 <a href="../examples/lighthouse_trace_probe.py"><code>examples/lighthouse_trace_probe.py</code></a>，里面完完整整地重现了 <code>isinstance(..., bool)</code> 坑死全场的那一幕。那个看长相的闸门会被当场剥夺考试资格打成 VOID，而那个一刀见血的 <code>propagated_true &gt;= 1</code> 闸门，则极其精准地把坏环境一枪崩了，然后给修好的环境发了张绿卡：</p>
+<p>去看 <a href="../../examples/lighthouse_trace_probe.py"><code>examples/lighthouse_trace_probe.py</code></a>，里面完完整整地重现了 <code>isinstance(..., bool)</code> 坑死全场的那一幕。那个看长相的闸门会被当场剥夺考试资格打成 VOID，而那个一刀见血的 <code>propagated_true &gt;= 1</code> 闸门，则极其精准地把坏环境一枪崩了，然后给修好的环境发了张绿卡：</p>
 <div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>examples/lighthouse_trace_probe.py
 </code></pre></div>
 
@@ -365,7 +365,7 @@ PASS-31 reproduced: shape gate VOID, broken REJECT, fixed ACCEPT ✓
 
 <h2 id="_4">顺藤摸瓜</h2>
 <ul>
-<li><a href="../examples/lighthouse_trace_probe.py"><code>examples/lighthouse_trace_probe.py</code></a> — 那个能直接跑起来的铁证。</li>
+<li><a href="../../examples/lighthouse_trace_probe.py"><code>examples/lighthouse_trace_probe.py</code></a> — 那个能直接跑起来的铁证。</li>
 <li><a href="cli-reference.html">CLI 指令大黄页 (cli-reference.md)</a> — 这里有这几个指令的所有变态参数。</li>
 <li><a href="integrating-bene.html">接入 BENE (integrating-bene.md)</a> — 去看看评测闸门在系统的那五个生命周期里到底卡在哪一层。</li>
 <li><a href="architecture.html">深层架构 (architecture.md)</a> — 去扒一扒那个上过哈希锁的击杀闸门，以及底下的印记底座到底长啥样。</li>
