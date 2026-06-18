@@ -1,0 +1,139 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>The Harness Behind the Arena: Why We Build BENE — BENE blog</title><link rel="icon" href="../assets/bene-logo.svg"><style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+:root { --bg:#F0EEE8; --surface:#EDE9E4; --border:#CFCCC8; --ink:#1F1D1C; --mute:#62666D; --accent:#EE6018; --gold:#B46A35; --term-bg:#332E2B; --term-fg:#EDE9E4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 Geist,ui-sans-serif,system-ui,sans-serif; }
+a { color:var(--gold); text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent); text-underline-offset:3px; }
+a:hover { color:var(--accent); }
+.top { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+.top-in { max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+.brand { font-family:Geist,ui-sans-serif,sans-serif; font-weight:700; letter-spacing:.12em; color:var(--ink); text-decoration:none; }
+.top .spacer { flex:1; }
+.top a.nav { color:var(--mute); text-decoration:none; font-size:14px; }
+.top a.nav:hover { color:var(--accent); }
+.top a.nav.cur { color:var(--ink); font-weight:600; }
+.wrap { max-width:760px; margin:0 auto; padding:40px 24px 24px; }
+main { min-width:0; }
+.crumbs { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-bottom:14px; }
+.crumbs a { color:var(--mute); }
+main h1 { font-family:Geist,ui-sans-serif,sans-serif; font-size:2.1rem; line-height:1.2; margin:.1em 0 .25em; }
+main h2 { font-family:Geist,ui-sans-serif,sans-serif; font-size:1.45rem; margin-top:2em; border-bottom:1px solid var(--border); padding-bottom:.35em; }
+main h3 { font-size:1.12rem; margin-top:1.7em; }
+main img { max-width:100%; border:1px solid var(--border); border-radius:8px; }
+main table { border-collapse:collapse; width:100%; font-size:14.5px; display:block; overflow-x:auto; }
+main th, main td { border:1px solid var(--border); padding:8px 12px; text-align:left; vertical-align:top; }
+main th { background:var(--surface); font-weight:600; }
+main blockquote { margin:1em 0; padding:.2em 1.2em; border-left:3px solid var(--accent); color:var(--mute); background:var(--surface); border-radius:0 4px 4px 0; }
+main :not(pre) > code { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:.08em .35em; font:.86em "Geist Mono",ui-monospace,monospace; }
+.codehilite, main pre { background:var(--term-bg); color:var(--term-fg); border-radius:6px; padding:16px 18px; overflow-x:auto; font:13.5px/1.55 "Geist Mono",ui-monospace,monospace; }
+.codehilite pre, pre code { background:none; padding:0; margin:0; border:none; }
+.byline { font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:0 0 28px; }
+.byline .kind { color:var(--accent); }
+.src { font:12.5px "Geist Mono",ui-monospace,monospace; margin-top:48px; padding-top:16px; border-top:1px solid var(--border); color:var(--mute); }
+.posts { list-style:none; padding:0; margin:8px 0 0; }
+.posts li { padding:20px 0; border-bottom:1px dashed var(--border); }
+.posts a.title { display:block; font-family:Geist,ui-sans-serif,sans-serif; font-size:1.3rem; font-weight:600; color:var(--ink); text-decoration:none; }
+.posts a.title:hover { color:var(--accent); }
+.posts .meta { font:12px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:4px 0 8px; }
+.posts .meta .kind { color:var(--accent); }
+.posts .excerpt { color:var(--mute); margin:0; }
+.empty { color:var(--mute); background:var(--surface); border:1px dashed var(--border); border-radius:6px; padding:24px; margin-top:8px; }
+footer.ft { border-top:1px solid var(--border); margin-top:40px; }
+footer.ft .in { max-width:760px; margin:0 auto; padding:24px; font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+@media (max-width: 860px) {
+  .wrap { padding:24px 16px 16px; }
+  main h1 { font-size:1.6rem; }
+  main h2 { font-size:1.2rem; }
+  .top-in { padding:0 16px; gap:14px; }
+}
+</style></head><body><div class="top"><div class="top-in"><a class="brand" href="../index.html">BENE</a><a class="nav" href="../index.html">Landing</a><a class="nav" href="../docs/index.html">Docs</a><a class="nav cur" href="index.html">Blog</a><span class="spacer"></span><a class="nav" href="../zh/blog/index.html" title="切换到中文">文</a></div></div><div class="wrap"><main><div class="crumbs"><a href="index.html">← All posts</a></div><h1>The Harness Behind the Arena: Why We Build BENE</h1><p class="byline"><span class="kind">the WHY</span> · 2026-06-17</p><blockquote>
+<p>"兽物的意识无法超越眼前所见……只会毁灭，不会创造……而人，则需框架逻辑，来理解世界。"
+— the gom jabbar, paraphrased</p>
+</blockquote>
+<h2 id="the-beast-and-the-box">The beast and the box</h2>
+<p>In the gom jabbar test, the beast cannot see past the pain in front of it. Its
+awareness never exceeds the immediate; it reacts, it destroys, but it does not
+build. A human passes the test by holding a <em>frame</em> — a deliberate, focused
+scaffolding that lets the mind reach beyond the present moment and construct
+rather than merely react.</p>
+<p>A raw language model is the beast. Give it one turn and a wall of context and it
+will react — sometimes brilliantly — but it has no durable memory of the path it
+already walked, no way to isolate its mistakes from yours, no receipt for what it
+claimed, and no way for the <em>next</em> agent to inherit anything it learned. Point a
+dozen of them at the same repository and the failure compounds: they clobber each
+other's work, overwrite each other's files, and produce a stream of confident
+output that no one can audit or reproduce.</p>
+<p>BENE is the box around the beast. It is the framework and logic — the focused
+scaffolding — that turns a reactive model into something that can <em>build</em>.</p>
+<h2 id="what-bene-is-in-one-breath">What BENE is, in one breath</h2>
+<p>BENE is a <strong>local-first, single-file, multi-agent harness</strong>. Every agent gets an
+isolated virtual filesystem. Every action lands in an append-only journal. A
+single auditable SQLite file — the <em>Nexus</em> — joins every isolated agent, so the
+whole swarm's state is one file you can copy, diff, check into git, or hand to
+the next shift. No cluster, no broker, no daemon farm: a substrate you can hold
+in your hand.</p>
+<p>That is the <em>what</em>. This post is about the <em>why</em>.</p>
+<h2 id="why-a-substrate-and-why-now">Why a substrate, and why now</h2>
+<p>We did not build BENE in the abstract. We built it because we needed to run
+something genuinely demanding on top of it: <strong>a competitive arena for coding
+agents</strong> — a platform where independent agents take on real engineering tasks and
+are scored against each other. (The arena is a separate product with its own
+internals; everything here is the substrate it sits on, described abstractly.)</p>
+<p>An arena is an unforgiving customer. To run one honestly, the substrate
+underneath has to guarantee four things that a bare LLM loop cannot:</p>
+<ul>
+<li>
+<p><strong>Isolation.</strong> Competitors must not see or stomp on each other's work. In BENE
+  every agent reaches its filesystem through <code>agent_id</code>-scoped VFS methods — one
+  agent's reads and writes <em>cannot</em> land in another's space. One database, many
+  sealed rooms. (The raw <code>query</code>/<code>search</code> tools see across agents on purpose:
+  they're the operator's audit view, not something you hand a competitor.)</p>
+</li>
+<li>
+<p><strong>Auditability.</strong> A score is only as trustworthy as its receipt. Every tool
+  call and every file write is an event in an append-only journal; every
+  coordination decision is a row in the shared log. When the arena says an agent
+  did X, there is a row that proves it — and a row that proves it <em>didn't</em> do Y.</p>
+</li>
+<li>
+<p><strong>Reproducibility.</strong> A result you cannot re-run is a rumor. BENE checkpoints an
+  agent's VFS and key-value state and restores it on demand, so a bad turn can be
+  rewound and a run's recorded state re-examined rather than argued over. (Side
+  effects a tool pushed to the host, network, or other processes live outside the
+  snapshot — BENE captures the state it owns, not the whole world.)</p>
+</li>
+<li>
+<p><strong>Accumulated memory.</strong> The next agent must not start cold. BENE turns execution
+  traces into <em>engrams</em> — searchable, compressed memory of paths already walked —
+  so the agent that picks up tomorrow inherits what the agent today discovered.</p>
+</li>
+</ul>
+<p>Strip the arena away and those four properties are exactly what <em>any</em> serious
+multi-agent system needs. The arena just refuses to let us cheat on them.</p>
+<h2 id="the-sisterhood-mapped-to-features">The Sisterhood, mapped to features</h2>
+<p>BENE is styled after the Bene Gesserit — a Sisterhood that wins not with force
+but with patience, memory, and preparation. The lore is not decoration; it maps
+one-to-one onto how the harness earns its keep:</p>
+<ul>
+<li><strong>Other Memory</strong> — a Reverend Mother carries the memory of every Reverend Mother
+  before her → searchable <strong>traces + trace-based retrieval</strong>. The next agent
+  inherits the path already walked.</li>
+<li><strong>Missionaria Protectiva</strong> — sisters seed protective myths <em>ahead of need</em> →
+  <strong>skills + shared memory</strong> propagated across agents before they are required.</li>
+<li><strong>The Breeding Program</strong> — patient, multi-generation selection → an
+  <strong>evolutionary meta-harness search</strong> that breeds better harness strategies on a
+  benchmark; surviving candidates are bridged into the engram store, and a
+  separate, opt-in kill-gated promotion step keeps only real improvements.</li>
+<li><strong>The Litany Against Fear</strong> — <em>face it, let it pass, turn the inner eye, restore</em>
+  → <strong>checkpoint, restore, diff</strong>: face a failed turn, let it pass through it, see
+  its path, and restore.</li>
+</ul>
+<h2 id="the-thesis">The thesis</h2>
+<p>Beasts only destroy; humans need frameworks. An LLM, left to react, is the most
+capable beast we have ever built — and still a beast. A harness is the deliberate,
+focused consciousness we wrap around it so it can build instead of merely react.</p>
+<p>That is why BENE exists. Not as a wrapper for a chatbot, but as the substrate
+underneath an arena that would expose any dishonesty in minutes: isolated,
+auditable, reproducible, and remembering. One file. Many agents. No cold starts.</p>
+<p><em>Next in this series: </em><em>What BENE is — the seven pillars</em><em>, and </em><em>How we build
+BENE — harness engineering and eval-gated evolution.</em>**</p><p class="src"><a href="index.html">← All posts</a></p></main></div><footer class="ft"><div class="in"><span>Edit the markdown in blog/, rerun site/build-blog.py; never edit the HTML.</span><a href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer">GitHub</a></div></footer></body></html>
