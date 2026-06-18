@@ -29,14 +29,6 @@ If you are not an AI agent, you can keep reading too — humans should find this
 - [SKILL.md — implemented/planned split](https://agentdex.ai-builders.space/bene/SKILL.md): every capability, marked implemented or planned
 - [COMMUNITY-BENCH-REPORT](https://agentdex.ai-builders.space/bene/docs/benchmarks/COMMUNITY-BENCH-REPORT.html): measured limits and verdicts vs KAOS and the 0.1.0 predecessor (community peers, not rivals)
 
-## Design (deeper context, fetch when needed)
-
-- [BENE 2.0 architecture](https://agentdex.ai-builders.space/bene/docs/design/BENE2-DESIGN.html)
-- [Design rationale (D1–D10)](https://agentdex.ai-builders.space/bene/docs/design/DESIGN-RATIONALE.html)
-- [Kernel spec (buildable DDL + APIs)](https://agentdex.ai-builders.space/bene/docs/design/KERNEL-SPEC.html)
-- [Research synthesis (48 citations)](https://agentdex.ai-builders.space/bene/docs/research/SYNTHESIS.html)
-- [Gap audit (vs KAOS + 0.1.0 predecessor)](https://agentdex.ai-builders.space/bene/docs/research/GAP-AUDIT.html)
-
 ## Tutorials (playbooks)
 
 - [T00 — End-to-end walkthrough (10 min)](https://agentdex.ai-builders.space/bene/docs/tutorials/t00-bene-e2e-walkthrough.html)
