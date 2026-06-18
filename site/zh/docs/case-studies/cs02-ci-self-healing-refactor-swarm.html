@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Self-Healing CI as a Multi-Agent System: Design, Insights, and Cross-Team Influence — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — Self-Healing CI as a Multi-Agent System: Design, Insights, and Cross-Team Influence" />
+<title>把自愈 CI 当成多 agent 系统来做：设计、洞察与跨团队影响 (Self-Healing CI as a Multi-Agent System: Design, Insights, and Cross-Team Influence) — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — 把自愈 CI 当成多 agent 系统来做：设计、洞察与跨团队影响 (Self-Healing CI as a Multi-Agent System: Design, Insights, and Cross-Team Influence)" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -242,196 +242,196 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="../index.html">docs</a> / case-studies/cs02-ci-self-healing-refactor-swarm.md</div>
-<h1 id="self-healing-ci-as-a-multi-agent-system-design-insights-and-cross-team-influence">Self-Healing CI as a Multi-Agent System: Design, Insights, and Cross-Team Influence</h1>
+<h1 id="ci-agent-self-healing-ci-as-a-multi-agent-system-design-insights-and-cross-team-influence">把自愈 CI 当成多 agent 系统来做：设计、洞察与跨团队影响 (Self-Healing CI as a Multi-Agent System: Design, Insights, and Cross-Team Influence)</h1>
 <p><em>Engineering · 2026-05</em></p>
 <hr />
-<h2 id="context">Context</h2>
-<p>Most CI pipelines are written as a pile of bash that grows by accretion. Each new check is a job; each flake is a workaround; each refactor is a one-off PR that nobody owns. Over time, the pipeline becomes the de-facto multi-agent system of the team — except it has no isolation, no audit, and no rollback.</p>
-<p>This case study describes a different design: CI as an explicit multi-agent system, where every job is a BENE agent program with isolation, an audit trail, and surgical rollback. It documents the architecture choices, the insights we landed on after running it, the practices we now recommend to other teams, and the ways this pattern reshaped how adjacent teams think about pipelines, refactors, and review.</p>
-<p>The aim is not to share a config — configs go stale — but to share the load-bearing design decisions and why they matter.</p>
-<h2 id="problem-framing">Problem Framing</h2>
-<p>The pipeline we set out to redesign had three smells common to mid-size services:</p>
+<h2 id="context">背景 (Context)</h2>
+<p>大多数 CI 流水线都是一堆 bash 靠层层堆叠攒出来的。每加一项检查就是一个 job，每遇一次抖动（flake）就打一个补丁，每做一次重构就是一个没人认领的一次性 PR。时间一长，这条流水线事实上就成了团队的多 agent 系统——只不过它没有隔离、没有审计、也没有回滚。</p>
+<p>本案例讲的是另一种做法：把 CI 当成一个显式的多 agent 系统，每个 job 都是一段带隔离、带审计轨迹、能做外科手术式回滚的 BENE agent 程序。它记录的是我们的架构取舍、跑起来之后才落定的几条洞察、如今我们推荐给其他团队的实践，以及这套模式如何重塑了相邻团队对流水线、重构和评审的认知。</p>
+<p>它的目的不是甩给你一份配置——配置会过期——而是把那些真正吃重的设计决策，以及它们为什么重要，讲清楚。</p>
+<h2 id="problem-framing">问题拆解 (Problem Framing)</h2>
+<p>我们要重做的这条流水线，带着中型服务常见的三种坏味道：</p>
 <ul>
-<li>A typecheck advisory job whose error count drifted upward each sprint, with no owner.</li>
-<li>A test suite where flake retries hid real reliability bugs behind green checks.</li>
-<li>A review culture where small refactors were either too big to land safely, or too small to attract a reviewer.</li>
+<li>一个 typecheck 的 advisory job，错误数每个迭代都在往上漂，却没有归属人。</li>
+<li>一个测试套件，抖动重试把真实的可靠性 bug 藏在了绿勾后面。</li>
+<li>一种评审文化：小重构要么大到没法安全上线，要么小到招不来评审人。</li>
 </ul>
-<p>A single human-driven cleanup PR is the wrong unit of work for any of these. We wanted <em>N</em> small, independently reviewable, independently revertible units — and we wanted the pipeline to produce them automatically.</p>
-<h2 id="design">Design</h2>
-<p>The architecture is four cooperating components, each one an instance of the same primitive: an isolated BENE agent (or set of agents) that does one job and writes its findings to a SQL audit trail.</p>
+<p>对这三件事来说，一个人手驱动的「一把清理」PR 都是错误的工作单元。我们想要的是 <em>N</em> 个小的、能独立评审、能独立回滚的单元——而且我们想让流水线自动把它们产出来。</p>
+<h2 id="design">设计 (Design)</h2>
+<p>整套架构由四个互相配合的组件构成，每一个都是同一个原语（primitive）的实例：一个隔离的 BENE agent（或一组 agent），只干一件事，并把它的发现写进一条 SQL 审计轨迹。</p>
 <table>
 <thead>
 <tr>
-<th>Component</th>
-<th>Concern</th>
-<th>Output</th>
+<th>组件</th>
+<th>关注点</th>
+<th>产出</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Regression gate</td>
-<td>Did this change move a measurable signal beyond a threshold?</td>
-<td>Pass/fail with delta</td>
+<td>回归闸门</td>
+<td>这次改动有没有把某个可量化的信号推过阈值？</td>
+<td>带 delta 的通过/失败</td>
 </tr>
 <tr>
-<td>Auto-fix</td>
-<td>Is this drift trivially repairable?</td>
-<td>A commit on the PR branch</td>
+<td>自动修复</td>
+<td>这处漂移是不是能轻松修掉？</td>
+<td>PR 分支上的一个 commit</td>
 </tr>
 <tr>
-<td>Review swarm</td>
-<td>Are there issues that aren't mechanically detectable?</td>
-<td>Per-role review notes</td>
+<td>评审蜂群</td>
+<td>有没有那种机器检测不出来的问题？</td>
+<td>按角色拆分的评审笔记</td>
 </tr>
 <tr>
-<td>Refactor swarm</td>
-<td>Can advisory errors be reduced one file at a time?</td>
-<td>A bundle of file-scoped patches plus an audit DB</td>
+<td>重构蜂群</td>
+<td>advisory 错误能不能一个文件一个文件地往下削？</td>
+<td>一捆按文件切分的补丁，外加一个审计 DB</td>
 </tr>
 </tbody>
 </table>
-<p>Five design decisions carry most of the weight.</p>
-<h3 id="1-one-agent-per-file-not-one-agent-per-task">1. One agent per file, not one agent per task</h3>
-<p>Single-agent attempts at "fix all type errors" hit context limits and produced sprawling, unreviewable diffs. Splitting the work into shards of <em>one file each</em> gave us the right unit. Each shard's diff is small enough to review in two minutes, and shard failures are local.</p>
-<p>This is the same pattern the 100-agent scale tutorial uses for migrations. The constraint — no shard touches more than one file — is load-bearing, not a stylistic preference.</p>
+<p>真正吃重的是下面这五个设计决策。</p>
+<h3 id="1-agent-agent">1. 一个 agent 管一个文件，而不是一个 agent 管一个任务</h3>
+<p>让单 agent 去「修掉所有类型错误」的尝试会撞上 context 上限，产出一坨摊得到处都是、根本没法评审的 diff。把活儿切成<em>一个文件一片</em>的分片（shard），我们才拿到了对的工作单元。每个分片的 diff 都小到两分钟能评审完，分片失败也只是局部的。</p>
+<p>这跟 100-agent 规模教程里做迁移用的是同一套模式。那条约束——任何分片都不许碰超过一个文件——是吃重的，不是什么风格上的偏好。</p>
 <blockquote>
-<p>See <a href="../tutorials/t08-hundred-agents-scale.html">tutorials/t08 — 100-Agent Scale</a> for the same constraint at 847 shards. Reading t08 first makes everything below feel obvious instead of arbitrary.</p>
+<p>同样的约束在 847 个分片上的样子，见 <a href="../tutorials/t08-hundred-agents-scale.html">tutorials/t08 — 100-Agent Scale</a>。先读 t08，下面这些东西会显得理所当然，而不是凭空冒出来的。</p>
 </blockquote>
-<h3 id="2-per-shard-git-worktree-not-per-shard-branch">2. Per-shard <code>git worktree</code>, not per-shard branch</h3>
-<p>Parallel branches produce parallel branch state. When a patch is rejected we want to discard it cleanly, not run <code>git reset</code> on a checkout other shards might depend on. A <code>git worktree</code> per shard gives us parallel filesystem state without parallel branch state. Cleanup is <code>rm -rf</code> of the worktree.</p>
-<p>Side benefit: each shard's <code>mypy</code>/test invocation runs in its own working directory, so verification has no cross-shard interference.</p>
+<h3 id="2-git-worktree-branch">2. 每个分片一个 <code>git worktree</code>，而不是每个分片一个 branch</h3>
+<p>并行的 branch 会产出并行的 branch 状态。一个补丁被否掉时，我们想干净利落地丢掉它，而不是在一个别的分片可能还依赖着的 checkout 上跑 <code>git reset</code>。给每个分片配一个 <code>git worktree</code>，就能拿到并行的文件系统状态，却不带并行的 branch 状态。清理就是把那个 worktree <code>rm -rf</code> 掉。</p>
+<p>附带的好处：每个分片的 <code>mypy</code>/测试调用都跑在自己的工作目录里，于是验证之间没有跨分片的相互干扰。</p>
 <blockquote>
-<p>The "discard one without disturbing the rest" property is the same one <a href="../tutorials/t02-e2e-self-healing.html">tutorials/t02 — End-to-End Self-Healing</a> demonstrates with VFS checkpoints. Read t02 if the rollback semantics here feel unfamiliar; the worktree is the filesystem-side analogue of t02's per-agent restore.</p>
+<p>「丢掉一个不惊动其余」这条性质，正是 <a href="../tutorials/t02-e2e-self-healing.html">tutorials/t02 — End-to-End Self-Healing</a> 用 VFS checkpoint 演示的那一条。如果这里的回滚语义你不熟，读一下 t02；worktree 就是 t02 里逐 agent restore 在文件系统侧的对应物。</p>
 </blockquote>
-<h3 id="3-hub-coordination-not-chat">3. Hub coordination, not chat</h3>
-<p>Cross-shard learning happens through a single read-only hub directory inside the shared VFS — agents write notes ("the codebase prefers <code>Optional[X]</code> over <code>X | None</code>") that later shards see at start. There is no agent-to-agent message bus, no consensus protocol, no token explosion.</p>
-<p>The discipline this enforces — "what did you learn that the next agent should know?" — turned out to be valuable on its own. We now ask the same question of human reviewers in PR templates.</p>
+<h3 id="3-hub">3. 用 hub 协调，而不是聊天</h3>
+<p>跨分片的学习是通过共享 VFS 里一个只读的 hub 目录发生的——agent 把笔记写进去（「这个代码库偏好 <code>Optional[X]</code> 而不是 <code>X | None</code>」），后面的分片一启动就能看到。这里没有 agent 之间的消息总线，没有共识协议，没有 token 爆炸。</p>
+<p>它强制出来的纪律——「你学到了什么、下一个 agent 应该知道？」——本身就很有价值。我们现在在 PR 模板里也拿同样的问题去问人类评审者。</p>
 <blockquote>
-<p>Why hub-not-chat works at scale: see <a href="../tutorials/t08-hundred-agents-scale.html">tutorials/t08 — 100-Agent Scale</a> for the token-cost math and <a href="../tutorials/t03-security-swarm.html">tutorials/t03 — Security Swarm</a> for why isolation prevents cross-agent anchoring bias. Both are short and concrete; either one is faster than re-deriving the argument from scratch.</p>
+<p>hub 而非聊天为什么能在规模上成立：token 成本的算账见 <a href="../tutorials/t08-hundred-agents-scale.html">tutorials/t08 — 100-Agent Scale</a>，隔离为什么能挡住 agent 之间的锚定偏差（anchoring bias）见 <a href="../tutorials/t03-security-swarm.html">tutorials/t03 — Security Swarm</a>。两篇都短而具体；随便读哪一篇，都比从头自己把这套论证推一遍要快。</p>
 </blockquote>
-<h3 id="4-verify-before-keep">4. Verify before keep</h3>
-<p>Every patch is re-validated inside its own worktree before it lands in the artifact bundle. The orchestrator never trusts the agent's self-report. Concretely: a patch is kept iff the verification metric (mypy error count, test pass rate, etc.) strictly improves after the patch is applied to a clean shard worktree.</p>
-<p>The first pilot run of the refactor swarm produced eight patches; three were discarded by this step. All three looked plausible. None of them actually reduced errors. Without this step they would have shipped.</p>
+<h3 id="4">4. 先验证再保留</h3>
+<p>每个补丁在进产物包（artifact bundle）之前，都要在它自己的 worktree 里重新验证一遍。orchestrator 从不相信 agent 的自我陈述。具体说：一个补丁能被保留，当且仅当——把它打到一个干净的分片 worktree 上之后，验证指标（mypy 错误数、测试通过率等）严格变好。</p>
+<p>重构蜂群的第一次试点跑出了八个补丁，其中三个被这一步丢掉了。这三个看起来都挺像那么回事，但没有一个真的削掉了错误。没有这一步，它们就上线了。</p>
 <blockquote>
-<p><a href="../tutorials/t07-regression-guard.html">tutorials/t07 — Regression Guard</a> shows the same threshold-on-a-metric idea applied to model swaps. If the verify-before-keep gate feels novel, t07 has a one-page worked example using benchmark deltas — read that, then return.</p>
+<p><a href="../tutorials/t07-regression-guard.html">tutorials/t07 — Regression Guard</a> 展示了同样的「对某个指标卡阈值」的思路，用在模型替换上。如果「先验证再保留」这道闸门对你来说还很新鲜，t07 有一个用 benchmark delta 跑出来的一页纸示例——读完那个，再回来。</p>
 </blockquote>
-<h3 id="5-the-audit-db-is-the-artifact">5. The audit DB is the artifact</h3>
-<p>Logs are for humans during the run. The audit DB is for the next agent (or human) after the run. Every tool call, file write, state change, and lifecycle event is a SQL row. The CI artifact bundle includes the DB, so a reviewer can query:</p>
+<h3 id="5-db">5. 审计 DB 才是交付物</h3>
+<p>日志是给跑批过程中的人看的。审计 DB 是给跑完之后的下一个 agent（或人）看的。每一次 tool 调用、文件写入、状态变更、生命周期事件，都是一行 SQL。CI 的 artifact bundle 把这个 DB 也打进去，于是评审者可以直接查：</p>
 <ul>
-<li>Which shards used the most tokens?</li>
-<li>Which shards' patches were kept vs discarded, and why?</li>
-<li>What did each shard write into the discoveries hub?</li>
-<li>Where did agents fail, and with what error messages?</li>
+<li>哪些分片用掉的 token 最多？</li>
+<li>哪些分片的补丁被保留、哪些被丢弃，为什么？</li>
+<li>每个分片往发现 hub（discoveries hub）里写了什么？</li>
+<li>agent 在哪里挂的，报的什么错？</li>
 </ul>
-<p>This single change — treating the DB as the deliverable, not the logs — is what made the system reviewable at scale.</p>
+<p>正是这一处改动——把 DB 而不是日志当成交付物——让这套系统在规模上变得可评审。</p>
 <blockquote>
-<p>The query patterns are the same ones used in <a href="../tutorials/t05-incident-response.html">tutorials/t05 — Incident Response</a> for 12-second root-cause analysis. The schema is documented in <a href="../schema.html">Schema</a>. If you only want the canned queries, jump to t05.</p>
+<p>这些查询模式，跟 <a href="../tutorials/t05-incident-response.html">tutorials/t05 — Incident Response</a> 里用来做 12 秒根因分析的是同一套。schema 在 <a href="../schema.html">Schema</a> 里有文档。如果你只想要那些现成的查询，直接跳到 t05。</p>
 </blockquote>
-<h2 id="supply-chain-insights">Supply-Chain Insights</h2>
-<p>Two non-obvious choices that we now consider mandatory for any agentic CI:</p>
-<p><strong>Runner config under code-owned paths — but not under <code>.github/workflows/</code>.</strong> A configuration file at the repo root is editable by any contributor's PR. Move the runner config under a CODEOWNERS-protected path so changes to it require an explicit owner review. The cost is zero. The threat it closes — a PR that quietly redirects model routing to a different provider or model — is real. We initially placed the config under <code>.github/workflows/</code>; that was wrong: GitHub Actions auto-discovers and <em>runs</em> every yaml in that directory as a workflow. The right home is a sibling like <code>.github/bene/</code>, which is still CODEOWNERS-protectable but is not an Actions workflow path. <strong>Insight: "CODEOWNERS-protected" and "auto-executable" are independent properties; place privileged configs where the first holds and the second does not.</strong></p>
-<p><strong>A runtime path guard for the config env var.</strong> Each swarm script verifies at startup that the config path resolves under the protected directory when running in CI. If not, the script refuses to start. This blocks the obvious bypass: a PR that adds a config file elsewhere and points the env var at it. The check is two lines of code.</p>
-<p>Both choices are testable: a PR that moves the config or removes the guard fails review the same way any other security regression would.</p>
-<h2 id="what-we-got-right">What We Got Right</h2>
+<h2 id="supply-chain-insights">供应链洞察 (Supply-Chain Insights)</h2>
+<p>有两个不那么显然的选择，我们现在认为对任何 agentic CI 都是必选项：</p>
+<p><strong>runner 配置放在受代码所有权管控的路径下——但不要放在 <code>.github/workflows/</code> 下。</strong> 一个搁在仓库根目录的配置文件，任何贡献者的 PR 都能改。把 runner 配置挪到一个受 CODEOWNERS 保护的路径下，改它就得有一次显式的 owner 评审。成本为零。它堵住的威胁——一个 PR 悄悄把模型路由改到另一个 provider 或另一个模型——是真实存在的。我们一开始把配置放在了 <code>.github/workflows/</code> 下；那是错的：GitHub Actions 会自动发现并<em>运行</em>那个目录里的每一个 yaml，把它当成一个 workflow。正确的归宿是一个同级目录，比如 <code>.github/bene/</code>——它照样能受 CODEOWNERS 保护，但不是 Actions 的 workflow 路径。<strong>洞察：「受 CODEOWNERS 保护」和「会被自动执行」是两个互相独立的性质；把有特权的配置放在前者成立、后者不成立的地方。</strong></p>
+<p><strong>给配置环境变量加一道运行时的路径守卫。</strong> 每个蜂群脚本在启动时都会校验：在 CI 里跑时，配置路径必须解析到那个受保护目录之下。如果不是，脚本直接拒绝启动。这堵住了那个最显然的绕过手法：一个 PR 在别处加个配置文件，再把环境变量指过去。这道检查就两行代码。</p>
+<p>这两个选择都是可测试的：一个挪走配置或拿掉守卫的 PR，会跟任何别的安全回归一样卡在评审上。</p>
+<h2 id="what-we-got-right">我们做对了什么 (What We Got Right)</h2>
 <ul>
-<li><strong>Treating the pipeline as a multi-agent system on purpose.</strong> Once we framed CI as agents-with-isolation, design questions had clear answers: of course each shard gets its own VFS; of course rollback is per-agent; of course the audit DB is the artifact.</li>
-<li><strong>Making phase 1 advisory.</strong> Auto-applying patches felt tempting and was wrong. Even a 5-of-8 success rate produces enough noisy diffs to drown the signal. Advisory output lets a reviewer skim the bundle in minutes.</li>
-<li><strong>Dogfooding the review swarm on the CI scripts themselves.</strong> The first non-trivial finding the review swarm produced was about its own auto-fix loop. That moment justified the entire system to skeptics.</li>
+<li><strong>刻意把流水线当成多 agent 系统来做。</strong> 一旦把 CI 框定成「带隔离的 agent」，设计问题就有了清晰的答案：当然每个分片拿自己的 VFS；当然回滚是逐 agent 的；当然审计 DB 才是交付物。</li>
+<li><strong>把第一阶段做成 advisory。</strong> 自动打补丁听着诱人，其实是错的。哪怕是八里中五的成功率，产出的噪声 diff 也足以把信号淹掉。advisory 产出能让评审者几分钟扫完那一捆东西。</li>
+<li><strong>拿评审蜂群对着 CI 脚本本身吃自家狗粮（dogfood）。</strong> 评审蜂群产出的第一个不平凡的发现，就是关于它自己那个自动修复循环的。那一刻，向怀疑者证明了整套系统的价值。</li>
 </ul>
-<h2 id="what-we-got-wrong">What We Got Wrong</h2>
+<h2 id="what-we-got-wrong">我们做错了什么 (What We Got Wrong)</h2>
 <ul>
-<li><strong>Letting agents read each other's worktrees.</strong> The first version allowed read-only mounts of sibling worktrees. Agents promptly "borrowed" partial patterns mid-run, which made verification flaky. Removed; discoveries-only is enough.</li>
-<li><strong>Allowing reformat-the-file diffs.</strong> Early agents would helpfully reformat an entire file alongside a one-line fix, drowning the actual change. We now constrain prompts to forbid touching anything outside the targeted error lines and reject patches whose diff exceeds a small line budget per error.</li>
-<li><strong>Trying to skip verification for "obvious" fixes.</strong> There are no obvious fixes. The verify step is cheap. Always run it.</li>
+<li><strong>让 agent 互相读对方的 worktree。</strong> 第一版允许只读挂载兄弟分片的 worktree。agent 立刻在跑批中途「借用」了一半的模式，把验证搞得抖来抖去。砍掉了；只共享 discoveries 就够了。</li>
+<li><strong>允许「顺手重排整个文件」的 diff。</strong> 早期的 agent 会很热心地在一行修复旁边把整个文件重排一遍，把真正的改动淹没掉。我们现在用 prompt 把它框死：禁止碰目标错误行以外的任何东西，并且拒绝那些 diff 超出「每个错误一小笔行数预算」的补丁。</li>
+<li><strong>想给「显而易见」的修复跳过验证。</strong> 根本没有显而易见的修复。验证这一步很便宜。永远跑它。</li>
 </ul>
-<h2 id="best-practices-we-now-recommend">Best Practices We Now Recommend</h2>
+<h2 id="best-practices-we-now-recommend">我们现在推荐的最佳实践 (Best Practices We Now Recommend)</h2>
 <ol>
-<li>Pick the smallest unit of work that the verification step can score independently. For typing it is a file. For tests it is a single failing test. For benchmarks it is a single regressed metric.</li>
-<li>Make every shard's work reproducible from the audit DB alone. If a reviewer cannot answer "what did this shard do?" from the DB, the orchestrator is hiding state.</li>
-<li>Keep the orchestrator boring. The leverage comes from the constraints (one shard per file, verify before keep, advisory phase 1) — not from the framework.</li>
-<li>Put the runner config behind code ownership and add a runtime guard. Treat the config as a privileged surface.</li>
-<li>Capture cross-shard learning in a hub directory, not in inter-agent chat.</li>
-<li>Review the audit DB, not the logs. Build a small set of canned SQL queries for cost, failures, and discoveries; share them in the runbook.</li>
+<li>挑那个验证步骤能独立打分的最小工作单元。对类型检查来说是一个文件，对测试来说是一个失败的用例，对 benchmark 来说是一个回归的指标。</li>
+<li>让每个分片的工作单凭审计 DB 就能复现。如果评审者光靠 DB 答不出「这个分片干了什么」，那就是 orchestrator 在藏状态。</li>
+<li>让 orchestrator 保持无聊。杠杆来自那些约束（一个分片一个文件、先验证再保留、第一阶段 advisory）——而不是来自框架。</li>
+<li>把 runner 配置放到代码所有权后面，再加一道运行时守卫。把配置当成一个有特权的面来对待。</li>
+<li>把跨分片的学习沉淀进一个 hub 目录，而不是 agent 之间的聊天。</li>
+<li>评审审计 DB，而不是日志。攒一小套现成的 SQL 查询，覆盖成本、失败和发现；把它们写进 runbook 共享出去。</li>
 </ol>
-<h2 id="cross-team-influence">Cross-Team Influence</h2>
-<p>The design propagated beyond the original pipeline in three ways:</p>
+<h2 id="cross-team-influence">跨团队影响 (Cross-Team Influence)</h2>
+<p>这套设计以三种方式传播到了原始流水线之外：</p>
 <ul>
-<li><strong>A neighbouring data team</strong> adopted the same pattern for their schema-migration pipeline. The unit of work is one table per shard; the verify step is the migration's own dry-run plan; the artifact is a bundle of per-table SQL plus the audit DB. The orchestrator code is ~150 LOC.</li>
-<li><strong>The platform team</strong> adopted the runner-config-under-code-ownership rule as a default for any tool that loads model-routing configuration in CI, not just BENE. This is now a generic policy, not a BENE policy.</li>
-<li><strong>Code review culture.</strong> The review swarm's per-role outputs ("security said X; reliability said Y; tests said Z") changed how human reviewers structure their own PR comments. The four-role split is now the implicit template for non-trivial reviews, regardless of whether the swarm ran.</li>
+<li><strong>一个相邻的数据团队</strong>把同样的模式用到了他们的 schema 迁移流水线上。工作单元是一个分片管一张表，验证步骤是迁移自己的 dry-run plan，产物是一捆按表切分的 SQL 加上审计 DB。orchestrator 代码大约 150 行。</li>
+<li><strong>平台团队</strong>把「runner 配置放在代码所有权之下」这条规则，定成了任何在 CI 里加载模型路由配置的工具的默认要求，而不只是 BENE。这现在是一条通用策略，不是 BENE 专属策略。</li>
+<li><strong>代码评审文化。</strong> 评审蜂群按角色拆分的产出（「安全说 X；可靠性说 Y；测试说 Z」）改变了人类评审者组织自己 PR 评论的方式。无论蜂群有没有跑过，那个四角色拆分如今都成了不平凡评审的隐性模板。</li>
 </ul>
-<h2 id="oppie-deployment-parallels">Oppie Deployment Parallels</h2>
-<p>The most useful design check during the redesign was an unexpected one: how did the storage team ship deployments? Comparing the two pipelines side by side, the same five concerns landed in the same five places — without any coordination between teams.</p>
+<h2 id="oppie-oppie-deployment-parallels">与 Oppie 部署的对照 (Oppie Deployment Parallels)</h2>
+<p>重做过程中最有用的一次设计校验，来得有点出人意料：存储团队是怎么上线部署的？把两条流水线并排一比，同样的五个关注点落在了同样的五个位置上——两个团队之间没有任何协调。</p>
 <table>
 <thead>
 <tr>
-<th>Concern</th>
-<th>Oppie deployments</th>
-<th>BENE self-healing CI</th>
+<th>关注点</th>
+<th>Oppie 部署</th>
+<th>BENE 自愈 CI</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Promotion contract</td>
-<td>Spinnaker pipeline with explicit stages: <code>staging → pre-prod → prod</code>. Each stage has a Manual Judgement.</td>
-<td>Three branch gates: <code>feature → dev → main → tag</code>. The <code>dev → main</code> step is a nightly bot; the tag step is a human cherry-pick. Both are explicit human judgement points.</td>
+<td>晋升契约</td>
+<td>Spinnaker 流水线，阶段显式划分：<code>staging → pre-prod → prod</code>。每个阶段都有一个 Manual Judgement。</td>
+<td>三道分支闸门：<code>feature → dev → main → tag</code>。<code>dev → main</code> 这一步是个夜间 bot，tag 这一步是人工 cherry-pick。两处都是显式的人工判断点。</td>
 </tr>
 <tr>
-<td>Configuration as a privileged surface</td>
-<td>Helm values and pipeline JSON live under code ownership; runtime guards reject configs from outside the protected path.</td>
-<td><code>.github/bene/</code> is the only allowed prefix for <code>BENE_CONFIG</code>; CODEOWNERS gates edits; the runner refuses other paths at startup.</td>
+<td>配置作为有特权的面</td>
+<td>Helm values 和流水线 JSON 放在代码所有权之下；运行时守卫会拒绝来自受保护路径之外的配置。</td>
+<td><code>.github/bene/</code> 是 <code>BENE_CONFIG</code> 唯一允许的前缀；CODEOWNERS 把守改动；runner 在启动时拒绝其他路径。</td>
 </tr>
 <tr>
-<td>Versioned, reproducible artifact</td>
-<td>Released-Builds bucket: SHA256-pinned artifact manifest per release, immutable.</td>
-<td><code>artifact_manifest.sh</code> produces a flat <code>&lt;sha256&gt;  &lt;size&gt;  &lt;relpath&gt;</code> text file alongside the wheel/sdist; <code>sbom.json</code> (CycloneDX) sits next to it.</td>
+<td>版本化、可复现的产物</td>
+<td>Released-Builds bucket：每次发布一份 SHA256 钉死的产物清单，不可变。</td>
+<td><code>artifact_manifest.sh</code> 在 wheel/sdist 旁边产出一个扁平的 <code>&lt;sha256&gt;  &lt;size&gt;  &lt;relpath&gt;</code> 文本文件；<code>sbom.json</code>（CycloneDX）就挨着它放。</td>
 </tr>
 <tr>
-<td>Pre-prod smoke before promotion</td>
-<td><code>pipeline_validation</code> jobs that exercise critical-path operations against a staging cluster.</td>
-<td><code>scripts/ci/pipeline_validation/smoke.py</code> validates critical imports plus a fresh-DB schema apply. Same name, same role.</td>
+<td>晋升前的 pre-prod 冒烟</td>
+<td><code>pipeline_validation</code> job，对着 staging 集群跑关键路径操作。</td>
+<td><code>scripts/ci/pipeline_validation/smoke.py</code> 校验关键 import 加上一次全新 DB 的 schema apply。同名，同职。</td>
 </tr>
 <tr>
-<td>Soak before declaring success</td>
-<td>Spinnaker waits for the canary alerts window before promoting to prod.</td>
-<td><code>canary_watcher.sh</code> polls the <code>release-blocker</code> issue label for 4h on every <code>*-rc*</code> tag.</td>
+<td>宣布成功前先泡一会儿</td>
+<td>Spinnaker 在晋升到 prod 之前会等过金丝雀告警窗口。</td>
+<td><code>canary_watcher.sh</code> 在每个 <code>*-rc*</code> tag 上轮询 <code>release-blocker</code> issue 标签，持续 4 小时。</td>
 </tr>
 <tr>
-<td>Backups as a tier, not an afterthought</td>
-<td>Bronze/silver/gold tiers; backups live on a different filesystem with retention policies and integrity checks.</td>
-<td>Bronze tier (<code>/mnt/gravytrain/triage/bronze/bene-cicd/</code>) holds DB snapshots produced via SQLite's online backup API; sha256 + JSONL audit log; restore refuses to clobber an open DB.</td>
+<td>备份是一个层级，不是事后补丁</td>
+<td>青铜/白银/黄金三层；备份落在另一个文件系统上，带保留策略和完整性校验。</td>
+<td>青铜层（<code>/mnt/gravytrain/triage/bronze/bene-cicd/</code>）存放经 SQLite online backup API 产出的 DB 快照；带 sha256 加 JSONL 审计日志；restore 拒绝覆盖一个打开着的 DB。</td>
 </tr>
 <tr>
-<td>Drift visibility</td>
-<td>Weekly drift reports compare deployed config to source-of-truth.</td>
-<td><code>drift_monitor.sh</code> runs on Monday cron, reports pin freshness, mypy allowlist size, coverage gap, lockfile age.</td>
+<td>漂移可见性</td>
+<td>每周漂移报告，把已部署的配置和事实来源（source-of-truth）做对比。</td>
+<td><code>drift_monitor.sh</code> 跑在周一的 cron 上，报告 pin 的新鲜度、mypy allowlist 的大小、覆盖率缺口、lockfile 的年龄。</td>
 </tr>
 </tbody>
 </table>
-<p>The lesson is not "Spinnaker is a model for CI." It is that <em>promotion, immutability, smoke, soak, snapshot, and drift</em> are the load-bearing primitives of any pipeline that must remain trustworthy across humans and time. Build pipelines that lack any one of them and the gap shows up later as either an outage, a regression, or a paper trail nobody can defend.</p>
-<p>The pipeline parallels also dictated a few choices we would not have made on our own:</p>
+<p>这里的教训不是「Spinnaker 是 CI 的范本」。而是说，<em>晋升、不可变、冒烟、浸泡、快照、漂移</em>，是任何一条「必须跨越人和时间保持可信」的流水线吃重的原语。少了其中任何一个去搭流水线，这个卡点迟早会以一次故障、一次回归，或者一份谁都没法替自己辩护的纸面记录的形式冒出来。</p>
+<p>这套流水线对照还逼出了几个我们自己本不会做的选择：</p>
 <ul>
-<li><strong>Use BSD sysexits semantics for skips.</strong> When a runner cannot reach the bronze tier (laptop, GitHub-hosted runner, ephemeral container), the snapshot script exits <code>75</code> (<code>EX_TEMPFAIL</code>). Callers treat <code>75</code> as "skip, never fail." We inherited this from the deployment-ops practice of distinguishing "skipped this stage on purpose" from "this stage is broken." Without the distinction, missing-mount failures look identical to corruption failures, and both get muted.</li>
-<li><strong>One sentinel issue, edited not appended.</strong> Drift reports rewrite a single rolling comment instead of opening a new issue weekly. Spinnaker dashboards do the same — overwrite the cell, do not paginate the history. Append-only is the right model for events; rolling-current is the right model for status.</li>
-<li><strong>Branch protection on job names, not workflow names.</strong> A workflow rename should not silently disable a required check. We learned this from the deployment side: pipeline IDs are the contract, not the file path that produces them.</li>
+<li><strong>跳过用 BSD sysexits 语义。</strong> 当一个 runner 够不着青铜层时（笔记本、GitHub 托管的 runner、临时容器），快照脚本以 <code>75</code>（<code>EX_TEMPFAIL</code>）退出。调用方把 <code>75</code> 当成「跳过，绝不算失败」。我们从部署运维「区分『这一步是故意跳过的』和『这一步坏了』」的实践里继承了这一点。没有这个区分，挂载缺失的失败看起来和损坏的失败一模一样，结果两者都被静音了。</li>
+<li><strong>一个哨兵 issue，编辑而不是追加。</strong> 漂移报告每周重写同一条滚动评论，而不是新开一个 issue。Spinnaker 的看板也是这么干的——覆盖那个格子，别把历史分页堆出来。append-only 是事件的对的模型；滚动当前态（rolling-current）是状态的对的模型。</li>
+<li><strong>分支保护卡在 job 名上，不卡在 workflow 名上。</strong> 改个 workflow 名，不该悄无声息地把一项必需检查禁掉。这是从部署侧学来的：流水线 ID 才是契约，产出它的那个文件路径不是。</li>
 </ul>
-<h2 id="open-questions">Open Questions</h2>
+<h2 id="open-questions">待解问题 (Open Questions)</h2>
 <ul>
-<li><strong>Auto-apply criteria.</strong> Phase 1 is advisory. Phase 2 should auto-apply patches that meet a strict bar (single-file diff, verification metric improves, no formatting noise, reviewer-marked label). The hard part is defining "no noise" without overfitting.</li>
-<li><strong>Cross-shard refactors.</strong> Some refactors genuinely require touching multiple files together. The current system rejects them. A future variant should detect these cases up front and route them to a different agent shape (one shard, multiple files, stricter human review).</li>
-<li><strong>Cost ceilings.</strong> Token budgets per shard work. Token budgets per PR are still ad-hoc. The audit DB makes this measurable; we have not yet wired a hard cap.</li>
+<li><strong>自动打补丁的判据。</strong> 第一阶段是 advisory。第二阶段应该自动打那些过了硬标准的补丁（单文件 diff、验证指标变好、无格式噪声、评审者打过标签）。难点在于怎么定义「无噪声」而不过拟合。</li>
+<li><strong>跨分片重构。</strong> 有些重构确实需要把多个文件一起改。当前系统会拒掉它们。未来的一个变体应该在前头就识别出这类情况，把它们路由到另一种 agent 形态（一个分片，多个文件，更严格的人工评审）。</li>
+<li><strong>成本上限。</strong> 逐分片的 token 预算管用。逐 PR 的 token 预算还停留在临时拍脑袋。审计 DB 让这件事变得可量化；我们还没接上一个硬性上限。</li>
 </ul>
-<h2 id="see-also">See Also</h2>
-<p>Read these in this order if you are new to the patterns; each one collapses a multi-paragraph explanation in this case study into a concrete, self-contained walkthrough.</p>
+<h2 id="see-also">另请参阅 (See Also)</h2>
+<p>如果你对这些模式还不熟，按这个顺序读；每一篇都把本案例里一段多自然段的解释，收拢成一个具体、自洽的走查。</p>
 <ul>
-<li><a href="../tutorials/t10-ci-overnight-bene-swarm.html">tutorials/t10 — Self-Healing CI Overnight</a> — the <em>how</em>. Working scripts, troubleshooting table, audit-DB queries. Use this when you want to ship the system rather than understand it.</li>
-<li><a href="../tutorials/t08-hundred-agents-scale.html">tutorials/t08 — 100-Agent Scale</a> — the <em>one-agent-per-file pattern</em> shown at 847 shards. Internalises the "shard size is the unit of review" insight in a single read.</li>
-<li><a href="../tutorials/t02-e2e-self-healing.html">tutorials/t02 — End-to-End Self-Healing</a> — the <em>surgical rollback</em> mental model. After this, per-shard worktree cleanup needs no further explanation.</li>
-<li><a href="../tutorials/t03-security-swarm.html">tutorials/t03 — Security Swarm</a> — the <em>parallel reviewers + isolation</em> pattern with anchoring-bias measurements. The fastest way to grasp the review swarm's role split.</li>
-<li><a href="../tutorials/t07-regression-guard.html">tutorials/t07 — Regression Guard</a> — the <em>threshold-on-a-metric</em> gate, applied to model swaps. The cheapest example of "verify before keep".</li>
-<li><a href="../tutorials/t05-incident-response.html">tutorials/t05 — Incident Response</a> — <em>audit-DB SQL</em> in 12 seconds. The canned queries from this case study, in context.</li>
-<li><a href="../checkpoints.html">Checkpoints</a> and <a href="../schema.html">Schema</a> — when you need the primitive reference rather than another scenario.</li>
-<li><a href="../use-cases.html#self-healing-ci-regression-gate-auto-fix-review-and-refactor-swarms">Use Cases — Self-Healing CI</a> — one-page summary that links here.</li>
+<li><a href="../tutorials/t10-ci-overnight-bene-swarm.html">tutorials/t10 — Self-Healing CI Overnight</a> ——<em>怎么做</em>。可跑的脚本、排障表、审计 DB 查询。当你想把系统上线、而不是理解它时，用这篇。</li>
+<li><a href="../tutorials/t08-hundred-agents-scale.html">tutorials/t08 — 100-Agent Scale</a> ——<em>一个 agent 一个文件</em>的模式，在 847 个分片上的样子。一遍读下来就把「分片大小就是评审单元」这条洞察内化掉。</li>
+<li><a href="../tutorials/t02-e2e-self-healing.html">tutorials/t02 — End-to-End Self-Healing</a> ——<em>外科手术式回滚</em>的心智模型。看完这篇，逐分片 worktree 清理就不用再多解释了。</li>
+<li><a href="../tutorials/t03-security-swarm.html">tutorials/t03 — Security Swarm</a> ——<em>并行评审者 + 隔离</em>的模式，带锚定偏差的量化测量。最快理解评审蜂群角色拆分的途径。</li>
+<li><a href="../tutorials/t07-regression-guard.html">tutorials/t07 — Regression Guard</a> ——<em>对某个指标卡阈值</em>的闸门，用在模型替换上。「先验证再保留」最便宜的一个例子。</li>
+<li><a href="../tutorials/t05-incident-response.html">tutorials/t05 — Incident Response</a> ——12 秒内搞定的<em>审计 DB SQL</em>。本案例里那些现成查询，放在上下文里的样子。</li>
+<li><a href="../checkpoints.html">Checkpoints</a> 和 <a href="../schema.html">Schema</a> ——当你要的是原语参考，而不是又一个场景时。</li>
+<li><a href="../use-cases.html#self-healing-ci-regression-gate-auto-fix-review-and-refactor-swarms">Use Cases — Self-Healing CI</a> ——一页纸的小结，链接回这里。</li>
 </ul>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/case-studies/cs02-ci-self-healing-refactor-swarm.md" target="_blank" rel="noopener noreferrer">docs/case-studies/cs02-ci-self-healing-refactor-swarm.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>
