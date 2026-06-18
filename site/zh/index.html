@@ -149,7 +149,7 @@ const Pill = ({ children }) => (
 );
 
 // ─── 卡点 demo (录屏 — 展示 BENE 怎么解决每个 gap) ─────────────────
-// 录屏源 site/demos/tapes/gap-N-*.tape；GIF 是对 bene-main HEAD 实跑的，没改过输出
+// 录屏源 site/demos/tapes/gap-N-*.tape；GIF 是对 bene v0.2.1 实跑的，没改过输出
 const GapDemo = ({ gif, caption }) => (
   <div className="mt-5 bg-[rgb(var(--term))] border border-bene-dim rounded-sm overflow-hidden">
     <div className="flex items-center px-3 py-2 border-b border-bene-dim bg-bene-surface">
@@ -300,16 +300,21 @@ const Hero = () => (
         <br />
         sqlite3 /tmp/bene-demo-*/story.db <span className="text-[#A3E635]">"SELECT tier, kind, substr(title,1,60) FROM engrams ORDER BY created_at DESC LIMIT 5;"</span>
       </Terminal>
-      <div className="mt-8 pt-6 border-t border-bene-dim flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
-        <p className="text-xs text-bene-muted leading-snug">
-          或者把 BENE 交给你的 agent — 一个 URL，agent 自己抓 skill 和 index，自己跑 BENE。
+      <div className="mt-8 pt-6 border-t border-bene-dim space-y-4">
+        <p className="text-sm text-bene-muted leading-relaxed max-w-3xl">
+          先把话讲清楚：agent loop 开箱即用——engram 和事件日志每次 run 都在写，不用接。gate、记忆 consolidation、skills、evolve 是给你的真家伙，得你自己拼，没替你接成一条线。<a href="docs/integrating-bene.html" className="text-bene-accent hover:underline">完整的诚实地图 →</a>
         </p>
-        <div className="flex flex-wrap gap-2 shrink-0">
-          <a href="../SKILL.md" target="_blank" rel="noopener noreferrer"
-             className="font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors border border-bene-dim rounded-sm px-3 py-1.5 whitespace-nowrap">
-            /bene/SKILL.md ↗
-          </a>
-          <CopyLlmsTxtButton className="text-bene-muted border-bene-dim hover:text-bene-accent !py-1.5" label="复制 llms.txt" />
+        <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
+          <p className="text-xs text-bene-muted leading-snug">
+            或者把 BENE 交给你的 agent — 一个 URL，agent 自己抓 skill 和 index，自己跑 BENE。
+          </p>
+          <div className="flex flex-wrap gap-2 shrink-0">
+            <a href="../SKILL.md" target="_blank" rel="noopener noreferrer"
+               className="font-mono text-xs text-bene-muted hover:text-bene-accent transition-colors border border-bene-dim rounded-sm px-3 py-1.5 whitespace-nowrap">
+              /bene/SKILL.md ↗
+            </a>
+            <CopyLlmsTxtButton className="text-bene-muted border-bene-dim hover:text-bene-accent !py-1.5" label="复制 llms.txt" />
+          </div>
         </div>
       </div>
     </div>
@@ -324,7 +329,7 @@ const TheGap = () => (
       论文里早翻过去的四个线上卡点。<br />
       <span className="text-bene-muted">你现在那套能接住一部分——BENE 把它们收进同一份可审计的文件。</span>
     </h2>
-    <p className="font-mono text-xs text-bene-muted mb-8">下面 4 段录屏都是对 bene-main HEAD 实跑出来的；输出没改过一个字。</p>
+    <p className="font-mono text-xs text-bene-muted mb-8">下面 4 段录屏都是对 bene v0.2.1 实跑出来的；输出没改过一个字。</p>
     <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-16">
       <Card className="md:col-span-12 h-full">
         <h3 className="font-mono text-bene-accent mb-4">卡点 1：eval 跑过了，线上不一定扛得住</h3>
@@ -487,6 +492,7 @@ const Proof = () => {
           <Terminal caption={tabs[a].c}>{tabs[a].r}</Terminal>
         </div>
       </div>
+      <p className="font-mono text-xs text-bene-muted mb-8">Tab 1 是对 bene v0.2.1 实跑的——0.3s、12 个 engram、4 次 experiment run 都是没改过的原始输出。</p>
       <p className="font-mono text-sm text-bene-text border-l-2 border-bene-accent pl-4">
         再跑一句 <code className="text-bene-accent">bene dashboard</code>。还是那份 .db，直接撑起实时 TUI，不补埋点。
       </p>
