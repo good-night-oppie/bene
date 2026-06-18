@@ -40,15 +40,19 @@ hard parts are the engine's job.
 
 | Arena need | BENE primitive | Why it holds |
 |---|---|---|
-| Isolation | per-agent VFS, SQL-scoped by `agent_id` | a competitor cannot *construct* a cross-agent query |
-| Auditability | append-only event journal + execution traces | every action is a row; receipts can't be back-dated |
-| Reproducibility | checkpoint / restore / diff | re-run any match from a snapshot |
-| Accumulated memory | engrams + trace retrieval | learn across matches; scope per agent |
+| Isolation | per-agent VFS, SQL-scoped by `agent_id` | an entrant's own `fs_*` tools stay in its namespace (add an OS sandbox + restricted tools for adversarial code — see below) |
+| Auditability | append-only event journal + execution traces | every action is a row (append-only by convention; hash-chain for tamper-evidence if the DB is writable) |
+| Reproducibility | checkpoint / restore / diff | re-run a match's BENE state from a snapshot (not external side effects) |
+| Accumulated memory | engrams + trace retrieval | learn across matches; scope retrieval per agent |
 
 ### Isolation — sealed rooms, one file
 
-Each competitor runs as an isolated agent. The engine scopes every filesystem
-operation by `agent_id`, so isolation is a property you cannot opt out of:
+Each competitor runs as an isolated agent. The engine scopes an agent's own
+`fs_*` tools by `agent_id`, so an entrant's reads and writes stay in its
+namespace. This is logical isolation in one file — for **adversarial** entrants,
+pair it with an OS sandbox and a restricted tool set: the default runner allows
+`shell_exec`, and the operator-facing `query`/`agent_read` tools take an explicit
+`agent_id`, so neither is a hard cross-agent boundary on its own.
 
 ```python
 from bene import Bene
@@ -56,13 +60,16 @@ from bene import Bene
 arena = Bene("arena.db")            # one auditable file for the whole tournament
 for competitor in entrants:         # pseudo-code: your entrant list
     arena.run(name=competitor, task=PROBLEM)   # each gets a sealed workspace
-# competitor A physically cannot read competitor B's /solution.py
+# competitor A's own fs_* tools never resolve to competitor B's /solution.py
 ```
 
 ### Auditability — the receipt is the row
 
-Scoring reads from the journal, never from the agent's self-report. Because the
-log is append-only, a receipt cannot be fabricated after the fact:
+Scoring reads from the journal, never from the agent's self-report. The log is
+append-only *by application convention* — for an arena where an entrant or
+operator can write the SQLite file, add real tamper-evidence (a hash-chain over
+rows, or an append-only store outside the contestant's reach) before treating a
+receipt as unforgeable:
 
 ```python
 # pseudo-code: derive the score from recorded events, not from what the agent said
@@ -90,14 +97,22 @@ the snapshot rather than argued about:
 ```python
 cp = arena.checkpoint(competitor, label="pre-grade")
 # ...grade...
-arena.restore(competitor, checkpoint=cp)           # exact re-run, byte for byte
+arena.restore(competitor, checkpoint=cp)           # rewinds BENE VFS + state
 ```
+
+`restore` rewinds the agent's BENE-managed VFS and key-value state. Steps that
+reached *outside* BENE — a model call, `shell_exec`, network or host-filesystem
+side effects — aren't replayed, so a re-run is deterministic only to the extent
+the contested work stayed inside the substrate.
 
 ### Accumulated memory — smarter across matches, sealed within one
 
-Finished matches leave traces that become engrams. A future match retrieves
-*lessons* (what tends to fail a gate) without ever reading a live competitor's
-workspace — memory is scoped, not shared wholesale.
+Finished matches leave traces that become engrams. A future match should
+retrieve *lessons* (what tends to fail a gate), not raw workspaces — but scope
+that retrieval explicitly: the kernel retrievers filter by `agent_id` only when
+*recording* the query, so pass the match/agent scope into retrieval (or curate
+which engrams are shared) rather than assuming cross-match reads are sealed by
+default.
 
 ```python
 arena.retrieve("common failure modes on refactor tasks")
