@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>BENE 设计哲学 — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — BENE 设计哲学" />
+<title>Other Memory: Trace-Based RAG so the Next Agent Never Starts Cold — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — Other Memory: Trace-Based RAG so the Next Agent Never Starts Cold" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -165,9 +165,9 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
   <a class="nav" href="../../../SKILL.md" target="_blank" rel="noopener noreferrer" title="把 BENE 交给你的 agent，一个 URL">SKILL.md ↗</a>
   <button class="nav copy-llms" data-llms-url="../../../llms.txt" data-copied-label="✓ 已复制" data-opened-label="↗ 已打开" title="把 llms.txt 索引拷到剪贴板 — 粘贴进你 agent 的 context">复制 llms.txt</button>
   <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="GitHub"><svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="vertical-align:text-bottom"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg></a>
-  <a class="nav" href="../../../docs/zh/philosophy.html" title="Switch to English" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">EN</a>
+  <a class="nav" href="../../../docs/case-studies/cs04-trace-rag-other-memory.html" title="Switch to English" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">EN</a>
 </div></div>
-<div class="zh-banner" style="background:rgba(238,96,24,.07);border-bottom:1px solid rgba(238,96,24,.2);padding:12px 24px;font-size:13px;line-height:1.5;color:rgb(var(--muted))"><strong style="color:rgb(var(--text))">本页中文版正在按照 4-book methodology 翻译（Mom Test / Pressfield / Zinsser / Dicks）—— 不放 AI 翻译稿。</strong> 下方是英文原文，点上方 <a href="../../../docs/zh/philosophy.html" style="color:rgb(var(--accent));text-decoration:underline">EN</a> 直接到英文页面， 或在 <a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer" style="color:rgb(var(--accent));text-decoration:underline">Discussions</a> 里贡献翻译。</div>
+<div class="zh-banner" style="background:rgba(238,96,24,.07);border-bottom:1px solid rgba(238,96,24,.2);padding:12px 24px;font-size:13px;line-height:1.5;color:rgb(var(--muted))"><strong style="color:rgb(var(--text))">本页中文版正在按照 4-book methodology 翻译（Mom Test / Pressfield / Zinsser / Dicks）—— 不放 AI 翻译稿。</strong> 下方是英文原文，点上方 <a href="../../../docs/case-studies/cs04-trace-rag-other-memory.html" style="color:rgb(var(--accent));text-decoration:underline">EN</a> 直接到英文页面， 或在 <a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer" style="color:rgb(var(--accent));text-decoration:underline">Discussions</a> 里贡献翻译。</div>
 <script>
 (function() {
   document.querySelectorAll('button.copy-llms').forEach(function(btn) {
@@ -205,12 +205,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../codegen.html">codegen</a>
 <a href="../dashboard.html">dashboard</a>
 <a href="../deployment.html">deployment</a>
+<a href="../examples.html">examples</a>
 <a href="../integrating-bene.html">integrating-bene</a>
 <a href="../mcp-integration.html">mcp-integration</a>
 <a href="../memory.html">memory</a>
 <a href="../meta-harness.html">meta-harness</a>
 <a href="../philosophy.html">philosophy</a>
-<a href="../primitive-review-cycle.html">primitive-review-cycle</a>
 <a href="../probe-authoring.html">probe-authoring</a>
 <a href="../schema.html">schema</a>
 <a href="../shared-log.html">shared-log</a>
@@ -219,14 +219,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <h4>Recipes</h4>
 <a href="../recipes/atomic-completion.html">atomic-completion</a>
 <h4>Design and claims</h4>
-<a href="../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
-<a href="../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
-<a href="../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
-<a href="../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
-<h4>Evidence and research</h4>
-<a href="../research/GAP-AUDIT.html">GAP-AUDIT</a>
-<a href="../research/SYNTHESIS.html">SYNTHESIS</a>
-<a href="../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<a href="../design/architecture-diagrams.html">architecture-diagrams</a>
 <h4>Benchmarks and gates</h4>
 <a href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
 <a href="../benchmarks/PREREG.html">PREREG</a>
@@ -244,138 +237,83 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
 <h4>Case studies</h4>
 <a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
-<h4>Infrastructure</h4>
-<a href="../infra/DNS.html">DNS</a></aside>
+<a href="../case-studies/cs03-multi-agent-arena.html">cs03-multi-agent-arena</a>
+<a class="cur" href="../case-studies/cs04-trace-rag-other-memory.html">cs04-trace-rag-other-memory</a>
+<a href="../case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
-<div class="crumbs"><a href="../index.html">docs</a> / zh/philosophy.md</div>
-<h1 id="bene">BENE 设计哲学</h1>
-<h2 id="bene_1">BENE 究竟是什么</h2>
-<p><strong>BENE</strong> = <strong>B</strong>reeding-program · <strong>E</strong>volutionary · <strong>N</strong>exus · <strong>E</strong>ngrams —— 一套贝尼·杰瑟里特 (Bene Gesserit) 式的 harness。</p>
+<div class="crumbs"><a href="../index.html">docs</a> / case-studies/cs04-trace-rag-other-memory.md</div>
+<h1 id="other-memory-trace-based-rag-so-the-next-agent-never-starts-cold">Other Memory: Trace-Based RAG so the Next Agent Never Starts Cold</h1>
+<p><em>Engineering · 2026-06</em></p>
+<hr />
+<h2 id="context">Context</h2>
+<p>The most expensive thing an agent does is rediscover what a previous agent
+already knew. A fresh session opens with an empty context window; whatever the
+last shift learned — which test was flaky, which refactor backfired, which gate
+rejected which candidate and why — is gone unless someone wrote it down in a form
+the next agent can actually find.</p>
+<p>Dumping the full history back into context is not the answer: it is expensive,
+it blows the window, and it buries the one relevant fact under thousands of
+irrelevant ones. This case study is about the alternative BENE ships by default —
+<strong>trace-based retrieval</strong>, the engineering behind the Bene Gesserit's <em>Other
+Memory</em>: the ancestral memory of every Reverend Mother, made queryable.</p>
+<h2 id="problem-framing">Problem framing</h2>
+<p>You want the next agent to inherit the <em>path already walked</em>, not the whole map.
+That means three things the substrate has to provide:</p>
 <ul>
-<li><strong>B</strong>reeding-program (繁育计划) —— 演化层面的 Meta-Harness 搜寻：一种极度耐心的、跨越多代的筛选机制，向着更完美的 harness 进化，一如姐妹会跨越千年繁育出魁萨茨·哈德拉赫 (Kwisatz Haderach)。</li>
-<li><strong>E</strong>volutionary (演化) —— 那些能在跨代传递中产生复利效应的 harness 策略，赢家必须存续，而不是每次都在冰冷的零起点重新摸索。</li>
-<li><strong>N</strong>exus (连结核心) —— 那个将所有 agent 牵绊在一起的、完全可审计的 SQLite 数据库。一个 nexus，唯一的真相源 (source of truth)。</li>
-<li><strong>E</strong>ngrams (记忆印记) —— 那些随时可检索的执行轨迹 (<strong>traces</strong>)：它们构成了基于 trace 进行 RAG 的语料库，也就是 BENE 版本的圣母 "Other Memory" (先祖记忆)。下一个登场的 agent 永远不用从零开始，它天生继承先祖的记录。</li>
+<li><strong>Capture without ceremony.</strong> If remembering requires a deliberate write step,
+  agents will skip it. Memory has to be a side effect of running.</li>
+<li><strong>Retrieve the relevant slice.</strong> Given a question, return the few traces that
+  matter — not a transcript.</li>
+<li><strong>Stay cheap at scale.</strong> Thousands of runs cannot mean a linear scan or a
+  context-window dump.</li>
 </ul>
-<p>这是我们在 Oppie 用来支撑大规模 agent 执行真实 triage (分诊)、on-call 和 SDLC 工作负载的底层编排基座。每个 agent 会分配到一个背靠 SQLite 并且完全物理隔离的虚拟文件系统 (VFS)、一条只能追加写入 (append-only) 的事件日志，以及一条支持任意回溯的 checkpoint 时间线。包裹着这套内核的，是一个负责<strong>演化</strong>的 Meta-Harness，它能不断优化 agent 履行职责的执行策略。</p>
-<p>BENE 不是一个大模型。它也绝不是某种企图用所谓 "优雅的抽象" 去抹平各家 LLM API 差异的平庸框架。BENE 是 harness 层，它的职责只有一项：把充满不确定性与非确定性的 LLM 调用，死死钉成可审计、可横向对比、可严格复现的生产级别操作。</p>
-<hr />
-<h2 id="harness">我们为什么需要一个 Harness？</h2>
-<blockquote>
-<p>兽物的意识无法超越眼前所见，更不会意识到其猎物或将灭绝……它们，只会毁灭，不会创造……兽类的快感局于感官，止于认知……而人，则需框架逻辑，来理解世界……主动选择专注的意识，来搭建思维的框架……体内细胞和神经最深处的意识，驱动着行为……万物，无永恒，忠于意识，生于本能。</p>
-</blockquote>
-<p>野兽的认知边界永远超不出它的视线所及。它只凭本能对猎物、威胁或者眼前的刺激做出应激反应 —— 它只会毁灭，不会创造。人类之所以为人，是因为人类需要用<strong>框架与逻辑</strong>来理解世界：这种经过刻意选择与高度聚焦的意识，在付诸行动之前就已经搭好了思考的脚手架。</p>
-<p>脱去这层框架，一个光秃秃的 LLM 就是那头野兽。它极度擅长对当前 context window 里塞满的东西做出即时反馈。一旦任由它在没有约束的环境里撒野，它会带着无比自信的态度一路反应下去，直到毁掉整个工作树 (working tree)，逼迫你执行全局恢复，或者理直气壮地给出一个彻底错误的答案。它没有 Other Memory，没有 nexus，更缺乏一种能审视自身轨迹的内在视野。</p>
-<p>BENE 正是那套让 agent 学会<strong>创造</strong>而不是仅仅<strong>反应</strong>的框架逻辑。组成名字的这四个字母不是为了凑字数的营销辞藻 —— 它们是四条被铸入底层架构的铁律。<strong>B</strong>reeding-program 和 <strong>E</strong>volutionary 循环，保证了随着时间推移变强的是 harness 本身，而不必苦等模型厂的恩赐。<strong>N</strong>exus 则是那颗唯一的数据库心脏，它让每一次动作都乖乖躺在可审计、可控制的边界里。<strong>E</strong>ngrams（那些留痕的 traces），则是将前代走过的每一步转化为后辈基石的记忆体。这一切加起来，就是一头只会做出应激反应的 LLM 野兽，和一个真正懂得创造的 agent 之间的分水岭。</p>
-<hr />
-<h2 id="_1">两大核心信念</h2>
-<h3 id="1-triage-trace-rag-prompt-rag">1. 面对 Triage 场景，基于 Trace 的 RAG 碾压基于 Prompt 的 RAG</h3>
-<p>对于一个负责分诊 (triage) 的 agent 来说，最昂贵的检索目标根本不是 "系统文档" 或者 "代码库"。最昂贵的情报是：<strong>上一个 agent 在这遇到问题时到底尝试了什么，以及随之引发了什么后果</strong>。BENE 直接把执行轨迹 (trace) 本身变成了第一公民级的语料库：</p>
+<h2 id="design">Design</h2>
+<h3 id="capture-is-the-default-not-a-step">Capture is the default, not a step</h3>
+<p>Every run drops a tier-0 trace engram automatically. The agent does not "decide
+to remember"; the harness records the path as it walks it. The unit is a
+<em>granule</em> — one compact record of a turn, a tool call, an outcome.</p>
+<h3 id="a-compression-ladder-not-a-flat-store">A compression ladder, not a flat store</h3>
+<p>Engrams live on a tiered ladder (0–4): raw traces at the bottom, progressively
+compressed summaries above. Cheap, high-level tiers are searched first; a hit
+drills down into the detailed tier only when it earns the cost. You query a slice
+of the ladder explicitly when you want to:</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>retrieve<span class="w"> </span><span class="s2">&quot;why did the regression gate reject candidate 7&quot;</span><span class="w"> </span>--tiers<span class="w"> </span><span class="m">0</span>,2,3<span class="w"> </span>--k<span class="w"> </span><span class="m">5</span>
+</code></pre></div>
+
+<h3 id="retrieval-that-routes-not-just-matches">Retrieval that routes, not just matches</h3>
+<p>Retrieval picks a router: an entropy-aware <strong>MemGAS</strong> router when enabled, or an
+adaptive fallback. The point is to return the <em>informative</em> traces — the ones
+that actually reduce the next agent's uncertainty — rather than the
+lexically-nearest ones.</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>retrieve<span class="w"> </span><span class="s2">&quot;common failure modes on auth refactors&quot;</span><span class="w"> </span>--memgas
+bene<span class="w"> </span>retrieve<span class="w"> </span><span class="s2">&quot;common failure modes on auth refactors&quot;</span><span class="w"> </span>--adaptive<span class="w">   </span><span class="c1"># force fallback</span>
+</code></pre></div>
+
+<h3 id="scoped-by-agent-attributable">Scoped by agent, attributable</h3>
+<p>A query can be attributed to the asking agent, so retrieval respects the same
+isolation the VFS does — memory compounds across the system without one agent's
+private workspace leaking into another's answers:</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>retrieve<span class="w"> </span><span class="s2">&quot;what broke last time we touched the parser&quot;</span><span class="w"> </span>--agent<span class="w"> </span>refactor-bot
+</code></pre></div>
+
+<h2 id="insights">Insights</h2>
 <ul>
-<li>每一次 tool call、每一个输出结果、每一次状态变迁，统统落入 event journal。</li>
-<li>每一个具有业务价值的产出物，都会被内容寻址机制打入 blob store。</li>
-<li>每一次决策逻辑，都必须能够通过 SQL 查询、FTS5 全文检索以及 agent 级别的隔离读取直接抽调出来。</li>
+<li><strong>Memory has to be free to be used.</strong> Making capture a side effect of running —
+  not a discipline agents must remember — is what makes the corpus complete
+  enough to be worth retrieving.</li>
+<li><strong>Compress, don't accumulate.</strong> A flat log of every turn is unsearchable at
+  scale; a ladder of summaries with drill-down keeps retrieval cheap as the
+  corpus grows.</li>
+<li><strong>Inheritance beats re-derivation.</strong> The measurable win is not "the agent has
+  more context" — it is "the agent skips the dead ends the last one already
+  mapped." The path walked is the asset.</li>
 </ul>
-<p>下一位接手的 agent 绝非白手起家。它会在属于自己的 VFS 里打开一份现成的文件，里面已经齐齐整整地记录着此前的 triage 历史、失败模式归类、前人失败的修复尝试，以及所有的回滚标记。<strong>以执行轨迹作为第一检索源 (Retrieval over execution traces)</strong>，这正是拉开代差的核心壁垒。</p>
-<h3 id="2-harness">2. 该演化的是 Harness，绝不该是模型</h3>
-<p>面对一种全新形态的 triage 挑战，我们绝不会跑去微调 LLM。我们选择演化包裹在模型外面的这层 harness：prompt 模板、tool 的组合顺序、检索策略以及判定修复是否生效的 verifier。Meta-Harness 只是一个非常轻量级的演化循环：它不断提出新的 harness 变体，丢进基准测试里跑，然后把胜出者留存在帕累托前沿 (Pareto frontier) 上。</p>
-<p>这种做法极其廉价（不吃 GPU 算力）、极其可逆（每一个 harness 只不过是一份带着哈希值的代码 blob）、极其透明（每一次演化迭代全在 event journal 里记着账），并且具有可怕的复利效应（胜出的套路会固化进项目的 skill library 中，直接成为下一次演化搜索的种子）。</p>
-<hr />
-<h2 id="_2">拼图从何而来</h2>
-<p>BENE 纯粹由那些已经被证明管用的方案组装而成。我们不发明轮子，我们只负责整合它们，并让它们在同一套逻辑下咬合运转：</p>
-<table>
-<thead>
-<tr>
-<th>核心能力</th>
-<th>来源</th>
-<th>帮 Oppie 解决了什么问题</th>
-<th>BENE 文档指引</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>跨 Agent 共享 FTS5 Memory</td>
-<td>claude-mem (Alex Newman)</td>
-<td>Triage agent 在跨 session 甚至跨任务时总是犯同样的低级错误</td>
-<td><a href="memory.html">memory.md</a></td>
-</tr>
-<tr>
-<td>跨 Agent 共享 Skill 库</td>
-<td>Zhou et al. 2026 (arXiv:2604.08224)</td>
-<td>Agent 反复重新推演一模一样的监控看板查询、去重启发式算法和回滚手册</td>
-<td><a href="skills.html">skills.md</a></td>
-</tr>
-<tr>
-<td>Shared log + 投票协同</td>
-<td>LogAct (arXiv:2604.07988)</td>
-<td>像抹杀 agent、执行大范围 checkpoint 恢复这类高危操作，必须有共识机制和审计轨迹背书</td>
-<td><a href="shared-log.html">shared-log.md</a></td>
-</tr>
-<tr>
-<td>高紧凑上下文符记化 (AAAK)</td>
-<td>MemPalace</td>
-<td>冗长且不断膨胀的 context 吃光了准确率，还烧光了搜寻任务的 token 预算</td>
-<td><a href="meta-harness.html">meta-harness.md</a></td>
-</tr>
-<tr>
-<td>停滞破解 + 共同演化</td>
-<td>CORAL (arXiv:2604.01658)</td>
-<td>Proposer 在某一种特定的 harness 构型上死磕并陷入局部最优</td>
-<td><a href="meta-harness.html#coral-getting-unstuck-v020">meta-harness.md#coral-getting-unstuck-v020</a></td>
-</tr>
-<tr>
-<td>失败根因诊断 (Verifier)</td>
-<td>EvoSkills (arXiv:2604.01687)</td>
-<td>大面积的不透明失败让下一轮迭代就像无头苍蝇一样拿不到 actionable 的反馈</td>
-<td><a href="meta-harness.html">meta-harness.md</a></td>
-</tr>
-<tr>
-<td>自动化参数调优</td>
-<td>Meta-Harness (arXiv:2603.28052)</td>
-<td>纯手工硬写的 prompt engineering 根本无法在发版之间产生跨代复利</td>
-<td><a href="meta-harness.html">meta-harness.md</a> 和 <a href="tutorials/t01-bene-meta-harness.html">tutorials/t01</a></td>
-</tr>
-</tbody>
-</table>
-<p>VFS 引擎、checkpoint 时间线、event journal 日志流以及层级隔离机制，这些才是 Oppie 团队真正的原创心血。它们构成了让上面这张表格里所有能力在同一个进程、同一个数据库里完美拼合的底层基座。</p>
-<hr />
-<h2 id="_3">运作铁律</h2>
-<h3 id="_4">信任来自审计日志，绝不来自模型拍胸脯的自信</h3>
-<p>一个说 "bug 在模块 X 里" 的 triage agent，跟另一个说 "bug 在模块 X 里，<strong>并且这里有一条 SQL 查询证明，在 14:32 到 14:51 之间它成功捕获了 847 条 <code>ConnectionPoolError</code> 报错事件</strong>" 的 triage agent，根本不是一个物种。BENE 的所有机制设计，都是在强迫系统极容易地生成第二种论述。Event journal 是绝对可被 SQL 查询的。Token 开销、tool calls 调用流以及耗时，在这里全是一等公民的数据列。</p>
-<h3 id="_5">隔离机制没有任何讨价还价的余地</h3>
-<p>每个 agent 都必须老老实实在自己的 VFS 里干活。两个同时并行审计同一个 PR 的 triage agent 绝不允许互相踩踏对方的工作区。哪怕修出了问题，也能在 0.3 秒内通过 checkpoint 干净利落地回滚，绝不会惊扰项目里的其他 agent。只有把隔离做到这个份上，你才敢把一个拥有自主执行权的 agent 散养在高度逼近生产环境的链路里，而不用在事后苦着脸去写一份关于<em>编排层怎么崩了</em>的 postmortem。</p>
-<h3 id="_6">核心目的就是吃复利</h3>
-<p>当值班工程师第一次用 BENE 冲进一个 <code>iss_storage_unreachable</code> 事件的案发现场时，他们是在做纯粹的调查。但等到第二次，BENE 早就备好了一套沉淀下来的 skill、一条先前的执行 trace，以及上周 verifier 开具的诊断报告。等到第五次爆雷时，harness 早就经历过迭代演化，接手的 agent 只需要跑两个 tool call 就能直接揪出罪魁祸首。这一切当然不是魔法自动变出来的 —— 这是当你拥有一套把 "存一次，到处用" 做到极致廉价的基座，并辅以一个只奖励胜出者的 Meta-Harness 后，必然产生的结果。</p>
-<h3 id="_7">无法复现的东西，坚决扔掉</h3>
-<p>BENE 随版发布的每一次更新，都会连带打包它正在使用的 harness、评估它的 benchmark 靶场、繁育出它的初代执行种源，以及能丝毫不差还原出任意一条决策依据的完整 event journal。如果你无法重播还原当时的现场，那这事就当没发生过。</p>
-<hr />
-<h2 id="_8">我们绝对不碰什么</h2>
-<ul>
-<li><strong>我们绝不重复发明已经被解决的问题。</strong> 只要有现成的论文或者开源组件已经把活儿干得足够漂亮，我们就直接集成并且署名致敬。</li>
-<li><strong>我们绝不添加那些没有实操 operator 兜底的需求。</strong> BENE 里的任何一个能力，都能追根溯源到某个因它获益的真实 triage、on-call 或者 SDLC 负载场景上。</li>
-<li><strong>我们绝不藏匿技术出处。</strong> 代码里、文档里、changelog 里都会挂着集成方案的溯源 citation。去看原版论文。</li>
-<li><strong>我们绝不构建自己都无法维护的过度抽象。</strong> 任何胆敢破坏整体拼合能力 (composability) 的花哨功能，都不值得被发版。</li>
-</ul>
-<hr />
-<h2 id="_9">悬赏区</h2>
-<p>我们正在持续搜集以下领域的先期研究 (prior art)：</p>
-<ul>
-<li>粒度能够精细到子 agent (sub-agent) 级别，而不是动辄覆盖整个 VFS 的精准回滚机制。</li>
-<li>远比目前只有同意/否决二元投票要丰富得多的跨 agent 信任建模方案。</li>
-<li>能够根据任务危急程度动态调整上下文预算的自适应机制 (比如关键告警的翻页与普通文档的翻页采取完全不对称的策略)。</li>
-<li>生命周期决策策略 —— 到底什么时候该强制让一个 agent 退休？什么时候该克隆并发？什么时候该提拔一个独苗 (singleton)？</li>
-</ul>
-<p>如果你读过切中要害的硬核文献，请直接丢进我们的 issue tracker。整合标准完全遵循上文的原则。你的贡献会被铭刻在这里。</p>
-<hr />
-<h2 id="_10">贡献指南</h2>
-<p>BENE 是为了 Oppie 内部的 AI Triage 战役以及更深远的愿景而生的。最有杀伤力的贡献途径如下：</p>
-<ol>
-<li>一项你深入研读过且急需落地整合的论文研究。</li>
-<li>一份直接拔自真实生产运维现场且附带可复现用例的 bug 报告。</li>
-<li>一份 benchmark 压测结果 —— 无所谓这套能力在真实的 triage 或 SDLC 任务里到底是起飞了还是拉垮了，数据说话。</li>
-</ol>
-<p>对于 Oppie 内部的贡献者，待发力的积压需求池已经全数躺在 <code>bene</code> 仓库的 epic tracker 以及 engineering-services 的 Jira 队列里。</p>
-<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/zh/philosophy.md" target="_blank" rel="noopener noreferrer">docs/zh/philosophy.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+<h2 id="what-to-take-from-this">What to take from this</h2>
+<p>If your agents start every session from zero, you are paying the rediscovery tax
+on every run. Make trace capture a default of the substrate, put a compression
+ladder under retrieval, and let the next agent query the path instead of
+re-walking it. That is Other Memory — and it is a <code>bene retrieve</code> away.</p>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/case-studies/cs04-trace-rag-other-memory.md" target="_blank" rel="noopener noreferrer">docs/case-studies/cs04-trace-rag-other-memory.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>
 </div>
 <footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>

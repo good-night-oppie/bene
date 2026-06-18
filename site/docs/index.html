@@ -205,12 +205,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="codegen.html">codegen</a>
 <a href="dashboard.html">dashboard</a>
 <a href="deployment.html">deployment</a>
+<a href="examples.html">examples</a>
 <a href="integrating-bene.html">integrating-bene</a>
 <a href="mcp-integration.html">mcp-integration</a>
 <a href="memory.html">memory</a>
 <a href="meta-harness.html">meta-harness</a>
 <a href="philosophy.html">philosophy</a>
-<a href="primitive-review-cycle.html">primitive-review-cycle</a>
 <a href="probe-authoring.html">probe-authoring</a>
 <a href="schema.html">schema</a>
 <a href="shared-log.html">shared-log</a>
@@ -219,14 +219,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <h4>Recipes</h4>
 <a href="recipes/atomic-completion.html">atomic-completion</a>
 <h4>Design and claims</h4>
-<a href="design/BENE2-DESIGN.html">BENE2-DESIGN</a>
-<a href="design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
-<a href="design/KERNEL-SPEC.html">KERNEL-SPEC</a>
-<a href="design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
-<h4>Evidence and research</h4>
-<a href="research/GAP-AUDIT.html">GAP-AUDIT</a>
-<a href="research/SYNTHESIS.html">SYNTHESIS</a>
-<a href="research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<a href="design/architecture-diagrams.html">architecture-diagrams</a>
 <h4>Benchmarks and gates</h4>
 <a href="benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
 <a href="benchmarks/PREREG.html">PREREG</a>
@@ -244,37 +237,29 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
 <h4>Case studies</h4>
 <a href="case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
-<h4>Infrastructure</h4>
-<a href="infra/DNS.html">DNS</a></aside>
+<a href="case-studies/cs03-multi-agent-arena.html">cs03-multi-agent-arena</a>
+<a href="case-studies/cs04-trace-rag-other-memory.html">cs04-trace-rag-other-memory</a>
+<a href="case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 
-<h1>BENE documentation</h1><p>74 documents, generated from <code>docs/</code>. Pick the job you are doing: start local, rewind a bad turn, connect an agent, verify a claim, or scale a run. These are the same files you can read <a href="https://github.com/EdwardTang/bene-site/tree/main/docs" target="_blank" rel="noopener noreferrer">on GitHub</a>. Edit the markdown, rerun <code>site/build-docs.py</code>; never edit the HTML.</p><div class="demo-embed"><div class="frame"><div class="dots"><i></i><i></i><i></i></div><img src="../assets/demos/demo-keyless.gif" alt="Demo — keyless first value: bene init &amp;&amp; bene demo --no-ui, 0.3s, recorded live against bene-main HEAD." loading="lazy" onerror="this.closest('.demo-embed').style.display='none'"></div><p>Demo — keyless first value: bene init &amp;&amp; bene demo --no-ui, 0.3s, recorded live against bene-main HEAD.</p></div><div class="idx-group"><h2>Start, operate, recover</h2><ul><li><a href="README.html">BENE Documentation</a><span class="path">docs/README.md</span></li>
+<h1>BENE documentation</h1><p>37 documents, generated from <code>docs/</code>. Pick the job you are doing: start local, rewind a bad turn, connect an agent, verify a claim, or scale a run. These are the same files you can read <a href="https://github.com/EdwardTang/bene-site/tree/main/docs" target="_blank" rel="noopener noreferrer">on GitHub</a>. Edit the markdown, rerun <code>site/build-docs.py</code>; never edit the HTML.</p><div class="demo-embed"><div class="frame"><div class="dots"><i></i><i></i><i></i></div><img src="../assets/demos/demo-keyless.gif" alt="Demo — keyless first value: bene init &amp;&amp; bene demo --no-ui, 0.3s, recorded live against bene-main HEAD." loading="lazy" onerror="this.closest('.demo-embed').style.display='none'"></div><p>Demo — keyless first value: bene init &amp;&amp; bene demo --no-ui, 0.3s, recorded live against bene-main HEAD.</p></div><div class="idx-group"><h2>Start, operate, recover</h2><ul><li><a href="README.html">BENE Documentation</a><span class="path">docs/README.md</span></li>
 <li><a href="architecture.html">BENE Architecture</a><span class="path">docs/architecture.md</span></li>
 <li><a href="checkpoints.html">Checkpoints — undo for agents</a><span class="path">docs/checkpoints.md</span></li>
 <li><a href="cli-reference.html">BENE CLI Reference</a><span class="path">docs/cli-reference.md</span></li>
 <li><a href="codegen.html">Code Generation as a BENE Capability</a><span class="path">docs/codegen.md</span></li>
 <li><a href="dashboard.html">BENE Dashboard</a><span class="path">docs/dashboard.md</span></li>
 <li><a href="deployment.html">Deploying BENE</a><span class="path">docs/deployment.md</span></li>
+<li><a href="examples.html">Examples gallery</a><span class="path">docs/examples.md</span></li>
 <li><a href="integrating-bene.html">Integrating BENE</a><span class="path">docs/integrating-bene.md</span></li>
 <li><a href="mcp-integration.html">BENE as an MCP Server</a><span class="path">docs/mcp-integration.md</span></li>
 <li><a href="memory.html">Cross-Agent Memory</a><span class="path">docs/memory.md</span></li>
 <li><a href="meta-harness.html">Meta-Harness: Search Your Way to a Better Harness</a><span class="path">docs/meta-harness.md</span></li>
 <li><a href="philosophy.html">BENE Design Philosophy</a><span class="path">docs/philosophy.md</span></li>
-<li><a href="primitive-review-cycle.html">Primitive Review Cycle</a><span class="path">docs/primitive-review-cycle.md</span></li>
 <li><a href="probe-authoring.html">Authoring a probe</a><span class="path">docs/probe-authoring.md</span></li>
 <li><a href="schema.html">Inside bene.db</a><span class="path">docs/schema.md</span></li>
 <li><a href="shared-log.html">Shared Log</a><span class="path">docs/shared-log.md</span></li>
 <li><a href="skills.html">Skill Library</a><span class="path">docs/skills.md</span></li>
-<li><a href="use-cases.html">BENE Use Cases</a><span class="path">docs/use-cases.md</span></li></ul></div><div class="idx-group"><h2>Recipes</h2><ul><li><a href="recipes/atomic-completion.html">Recipe: atomic completion (exactly-once, ghost-free)</a><span class="path">docs/recipes/atomic-completion.md</span></li></ul></div><div class="idx-group"><h2>Design and claims</h2><ul><li><a href="design/BENE2-DESIGN.html">BENE 2.0 — Architecture</a><span class="path">docs/design/BENE2-DESIGN.md</span></li>
-<li><a href="design/DESIGN-RATIONALE.html">BENE 2.0 — Design Rationale</a><span class="path">docs/design/DESIGN-RATIONALE.md</span></li>
-<li><a href="design/KERNEL-SPEC.html">BENE 2.0 — Kernel Spec (buildable)</a><span class="path">docs/design/KERNEL-SPEC.md</span></li>
-<li><a href="design/v0.3-roadmap-spec.html">BENE v0.3 — Roadmap Feature Spec</a><span class="path">docs/design/v0.3-roadmap-spec.md</span></li></ul></div><div class="idx-group"><h2>Evidence and research</h2><ul><li><a href="research/GAP-AUDIT.html">KAOS &amp; the 0.1.0 predecessor/BENE-0.1.0 Gap Audit</a><span class="path">docs/research/GAP-AUDIT.md</span></li>
-<li><a href="research/SYNTHESIS.html">BENE 2.0 Research Synthesis</a><span class="path">docs/research/SYNTHESIS.md</span></li>
-<li><a href="research/product-comms/mom-test.html">The Mom Test — Rob Fitzpatrick</a><span class="path">docs/research/product-comms/mom-test.md</span></li>
-<li><a href="research/product-comms/nobody-wants-to-read.html">Nobody Wants to Read Your Sht — Steven Pressfield</a><span class="path">docs/research/product-comms/nobody-wants-to-read.md</span></li>
-<li><a href="research/product-comms/on-writing-well.html">On Writing Well: The Classic Guide to Writing Nonfiction — William Zinsser</a><span class="path">docs/research/product-comms/on-writing-well.md</span></li>
-<li><a href="research/product-comms/storyworthy.html">Storyworthy: Engage, Teach, Persuade, and Change Your Life through the Power of Storytelling — Matthew Dicks</a><span class="path">docs/research/product-comms/storyworthy.md</span></li>
-<li><a href="research/tech-doc-writing-2026.html">Tech-doc writing 2026 — distilled evidence base</a><span class="path">docs/research/tech-doc-writing-2026.md</span></li></ul></div><div class="idx-group"><h2>Benchmarks and gates</h2><ul><li><a href="benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT — BENE alongside KAOS/the 0.1.0 predecessor across community benchmarks (pre-registered run, 2026-06-11)</a><span class="path">docs/benchmarks/COMMUNITY-BENCH-REPORT.md</span></li>
+<li><a href="use-cases.html">BENE Use Cases</a><span class="path">docs/use-cases.md</span></li></ul></div><div class="idx-group"><h2>Recipes</h2><ul><li><a href="recipes/atomic-completion.html">Recipe: atomic completion (exactly-once, ghost-free)</a><span class="path">docs/recipes/atomic-completion.md</span></li></ul></div><div class="idx-group"><h2>Design and claims</h2><ul><li><a href="design/architecture-diagrams.html">Architecture diagrams</a><span class="path">docs/design/architecture-diagrams.md</span></li></ul></div><div class="idx-group"><h2>Benchmarks and gates</h2><ul><li><a href="benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT — BENE alongside KAOS/the 0.1.0 predecessor across community benchmarks (pre-registered run, 2026-06-11)</a><span class="path">docs/benchmarks/COMMUNITY-BENCH-REPORT.md</span></li>
 <li><a href="benchmarks/PREREG.html">Pre-registered Evaluation Protocol — BENE vs KAOS/the 0.1.0 predecessor unique benchmarks</a><span class="path">docs/benchmarks/PREREG.md</span></li></ul></div><div class="idx-group"><h2>Tutorial playbooks</h2><ul><li><a href="tutorials/t00-bene-e2e-walkthrough.html">BENE in 10 Minutes: An End-to-End Walkthrough</a><span class="path">docs/tutorials/t00-bene-e2e-walkthrough.md</span></li>
 <li><a href="tutorials/t01-bene-meta-harness.html">From 48% to 83%: How BENE v0.2.0 Automates Multi-Agent AI Research</a><span class="path">docs/tutorials/t01-bene-meta-harness.md</span></li>
 <li><a href="tutorials/t02-e2e-self-healing.html">Undo an Agent&#x27;s Bad Fix in 0.3 Seconds, Repo Untouched</a><span class="path">docs/tutorials/t02-e2e-self-healing.md</span></li>
@@ -285,7 +270,10 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <li><a href="tutorials/t07-regression-guard.html">Swap Models Without Shipping Regressions</a><span class="path">docs/tutorials/t07-regression-guard.md</span></li>
 <li><a href="tutorials/t08-hundred-agents-scale.html">Hundreds of Agents, One Database, Zero Regressions</a><span class="path">docs/tutorials/t08-hundred-agents-scale.md</span></li>
 <li><a href="tutorials/t10-ci-overnight-bene-swarm.html">t10 — Self-Healing CI Overnight: Regression Gate, Auto-Fix, Review and Refactor Swarms</a><span class="path">docs/tutorials/t10-ci-overnight-bene-swarm.md</span></li>
-<li><a href="tutorials/t11-local-agents-vllm.html">t11 — Local Agents with vLLM: a Zero-Cost, Auditable Multi-Agent Stack</a><span class="path">docs/tutorials/t11-local-agents-vllm.md</span></li></ul></div><div class="idx-group"><h2>Case studies</h2><ul><li><a href="case-studies/cs02-ci-self-healing-refactor-swarm.html">Self-Healing CI as a Multi-Agent System: Design, Insights, and Cross-Team Influence</a><span class="path">docs/case-studies/cs02-ci-self-healing-refactor-swarm.md</span></li></ul></div><div class="idx-group"><h2>Infrastructure</h2><ul><li><a href="infra/DNS.html">agentdex.builders — DNS / redirection record</a><span class="path">docs/infra/DNS.md</span></li></ul></div>
+<li><a href="tutorials/t11-local-agents-vllm.html">t11 — Local Agents with vLLM: a Zero-Cost, Auditable Multi-Agent Stack</a><span class="path">docs/tutorials/t11-local-agents-vllm.md</span></li></ul></div><div class="idx-group"><h2>Case studies</h2><ul><li><a href="case-studies/cs02-ci-self-healing-refactor-swarm.html">Self-Healing CI as a Multi-Agent System: Design, Insights, and Cross-Team Influence</a><span class="path">docs/case-studies/cs02-ci-self-healing-refactor-swarm.md</span></li>
+<li><a href="case-studies/cs03-multi-agent-arena.html">A Competitive Coding Arena on BENE: Design at the Substrate Layer</a><span class="path">docs/case-studies/cs03-multi-agent-arena.md</span></li>
+<li><a href="case-studies/cs04-trace-rag-other-memory.html">Other Memory: Trace-Based RAG so the Next Agent Never Starts Cold</a><span class="path">docs/case-studies/cs04-trace-rag-other-memory.md</span></li>
+<li><a href="case-studies/cs05-meta-harness-evolution.html">The Breeding Program: Evolving a Harness Behind a Kill-Gate</a><span class="path">docs/case-studies/cs05-meta-harness-evolution.md</span></li></ul></div>
 
 </main>
 </div>

@@ -10,12 +10,12 @@
 
 本页导览:
 
-- [接入 Claude Code](#connect-claude-code)
-- [如何直接拉起服务端](#run-the-server-directly)
-- [更廉价的平替：JSON CLI](#the-cheaper-path-the-json-cli)
-- [Tool 全阵列参考](#tool-reference)
-- [现在就能跑的实战对话](#conversations-that-work-today)
-- [CLI-First 这条路到底赚了什么](#what-the-cli-first-path-adds)
+- [接入 Claude Code](#claude-code-integration)
+- [如何直接拉起服务端](#starting-the-mcp-server)
+- [更廉价的平替：JSON CLI](#cli-alternative)
+- [Tool 全阵列参考](#available-tools)
+- [现在就能跑的实战对话](#example-conversation-flows)
+- [CLI-First 这条路到底赚了什么](#cli-first-这条路到底赚了什么)
 
 原版锚点映射: [Overview](#overview), [CLI Alternative](#cli-alternative), [Starting the MCP Server](#starting-the-mcp-server), [Claude Code Integration](#claude-code-integration), [Available Tools](#available-tools), [Example Conversation Flows](#example-conversation-flows).
 

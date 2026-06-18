@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Checkpoints — 专给 Agent 吃的后悔药 — BENE docs</title>
-<meta name="description" content="BENE 0.2.0 documentation — Checkpoints — 专给 Agent 吃的后悔药" />
+<title>The Breeding Program: Evolving a Harness Behind a Kill-Gate — BENE docs</title>
+<meta name="description" content="BENE 0.2.0 documentation — The Breeding Program: Evolving a Harness Behind a Kill-Gate" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -165,7 +165,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
   <a class="nav" href="../../SKILL.md" target="_blank" rel="noopener noreferrer" title="Hand BENE to your agent in one URL">SKILL.md ↗</a>
   <button class="nav copy-llms" data-llms-url="../../llms.txt" data-copied-label="✓ copied" data-opened-label="↗ opened" title="Copy the llms.txt site map (an LLM-friendly index pointing at SKILL.md + every doc). Paste it into your agent's context.">Copy llms.txt</button>
   <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="GitHub"><svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="vertical-align:text-bottom"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg></a>
-  <a class="nav" href="../../zh/docs/zh/checkpoints.html" title="切换到中文" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">文</a>
+  <a class="nav" href="../../zh/docs/case-studies/cs05-meta-harness-evolution.html" title="切换到中文" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">文</a>
 </div></div>
 
 <script>
@@ -205,12 +205,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../codegen.html">codegen</a>
 <a href="../dashboard.html">dashboard</a>
 <a href="../deployment.html">deployment</a>
+<a href="../examples.html">examples</a>
 <a href="../integrating-bene.html">integrating-bene</a>
 <a href="../mcp-integration.html">mcp-integration</a>
 <a href="../memory.html">memory</a>
 <a href="../meta-harness.html">meta-harness</a>
 <a href="../philosophy.html">philosophy</a>
-<a href="../primitive-review-cycle.html">primitive-review-cycle</a>
 <a href="../probe-authoring.html">probe-authoring</a>
 <a href="../schema.html">schema</a>
 <a href="../shared-log.html">shared-log</a>
@@ -219,14 +219,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <h4>Recipes</h4>
 <a href="../recipes/atomic-completion.html">atomic-completion</a>
 <h4>Design and claims</h4>
-<a href="../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
-<a href="../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
-<a href="../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
-<a href="../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
-<h4>Evidence and research</h4>
-<a href="../research/GAP-AUDIT.html">GAP-AUDIT</a>
-<a href="../research/SYNTHESIS.html">SYNTHESIS</a>
-<a href="../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<a href="../design/architecture-diagrams.html">architecture-diagrams</a>
 <h4>Benchmarks and gates</h4>
 <a href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
 <a href="../benchmarks/PREREG.html">PREREG</a>
@@ -244,152 +237,88 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
 <h4>Case studies</h4>
 <a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
-<h4>Infrastructure</h4>
-<a href="../infra/DNS.html">DNS</a></aside>
+<a href="../case-studies/cs03-multi-agent-arena.html">cs03-multi-agent-arena</a>
+<a href="../case-studies/cs04-trace-rag-other-memory.html">cs04-trace-rag-other-memory</a>
+<a class="cur" href="../case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
-<div class="crumbs"><a href="../index.html">docs</a> / zh/checkpoints.md</div>
-<h1 id="checkpoints-agent">Checkpoints — 专给 Agent 吃的后悔药</h1>
-<p>在让 agent 去碰那些高风险脏活之前，先给它打个 checkpoint。万一搞砸了，只需敲一行 restore 命令就能满血复活，再也不用含泪从头开始重建状态。bene 支持随时将 agent 的全部脑容量和文件资产无损冻结；你可以把时间线拨回任意一个坐标，或者直接拿两个坐标进行贴身比对。</p>
+<div class="crumbs"><a href="../index.html">docs</a> / case-studies/cs05-meta-harness-evolution.md</div>
+<h1 id="the-breeding-program-evolving-a-harness-behind-a-kill-gate">The Breeding Program: Evolving a Harness Behind a Kill-Gate</h1>
+<p><em>Engineering · 2026-06</em></p>
+<hr />
+<h2 id="context">Context</h2>
+<p>A harness — the control-flow program that wraps a model: how it plans, when it
+retries, what it retrieves, how it gates itself — is usually hand-tuned. Someone
+tweaks a prompt, runs a few tasks, decides it "feels better," and ships it. That
+loop has two failure modes baked in: it does not scale past a handful of knobs,
+and it promotes on vibes — a strategy that looked good in a demo, not one that
+provably beat the incumbent.</p>
+<p>This case study is about the alternative BENE ships: <strong>breed</strong> harness strategies
+across generations on a benchmark, and promote a candidate only when it clears a
+held-out kill-gate. It is the Bene Gesserit breeding program as an engineering
+loop — patient, multi-generation selection, with no candidate advanced on
+appearance.</p>
+<h2 id="problem-framing">Problem framing</h2>
+<p>Optimizing a harness automatically has three traps:</p>
+<ul>
+<li><strong>Search that overfits.</strong> Tune against the same tasks you score on and you
+  breed a strategy that memorizes the benchmark, not one that generalizes.</li>
+<li><strong>Promotion by self-report.</strong> If a candidate's own run decides whether it
+  ships, you get self-certifying progress — the exact thing eval-probes exist to
+  prevent.</li>
+<li><strong>One-number tunnel vision.</strong> Collapsing "better" to a single score hides the
+  trade-offs (accuracy vs cost vs latency) that actually matter.</li>
+</ul>
+<h2 id="design">Design</h2>
+<h3 id="reflective-mutation-across-generations">Reflective mutation across generations</h3>
+<p>The search proposes harness variants by <em>reflective mutation</em> — a GEPA-style
+loop that reads what failed and rewrites the strategy, generation over
+generation, rather than random search. Each candidate is a real, runnable
+harness program in the archive.</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>--benchmark<span class="w"> </span>agentic_coding<span class="w"> </span>-n<span class="w"> </span><span class="m">20</span><span class="w"> </span>-k<span class="w"> </span><span class="m">4</span><span class="w">   </span><span class="c1"># 20 generations, 4 candidates each</span>
+bene<span class="w"> </span>mh<span class="w"> </span>status<span class="w">                                          </span><span class="c1"># how the run is progressing</span>
+</code></pre></div>
+
+<h3 id="a-pareto-frontier-not-a-single-winner">A Pareto frontier, not a single winner</h3>
+<p>Candidates are scored on multiple objectives and kept as a frontier, so the
+trade-offs stay visible instead of being averaged away:</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>frontier<span class="w">                 </span><span class="c1"># the non-dominated set</span>
+bene<span class="w"> </span>mh<span class="w"> </span>inspect<span class="w"> </span>&lt;harness-id&gt;<span class="w">     </span><span class="c1"># one candidate: source, scores, trace summary</span>
+</code></pre></div>
+
+<h3 id="promotion-behind-a-held-out-kill-gate">Promotion behind a held-out kill-gate</h3>
+<p>This is the load-bearing decision. A candidate is auto-promoted only when it
+passes a probe on a <strong>held-out</strong> slice it never trained against — the same
+falsifiable, hash-locked kill-gate every other claim in BENE faces. A gate the
+incumbent already passes is inadmissible; a candidate that only wins on the
+training tasks never ships.</p>
 <blockquote>
-<p><strong>一行代码存档，一行代码读档，一行代码对比 —— 跨越时空的整条履历，全攥在你电脑里的那唯一一个 SQLite 文件里。</strong></p>
+<p>The promotion gate is the breeding program's selection pressure. Weaken it and
+you breed benchmark-memorizers; keep it honest and you breed generalizers.</p>
 </blockquote>
-<hr />
-<h2 id="_1">冻结一个已知稳妥的状态</h2>
-<div class="codehilite"><pre><span></span><code><span class="n">cp</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;before-migration&quot;</span><span class="p">)</span>
+<h3 id="discoveries-persist">Discoveries persist</h3>
+<p>What the search learns — which mutations tend to help, which dead-end — is kept
+in a persistent knowledge base, so later searches start from the accumulated
+lessons rather than from scratch:</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>knowledge<span class="w">                </span><span class="c1"># discoveries carried across searches</span>
 </code></pre></div>
 
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>checkpoint<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>--label<span class="w"> </span><span class="s2">&quot;before-migration&quot;</span>
-</code></pre></div>
-
-<p>每拍下一次快照，就会死死钉住以下内容：</p>
+<h2 id="insights">Insights</h2>
 <ul>
-<li>VFS 里的每一份文件，全按内容寻址打成了 blob 引用 —— 绝对不存半点冗余字节。</li>
-<li>通过 <code>db.set_state(...)</code> 写入大脑的每一把 KV 钥匙。</li>
-<li>冻结时刻的精确时间戳，以及你随手贴上去的任何 metadata。</li>
+<li><strong>Search and score must not share tasks.</strong> Held-out evaluation is the
+  difference between breeding a generalizer and breeding an overfit.</li>
+<li><strong>Promotion is a gate, not a vote.</strong> Tying advancement to a kill-gate the
+  candidate could have failed is what makes automated evolution trustworthy —
+  the same rule the rest of BENE lives by, applied to BENE's own strategies.</li>
+<li><strong>Keep the frontier.</strong> Multi-objective selection preserves the trade-offs a
+  single score would erase, so you choose a strategy with eyes open.</li>
 </ul>
-<p>这种快照机制记的是 blob 指针而不是文件拷贝，所以大胆放开手脚去存，权当免费。</p>
-<h3 id="_2">自动化快照机制</h3>
-<p><code>ClaudeCodeRunner</code> 自带求生本能，每熬过 <code>checkpoint_interval</code> 指定的轮次 (默认是 10)，就会自动打点存档:</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># bene.yaml</span>
-<span class="nt">ccr</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">checkpoint_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
-</code></pre></div>
-
-<hr />
-<h2 id="_3">逆转一场灾难级的失控</h2>
-<p>随时随地倒转时间轴，回到过去的某个定格点：</p>
-<div class="codehilite"><pre><span></span><code><span class="n">db</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">checkpoint_id</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>restore<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>--checkpoint<span class="w"> </span>&lt;checkpoint-id&gt;
-</code></pre></div>
-
-<p>恢复操作底层走的是纯净的 SQL —— bene 会直接暴力重写这个 agent 名下的文件记录行和状态行 —— 因此不管时空畸变有多严重，落地都只在毫秒之间，且绝不会波及其他任何 agent，数据也永远锁死在你的物理机里。</p>
-<p>你应该养成的肌肉记忆是：打好快照，放手去搏，见势不妙，立马回滚。</p>
-<div class="codehilite"><pre><span></span><code><span class="n">cp</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;pre-migration&quot;</span><span class="p">)</span>
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ccr</span><span class="o">.</span><span class="n">run_agent</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="s2">&quot;Migrate schema to v3&quot;</span><span class="p">)</span>
-<span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-    <span class="n">db</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">cp</span><span class="p">)</span>
-    <span class="k">raise</span>
-</code></pre></div>
-
-<hr />
-<h2 id="_4">扒开细节看看究竟动了哪</h2>
-<p>把两个时空坐标拿来当面对质：</p>
-<div class="codehilite"><pre><span></span><code><span class="n">diff</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">diff_checkpoints</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">checkpoint_id_a</span><span class="p">,</span> <span class="n">checkpoint_id_b</span><span class="p">)</span>
-</code></pre></div>
-
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>diff<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>--from<span class="w"> </span>&lt;checkpoint-id-A&gt;<span class="w"> </span>--to<span class="w"> </span>&lt;checkpoint-id-B&gt;
-</code></pre></div>
-
-<p>每一份比对战报都会赤裸裸地交代：</p>
-<ul>
-<li><strong>无中生有 (Files added)</strong> — 那些只在快照 B 里冒出来的路径。</li>
-<li><strong>毁尸灭迹 (Files removed)</strong> — 曾经活在 A 里，但在 B 里灰飞烟灭的。</li>
-<li><strong>改头换面 (Files modified)</strong> — 路径没变，但是两边捏着的 SHA-256 指纹对不上号的。</li>
-<li><strong>篡改记忆 (State changed)</strong> — KV 脑容量里那些新增的、丢掉的、或是被塞了新值的键。</li>
-<li><strong>暗度陈仓 (Tool calls between)</strong> — 夹在这两个时空快照之间偷偷调用的 tool。</li>
-</ul>
-<p>一份典型的出战报告长这样 —— 顶上是一个由路径和状态把守的表格 (不显示文件体积)，紧跟着是被扒光的 state 变更以及 tool-call 账单：</p>
-<div class="codehilite"><pre><span></span><code>            文件战损报告 (File Changes)
-┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
-┃ Status     ┃ Path               ┃
-┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
-│ ADDED      │ /tests/test_auth.py│
-│ MODIFIED   │ /src/auth.py       │
-│ REMOVED    │ /src/auth_legacy.py│
-└────────────┴────────────────────┘
-
-           记忆篡改记录 (State Changes)
-┏━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Status     ┃ Key      ┃ Value                        ┃
-┡━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ MODIFIED   │ progress │ 75 -&gt; 100                    │
-│ MODIFIED   │ status   │ &quot;in-progress&quot; -&gt; &quot;complete&quot;  │
-└────────────┴──────────┴──────────────────────────────┘
-
-      快照夹缝里的工具调用 (Tool Calls Between Checkpoints)
-┏━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━┓
-┃ Tool      ┃ Status  ┃ Duration ┃ Tokens ┃
-┡━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━┩
-│ read_file │ success │ 15ms     │ 120    │
-└───────────┴─────────┴──────────┴────────┘
-</code></pre></div>
-
-<p>如果哪个环节岁月静好毫无动静，终端会直接甩你一句 <code>No state changes</code> (记忆未曾变动) 或是 <code>No tool calls between checkpoints</code> (夹缝中并无调用)。</p>
-<p>如果你加上了 <code>--json</code> 标志，这堆东西就会乖乖被打进一份机器友好的包裹里：<code>{"files": {"added": [...], "removed": [...], "modified": [...]}, "state": {"added": {...}, "removed": {...}, "modified": {...}}, "tool_calls": [...]}</code>。</p>
-<h3 id="_5">让两种方案互殴</h3>
-<p>给两种解题思路各打一张快照，然后把它们拉回现实来打擂台：</p>
-<div class="codehilite"><pre><span></span><code><span class="n">cp_a</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;approach-A&quot;</span><span class="p">)</span>
-<span class="c1"># ... 放出方案 A 的恶犬 ...</span>
-<span class="n">cp_b</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;approach-B&quot;</span><span class="p">)</span>
-
-<span class="c1"># 对薄公堂</span>
-<span class="n">diff</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">diff_checkpoints</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">cp_a</span><span class="p">,</span> <span class="n">cp_b</span><span class="p">)</span>
-</code></pre></div>
-
-<hr />
-<h2 id="_6">翻找时空存根</h2>
-<p>把一个 agent 兜里揣着的所有快照票根全抖搂出来：</p>
-<div class="codehilite"><pre><span></span><code><span class="n">cps</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">list_checkpoints</span><span class="p">(</span><span class="n">agent_id</span><span class="p">)</span>
-<span class="c1"># [{&quot;checkpoint_id&quot;: &quot;01K...&quot;, &quot;label&quot;: &quot;before-migration&quot;, &quot;created_at&quot;: &quot;...&quot;}]</span>
-</code></pre></div>
-
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>checkpoints<span class="w"> </span>&lt;agent-id&gt;
-bene<span class="w"> </span>--json<span class="w"> </span>checkpoints<span class="w"> </span>&lt;agent-id&gt;
-</code></pre></div>
-
-<h3 id="_7">给快照钉上墓志铭</h3>
-<p>label 只是个简短的名号；但 metadata 可以塞进长篇大论的注解 —— 比如测试战报、触发它的罪魁祸首、或者是留给后人的遗言：</p>
-<div class="codehilite"><pre><span></span><code><span class="n">cp</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;v2-attempt&quot;</span><span class="p">)</span>
-
-<span class="c1"># Bene 的 facade 外壳只吃一个短平快的 label。想要塞入硬核的 metadata，你需要直接绕开它去找底层 manager 办事：</span>
-<span class="c1"># db.checkpoints.create(agent_id, label=&quot;v2-attempt&quot;, metadata={</span>
-<span class="c1">#     &quot;notes&quot;: &quot;全盘切换到了 JWT — 干掉了基于 session 的老掉牙认证&quot;,</span>
-<span class="c1">#     &quot;test_results&quot;: {&quot;passed&quot;: 14, &quot;failed&quot;: 0},</span>
-<span class="c1">#     &quot;triggered_by&quot;: &quot;CI 流水线第 428 号战役&quot;,</span>
-<span class="c1"># })</span>
-</code></pre></div>
-
-<p>这堆私货会在 <code>bene checkpoints &lt;agent-id&gt;</code> 以及 Dashboard 的 Checkpoints 标签页里昭告天下。</p>
-<hr />
-<h2 id="_8">这堆快照究竟吃掉我多少硬盘？</h2>
-<p>几乎就是个零头。真正重头的文件血肉全部只在 blob 库里躺着唯一一份 (有 SHA-256 钥匙锁着，外加 zstd 压缩伺候)；区区一个 checkpoint 不过就是一撮干瘪的指针。两份相似度高达 95% 的快照，并排站在一起占用的空间几乎等同于一份。</p>
-<p>想要无情火化掉那些再也没有快照认领的孤魂野鬼 blobs？</p>
-<div class="codehilite"><pre><span></span><code><span class="n">db</span><span class="o">.</span><span class="n">blobs</span><span class="o">.</span><span class="n">gc</span><span class="p">()</span>  <span class="c1"># 毫不留情地铲除所有 ref_count 归 0 的 blob</span>
-</code></pre></div>
-
-<hr />
-<h2 id="_9">连锅端走换台机器接着跑</h2>
-<p>将一个 agent 导出会连带着把它名下所有的快照一起塞进一个极度便携的文件里：</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># 连锅端出整个 agent 的祖宗十八代 (当然包含了它所有的 checkpoints)</span>
-bene<span class="w"> </span><span class="nb">export</span><span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>-o<span class="w"> </span>agent-snapshot.db
-
-<span class="c1"># 换台机器，当场复活</span>
-bene<span class="w"> </span>import<span class="w"> </span>agent-snapshot.db
-</code></pre></div>
-<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/zh/checkpoints.md" target="_blank" rel="noopener noreferrer">docs/zh/checkpoints.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+<h2 id="what-to-take-from-this">What to take from this</h2>
+<p>If you are hand-tuning prompts and shipping on feel, you are doing selection
+without selection pressure. Put your strategies in an archive, evolve them
+against a benchmark, and gate promotion on a held-out probe that could kill the
+candidate. That is the breeding program — automated improvement that cannot
+quietly cheat, because it answers to the same gate as everything else.</p>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/case-studies/cs05-meta-harness-evolution.md" target="_blank" rel="noopener noreferrer">docs/case-studies/cs05-meta-harness-evolution.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>
 </div>
 <footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>

@@ -4,7 +4,7 @@
 
 > **一个 agent 吃过的亏，直接变成全场 agent 的共有 context：这就是整个项目共享的、支持全文检索的唯一记忆总库。**
 
-本方案的核心构想，是对 [claude-mem](https://github.com/thedotmack/claude-mem) (AGPL-3.0) 的一次 clean-room 级别的重构演进 —— 详见 [致谢](#credits)。
+本方案的核心构想，是对 [claude-mem](https://github.com/thedotmack/claude-mem) (AGPL-3.0) 的一次 clean-room 级别的重构演进 —— 详见 [致谢](#致谢)。
 
 ---
 

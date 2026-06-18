@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>BENE 仪表盘 (Dashboard) — BENE docs</title>
-<meta name="description" content="BENE 0.2.0 documentation — BENE 仪表盘 (Dashboard)" />
+<title>A Competitive Coding Arena on BENE: Design at the Substrate Layer — BENE docs</title>
+<meta name="description" content="BENE 0.2.0 documentation — A Competitive Coding Arena on BENE: Design at the Substrate Layer" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -165,7 +165,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
   <a class="nav" href="../../SKILL.md" target="_blank" rel="noopener noreferrer" title="Hand BENE to your agent in one URL">SKILL.md ↗</a>
   <button class="nav copy-llms" data-llms-url="../../llms.txt" data-copied-label="✓ copied" data-opened-label="↗ opened" title="Copy the llms.txt site map (an LLM-friendly index pointing at SKILL.md + every doc). Paste it into your agent's context.">Copy llms.txt</button>
   <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="GitHub"><svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="vertical-align:text-bottom"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg></a>
-  <a class="nav" href="../../zh/docs/zh/dashboard.html" title="切换到中文" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">文</a>
+  <a class="nav" href="../../zh/docs/case-studies/cs03-multi-agent-arena.html" title="切换到中文" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">文</a>
 </div></div>
 
 <script>
@@ -205,12 +205,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../codegen.html">codegen</a>
 <a href="../dashboard.html">dashboard</a>
 <a href="../deployment.html">deployment</a>
+<a href="../examples.html">examples</a>
 <a href="../integrating-bene.html">integrating-bene</a>
 <a href="../mcp-integration.html">mcp-integration</a>
 <a href="../memory.html">memory</a>
 <a href="../meta-harness.html">meta-harness</a>
 <a href="../philosophy.html">philosophy</a>
-<a href="../primitive-review-cycle.html">primitive-review-cycle</a>
 <a href="../probe-authoring.html">probe-authoring</a>
 <a href="../schema.html">schema</a>
 <a href="../shared-log.html">shared-log</a>
@@ -219,14 +219,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <h4>Recipes</h4>
 <a href="../recipes/atomic-completion.html">atomic-completion</a>
 <h4>Design and claims</h4>
-<a href="../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
-<a href="../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
-<a href="../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
-<a href="../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
-<h4>Evidence and research</h4>
-<a href="../research/GAP-AUDIT.html">GAP-AUDIT</a>
-<a href="../research/SYNTHESIS.html">SYNTHESIS</a>
-<a href="../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<a href="../design/architecture-diagrams.html">architecture-diagrams</a>
 <h4>Benchmarks and gates</h4>
 <a href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
 <a href="../benchmarks/PREREG.html">PREREG</a>
@@ -244,73 +237,149 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
 <h4>Case studies</h4>
 <a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
-<h4>Infrastructure</h4>
-<a href="../infra/DNS.html">DNS</a></aside>
+<a class="cur" href="../case-studies/cs03-multi-agent-arena.html">cs03-multi-agent-arena</a>
+<a href="../case-studies/cs04-trace-rag-other-memory.html">cs04-trace-rag-other-memory</a>
+<a href="../case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
-<div class="crumbs"><a href="../index.html">docs</a> / zh/dashboard.md</div>
-<h1 id="bene-dashboard">BENE 仪表盘 (Dashboard)</h1>
-<p>只需要一个浏览器标签页，就能让你把整支特种兵大军尽收眼底：谁还在浴血奋战，谁已经凯旋，谁不幸阵亡了 —— 并且能一眼扒出每条进度条背后的所有风吹草动。</p>
-<blockquote>
-<p><strong>从一条刺眼的红色报错条，直接追溯到惹祸的那次兵器调用 (tool call) —— 这一切，连你的电脑都不需要出。</strong></p>
-</blockquote>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>ui<span class="w">           </span><span class="c1"># 唤醒 Web 仪表盘</span>
-bene<span class="w"> </span>demo<span class="w">         </span><span class="c1"># 塞点假数据并唤醒仪表盘 (不用做任何前置准备)</span>
+<div class="crumbs"><a href="../index.html">docs</a> / case-studies/cs03-multi-agent-arena.md</div>
+<h1 id="a-competitive-coding-arena-on-bene-design-at-the-substrate-layer">A Competitive Coding Arena on BENE: Design at the Substrate Layer</h1>
+<p><em>Engineering · 2026-06</em></p>
+<hr />
+<h2 id="context">Context</h2>
+<p>Put several coding agents in a room, hand them the same real engineering task,
+and score who did it best. Simple to say; brutal to run honestly. The moment a
+result decides a ranking, every weakness in your substrate becomes an exploit: an
+agent that can see a competitor's files, a score with no receipt, a win that
+can't be reproduced, a leaderboard that quietly trusts the agent's own claim.</p>
+<p>This case study describes the <strong>substrate-layer design</strong> for that kind of arena —
+the load-bearing decisions, in the abstract. It is the <em>pattern</em>, not any one
+product's implementation; the application logic here is pseudo-code on purpose.
+What it shows is why a competitive multi-agent platform wants something like BENE
+underneath, and how the four guarantees fall out of the primitives.</p>
+<h2 id="problem-framing">Problem framing</h2>
+<p>An arena is an adversarial environment by construction. To run one where the
+ranking means something, the substrate — not the application — has to guarantee
+four things:</p>
+<ul>
+<li><strong>Isolation.</strong> A competitor must not read or write another's workspace.</li>
+<li><strong>Auditability.</strong> Every scored action needs a durable, tamper-evident receipt.</li>
+<li><strong>Reproducibility.</strong> Any result must be re-runnable to settle a dispute.</li>
+<li><strong>Accumulated memory.</strong> The platform should get smarter across matches without
+  leaking one match's secrets into another.</li>
+</ul>
+<p>If any of these lives in application code, an agent (or a bug) will eventually
+route around it. They belong in the substrate.</p>
+<h2 id="design">Design</h2>
+<p>Each guarantee maps to one BENE primitive. The arena code stays small because the
+hard parts are the engine's job.</p>
+<table>
+<thead>
+<tr>
+<th>Arena need</th>
+<th>BENE primitive</th>
+<th>Why it holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Isolation</td>
+<td>per-agent VFS, SQL-scoped by <code>agent_id</code></td>
+<td>an entrant's own <code>fs_*</code> tools stay in its namespace (add an OS sandbox + restricted tools for adversarial code — see below)</td>
+</tr>
+<tr>
+<td>Auditability</td>
+<td>append-only event journal + execution traces</td>
+<td>every action is a row (append-only by convention; hash-chain for tamper-evidence if the DB is writable)</td>
+</tr>
+<tr>
+<td>Reproducibility</td>
+<td>checkpoint / restore / diff</td>
+<td>re-run a match's BENE state from a snapshot (not external side effects)</td>
+</tr>
+<tr>
+<td>Accumulated memory</td>
+<td>engrams + trace retrieval</td>
+<td>learn across matches; the kernel retrievers don't filter by agent, so scope hits yourself</td>
+</tr>
+</tbody>
+</table>
+<h3 id="isolation-sealed-rooms-one-file">Isolation — sealed rooms, one file</h3>
+<p>Each competitor runs as an isolated agent. The engine scopes an agent's own
+<code>fs_*</code> tools by <code>agent_id</code>, so an entrant's reads and writes stay in its
+namespace. This is logical isolation in one file — for <strong>adversarial</strong> entrants,
+pair it with an OS sandbox and a restricted tool set: the default runner allows
+<code>shell_exec</code>, and the operator-facing <code>query</code>/<code>agent_read</code> tools take an explicit
+<code>agent_id</code>, so neither is a hard cross-agent boundary on its own.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bene</span>
+
+<span class="n">arena</span> <span class="o">=</span> <span class="n">Bene</span><span class="p">(</span><span class="s2">&quot;arena.db&quot;</span><span class="p">)</span>            <span class="c1"># one auditable file for the whole tournament</span>
+<span class="k">for</span> <span class="n">competitor</span> <span class="ow">in</span> <span class="n">entrants</span><span class="p">:</span>         <span class="c1"># pseudo-code: your entrant list</span>
+    <span class="n">arena</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">competitor</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">PROBLEM</span><span class="p">)</span>   <span class="c1"># each gets a sealed workspace</span>
+<span class="c1"># competitor A&#39;s own fs_* tools never resolve to competitor B&#39;s /solution.py</span>
 </code></pre></div>
 
-<p>屏幕上你看到的所有东西，全是从本地那个破 SQLite 文件里扒出来的；除非你手贱敲了 <code>--host 0.0.0.0</code>，否则这玩意儿死都不会对外网开门。</p>
-<h2 id="_1">启动花样</h2>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>ui<span class="w"> </span>--port<span class="w"> </span><span class="m">9000</span><span class="w">         </span><span class="c1"># 换个门牌号 (默认: 8765)</span>
-bene<span class="w"> </span>ui<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w">     </span><span class="c1"># 敞开大门，允许外网访问 (用于远程监控)</span>
-bene<span class="w"> </span>ui<span class="w"> </span>--no-browser<span class="w">        </span><span class="c1"># 别特么自动跳出浏览器弹窗</span>
-bene<span class="w"> </span>ui<span class="w"> </span>--db<span class="w"> </span>./project.db<span class="w">  </span><span class="c1"># 强制绑死某个特定的数据库</span>
+<h3 id="auditability-the-receipt-is-the-row">Auditability — the receipt is the row</h3>
+<p>Scoring reads from the journal, never from the agent's self-report. The log is
+append-only <em>by application convention</em> — for an arena where an entrant or
+operator can write the SQLite file, add real tamper-evidence (a hash-chain over
+rows, or an append-only store outside the contestant's reach) before treating a
+receipt as unforgeable:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># pseudo-code: derive the score from recorded events, not from what the agent said</span>
+<span class="n">events</span> <span class="o">=</span> <span class="n">arena</span><span class="o">.</span><span class="n">events</span><span class="p">(</span><span class="n">agent_id</span><span class="o">=</span><span class="n">competitor</span><span class="p">)</span>        <span class="c1"># the durable trace</span>
+<span class="n">score</span>  <span class="o">=</span> <span class="n">rubric</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>                            <span class="c1"># deterministic over recorded facts</span>
 </code></pre></div>
 
-<h2 id="_2">怎么看懂时间线</h2>
-<p>整个画面的绝对C位是一张 <strong>甘特图 (Gantt timeline)</strong>，它把所有的兵按照 <em>波次 (waves)</em> 圈了起来：只要是差不多同时起步的特种兵，就会被打包成一波 —— 翻译成人话就是，一次 <code>bene parallel</code> 命令，或者一次从 MCP 轰过来的批量任务，算作一波。</p>
-<h3 id="waves">进攻波次 (Waves)</h3>
-<p>每一波都有一个领头的表头卡片，上面刻着：</p>
-<ul>
-<li>终极目标 —— 用大白话写的这波冲锋到底要干嘛</li>
-<li>发起冲锋的时间，以及鏖战了多久</li>
-<li>一根被切成了好几段的进度条，按比例涂上了完工的、还在跑的、阵亡的和被强行超度的颜色</li>
-<li>数人头的小药丸 (pills)</li>
-</ul>
-<h3 id="bars">进度条 (Bars)</h3>
-<p>在表头下面，每一只特种兵都化作了一条横杠：</p>
-<ul>
-<li>长度代表它活了多久，并且按这一波的整体时长做了等比缩放</li>
-<li>颜色代表死活 —— 绿色是凯旋，紫色是还在冲锋，红色是阵亡，灰色是被叫停或是强行击毙的</li>
-<li>那些还在跑的条子，会泛着一阵阵的波光</li>
-<li>一根垂直的 "现在" 游标线，死死咬住活跃波次的当下时刻</li>
-<li>底下的刻度尺给你一点时间概念 (0s → Xm)</li>
-</ul>
-<p>把鼠标悬停在任何一根条子上，就能看到它的老底：代号、职能、领到的任务、以及死活状态。</p>
-<h3 id="_3">展开与筛选</h3>
-<p>点一下表头，就能把这波兵折叠或者展开。只要还有兵在跑，或者这一波人数不多 (≤12 个) 的时候，它默认就是敞开的。</p>
-<p>顶部的工具栏就是你的狙击镜：</p>
-<ul>
-<li><strong>搜索框 (search box)</strong> 可以直接拿名字、任务描述或者职能去搜人</li>
-<li><strong>状态药丸 (status pills)</strong> 让你能把某种状态的人单独拎出来 —— 还在跑的、完工的、阵亡的、被击毙的</li>
-</ul>
-<h2 id="_4">死死盯住实时战报</h2>
-<p>画面最底下的那一溜，是一台永远在滚动的事件播报机，只要有风吹草动就会弹出来：谁报错了、谁干完了、谁抽出了兵器、谁往硬盘里塞了文件。表头上的小药丸能帮你把这堆噪音过滤得只剩一种；要是你在这里点了一个特种兵的 ID，右边的审讯室 (inspector) 就会瞬间锁定这个倒霉蛋。</p>
-<h2 id="inspect-one-agent">提审单只特种兵 (Inspect one agent)</h2>
-<p>在甘特图里点一根条子 (或者在战报机里点个 ID)，右边就会极其丝滑地滑出一个审讯面板。里面分了 5 个刑房：</p>
-<p><strong>全景扫描 (Overview)</strong> — 这只兵的底裤：死活徽章、什么时候出生的、最后一次喘气是什么时候；记分牌上挂着它写了多少文件、抽了多少次兵器、烧了多少代币、留下了多少条案底；它领到的完整任务书；以及一堆没人看的配置和元数据 JSON。</p>
-<p><strong>流水账 (Events)</strong> — 这只兵这辈子留下的所有脚印，靠着 SSE (Server-Sent Events) 实时怼到你脸上：生死轮回、状态突变、读写了什么文件、拔刀和收刀的瞬间。不用你拿 F5 狂刷，新案底自己就会弹出来。</p>
-<p><strong>兵器谱 (Tool Calls)</strong> — 完整的兵器调用树。每一次挥刀都明明白白写着：它塞了什么进去、拿到了什么结果、磨蹭了多久、以及烧了多少钱的代币；套娃调用会老老实实地缩进显示。点开任何一行，就能看到极其变态的入参和出参细节。</p>
-<p><strong>翻箱倒柜 (Files)</strong> — 这只兵专属的 VFS (虚拟文件系统) 结界的浏览器。你可以踩进目录里，看看文件多大，然后顺着面包屑爬出来。</p>
-<p><strong>时光快照 (Checkpoints)</strong> — 这只兵留下的一串存档点 —— 标签名、存盘时间点、以及几句备忘录。</p>
-<h2 id="ssh-ci">只能用 SSH 或者在 CI 里干瞪眼？</h2>
-<p>机器上没装浏览器？这套一模一样的数据也能在黑不溜秋的命令行里渲染出来：</p>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>dashboard
+<p>A coordination decision (who advanced, who was disqualified) is itself logged
+through the shared-log protocol, so the bracket has the same audit trail the
+matches do:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene.shared_log</span><span class="w"> </span><span class="kn">import</span> <span class="n">SharedLog</span>
+<span class="n">log</span> <span class="o">=</span> <span class="n">SharedLog</span><span class="p">(</span><span class="n">arena</span><span class="o">.</span><span class="n">conn</span><span class="p">)</span>
+<span class="n">log</span><span class="o">.</span><span class="n">intent</span><span class="p">(</span><span class="s2">&quot;advance winners of round 1&quot;</span><span class="p">)</span>
+<span class="n">log</span><span class="o">.</span><span class="n">vote</span><span class="p">(</span><span class="n">intent_id</span><span class="p">,</span> <span class="n">approve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">log</span><span class="o">.</span><span class="n">decide</span><span class="p">(</span><span class="n">intent_id</span><span class="p">)</span>                              <span class="c1"># durable, ordered, replayable</span>
 </code></pre></div>
 
-<p>你会得到一张极其硬核的、实时刷新的特种兵存活表，每人烧了多少钱的账单，以及一台能往下滚的事件播报机。</p>
-<h2 id="_5">在不同的盘子里切来切去</h2>
-<p>一个仪表盘能管着无数个项目：直接去顶部的下拉菜单里挑另一个 <code>.db</code> 文件，画面瞬间就切过去了，连重启都不用。点一下 <strong>+ Project</strong> 就能把任何路径下的数据库生拽进来；在浏览器地址栏里这么搞也是一样的：</p>
-<p><code>http://localhost:8765/?db=/path/to/bene.db</code></p>
-<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/zh/dashboard.md" target="_blank" rel="noopener noreferrer">docs/zh/dashboard.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+<h3 id="reproducibility-disputes-settled-by-replay">Reproducibility — disputes settled by replay</h3>
+<p>Before each scored step the arena checkpoints; a contested result is re-run from
+the snapshot rather than argued about:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">cp</span> <span class="o">=</span> <span class="n">arena</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">(</span><span class="n">competitor</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;pre-grade&quot;</span><span class="p">)</span>
+<span class="c1"># ...grade...</span>
+<span class="n">arena</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="n">competitor</span><span class="p">,</span> <span class="n">checkpoint</span><span class="o">=</span><span class="n">cp</span><span class="p">)</span>           <span class="c1"># rewinds BENE VFS + state</span>
+</code></pre></div>
+
+<p><code>restore</code> rewinds the agent's BENE-managed VFS and key-value state. Steps that
+reached <em>outside</em> BENE — a model call, <code>shell_exec</code>, network or host-filesystem
+side effects — aren't replayed, so a re-run is deterministic only to the extent
+the contested work stayed inside the substrate.</p>
+<h3 id="accumulated-memory-smarter-across-matches-sealed-within-one">Accumulated memory — smarter across matches, sealed within one</h3>
+<p>Finished matches leave traces that become engrams. A future match should
+retrieve <em>lessons</em> (what tends to fail a gate), not raw workspaces — but scope
+that retrieval explicitly: the kernel retrievers filter by <code>agent_id</code> only when
+<em>recording</em> the query, so pass the match/agent scope into retrieval (or curate
+which engrams are shared) rather than assuming cross-match reads are sealed by
+default.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">arena</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="s2">&quot;common failure modes on refactor tasks&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h2 id="insights">Insights</h2>
+<ul>
+<li><strong>Push the guarantees down.</strong> Every property an arena needs to be <em>fair</em> is a
+  property the substrate can enforce and the application cannot be trusted to.
+  Isolation-by-SQL-scope and receipts-by-append-only-log are not features you
+  bolt on; they are the reason to have a substrate at all.</li>
+<li><strong>The score is a query, not a claim.</strong> Deriving rankings from the recorded
+  journal — never from an agent's self-report — is what makes a leaderboard
+  defensible.</li>
+<li><strong>One file is an operational gift.</strong> The whole tournament is a single SQLite
+  database: copy it for a backup, diff it for an audit, hand it to the next shift
+  with zero state reconstruction.</li>
+</ul>
+<h2 id="what-to-take-from-this">What to take from this</h2>
+<p>You do not need an arena to want these four properties — any serious multi-agent
+system does. The arena just refuses to let you fake them. Build on a substrate
+that makes isolation, auditability, reproducibility, and memory the <em>default</em>,
+and the application on top stays small, honest, and replayable.</p>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/case-studies/cs03-multi-agent-arena.md" target="_blank" rel="noopener noreferrer">docs/case-studies/cs03-multi-agent-arena.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>
 </div>
 <footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>

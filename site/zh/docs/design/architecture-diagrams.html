@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>BENE 仪表盘 (Dashboard) — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — BENE 仪表盘 (Dashboard)" />
+<title>Architecture diagrams — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — Architecture diagrams" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -155,7 +155,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 .codehilite .il { color: #AE81FF } /* Literal.Number.Integer.Long */
 .codehilite { background: var(--term-bg) !important; }
 </style>
-
+<script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs"; mermaid.initialize({startOnLoad: true, theme: "neutral"});</script>
 </head>
 <body>
 <div class="top"><div class="top-in">
@@ -165,9 +165,9 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
   <a class="nav" href="../../../SKILL.md" target="_blank" rel="noopener noreferrer" title="把 BENE 交给你的 agent，一个 URL">SKILL.md ↗</a>
   <button class="nav copy-llms" data-llms-url="../../../llms.txt" data-copied-label="✓ 已复制" data-opened-label="↗ 已打开" title="把 llms.txt 索引拷到剪贴板 — 粘贴进你 agent 的 context">复制 llms.txt</button>
   <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="GitHub"><svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="vertical-align:text-bottom"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg></a>
-  <a class="nav" href="../../../docs/zh/dashboard.html" title="Switch to English" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">EN</a>
+  <a class="nav" href="../../../docs/design/architecture-diagrams.html" title="Switch to English" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">EN</a>
 </div></div>
-<div class="zh-banner" style="background:rgba(238,96,24,.07);border-bottom:1px solid rgba(238,96,24,.2);padding:12px 24px;font-size:13px;line-height:1.5;color:rgb(var(--muted))"><strong style="color:rgb(var(--text))">本页中文版正在按照 4-book methodology 翻译（Mom Test / Pressfield / Zinsser / Dicks）—— 不放 AI 翻译稿。</strong> 下方是英文原文，点上方 <a href="../../../docs/zh/dashboard.html" style="color:rgb(var(--accent));text-decoration:underline">EN</a> 直接到英文页面， 或在 <a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer" style="color:rgb(var(--accent));text-decoration:underline">Discussions</a> 里贡献翻译。</div>
+<div class="zh-banner" style="background:rgba(238,96,24,.07);border-bottom:1px solid rgba(238,96,24,.2);padding:12px 24px;font-size:13px;line-height:1.5;color:rgb(var(--muted))"><strong style="color:rgb(var(--text))">本页中文版正在按照 4-book methodology 翻译（Mom Test / Pressfield / Zinsser / Dicks）—— 不放 AI 翻译稿。</strong> 下方是英文原文，点上方 <a href="../../../docs/design/architecture-diagrams.html" style="color:rgb(var(--accent));text-decoration:underline">EN</a> 直接到英文页面， 或在 <a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer" style="color:rgb(var(--accent));text-decoration:underline">Discussions</a> 里贡献翻译。</div>
 <script>
 (function() {
   document.querySelectorAll('button.copy-llms').forEach(function(btn) {
@@ -205,12 +205,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../codegen.html">codegen</a>
 <a href="../dashboard.html">dashboard</a>
 <a href="../deployment.html">deployment</a>
+<a href="../examples.html">examples</a>
 <a href="../integrating-bene.html">integrating-bene</a>
 <a href="../mcp-integration.html">mcp-integration</a>
 <a href="../memory.html">memory</a>
 <a href="../meta-harness.html">meta-harness</a>
 <a href="../philosophy.html">philosophy</a>
-<a href="../primitive-review-cycle.html">primitive-review-cycle</a>
 <a href="../probe-authoring.html">probe-authoring</a>
 <a href="../schema.html">schema</a>
 <a href="../shared-log.html">shared-log</a>
@@ -219,14 +219,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <h4>Recipes</h4>
 <a href="../recipes/atomic-completion.html">atomic-completion</a>
 <h4>Design and claims</h4>
-<a href="../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
-<a href="../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
-<a href="../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
-<a href="../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
-<h4>Evidence and research</h4>
-<a href="../research/GAP-AUDIT.html">GAP-AUDIT</a>
-<a href="../research/SYNTHESIS.html">SYNTHESIS</a>
-<a href="../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<a class="cur" href="../design/architecture-diagrams.html">architecture-diagrams</a>
 <h4>Benchmarks and gates</h4>
 <a href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
 <a href="../benchmarks/PREREG.html">PREREG</a>
@@ -244,73 +237,82 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
 <h4>Case studies</h4>
 <a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
-<h4>Infrastructure</h4>
-<a href="../infra/DNS.html">DNS</a></aside>
+<a href="../case-studies/cs03-multi-agent-arena.html">cs03-multi-agent-arena</a>
+<a href="../case-studies/cs04-trace-rag-other-memory.html">cs04-trace-rag-other-memory</a>
+<a href="../case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
-<div class="crumbs"><a href="../index.html">docs</a> / zh/dashboard.md</div>
-<h1 id="bene-dashboard">BENE 仪表盘 (Dashboard)</h1>
-<p>只需要一个浏览器标签页，就能让你把整支特种兵大军尽收眼底：谁还在浴血奋战，谁已经凯旋，谁不幸阵亡了 —— 并且能一眼扒出每条进度条背后的所有风吹草动。</p>
-<blockquote>
-<p><strong>从一条刺眼的红色报错条，直接追溯到惹祸的那次兵器调用 (tool call) —— 这一切，连你的电脑都不需要出。</strong></p>
-</blockquote>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>ui<span class="w">           </span><span class="c1"># 唤醒 Web 仪表盘</span>
-bene<span class="w"> </span>demo<span class="w">         </span><span class="c1"># 塞点假数据并唤醒仪表盘 (不用做任何前置准备)</span>
-</code></pre></div>
+<div class="crumbs"><a href="../index.html">docs</a> / design/architecture-diagrams.md</div>
+<h1 id="architecture-diagrams">Architecture diagrams</h1>
+<p>Three pictures of how BENE fits together: the single-file <strong>Nexus</strong>, the
+<strong>engram compression ladder</strong>, and the <strong>autonomy ladder</strong>. Each diagram is the
+shape; the prose says what it's load-bearing for.</p>
+<h2 id="the-nexus-many-isolated-agents-one-file">The Nexus — many isolated agents, one file</h2>
+<p>Every agent has its own VFS, event journal, checkpoints, and traces — but they
+all live in <strong>one</strong> SQLite database. That single file is the Nexus: the join
+point for the whole swarm, and the thing you copy, diff, or check into git.
+(WAL mode keeps recent commits in a <code>bene.db-wal</code> sidecar until a checkpoint, so
+on a live process run a WAL checkpoint (or close) before copying only <code>bene.db</code>,
+or copy the <code>-wal</code>/<code>-shm</code> sidecars alongside it.)</p>
+<div class="mermaid">
+flowchart TB
+    subgraph agents["Isolated agents (SQL-scoped by agent_id)"]
+        A1["researcher<br/>VFS · events · checkpoints"]
+        A2["refactor-bot<br/>VFS · events · checkpoints"]
+        A3["reviewer<br/>VFS · events · checkpoints"]
+    end
+    A1 --> DB
+    A2 --> DB
+    A3 --> DB
+    DB[("bene.db — one auditable<br/>SQLite file · the Nexus")]
+    DB --> S["shared log · blobs · engrams"]
+</div>
 
-<p>屏幕上你看到的所有东西，全是从本地那个破 SQLite 文件里扒出来的；除非你手贱敲了 <code>--host 0.0.0.0</code>，否则这玩意儿死都不会对外网开门。</p>
-<h2 id="_1">启动花样</h2>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>ui<span class="w"> </span>--port<span class="w"> </span><span class="m">9000</span><span class="w">         </span><span class="c1"># 换个门牌号 (默认: 8765)</span>
-bene<span class="w"> </span>ui<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w">     </span><span class="c1"># 敞开大门，允许外网访问 (用于远程监控)</span>
-bene<span class="w"> </span>ui<span class="w"> </span>--no-browser<span class="w">        </span><span class="c1"># 别特么自动跳出浏览器弹窗</span>
-bene<span class="w"> </span>ui<span class="w"> </span>--db<span class="w"> </span>./project.db<span class="w">  </span><span class="c1"># 强制绑死某个特定的数据库</span>
-</code></pre></div>
+<p><em>Load-bearing:</em> an agent's own <code>fs_*</code> tools are scoped to its <code>agent_id</code>, so in
+normal operation "many agents, one file" doesn't mean agents stumble into each
+other. It is logical namespacing, not a hard authorization boundary — the
+operator surface (<code>Bene.read</code>/<code>query</code>, the <code>agent_read</code>/<code>agent_write</code> MCP tools)
+takes an explicit <code>agent_id</code> and can cross agents by design. The union is the
+audit surface.</p>
+<h2 id="the-engram-compression-ladder">The engram compression ladder</h2>
+<p>Execution traces are stored on a tiered ladder (0–4): raw at the bottom,
+progressively compressed summaries above. Retrieval searches the cheap high
+tiers first and drills into detail only on a hit — so memory stays searchable as
+the corpus grows.</p>
+<div class="mermaid">
+flowchart LR
+    T0["Tier 0<br/>raw traces<br/>(every turn)"] --> T1["Tier 1<br/>granule summaries"]
+    T1 --> T2["Tier 2"]
+    T2 --> T3["Tier 3"]
+    T3 --> T4["Tier 4<br/>most compressed"]
+    Q(["bene retrieve"]) -. "search cheap tiers,<br/>drill down on a hit" .-> T3
+    Q -.-> T2
+</div>
 
-<h2 id="_2">怎么看懂时间线</h2>
-<p>整个画面的绝对C位是一张 <strong>甘特图 (Gantt timeline)</strong>，它把所有的兵按照 <em>波次 (waves)</em> 圈了起来：只要是差不多同时起步的特种兵，就会被打包成一波 —— 翻译成人话就是，一次 <code>bene parallel</code> 命令，或者一次从 MCP 轰过来的批量任务，算作一波。</p>
-<h3 id="waves">进攻波次 (Waves)</h3>
-<p>每一波都有一个领头的表头卡片，上面刻着：</p>
-<ul>
-<li>终极目标 —— 用大白话写的这波冲锋到底要干嘛</li>
-<li>发起冲锋的时间，以及鏖战了多久</li>
-<li>一根被切成了好几段的进度条，按比例涂上了完工的、还在跑的、阵亡的和被强行超度的颜色</li>
-<li>数人头的小药丸 (pills)</li>
-</ul>
-<h3 id="bars">进度条 (Bars)</h3>
-<p>在表头下面，每一只特种兵都化作了一条横杠：</p>
-<ul>
-<li>长度代表它活了多久，并且按这一波的整体时长做了等比缩放</li>
-<li>颜色代表死活 —— 绿色是凯旋，紫色是还在冲锋，红色是阵亡，灰色是被叫停或是强行击毙的</li>
-<li>那些还在跑的条子，会泛着一阵阵的波光</li>
-<li>一根垂直的 "现在" 游标线，死死咬住活跃波次的当下时刻</li>
-<li>底下的刻度尺给你一点时间概念 (0s → Xm)</li>
-</ul>
-<p>把鼠标悬停在任何一根条子上，就能看到它的老底：代号、职能、领到的任务、以及死活状态。</p>
-<h3 id="_3">展开与筛选</h3>
-<p>点一下表头，就能把这波兵折叠或者展开。只要还有兵在跑，或者这一波人数不多 (≤12 个) 的时候，它默认就是敞开的。</p>
-<p>顶部的工具栏就是你的狙击镜：</p>
-<ul>
-<li><strong>搜索框 (search box)</strong> 可以直接拿名字、任务描述或者职能去搜人</li>
-<li><strong>状态药丸 (status pills)</strong> 让你能把某种状态的人单独拎出来 —— 还在跑的、完工的、阵亡的、被击毙的</li>
-</ul>
-<h2 id="_4">死死盯住实时战报</h2>
-<p>画面最底下的那一溜，是一台永远在滚动的事件播报机，只要有风吹草动就会弹出来：谁报错了、谁干完了、谁抽出了兵器、谁往硬盘里塞了文件。表头上的小药丸能帮你把这堆噪音过滤得只剩一种；要是你在这里点了一个特种兵的 ID，右边的审讯室 (inspector) 就会瞬间锁定这个倒霉蛋。</p>
-<h2 id="inspect-one-agent">提审单只特种兵 (Inspect one agent)</h2>
-<p>在甘特图里点一根条子 (或者在战报机里点个 ID)，右边就会极其丝滑地滑出一个审讯面板。里面分了 5 个刑房：</p>
-<p><strong>全景扫描 (Overview)</strong> — 这只兵的底裤：死活徽章、什么时候出生的、最后一次喘气是什么时候；记分牌上挂着它写了多少文件、抽了多少次兵器、烧了多少代币、留下了多少条案底；它领到的完整任务书；以及一堆没人看的配置和元数据 JSON。</p>
-<p><strong>流水账 (Events)</strong> — 这只兵这辈子留下的所有脚印，靠着 SSE (Server-Sent Events) 实时怼到你脸上：生死轮回、状态突变、读写了什么文件、拔刀和收刀的瞬间。不用你拿 F5 狂刷，新案底自己就会弹出来。</p>
-<p><strong>兵器谱 (Tool Calls)</strong> — 完整的兵器调用树。每一次挥刀都明明白白写着：它塞了什么进去、拿到了什么结果、磨蹭了多久、以及烧了多少钱的代币；套娃调用会老老实实地缩进显示。点开任何一行，就能看到极其变态的入参和出参细节。</p>
-<p><strong>翻箱倒柜 (Files)</strong> — 这只兵专属的 VFS (虚拟文件系统) 结界的浏览器。你可以踩进目录里，看看文件多大，然后顺着面包屑爬出来。</p>
-<p><strong>时光快照 (Checkpoints)</strong> — 这只兵留下的一串存档点 —— 标签名、存盘时间点、以及几句备忘录。</p>
-<h2 id="ssh-ci">只能用 SSH 或者在 CI 里干瞪眼？</h2>
-<p>机器上没装浏览器？这套一模一样的数据也能在黑不溜秋的命令行里渲染出来：</p>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>dashboard
-</code></pre></div>
+<p><em>Load-bearing:</em> capture is the default (every run drops a tier-0 trace), and the
+ladder is what keeps "remember everything" from becoming "scan everything."</p>
+<h2 id="the-autonomy-ladder-l0-l4">The autonomy ladder (L0 → L4)</h2>
+<p>Agents operate at a rung. Computed trust (four signals + a composite) raises the
+floor an agent is allowed to reach — but the top rung, autonomous promotion, is
+<strong>capped below L4 by the engine</strong> and only a human grant crosses it.</p>
+<div class="mermaid">
+flowchart TB
+    L0["L0 · Observe"] --> L1["L1 · Suggest"]
+    L1 --> L2["L2 · Act in sandbox"]
+    L2 --> L3["L3 · Act on shared state"]
+    L3 --> L4["L4 · Autonomous-promote"]
+    Trust["computed trust<br/>(4 signals + composite)"] -. "trust:auto promotes up to L3<br/>(records a grant); L4 stays human" .-> L3
+    Human["human grant<br/>(--by human:name)"] ==> L4
+</div>
 
-<p>你会得到一张极其硬核的、实时刷新的特种兵存活表，每人烧了多少钱的账单，以及一台能往下滚的事件播报机。</p>
-<h2 id="_5">在不同的盘子里切来切去</h2>
-<p>一个仪表盘能管着无数个项目：直接去顶部的下拉菜单里挑另一个 <code>.db</code> 文件，画面瞬间就切过去了，连重启都不用。点一下 <strong>+ Project</strong> 就能把任何路径下的数据库生拽进来；在浏览器地址栏里这么搞也是一样的：</p>
-<p><code>http://localhost:8765/?db=/path/to/bene.db</code></p>
-<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/zh/dashboard.md" target="_blank" rel="noopener noreferrer">docs/zh/dashboard.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+<p><em>Load-bearing:</em> autonomy is <em>earned</em> from observed behavior, not asserted.
+Shared-state actions live at <strong>L3</strong>; the top rung — <strong>L4</strong>, autonomous
+self-promotion — is the one that always requires a human grant.</p>
+<hr />
+<p><em>Diagrams are Mermaid; the docs site renders them inline. Grounded in
+<code>bene/kernel/harness/autonomy.py</code> (the L0–L4 labels), the engram tier model, and
+the single-file Nexus design. Source: edit this markdown, never the generated
+HTML.</em></p>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/design/architecture-diagrams.md" target="_blank" rel="noopener noreferrer">docs/design/architecture-diagrams.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>
 </div>
 <footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>

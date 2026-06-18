@@ -136,8 +136,13 @@ def all_docs() -> list[Path]:
     # that must NOT be published — they were relocated to ops/runbooks/ (2026-06-18).
     # This filter is the safety net so anything dropped under docs/**/infra/ in
     # future is never rendered to the public site.
+    # `zh/` holds the Chinese translations: they are the *zh-mirror* source for each
+    # EN page (rendered via zh_src below), NOT standalone EN pages — excluding them
+    # here stops docs/zh/*.md being mis-rendered into site/docs/zh/ and the
+    # double-nested site/zh/docs/zh/.
+    skip = {"infra", "zh"}
     return sorted(
-        p for p in DOCS.rglob("*.md") if "infra" not in p.relative_to(DOCS).parts
+        p for p in DOCS.rglob("*.md") if not (skip & set(p.relative_to(DOCS).parts))
     )
 
 

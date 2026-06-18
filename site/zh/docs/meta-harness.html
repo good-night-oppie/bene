@@ -205,12 +205,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="codegen.html">codegen</a>
 <a href="dashboard.html">dashboard</a>
 <a href="deployment.html">deployment</a>
+<a href="examples.html">examples</a>
 <a href="integrating-bene.html">integrating-bene</a>
 <a href="mcp-integration.html">mcp-integration</a>
 <a href="memory.html">memory</a>
 <a class="cur" href="meta-harness.html">meta-harness</a>
 <a href="philosophy.html">philosophy</a>
-<a href="primitive-review-cycle.html">primitive-review-cycle</a>
 <a href="probe-authoring.html">probe-authoring</a>
 <a href="schema.html">schema</a>
 <a href="shared-log.html">shared-log</a>
@@ -219,14 +219,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <h4>Recipes</h4>
 <a href="recipes/atomic-completion.html">atomic-completion</a>
 <h4>Design and claims</h4>
-<a href="design/BENE2-DESIGN.html">BENE2-DESIGN</a>
-<a href="design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
-<a href="design/KERNEL-SPEC.html">KERNEL-SPEC</a>
-<a href="design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
-<h4>Evidence and research</h4>
-<a href="research/GAP-AUDIT.html">GAP-AUDIT</a>
-<a href="research/SYNTHESIS.html">SYNTHESIS</a>
-<a href="research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<a href="design/architecture-diagrams.html">architecture-diagrams</a>
 <h4>Benchmarks and gates</h4>
 <a href="benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
 <a href="benchmarks/PREREG.html">PREREG</a>
@@ -244,8 +237,9 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
 <h4>Case studies</h4>
 <a href="case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
-<h4>Infrastructure</h4>
-<a href="infra/DNS.html">DNS</a></aside>
+<a href="case-studies/cs03-multi-agent-arena.html">cs03-multi-agent-arena</a>
+<a href="case-studies/cs04-trace-rag-other-memory.html">cs04-trace-rag-other-memory</a>
+<a href="case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
 <div class="crumbs"><a href="index.html">docs</a> / meta-harness.md</div>
 <h1 id="meta-harness">演化脚手架 (Meta-Harness)：用搜索算法跑出一个最强脚手架</h1>
@@ -253,7 +247,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <blockquote>
 <p><strong>只需敲一行命令，就能把平时靠人肉干的 "微调一下 prompt 然后重跑" 的低级循环，彻底拉升为一场有着严密测量、随时可断点续传、且全盘留底的自动化代码搜索战役。</strong></p>
 </blockquote>
-<p>bene 的这套玩法直接落地了 <a href="https://yoonholee.com/meta-harness/">Meta-Harness 论文 (arXiv:2603.28052)</a> 里的核心技术；关于出处和可跑的示范代码，去 <a href="#sources-and-worked-examples">血脉渊源和实战靶场</a> 找。在 bene 的世界观里，这被称作 "配种计划 (breeding program)" —— 一场极其考验耐心、跨越数个世代的、专门针对 harness 代码的达尔文式大筛选。</p>
+<p>bene 的这套玩法直接落地了 <a href="https://yoonholee.com/meta-harness/">Meta-Harness 论文 (arXiv:2603.28052)</a> 里的核心技术；关于出处和可跑的示范代码，去 <a href="#血脉渊源和实战靶场">血脉渊源和实战靶场</a> 找。在 bene 的世界观里，这被称作 "配种计划 (breeding program)" —— 一场极其考验耐心、跨越数个世代的、专门针对 harness 代码的达尔文式大筛选。</p>
 <hr />
 <h2 id="_1">为什么搜索算法能把人肉调参按在地上摩擦？</h2>
 <p>你手里那套大模型是个黑盒，它是冻死的。你能掌控的，是外面套的那层脚手架 (Harness)：到底塞什么词进 prompt 里？捞哪些旧例子作弊？带多少上下文陪跑？光是脚手架好坏的差距，就能让同一个大模型在同一个任务上的表现拉开 <strong>6倍</strong> 的鸿沟。</p>
@@ -271,8 +265,8 @@ bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </s
 bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>agentic_coding<span class="w"> </span>-n<span class="w"> </span><span class="m">10</span><span class="w"> </span>-k<span class="w"> </span><span class="m">2</span>
 </code></pre></div>
 
-<p>如果你想拿自己的私家数据集 (比如一份你司的 CSV 或者 JSONL 语料) 来跑，你需要走 Python API 里的 <code>get_benchmark</code> 接口 (去抄 <a href="#drive-it-from-python">在 Python 里发号施令</a> 那节的作业)。</p>
-<p><code>-n</code> 限制的是搜索迭代轮数，<code>-k</code> 则限制每轮提议出的变种数量。想看全部的参数？去翻 <a href="#every-flag-one-place">把所有开关列在同一处</a>。</p>
+<p>如果你想拿自己的私家数据集 (比如一份你司的 CSV 或者 JSONL 语料) 来跑，你需要走 Python API 里的 <code>get_benchmark</code> 接口 (去抄 <a href="#在-python-里发号施令">在 Python 里发号施令</a> 那节的作业)。</p>
+<p><code>-n</code> 限制的是搜索迭代轮数，<code>-k</code> 则限制每轮提议出的变种数量。想看全部的参数？去翻 <a href="#把所有开关列在同一处">把所有开关列在同一处</a>。</p>
 <hr />
 <h2 id="_3">扒开一场战役的五脏六腑</h2>
 <p>想要看懂这套杀戮机器是怎么运转的，最直观的办法就是拆解一场实战：教一个分类器去分发工单。</p>
@@ -345,12 +339,14 @@ Agent: harness-01HXY1C...    (智能检索那套)
   /pareto/frontier.json     ← 战报显示：目前检索那套方案占优
 </code></pre></div>
 
-<p>在每一份 harness 的案底目录下：
-- <strong>source.py</strong> — 变种方案的源码
-- <strong>scores.json</strong> — 最终的汇总战绩 (准确率、上下文开销等)
-- <strong>trace.jsonl</strong> — 全景式的跑分流水：输入长啥样，标答是啥，生出的 prompt 啥样，AI 给的预测是啥，判题对不对，耗了几个 token。
-- <strong>per_problem.jsonl</strong> — 分题目的细粒度账单
-- <strong>metadata.json</strong> — 身世档案 (第几代、爹是谁、当时改它的 rationale 思路)</p>
+<p>在每一份 harness 的案底目录下：</p>
+<ul>
+<li><strong>source.py</strong> — 变种方案的源码</li>
+<li><strong>scores.json</strong> — 最终的汇总战绩 (准确率、上下文开销等)</li>
+<li><strong>trace.jsonl</strong> — 全景式的跑分流水：输入长啥样，标答是啥，生出的 prompt 啥样，AI 给的预测是啥，判题对不对，耗了几个 token。</li>
+<li><strong>per_problem.jsonl</strong> — 分题目的细粒度账单</li>
+<li><strong>metadata.json</strong> — 身世档案 (第几代、爹是谁、当时改它的 rationale 思路)</li>
+</ul>
 <p>这些 trace 文件才是真正的核心。在原论文的消融实验里，喂给 proposer 完整 trace 所带来的战力，能把那些只喂了干瘪得分或者缩水总结的 proposer 甩开足足 15 个百分点。</p>
 <h4 id="1-proposer">第 1 轮 — Proposer 开始狼吞虎咽</h4>
 <p>紧接着，bene 唤醒了一只极其凶悍的 <strong>Proposer Agent</strong>：它手里握着能够撬开整个档案馆大门的专属工具。</p>
@@ -364,9 +360,11 @@ Agent: harness-01HXY1C...    (智能检索那套)
 <p>它大笔一挥，写下两副猛药：</p>
 <p><strong>Candidate 1 — 聚类强吃。</strong> 先把数据池按分类聚好，然后保证每个分类都硬抽出一个例子喂进去。
 <strong>Candidate 2 — 盲猜再查。</strong> 先不带例子裸跑一发猜个大概，拿着猜出来的分类去精准捞例子，最后拿着这些精准例子再跑第二遍做确认。</p>
-<p>它会拿着 <code>mh_submit_harness(source_code, rationale)</code> 把这两套代码丢出去。但在碰到测试集之前，代码必须得过两道鬼门关 (两级校验)：
-1. <strong>AST 静检</strong> — 用 <code>ast.walk</code> 查验它是不是合法 Python，且有没有老老实实写明 <code>run()</code>。
-2. <strong>跑通点火</strong> — 用一道题当靶子真刀真枪跑一遍，但凡报了异常直接毙掉。</p>
+<p>它会拿着 <code>mh_submit_harness(source_code, rationale)</code> 把这两套代码丢出去。但在碰到测试集之前，代码必须得过两道鬼门关 (两级校验)：</p>
+<ol>
+<li><strong>AST 静检</strong> — 用 <code>ast.walk</code> 查验它是不是合法 Python，且有没有老老实实写明 <code>run()</code>。</li>
+<li><strong>跑通点火</strong> — 用一道题当靶子真刀真枪跑一遍，但凡报了异常直接毙掉。</li>
+</ol>
 <p>没跑通的残次品连上桌的资格都没有。</p>
 <div class="codehilite"><pre><span></span><code>跑完第一轮后的档案馆:
   /harnesses/
@@ -389,15 +387,19 @@ Agent: harness-01HXY1C...    (智能检索那套)
 </code></pre></div>
 
 <h4 id="3-10">第 3 到 10 轮 — 复利的暴击</h4>
-<p>从此往后，proposer 算是开了天眼，每一轮都能俯瞰全局。它平时最爱耍的花招包括：
-- 把前三甲拎出来，拆出那些立了大功的代码片段
-- 盯着翻车记录使劲看，找出至今没补上的漏网之鱼
-- 把原本毫无瓜葛的两套流派硬缝合在一起
-- 一刀切中要害，一次只修一个 bug，绝不无脑推翻重写</p>
-<p>为了约束它，bene 还在系统 prompt 里塞进了原论文摸索出来的三大军规：
-- <strong>连跪后转保守 (Go additive)</strong> — 如果连着几轮都在退步，proposer 就会被锁死在 "只许加东西，不许碰老代码" 的保守模式，大幅压低风险。
-- <strong>控制变量法 (Change one variable)</strong> — 每个变种只许改一处地方，只有这样，分数的涨跌才能清清楚楚地算在那个改动头上。
-- <strong>溯源对比 (Compare across iterations)</strong> — 逼着它去翻旧账，搞清楚以前的改动到底是帮了倒忙还是真有奇效。</p>
+<p>从此往后，proposer 算是开了天眼，每一轮都能俯瞰全局。它平时最爱耍的花招包括：</p>
+<ul>
+<li>把前三甲拎出来，拆出那些立了大功的代码片段</li>
+<li>盯着翻车记录使劲看，找出至今没补上的漏网之鱼</li>
+<li>把原本毫无瓜葛的两套流派硬缝合在一起</li>
+<li>一刀切中要害，一次只修一个 bug，绝不无脑推翻重写</li>
+</ul>
+<p>为了约束它，bene 还在系统 prompt 里塞进了原论文摸索出来的三大军规：</p>
+<ul>
+<li><strong>连跪后转保守 (Go additive)</strong> — 如果连着几轮都在退步，proposer 就会被锁死在 "只许加东西，不许碰老代码" 的保守模式，大幅压低风险。</li>
+<li><strong>控制变量法 (Change one variable)</strong> — 每个变种只许改一处地方，只有这样，分数的涨跌才能清清楚楚地算在那个改动头上。</li>
+<li><strong>溯源对比 (Compare across iterations)</strong> — 逼着它去翻旧账，搞清楚以前的改动到底是帮了倒忙还是真有奇效。</li>
+</ul>
 <p>bene 默认 <code>candidates_per_iteration</code> (每轮变种数) 设为 <strong>2</strong> (论文里是 3)；因为在工程实测中我们发现：集中火力少提几个变种，比无脑乱撒网的效果要更狠。</p>
 <h3 id="4">4. 战事结算</h3>
 <p>十轮绞肉战打完，系统会给你甩出一份结案报告：</p>

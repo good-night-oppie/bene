@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>BENE 文档 — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — BENE 文档" />
+<title>A Competitive Coding Arena on BENE: Design at the Substrate Layer — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — A Competitive Coding Arena on BENE: Design at the Substrate Layer" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -165,9 +165,9 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
   <a class="nav" href="../../../SKILL.md" target="_blank" rel="noopener noreferrer" title="把 BENE 交给你的 agent，一个 URL">SKILL.md ↗</a>
   <button class="nav copy-llms" data-llms-url="../../../llms.txt" data-copied-label="✓ 已复制" data-opened-label="↗ 已打开" title="把 llms.txt 索引拷到剪贴板 — 粘贴进你 agent 的 context">复制 llms.txt</button>
   <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="GitHub"><svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="vertical-align:text-bottom"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg></a>
-  <a class="nav" href="../../../docs/zh/README.html" title="Switch to English" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">EN</a>
+  <a class="nav" href="../../../docs/case-studies/cs03-multi-agent-arena.html" title="Switch to English" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">EN</a>
 </div></div>
-<div class="zh-banner" style="background:rgba(238,96,24,.07);border-bottom:1px solid rgba(238,96,24,.2);padding:12px 24px;font-size:13px;line-height:1.5;color:rgb(var(--muted))"><strong style="color:rgb(var(--text))">本页中文版正在按照 4-book methodology 翻译（Mom Test / Pressfield / Zinsser / Dicks）—— 不放 AI 翻译稿。</strong> 下方是英文原文，点上方 <a href="../../../docs/zh/README.html" style="color:rgb(var(--accent));text-decoration:underline">EN</a> 直接到英文页面， 或在 <a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer" style="color:rgb(var(--accent));text-decoration:underline">Discussions</a> 里贡献翻译。</div>
+<div class="zh-banner" style="background:rgba(238,96,24,.07);border-bottom:1px solid rgba(238,96,24,.2);padding:12px 24px;font-size:13px;line-height:1.5;color:rgb(var(--muted))"><strong style="color:rgb(var(--text))">本页中文版正在按照 4-book methodology 翻译（Mom Test / Pressfield / Zinsser / Dicks）—— 不放 AI 翻译稿。</strong> 下方是英文原文，点上方 <a href="../../../docs/case-studies/cs03-multi-agent-arena.html" style="color:rgb(var(--accent));text-decoration:underline">EN</a> 直接到英文页面， 或在 <a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer" style="color:rgb(var(--accent));text-decoration:underline">Discussions</a> 里贡献翻译。</div>
 <script>
 (function() {
   document.querySelectorAll('button.copy-llms').forEach(function(btn) {
@@ -205,12 +205,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../codegen.html">codegen</a>
 <a href="../dashboard.html">dashboard</a>
 <a href="../deployment.html">deployment</a>
+<a href="../examples.html">examples</a>
 <a href="../integrating-bene.html">integrating-bene</a>
 <a href="../mcp-integration.html">mcp-integration</a>
 <a href="../memory.html">memory</a>
 <a href="../meta-harness.html">meta-harness</a>
 <a href="../philosophy.html">philosophy</a>
-<a href="../primitive-review-cycle.html">primitive-review-cycle</a>
 <a href="../probe-authoring.html">probe-authoring</a>
 <a href="../schema.html">schema</a>
 <a href="../shared-log.html">shared-log</a>
@@ -219,14 +219,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <h4>Recipes</h4>
 <a href="../recipes/atomic-completion.html">atomic-completion</a>
 <h4>Design and claims</h4>
-<a href="../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
-<a href="../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
-<a href="../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
-<a href="../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
-<h4>Evidence and research</h4>
-<a href="../research/GAP-AUDIT.html">GAP-AUDIT</a>
-<a href="../research/SYNTHESIS.html">SYNTHESIS</a>
-<a href="../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<a href="../design/architecture-diagrams.html">architecture-diagrams</a>
 <h4>Benchmarks and gates</h4>
 <a href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
 <a href="../benchmarks/PREREG.html">PREREG</a>
@@ -244,243 +237,149 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
 <h4>Case studies</h4>
 <a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
-<h4>Infrastructure</h4>
-<a href="../infra/DNS.html">DNS</a></aside>
+<a class="cur" href="../case-studies/cs03-multi-agent-arena.html">cs03-multi-agent-arena</a>
+<a href="../case-studies/cs04-trace-rag-other-memory.html">cs04-trace-rag-other-memory</a>
+<a href="../case-studies/cs05-meta-harness-evolution.html">cs05-meta-harness-evolution</a></aside>
 <main>
-<div class="crumbs"><a href="../index.html">docs</a> / zh/README.md</div>
-<h1 id="bene">BENE 文档</h1>
-<p>在本地机器上运行一组 AI agent 蜂群，监测它们的一举一动，并能随时回滚任何被它们搞砸的操作。</p>
-<blockquote>
-<p><strong>每个 agent 的文件、每一次事件、每一个 checkpoint —— 全部记录在一个你可以直接 <code>cp</code> 复制的 SQLite 文件里。没有潜藏的云端依赖。</strong></p>
-</blockquote>
-<p>BENE (Breeding-program Evolutionary Nexus for Engrams) 为每个 agent 分配专属的私有文件系统，提供自动 checkpoint 机制、实时看板，以及一份完全支持 SQL 查询的审计追踪（audit trail）。</p>
+<div class="crumbs"><a href="../index.html">docs</a> / case-studies/cs03-multi-agent-arena.md</div>
+<h1 id="a-competitive-coding-arena-on-bene-design-at-the-substrate-layer">A Competitive Coding Arena on BENE: Design at the Substrate Layer</h1>
+<p><em>Engineering · 2026-06</em></p>
 <hr />
-<h2 id="clone-demo">极速起步：从 clone 到 demo</h2>
-<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/good-night-oppie/bene.git<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>bene
-uv<span class="w"> </span>sync
-uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>setup<span class="w">       </span><span class="c1"># 配置模型，初始化数据库，安装 MCP server</span>
-uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>demo<span class="w">        </span><span class="c1"># 观看运行效果 —— 完全不需要 API key</span>
-</code></pre></div>
-
-<hr />
-<h2 id="_1">从编辑器中直接驱动</h2>
-<p>运行 <code>uv run bene setup</code> 后，Claude Code、Cursor 以及其他任何 MCP client 都可以用自然语言直接驱动 BENE：</p>
-<div class="codehilite"><pre><span></span><code>with bene, 帮我 review payments 模块 —— 让安全 agent 和测试 agent 并行工作
-</code></pre></div>
-
-<div class="codehilite"><pre><span></span><code>with bene, 重构 auth.py —— 并行执行实现、测试和文档更新
-</code></pre></div>
-
-<div class="codehilite"><pre><span></span><code>with bene, 找出上次运行中所有失败的 agent，并展示它们遭遇了什么错误
-</code></pre></div>
-
-<p>客户端配置以及全部 37 个 MCP tools 的清单，请见：<a href="mcp-integration.html">MCP 整合方案</a>。</p>
-<hr />
-<h2 id="_2">核心机制</h2>
-<p><strong>虚拟文件系统 (VFS)</strong> —— 每个 agent 都在数据库内的私有文件系统中工作。没有任何 agent 能越权读取其他 agent 的文件：隔离性是由底层的 SQL 约束（<code>WHERE agent_id = ?</code>）来保证的，而不是靠代码约定。</p>
-<p><strong>Checkpoint (快照)</strong> —— 将单个 agent 的文件和 KV 状态冻结在特定时刻。毫秒级恢复；对两个 checkpoint 进行 diff 即可精准掌控变动。详见 <a href="checkpoints.html">Checkpoints</a>。</p>
-<p><strong>审计追踪 (Audit trail)</strong> —— 文件读写、tool 调用、状态变更、生命周期事件：每一次动作都作为一条不可篡改的（append-only）记录写入 <code>events</code> 表，随时可以用 SQL 查询。表结构设计：<a href="schema.html">Schema 数据库大纲</a>。</p>
-<p><strong>Tier 路由器</strong> —— 难度感知路由（Difficulty-Aware Routing by Tier）负责将任务分配给合适的模型层级：琐碎的工作交给本地 7B 模型，复杂的硬核任务则路由给 70B 模型或 Claude。内部原理：<a href="architecture.html">架构解析</a>。</p>
-<p><strong>单 <code>.db</code> 文件存储</strong> —— 没有独立的服务进程，不需要配置云账号。仅靠一个 SQLite 文件，你就可以通过 <code>cp</code> 进行备份，用任意 SQLite 工具打开检视，或者直接发给你的队友。</p>
-<hr />
-<h2 id="_3">场景导航</h2>
-<table>
-<thead>
-<tr>
-<th>你的需求...</th>
-<th>指南</th>
-<th>内容概要</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>实时观测</td>
-<td><a href="dashboard.html">Dashboard 看板</a></td>
-<td>Agent 活动的甘特图，单 agent 探查器，实时事件流，多项目视图</td>
-</tr>
-<tr>
-<td>编写脚本</td>
-<td><a href="cli-reference.html">CLI 参考手册</a></td>
-<td>每一个命令、每一个 flag 的详尽说明</td>
-</tr>
-<tr>
-<td>撤销错误</td>
-<td><a href="checkpoints.html">Checkpoints 机制</a></td>
-<td>状态快照与回滚，对比两次 checkpoint，自动 checkpoint 策略及存储原理</td>
-</tr>
-<tr>
-<td>共享记忆</td>
-<td><a href="memory.html">跨 Agent Memory</a></td>
-<td>在不同 agent 和不同 session 间共享支持 FTS5 检索的记忆</td>
-</tr>
-<tr>
-<td>复用技能</td>
-<td><a href="skills.html">Skill 技能库</a></td>
-<td>共享支持 FTS5 检索的程序化技能模板，并跟踪使用情况</td>
-</tr>
-<tr>
-<td>协同决策</td>
-<td><a href="shared-log.html">Shared Log 共享日志</a></td>
-<td>LogAct 协议：声明意图 (intent) → 投票 (vote) → 决断 (decide)</td>
-</tr>
-<tr>
-<td>调优 harness</td>
-<td><a href="meta-harness.html">Meta-Harness 演化搜寻</a></td>
-<td>对 prompt 和执行策略的自动化参数搜寻</td>
-</tr>
-<tr>
-<td>借鉴模式</td>
-<td><a href="use-cases.html">应用场景 (Use Cases)</a></td>
-<td>Code-review 蜂群，并行重构，自愈合 agent，事后复盘，事故响应，ML 研究</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="_4">验证：教程与案例分析</h2>
-<p><strong>组件深度解析</strong>：</p>
-<table>
-<thead>
-<tr>
-<th>教程</th>
-<th>核心焦点</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="tutorials/t11-local-agents-vllm.html">t11 — 基于 vLLM 的本地 Agent</a></td>
-<td>零成本、可审计的本地多 agent 栈 —— vLLM + Tier 路由 + Claude Code MCP</td>
-</tr>
-</tbody>
-</table>
-<p><strong>完整工作流演练</strong> (端到端的实战场景)：</p>
-<table>
-<thead>
-<tr>
-<th>教程</th>
-<th>实战场景</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="tutorials/t00-bene-e2e-walkthrough.html">t00 — 端到端完整演练</a></td>
-<td><strong>从此开始</strong>。生成 → 运行 → checkpoint → 审计 → 恢复 → 导出</td>
-</tr>
-<tr>
-<td><a href="tutorials/t01-bene-meta-harness.html">t01 — Meta-Harness: 胜率从 48% 提升至 83%</a></td>
-<td>15 轮自动化 prompt 及策略搜寻，总花费 $0.14</td>
-</tr>
-<tr>
-<td><a href="tutorials/t02-e2e-self-healing.html">t02 — 端到端的自我愈合</a></td>
-<td>错误修复检测，外科手术式回滚，基于审计日志的根因分析</td>
-</tr>
-<tr>
-<td><a href="tutorials/t03-security-swarm.html">t03 — 安全审计蜂群</a></td>
-<td>4 个审计 agent 并行工作，使用 SQL 聚合发现的安全隐患</td>
-</tr>
-<tr>
-<td><a href="tutorials/t04-migration-rollback.html">t04 — 数据库迁移回滚</a></td>
-<td>200万行数据回填异常应对，0.3秒极速回滚</td>
-</tr>
-<tr>
-<td><a href="tutorials/t05-incident-response.html">t05 — 生产事故响应</a></td>
-<td>基于 SQL 事件日志的 12 秒根因定位</td>
-</tr>
-<tr>
-<td><a href="tutorials/t06-ml-research-lab.html">t06 — ML 研究实验室</a></td>
-<td>4 个负责验证假设的 agent 彻夜运行，通过 SQL 对比最终结果</td>
-</tr>
-<tr>
-<td><a href="tutorials/t07-regression-guard.html">t07 — 衰退防御 (Regression Guard)</a></td>
-<td>拦截失败的模型替换，Meta-Harness 自动回滚到基线状态</td>
-</tr>
-<tr>
-<td><a href="tutorials/t08-hundred-agents-scale.html">t08 — 100 Agent 规模化运行</a></td>
-<td>847 个 agent 规模化部署，hub 协调机制，节省 245 万 token</td>
-</tr>
-<tr>
-<td><a href="tutorials/t10-ci-overnight-bene-swarm.html">t10 — CI 环境中的彻夜自愈</a></td>
-<td>GitHub Actions 中的衰退拦截、自动修复、以及代码 review 与重构蜂群</td>
-</tr>
-</tbody>
-</table>
-<p><strong>真实案例研究</strong> (Oppie 实际战役复盘)：</p>
-<table>
-<thead>
-<tr>
-<th>案例</th>
-<th>成果</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02 — 持续集成 (CI) 自愈</a></td>
-<td>多 agent CI 架构设计、核心洞察、软件供应链实践及跨团队影响力</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="_5">示例脚本</h2>
-<p>位于仓库根目录的 <code>examples/</code> 下：</p>
+<h2 id="context">Context</h2>
+<p>Put several coding agents in a room, hand them the same real engineering task,
+and score who did it best. Simple to say; brutal to run honestly. The moment a
+result decides a ranking, every weakness in your substrate becomes an exploit: an
+agent that can see a competitor's files, a score with no receipt, a win that
+can't be reproduced, a leaderboard that quietly trusts the agent's own claim.</p>
+<p>This case study describes the <strong>substrate-layer design</strong> for that kind of arena —
+the load-bearing decisions, in the abstract. It is the <em>pattern</em>, not any one
+product's implementation; the application logic here is pseudo-code on purpose.
+What it shows is why a competitive multi-agent platform wants something like BENE
+underneath, and how the four guarantees fall out of the primitives.</p>
+<h2 id="problem-framing">Problem framing</h2>
+<p>An arena is an adversarial environment by construction. To run one where the
+ranking means something, the substrate — not the application — has to guarantee
+four things:</p>
 <ul>
-<li><code>library_basics.py</code> — 演示基础 VFS 操作，不接入 LLM</li>
-<li><code>code_review_swarm.py</code> — 4 个 review agent 并行工作</li>
-<li><code>parallel_refactor.py</code> — 并行执行代码实现、测试和文档更新</li>
-<li><code>self_healing_agent.py</code> — 自动在失败运行时触发 checkpoint 恢复</li>
-<li><code>autonomous_research_lab.py</code> — 启动 N 个假设验证 agent，最后通过 SQL 对比输出结果</li>
-<li><code>meta_harness_*.py</code> — 自动化的 prompt 和执行策略寻优</li>
+<li><strong>Isolation.</strong> A competitor must not read or write another's workspace.</li>
+<li><strong>Auditability.</strong> Every scored action needs a durable, tamper-evident receipt.</li>
+<li><strong>Reproducibility.</strong> Any result must be re-runnable to settle a dispute.</li>
+<li><strong>Accumulated memory.</strong> The platform should get smarter across matches without
+  leaking one match's secrets into another.</li>
 </ul>
-<hr />
-<h2 id="_6">查阅资料</h2>
+<p>If any of these lives in application code, an agent (or a bug) will eventually
+route around it. They belong in the substrate.</p>
+<h2 id="design">Design</h2>
+<p>Each guarantee maps to one BENE primitive. The arena code stays small because the
+hard parts are the engine's job.</p>
 <table>
 <thead>
 <tr>
-<th>参考手册</th>
-<th>内容概要</th>
+<th>Arena need</th>
+<th>BENE primitive</th>
+<th>Why it holds</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a href="schema.html">Schema 数据库大纲</a></td>
-<td>全景拆解 11 张 SQLite 表 —— 包含每一个字段和索引</td>
+<td>Isolation</td>
+<td>per-agent VFS, SQL-scoped by <code>agent_id</code></td>
+<td>an entrant's own <code>fs_*</code> tools stay in its namespace (add an OS sandbox + restricted tools for adversarial code — see below)</td>
 </tr>
 <tr>
-<td><a href="architecture.html">架构解析 (Architecture)</a></td>
-<td>系统划分、数据流转机制，以及设计背后的权衡与推演</td>
+<td>Auditability</td>
+<td>append-only event journal + execution traces</td>
+<td>every action is a row (append-only by convention; hash-chain for tamper-evidence if the DB is writable)</td>
 </tr>
 <tr>
-<td><a href="deployment.html">部署指南 (Deployment)</a></td>
-<td>vLLM 配置、生产环境设置、Docker 容器化</td>
+<td>Reproducibility</td>
+<td>checkpoint / restore / diff</td>
+<td>re-run a match's BENE state from a snapshot (not external side effects)</td>
+</tr>
+<tr>
+<td>Accumulated memory</td>
+<td>engrams + trace retrieval</td>
+<td>learn across matches; the kernel retrievers don't filter by agent, so scope hits yourself</td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h2 id="agent">融入你自己的 Agent</h2>
-<table>
-<thead>
-<tr>
-<th>指南</th>
-<th>内容概要</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="integrating-bene.html">集成 BENE</a></td>
-<td>一份坦诚的地图：什么是开箱即用的，什么需要你自己手写连线</td>
-</tr>
-<tr>
-<td><a href="probe-authoring.html">Probe (探针) 开发</a></td>
-<td>编写真正能失效拦截的 kill gate，然后通过 <code>bene probe run --json</code> 接入 CI</td>
-</tr>
-<tr>
-<td><a href="recipes/atomic-completion.html">原子化补全方案 (Atomic Completion)</a></td>
-<td>基于纯 SQLite/JSONL 日志实现的 Exactly-once（精确一次）、无幽灵执行的补全机制 —— 无需引入 Temporal</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="_7">设计哲学</h2>
-<p><a href="philosophy.html">设计哲学 (Design Philosophy)</a> 解释了 BENE 为什么选择采纳已发表的研究成果而不是重复造轮子，一项技术需要达到什么标准才会被采纳整合，以及系统的下一步演进方向。</p>
-<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/zh/README.md" target="_blank" rel="noopener noreferrer">docs/zh/README.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+<h3 id="isolation-sealed-rooms-one-file">Isolation — sealed rooms, one file</h3>
+<p>Each competitor runs as an isolated agent. The engine scopes an agent's own
+<code>fs_*</code> tools by <code>agent_id</code>, so an entrant's reads and writes stay in its
+namespace. This is logical isolation in one file — for <strong>adversarial</strong> entrants,
+pair it with an OS sandbox and a restricted tool set: the default runner allows
+<code>shell_exec</code>, and the operator-facing <code>query</code>/<code>agent_read</code> tools take an explicit
+<code>agent_id</code>, so neither is a hard cross-agent boundary on its own.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bene</span>
+
+<span class="n">arena</span> <span class="o">=</span> <span class="n">Bene</span><span class="p">(</span><span class="s2">&quot;arena.db&quot;</span><span class="p">)</span>            <span class="c1"># one auditable file for the whole tournament</span>
+<span class="k">for</span> <span class="n">competitor</span> <span class="ow">in</span> <span class="n">entrants</span><span class="p">:</span>         <span class="c1"># pseudo-code: your entrant list</span>
+    <span class="n">arena</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">competitor</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">PROBLEM</span><span class="p">)</span>   <span class="c1"># each gets a sealed workspace</span>
+<span class="c1"># competitor A&#39;s own fs_* tools never resolve to competitor B&#39;s /solution.py</span>
+</code></pre></div>
+
+<h3 id="auditability-the-receipt-is-the-row">Auditability — the receipt is the row</h3>
+<p>Scoring reads from the journal, never from the agent's self-report. The log is
+append-only <em>by application convention</em> — for an arena where an entrant or
+operator can write the SQLite file, add real tamper-evidence (a hash-chain over
+rows, or an append-only store outside the contestant's reach) before treating a
+receipt as unforgeable:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># pseudo-code: derive the score from recorded events, not from what the agent said</span>
+<span class="n">events</span> <span class="o">=</span> <span class="n">arena</span><span class="o">.</span><span class="n">events</span><span class="p">(</span><span class="n">agent_id</span><span class="o">=</span><span class="n">competitor</span><span class="p">)</span>        <span class="c1"># the durable trace</span>
+<span class="n">score</span>  <span class="o">=</span> <span class="n">rubric</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>                            <span class="c1"># deterministic over recorded facts</span>
+</code></pre></div>
+
+<p>A coordination decision (who advanced, who was disqualified) is itself logged
+through the shared-log protocol, so the bracket has the same audit trail the
+matches do:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene.shared_log</span><span class="w"> </span><span class="kn">import</span> <span class="n">SharedLog</span>
+<span class="n">log</span> <span class="o">=</span> <span class="n">SharedLog</span><span class="p">(</span><span class="n">arena</span><span class="o">.</span><span class="n">conn</span><span class="p">)</span>
+<span class="n">log</span><span class="o">.</span><span class="n">intent</span><span class="p">(</span><span class="s2">&quot;advance winners of round 1&quot;</span><span class="p">)</span>
+<span class="n">log</span><span class="o">.</span><span class="n">vote</span><span class="p">(</span><span class="n">intent_id</span><span class="p">,</span> <span class="n">approve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">log</span><span class="o">.</span><span class="n">decide</span><span class="p">(</span><span class="n">intent_id</span><span class="p">)</span>                              <span class="c1"># durable, ordered, replayable</span>
+</code></pre></div>
+
+<h3 id="reproducibility-disputes-settled-by-replay">Reproducibility — disputes settled by replay</h3>
+<p>Before each scored step the arena checkpoints; a contested result is re-run from
+the snapshot rather than argued about:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">cp</span> <span class="o">=</span> <span class="n">arena</span><span class="o">.</span><span class="n">checkpoint</span><span class="p">(</span><span class="n">competitor</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;pre-grade&quot;</span><span class="p">)</span>
+<span class="c1"># ...grade...</span>
+<span class="n">arena</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="n">competitor</span><span class="p">,</span> <span class="n">checkpoint</span><span class="o">=</span><span class="n">cp</span><span class="p">)</span>           <span class="c1"># rewinds BENE VFS + state</span>
+</code></pre></div>
+
+<p><code>restore</code> rewinds the agent's BENE-managed VFS and key-value state. Steps that
+reached <em>outside</em> BENE — a model call, <code>shell_exec</code>, network or host-filesystem
+side effects — aren't replayed, so a re-run is deterministic only to the extent
+the contested work stayed inside the substrate.</p>
+<h3 id="accumulated-memory-smarter-across-matches-sealed-within-one">Accumulated memory — smarter across matches, sealed within one</h3>
+<p>Finished matches leave traces that become engrams. A future match should
+retrieve <em>lessons</em> (what tends to fail a gate), not raw workspaces — but scope
+that retrieval explicitly: the kernel retrievers filter by <code>agent_id</code> only when
+<em>recording</em> the query, so pass the match/agent scope into retrieval (or curate
+which engrams are shared) rather than assuming cross-match reads are sealed by
+default.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">arena</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="s2">&quot;common failure modes on refactor tasks&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h2 id="insights">Insights</h2>
+<ul>
+<li><strong>Push the guarantees down.</strong> Every property an arena needs to be <em>fair</em> is a
+  property the substrate can enforce and the application cannot be trusted to.
+  Isolation-by-SQL-scope and receipts-by-append-only-log are not features you
+  bolt on; they are the reason to have a substrate at all.</li>
+<li><strong>The score is a query, not a claim.</strong> Deriving rankings from the recorded
+  journal — never from an agent's self-report — is what makes a leaderboard
+  defensible.</li>
+<li><strong>One file is an operational gift.</strong> The whole tournament is a single SQLite
+  database: copy it for a backup, diff it for an audit, hand it to the next shift
+  with zero state reconstruction.</li>
+</ul>
+<h2 id="what-to-take-from-this">What to take from this</h2>
+<p>You do not need an arena to want these four properties — any serious multi-agent
+system does. The arena just refuses to let you fake them. Build on a substrate
+that makes isolation, auditability, reproducibility, and memory the <em>default</em>,
+and the application on top stays small, honest, and replayable.</p>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/case-studies/cs03-multi-agent-arena.md" target="_blank" rel="noopener noreferrer">docs/case-studies/cs03-multi-agent-arena.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>
 </div>
 <footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>

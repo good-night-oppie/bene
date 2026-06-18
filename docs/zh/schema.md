@@ -36,14 +36,14 @@ blobs   <----  files         (1:N - 多个文件可能共享同一个内容 blob
 | 遇到这个问题时... | 请查阅 |
 |---|---|
 | 这个 agent 到底干了什么？ | [events 事件流](#events) |
-| 跑了什么 tool？输入是什么？耗时多久？ | [tool_calls 调用账本](#tool_calls-every-tool-invocation) |
-| 到底生了几个 agent？它们还活着吗？ | [agents 花名册](#agents-the-roster) |
-| agent 当前的作业状态 (短期记忆草稿) 是什么？ | [state 专属键值存储](#state-per-agent-key-value-memory) |
+| 跑了什么 tool？输入是什么？耗时多久？ | [tool_calls 调用账本](#tool_calls-每一笔工具调用账单) |
+| 到底生了几个 agent？它们还活着吗？ | [agents 花名册](#agents-花名册) |
+| agent 当前的作业状态 (短期记忆草稿) 是什么？ | [state 专属键值存储](#state-专属的键值存储草稿本) |
 | agent 跨 session 还能记住啥？ | 查 `memory` + `memory_fts` —— 支持全文检索 (`SELECT … FROM memory_fts WHERE memory_fts MATCH '…'`); 详见 [memory.md](memory.md) |
-| 我能回滚到哪里？ | [checkpoints 状态快照](#checkpoints-snapshots-you-can-return-to) |
-| 这个 agent 到底写了什么东西？ | [files 虚拟文件系统](#files-the-virtual-filesystem) |
-| 文件的字节肉身到底是怎么存的？ | [blobs 去重内容块](#blobs-deduplicated-content) |
-| 这份文件经历过几次数据库迁移？ | [schema_version 迁移大账本](#schema_version-the-migration-record) |
+| 我能回滚到哪里？ | [checkpoints 状态快照](#checkpoints-随时退回的时空快照) |
+| 这个 agent 到底写了什么东西？ | [files 虚拟文件系统](#files-虚拟文件系统) |
+| 文件的字节肉身到底是怎么存的？ | [blobs 去重内容块](#blobs-彻底去重的内容块) |
+| 这份文件经历过几次数据库迁移？ | [schema_version 迁移大账本](#schema_version-迁移大账本) |
 
 ---
 
@@ -142,7 +142,7 @@ ORDER BY e.timestamp DESC
 LIMIT 20;
 ```
 
-*背后的索引支撑: `idx_events_agent_time` (`agent_id, timestamp`) 以及 `idx_events_type` (`event_type`) —— 详情查阅文末的 [索引目录](#index-catalog)。*
+*背后的索引支撑: `idx_events_agent_time` (`agent_id, timestamp`) 以及 `idx_events_type` (`event_type`) —— 详情查阅文末的 [索引目录](#index-reference)。*
 
 ---
 
@@ -229,7 +229,7 @@ WITH RECURSIVE chain AS (
 SELECT * FROM chain ORDER BY depth;
 ```
 
-*背后的索引支撑: `idx_tool_calls_agent` (`agent_id, started_at`), `idx_tool_calls_tool` (`tool_name`), 以及 `idx_tool_calls_status` (`status`) —— 详情查阅文末的 [索引目录](#index-catalog)。*
+*背后的索引支撑: `idx_tool_calls_agent` (`agent_id, started_at`), `idx_tool_calls_tool` (`tool_name`), 以及 `idx_tool_calls_status` (`status`) —— 详情查阅文末的 [索引目录](#index-reference)。*
 
 ---
 
@@ -288,7 +288,7 @@ WHERE status = 'running'
 AND last_heartbeat < strftime('%Y-%m-%dT%H:%M:%f', 'now', '-5 minutes');
 ```
 
-*背后的索引支撑: `idx_agents_status` (`status`) 以及 `idx_agents_parent` (`parent_id`) —— 详情查阅文末的 [索引目录](#index-catalog)。*
+*背后的索引支撑: `idx_agents_status` (`status`) 以及 `idx_agents_parent` (`parent_id`) —— 详情查阅文末的 [索引目录](#index-reference)。*
 
 ---
 
@@ -414,7 +414,7 @@ FROM checkpoints, json_each(file_manifest)
 WHERE checkpoint_id = '01HABC...';
 ```
 
-*背后的索引支撑: `idx_checkpoints_agent` (`agent_id, created_at`) —— 详情查阅文末的 [索引目录](#index-catalog)。*
+*背后的索引支撑: `idx_checkpoints_agent` (`agent_id, created_at`) —— 详情查阅文末的 [索引目录](#index-reference)。*
 
 ---
 
@@ -489,7 +489,7 @@ GROUP BY agent_id
 ORDER BY total_bytes DESC;
 ```
 
-*背后的索引支撑: `idx_files_agent_path` (`agent_id, path`，带有局部过滤 `WHERE deleted = 0`) 以及 `idx_files_agent` (`agent_id`) —— 详情查阅文末的 [索引目录](#index-catalog)。*
+*背后的索引支撑: `idx_files_agent_path` (`agent_id, path`，带有局部过滤 `WHERE deleted = 0`) 以及 `idx_files_agent` (`agent_id`) —— 详情查阅文末的 [索引目录](#index-reference)。*
 
 ---
 

@@ -4,7 +4,7 @@
 
 > **只需敲一行命令，就能把平时靠人肉干的 "微调一下 prompt 然后重跑" 的低级循环，彻底拉升为一场有着严密测量、随时可断点续传、且全盘留底的自动化代码搜索战役。**
 
-bene 的这套玩法直接落地了 [Meta-Harness 论文 (arXiv:2603.28052)](https://yoonholee.com/meta-harness/) 里的核心技术；关于出处和可跑的示范代码，去 [血脉渊源和实战靶场](#sources-and-worked-examples) 找。在 bene 的世界观里，这被称作 "配种计划 (breeding program)" —— 一场极其考验耐心、跨越数个世代的、专门针对 harness 代码的达尔文式大筛选。
+bene 的这套玩法直接落地了 [Meta-Harness 论文 (arXiv:2603.28052)](https://yoonholee.com/meta-harness/) 里的核心技术；关于出处和可跑的示范代码，去 [血脉渊源和实战靶场](#血脉渊源和实战靶场) 找。在 bene 的世界观里，这被称作 "配种计划 (breeding program)" —— 一场极其考验耐心、跨越数个世代的、专门针对 harness 代码的达尔文式大筛选。
 
 ---
 
@@ -31,9 +31,9 @@ bene mh search -b math_rag -n 20 -k 3
 bene mh search -b agentic_coding -n 10 -k 2
 ```
 
-如果你想拿自己的私家数据集 (比如一份你司的 CSV 或者 JSONL 语料) 来跑，你需要走 Python API 里的 `get_benchmark` 接口 (去抄 [在 Python 里发号施令](#drive-it-from-python) 那节的作业)。
+如果你想拿自己的私家数据集 (比如一份你司的 CSV 或者 JSONL 语料) 来跑，你需要走 Python API 里的 `get_benchmark` 接口 (去抄 [在 Python 里发号施令](#在-python-里发号施令) 那节的作业)。
 
-`-n` 限制的是搜索迭代轮数，`-k` 则限制每轮提议出的变种数量。想看全部的参数？去翻 [把所有开关列在同一处](#every-flag-one-place)。
+`-n` 限制的是搜索迭代轮数，`-k` 则限制每轮提议出的变种数量。想看全部的参数？去翻 [把所有开关列在同一处](#把所有开关列在同一处)。
 
 ---
 
@@ -129,6 +129,7 @@ Search Agent VFS:
 ```
 
 在每一份 harness 的案底目录下：
+
 - **source.py** — 变种方案的源码
 - **scores.json** — 最终的汇总战绩 (准确率、上下文开销等)
 - **trace.jsonl** — 全景式的跑分流水：输入长啥样，标答是啥，生出的 prompt 啥样，AI 给的预测是啥，判题对不对，耗了几个 token。
@@ -154,6 +155,7 @@ Search Agent VFS:
 **Candidate 2 — 盲猜再查。** 先不带例子裸跑一发猜个大概，拿着猜出来的分类去精准捞例子，最后拿着这些精准例子再跑第二遍做确认。
 
 它会拿着 `mh_submit_harness(source_code, rationale)` 把这两套代码丢出去。但在碰到测试集之前，代码必须得过两道鬼门关 (两级校验)：
+
 1. **AST 静检** — 用 `ast.walk` 查验它是不是合法 Python，且有没有老老实实写明 `run()`。
 2. **跑通点火** — 用一道题当靶子真刀真枪跑一遍，但凡报了异常直接毙掉。
 
@@ -188,12 +190,14 @@ Search Agent VFS:
 #### 第 3 到 10 轮 — 复利的暴击
 
 从此往后，proposer 算是开了天眼，每一轮都能俯瞰全局。它平时最爱耍的花招包括：
+
 - 把前三甲拎出来，拆出那些立了大功的代码片段
 - 盯着翻车记录使劲看，找出至今没补上的漏网之鱼
 - 把原本毫无瓜葛的两套流派硬缝合在一起
 - 一刀切中要害，一次只修一个 bug，绝不无脑推翻重写
 
 为了约束它，bene 还在系统 prompt 里塞进了原论文摸索出来的三大军规：
+
 - **连跪后转保守 (Go additive)** — 如果连着几轮都在退步，proposer 就会被锁死在 "只许加东西，不许碰老代码" 的保守模式，大幅压低风险。
 - **控制变量法 (Change one variable)** — 每个变种只许改一处地方，只有这样，分数的涨跌才能清清楚楚地算在那个改动头上。
 - **溯源对比 (Compare across iterations)** — 逼着它去翻旧账，搞清楚以前的改动到底是帮了倒忙还是真有奇效。
