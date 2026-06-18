@@ -1,0 +1,103 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>How We Build BENE: Harness Engineering and Eval-Gated Evolution — BENE blog</title><link rel="icon" href="../assets/bene-logo.svg"><style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+:root { --bg:#F0EEE8; --surface:#EDE9E4; --border:#CFCCC8; --ink:#1F1D1C; --mute:#62666D; --accent:#EE6018; --gold:#B46A35; --term-bg:#332E2B; --term-fg:#EDE9E4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 Geist,ui-sans-serif,system-ui,sans-serif; }
+a { color:var(--gold); text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent); text-underline-offset:3px; }
+a:hover { color:var(--accent); }
+.top { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+.top-in { max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+.brand { font-family:Geist,ui-sans-serif,sans-serif; font-weight:700; letter-spacing:.12em; color:var(--ink); text-decoration:none; }
+.top .spacer { flex:1; }
+.top a.nav { color:var(--mute); text-decoration:none; font-size:14px; }
+.top a.nav:hover { color:var(--accent); }
+.top a.nav.cur { color:var(--ink); font-weight:600; }
+.wrap { max-width:760px; margin:0 auto; padding:40px 24px 24px; }
+main { min-width:0; }
+.crumbs { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-bottom:14px; }
+.crumbs a { color:var(--mute); }
+main h1 { font-family:Geist,ui-sans-serif,sans-serif; font-size:2.1rem; line-height:1.2; margin:.1em 0 .25em; }
+main h2 { font-family:Geist,ui-sans-serif,sans-serif; font-size:1.45rem; margin-top:2em; border-bottom:1px solid var(--border); padding-bottom:.35em; }
+main h3 { font-size:1.12rem; margin-top:1.7em; }
+main img { max-width:100%; border:1px solid var(--border); border-radius:8px; }
+main table { border-collapse:collapse; width:100%; font-size:14.5px; display:block; overflow-x:auto; }
+main th, main td { border:1px solid var(--border); padding:8px 12px; text-align:left; vertical-align:top; }
+main th { background:var(--surface); font-weight:600; }
+main blockquote { margin:1em 0; padding:.2em 1.2em; border-left:3px solid var(--accent); color:var(--mute); background:var(--surface); border-radius:0 4px 4px 0; }
+main :not(pre) > code { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:.08em .35em; font:.86em "Geist Mono",ui-monospace,monospace; }
+.codehilite, main pre { background:var(--term-bg); color:var(--term-fg); border-radius:6px; padding:16px 18px; overflow-x:auto; font:13.5px/1.55 "Geist Mono",ui-monospace,monospace; }
+.codehilite pre, pre code { background:none; padding:0; margin:0; border:none; }
+.byline { font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:0 0 28px; }
+.byline .kind { color:var(--accent); }
+.src { font:12.5px "Geist Mono",ui-monospace,monospace; margin-top:48px; padding-top:16px; border-top:1px solid var(--border); color:var(--mute); }
+.posts { list-style:none; padding:0; margin:8px 0 0; }
+.posts li { padding:20px 0; border-bottom:1px dashed var(--border); }
+.posts a.title { display:block; font-family:Geist,ui-sans-serif,sans-serif; font-size:1.3rem; font-weight:600; color:var(--ink); text-decoration:none; }
+.posts a.title:hover { color:var(--accent); }
+.posts .meta { font:12px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:4px 0 8px; }
+.posts .meta .kind { color:var(--accent); }
+.posts .excerpt { color:var(--mute); margin:0; }
+.empty { color:var(--mute); background:var(--surface); border:1px dashed var(--border); border-radius:6px; padding:24px; margin-top:8px; }
+footer.ft { border-top:1px solid var(--border); margin-top:40px; }
+footer.ft .in { max-width:760px; margin:0 auto; padding:24px; font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+@media (max-width: 860px) {
+  .wrap { padding:24px 16px 16px; }
+  main h1 { font-size:1.6rem; }
+  main h2 { font-size:1.2rem; }
+  .top-in { padding:0 16px; gap:14px; }
+}
+</style></head><body><div class="top"><div class="top-in"><a class="brand" href="../index.html">BENE</a><a class="nav" href="../index.html">Landing</a><a class="nav" href="../docs/index.html">Docs</a><a class="nav cur" href="index.html">Blog</a><span class="spacer"></span><a class="nav" href="../zh/blog/index.html" title="切换到中文">文</a></div></div><div class="wrap"><main><div class="crumbs"><a href="index.html">← All posts</a></div><h1>How We Build BENE: Harness Engineering and Eval-Gated Evolution</h1><p class="byline"><span class="kind">the HOW</span> · 2026-06-18</p><p><a href="why-bene.html">Why</a> and <a href="what-is-bene.html">what</a> are done. This is the <em>how</em> —
+the method, not just the code. BENE is built the way it asks its agents to
+build: in small reversible steps, behind gates that can actually fail, and with
+every run leaving memory for the next one. Three loops.</p>
+<h2 id="loop-1-the-pr-loop-harness-engineering-not-vibe-coding">Loop 1 — the PR loop: harness engineering, not vibe coding</h2>
+<p>Vibe coding is one giant turn that either lands or doesn't. Harness engineering
+is the opposite: <strong>research → plan → implement</strong> in steps small enough to verify
+and reverse.</p>
+<p>Every change ships as a <strong>tiny PR</strong> from an isolated git worktree, so the shared
+checkout is never disturbed and a bad change is one revert away. The work is
+planned to disk first (a roadmap, falsifiable acceptance criteria) and only then
+executed — the plan is the artifact, the diff is the consequence.</p>
+<blockquote>
+<p>A change you cannot review in one sitting is a change you cannot trust.</p>
+</blockquote>
+<h2 id="loop-2-the-gate-loop-a-gate-you-cannot-fail-is-not-a-gate">Loop 2 — the gate loop: a gate you cannot fail is not a gate</h2>
+<p>Every claim BENE makes about itself must survive a <strong>falsifiable probe</strong> — a
+pre-registered, hash-locked check with a verdict of ACCEPT, REJECT, or VOID.</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>probe<span class="w"> </span>ls<span class="w"> </span>--check-admissible<span class="w">    </span><span class="c1"># every probe must be able to REJECT</span>
+bene<span class="w"> </span>probe<span class="w"> </span>run<span class="w"> </span>&lt;name&gt;<span class="w"> </span>--subject<span class="w"> </span>m.json<span class="w"> </span>--baseline<span class="w"> </span>base.json<span class="w"> </span>--json
+<span class="c1"># ACCEPT -&gt; exit 0 ; REJECT / VOID -&gt; exit 1</span>
+</code></pre></div>
+
+<p>The load-bearing rule is <strong>admissibility</strong>: a probe has to be able to REJECT a
+broken baseline <em>before</em> it is allowed to ACCEPT a fix. A check the incumbent
+already passes proves nothing — it VOIDs instead of rubber-stamping. The gate is
+hash-locked so it cannot be quietly loosened to make a failing change pass.</p>
+<p>This is the discipline behind the docs you are reading: every command in these
+posts was run against the real CLI before it was written down. No fabricated
+output.</p>
+<h2 id="loop-3-the-evolution-loop-the-breeding-program">Loop 3 — the evolution loop: the breeding program</h2>
+<p>BENE does not hand-tune its harness strategies — it <strong>breeds</strong> them. A
+meta-harness search mutates strategies across generations on a benchmark, and a
+candidate is promoted only when it clears the same kind of kill-gated probe
+everything else faces.</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>--benchmark<span class="w"> </span>agentic_coding<span class="w">   </span><span class="c1"># mutate + evaluate across generations</span>
+bene<span class="w"> </span>mh<span class="w"> </span>frontier<span class="w">                            </span><span class="c1"># the Pareto frontier that survived</span>
+</code></pre></div>
+
+<p>Selection is patient and gated: no candidate promotes by looking good in a demo,
+only by passing a held-out gate that could have killed it. Progress that can't be
+falsified isn't progress.</p>
+<h2 id="what-ties-the-loops-together-memory">What ties the loops together: memory</h2>
+<p>Each loop leaves a trace, and traces become <strong>engrams</strong> — searchable memory of
+the path already walked. The agent that picks up the next PR, the next gate, the
+next generation does not start cold; it retrieves what the last one learned.</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>retrieve<span class="w"> </span><span class="s2">&quot;why did the regression gate reject candidate 7&quot;</span>
+</code></pre></div>
+
+<p>That is the whole method in one sentence: <strong>small steps, real gates, bred
+strategies, durable memory</strong> — and the harness holds itself to it. The framework
+that lets an agent build instead of react is built, recursively, by agents
+building instead of reacting.</p>
+<p><em>That closes the opening series. The docs go deeper — start with the
+<a href="../docs/architecture.html">architecture</a> and the case studies.</em></p><p class="src"><a href="index.html">← All posts</a></p></main></div><footer class="ft"><div class="in"><span>Edit the markdown in blog/, rerun site/build-blog.py; never edit the HTML.</span><a href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer">GitHub</a></div></footer></body></html>
