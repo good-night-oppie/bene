@@ -41,4 +41,3 @@ These are kernel-side fixes shipped to the runtime (the published package is sti
 - [Atomic completion recipe](recipes/atomic-completion.md) — exactly-once, ghost-free completion on a plain SQLite/JSONL log (no Temporal); the pattern for the Fault/Data glue above.
 - [CLI reference](cli-reference.md) — every command, with verify lines.
 - [Architecture](architecture.md) — how the engram ladder, kill gate, and trust ledger sit in one SQLite file.
-- [v0.3 roadmap spec](design/v0.3-roadmap-spec.md) — what is still wire-yourself and on the roadmap to chain.
