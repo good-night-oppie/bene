@@ -3020,6 +3020,69 @@ def observe_status(ctx, config: str):
         )
 
 
+@observe.command("up")
+@click.option("--compose", default=None, help="docker compose file (default: bundled langfuse v3 stack)")
+@click.option("--config", default=DEFAULT_CONFIG, help="bene.yaml path")
+@click.pass_context
+def observe_up(ctx, compose: str | None, config: str):
+    """Start a self-hosted langfuse backend (docker compose up -d)."""
+    from bene.observe.selfhost import DEFAULT_HOST, SelfHostError, up
+
+    try:
+        used = up(compose, config=_observability_config(config))
+    except SelfHostError as exc:
+        if not _json_out(ctx, {"ok": False, "error": str(exc)}):
+            console.print(f"[red]{exc}[/red]")
+        raise SystemExit(1) from exc
+    if _json_out(ctx, {"ok": True, "compose": str(used), "host": DEFAULT_HOST}):
+        return
+    console.print(f"langfuse starting via [cyan]{used}[/cyan]")
+    console.print(f"  set [green]LANGFUSE_HOST={DEFAULT_HOST}[/green] (first run boots in ~30s)")
+
+
+@observe.command("down")
+@click.option("--compose", default=None, help="docker compose file (default: bundled stack)")
+@click.option("--config", default=DEFAULT_CONFIG, help="bene.yaml path")
+@click.pass_context
+def observe_down(ctx, compose: str | None, config: str):
+    """Stop the self-hosted langfuse backend (docker compose down)."""
+    from bene.observe.selfhost import SelfHostError, down
+
+    try:
+        used = down(compose, config=_observability_config(config))
+    except SelfHostError as exc:
+        if not _json_out(ctx, {"ok": False, "error": str(exc)}):
+            console.print(f"[red]{exc}[/red]")
+        raise SystemExit(1) from exc
+    if _json_out(ctx, {"ok": True, "compose": str(used)}):
+        return
+    console.print(f"langfuse stopped ([cyan]{used}[/cyan])")
+
+
+@observe.command("ensure")
+@click.option("--compose", default=None, help="docker compose file (default: bundled stack)")
+@click.option("--host", default=None, help="langfuse host to health-check (default: $LANGFUSE_HOST or localhost:3000)")
+@click.option("--config", default=DEFAULT_CONFIG, help="bene.yaml path")
+@click.pass_context
+def observe_ensure(ctx, compose: str | None, host: str | None, config: str):
+    """Bring langfuse up only if it is not already healthy (idempotent)."""
+    from bene.observe.selfhost import DEFAULT_HOST, SelfHostError, ensure
+
+    target = host or os.environ.get("LANGFUSE_HOST") or DEFAULT_HOST
+    try:
+        result = ensure(compose, host=target, config=_observability_config(config))
+    except SelfHostError as exc:
+        if not _json_out(ctx, {"ok": False, "error": str(exc)}):
+            console.print(f"[red]{exc}[/red]")
+        raise SystemExit(1) from exc
+    if _json_out(ctx, {"ok": True, **result}):
+        return
+    if result["action"] == "noop":
+        console.print(f"langfuse already healthy at [cyan]{target}[/cyan]")
+    else:
+        console.print(f"langfuse starting via [cyan]{result['compose']}[/cyan] (was down at {target})")
+
+
 # ---- continual harness (probe-gated in-episode genome swaps) ----
 
 
