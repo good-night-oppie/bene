@@ -27,15 +27,35 @@ class SelfHostError(RuntimeError):
     """A self-host operation could not proceed (no Docker, missing compose, …)."""
 
 
+def _compose_plugin_available() -> bool:
+    """True if the ``docker compose`` v2 plugin is actually usable — probed with
+    ``docker compose version`` rather than inferred from the ``docker`` CLI being
+    on ``PATH`` (the CLI can be present without the Compose plugin installed)."""
+    try:
+        proc = subprocess.run(
+            ["docker", "compose", "version"],
+            capture_output=True,
+            timeout=10,
+            check=False,
+        )
+        return proc.returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
 def docker_compose_cmd() -> list[str]:
-    """Resolve the compose base command: ``docker compose`` (v2 plugin) or the
-    legacy ``docker-compose`` binary. Raises :class:`SelfHostError` if neither
-    is on ``PATH``."""
-    if shutil.which("docker"):
+    """Resolve the compose base command: ``docker compose`` (v2 plugin, verified
+    with ``docker compose version``) or the legacy ``docker-compose`` binary. A
+    Docker CLI installed *without* the Compose plugin correctly falls back to
+    ``docker-compose``. Raises :class:`SelfHostError` if neither is available."""
+    if shutil.which("docker") and _compose_plugin_available():
         return ["docker", "compose"]
     if shutil.which("docker-compose"):
         return ["docker-compose"]
-    raise SelfHostError("docker not found on PATH — install Docker to self-host langfuse")
+    raise SelfHostError(
+        "docker compose not available — install the Docker Compose v2 plugin or the "
+        "legacy docker-compose binary to self-host langfuse"
+    )
 
 
 def resolve_compose(compose: str | None = None, config: dict[str, Any] | None = None) -> Path:
