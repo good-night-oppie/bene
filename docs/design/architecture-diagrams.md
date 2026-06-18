@@ -9,8 +9,9 @@ shape; the prose says what it's load-bearing for.
 Every agent has its own VFS, event journal, checkpoints, and traces — but they
 all live in **one** SQLite database. That single file is the Nexus: the join
 point for the whole swarm, and the thing you copy, diff, or check into git.
-(WAL mode keeps recent commits in a `bene.db-wal` sidecar until checkpoint/close,
-so copy the db when the process is idle — or copy the `-wal`/`-shm` files too.)
+(WAL mode keeps recent commits in a `bene.db-wal` sidecar until a checkpoint, so
+on a live process run a WAL checkpoint (or close) before copying only `bene.db`,
+or copy the `-wal`/`-shm` sidecars alongside it.)
 
 ```mermaid
 flowchart TB
@@ -65,7 +66,7 @@ flowchart TB
     L1 --> L2["L2 · Act in sandbox"]
     L2 --> L3["L3 · Act on shared state"]
     L3 --> L4["L4 · Autonomous-promote"]
-    Trust["computed trust<br/>(4 signals + composite)"] -. "informs grant decisions<br/>(does not auto-raise the level)" .-> L3
+    Trust["computed trust<br/>(4 signals + composite)"] -. "trust:auto promotes up to L3<br/>(records a grant); L4 stays human" .-> L3
     Human["human grant<br/>(--by human:name)"] ==> L4
 ```
 
