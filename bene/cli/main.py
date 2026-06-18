@@ -3076,10 +3076,17 @@ def observe_ensure(ctx, compose: str | None, host: str | None, config: str):
 
     obs_cfg = _observability_config(config)
     config_host = obs_cfg.get("host") if isinstance(obs_cfg, dict) else None
-    # Mirror the langfuse adapter's resolution (`cfg.get("host") or LANGFUSE_HOST`
-    # in bene/observe/langfuse.py): explicit --host wins, then the configured
-    # host, then the env fallback — so ensure probes the SAME backend the runner
-    # sends traces to, and a stale LANGFUSE_HOST can't mask an unhealthy config host.
+    obs_provider = (
+        str(obs_cfg.get("provider", "auto")).lower() if isinstance(obs_cfg, dict) else "auto"
+    )
+    obs_enabled = obs_cfg.get("enabled", True) if isinstance(obs_cfg, dict) else True
+    # Only let the config host outrank LANGFUSE_HOST when langfuse is the provider
+    # the runner would actually use. A disabled config (enabled: false, or
+    # provider: none/off/...) yields NullObserver — it never traces to config_host,
+    # so a leftover host there must not mask the env self-host target. When active,
+    # mirror the adapter's `cfg.get("host") or LANGFUSE_HOST` (config first).
+    if obs_enabled is False or obs_provider not in ("langfuse", "auto"):
+        config_host = None
     target = host or config_host or os.environ.get("LANGFUSE_HOST") or DEFAULT_HOST
     try:
         result = ensure(compose, host=target, config=obs_cfg)
