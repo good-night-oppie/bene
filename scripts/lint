@@ -7,3 +7,7 @@ uv run python scripts/landing_copy_linter.py
 # cmd_check prints VERDICT but doesn't sys.exit on REJECT, so enforce it here.
 uv run python scripts/landing_copy_linter/accuracy_gate.py check | tee /tmp/bene-accuracy-gate.out
 grep -q 'VERDICT=ACCEPT' /tmp/bene-accuracy-gate.out || { echo 'accuracy gate REJECTED — fix the findings above'; exit 1; }
+# Public-launch readiness gate (source mode — no network, CI-safe):
+# landing version == pyproject; llms.txt one canonical repo; CN docs make no
+# fake translation promises. Run with --pypi / --live before an actual launch.
+uv run python scripts/launch_gate.py
