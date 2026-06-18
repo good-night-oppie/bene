@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>探秘 bene.db — BENE docs</title>
+<meta name="description" content="BENE 0.2.0 documentation — 探秘 bene.db" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+:root { --bg:#F0EEE8; --surface:#EDE9E4; --border:#CFCCC8; --ink:#1F1D1C; --mute:#62666D; --accent:#EE6018; --gold:#B46A35; --term-bg:#332E2B; --term-fg:#EDE9E4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 Geist,ui-sans-serif,system-ui,sans-serif; }
+a { color:var(--gold); text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent); text-underline-offset:3px; }
+a:hover { color:var(--accent); }
+.top { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+.top-in { max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+.brand { font-family:Geist,ui-sans-serif,sans-serif; font-weight:700; letter-spacing:.12em; color:var(--ink); text-decoration:none; }
+.top a.nav { color:var(--mute); text-decoration:none; font-size:14px; }
+.top a.nav:hover { color:var(--accent); }
+.wrap { max-width:1200px; margin:0 auto; padding:24px; display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; }
+aside.sb { position:sticky; top:80px; align-self:start; max-height:calc(100vh - 100px); overflow-y:auto; font-size:13.5px; border-left:1px solid var(--border); padding-left:16px; }
+.sb h4 { margin:18px 0 6px; font:600 11px/1 "Geist Mono",ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+.sb a { display:block; padding:3px 0; color:var(--mute); text-decoration:none; }
+.sb a:hover { color:var(--accent); }
+.sb a.cur { color:var(--ink); font-weight:600; }
+main { min-width:0; max-width:760px; }
+main h1 { font-family:Geist,ui-sans-serif,sans-serif; font-size:2.1rem; line-height:1.2; margin:.2em 0 .5em; }
+main h2 { font-family:Geist,ui-sans-serif,sans-serif; font-size:1.45rem; margin-top:2em; border-bottom:1px solid var(--border); padding-bottom:.35em; }
+main h3 { font-size:1.12rem; margin-top:1.7em; }
+main img { max-width:100%; border:1px solid var(--border); border-radius:8px; }
+main table { border-collapse:collapse; width:100%; font-size:14.5px; display:block; overflow-x:auto; }
+main th, main td { border:1px solid var(--border); padding:8px 12px; text-align:left; vertical-align:top; }
+main th { background:var(--surface); font-weight:600; }
+main blockquote { margin:1em 0; padding:.2em 1.2em; border-left:3px solid var(--accent); color:var(--mute); background:var(--surface); border-radius:0 4px 4px 0; }
+main :not(pre) > code { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:.08em .35em; font:.86em "Geist Mono",ui-monospace,monospace; }
+.codehilite, main pre { background:var(--term-bg); color:var(--term-fg); border-radius:6px; padding:16px 18px; overflow-x:auto; font:13.5px/1.55 "Geist Mono",ui-monospace,monospace; }
+.codehilite pre, pre code { background:none; padding:0; margin:0; border:none; }
+.demo-embed { margin:20px 0 28px; }
+.demo-embed .frame { background:var(--term-bg); border-radius:6px; padding:14px; }
+.demo-embed .dots { display:flex; gap:6px; margin-bottom:10px; }
+.demo-embed .dots i { width:10px; height:10px; border-radius:50%; background:#3a3344; }
+.demo-embed img { border:none; border-radius:6px; display:block; width:100%; }
+.demo-embed p { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:8px 2px 0; }
+.crumbs { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-bottom:8px; }
+.crumbs a { color:var(--mute); }
+.src { font:12.5px "Geist Mono",ui-monospace,monospace; margin-top:48px; padding-top:16px; border-top:1px solid var(--border); color:var(--mute); }
+footer.ft { border-top:1px solid var(--border); margin-top:40px; }
+footer.ft .in { max-width:1200px; margin:0 auto; padding:24px; font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.idx-group h2 { font-family:Geist,ui-sans-serif,sans-serif; border:none; margin-top:1.6em; }
+.idx-group ul { list-style:none; padding:0; margin:.4em 0; }
+.idx-group li { padding:6px 0; border-bottom:1px dashed var(--border); }
+.idx-group .path { font:11.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-left:8px; }
+/* Mobile overrides — kept at the end so source order beats base rules.
+   Earlier this rule sat between base rules and got overridden by a later
+   `aside.sb { position:sticky }`, leaving the sidebar stuck on top of
+   main content on phones. */
+@media (max-width: 860px) {
+  .wrap { grid-template-columns:1fr; gap:24px; padding:16px; }
+  aside.sb { position:static; max-height:none; border-left:none; border-bottom:1px solid var(--border); padding-left:0; padding-bottom:16px; font-size:13px; }
+  .sb h4 { margin:12px 0 4px; }
+  main { max-width:none; }
+  main h1 { font-size:1.6rem; }
+  main h2 { font-size:1.2rem; }
+  main h3 { font-size:1.05rem; }
+  .top-in { padding:0 16px; gap:14px; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #49483e }
+.codehilite { background: #272822; color: #F8F8F2 }
+.codehilite .c { color: #959077 } /* Comment */
+.codehilite .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.codehilite .esc { color: #F8F8F2 } /* Escape */
+.codehilite .g { color: #F8F8F2 } /* Generic */
+.codehilite .k { color: #66D9EF } /* Keyword */
+.codehilite .l { color: #AE81FF } /* Literal */
+.codehilite .n { color: #F8F8F2 } /* Name */
+.codehilite .o { color: #FF4689 } /* Operator */
+.codehilite .x { color: #F8F8F2 } /* Other */
+.codehilite .p { color: #F8F8F2 } /* Punctuation */
+.codehilite .ch { color: #959077 } /* Comment.Hashbang */
+.codehilite .cm { color: #959077 } /* Comment.Multiline */
+.codehilite .cp { color: #959077 } /* Comment.Preproc */
+.codehilite .cpf { color: #959077 } /* Comment.PreprocFile */
+.codehilite .c1 { color: #959077 } /* Comment.Single */
+.codehilite .cs { color: #959077 } /* Comment.Special */
+.codehilite .gd { color: #FF4689 } /* Generic.Deleted */
+.codehilite .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F8F8F2 } /* Generic.Error */
+.codehilite .gh { color: #F8F8F2 } /* Generic.Heading */
+.codehilite .gi { color: #A6E22E } /* Generic.Inserted */
+.codehilite .go { color: #66D9EF } /* Generic.Output */
+.codehilite .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #959077 } /* Generic.Subheading */
+.codehilite .gt { color: #F8F8F2 } /* Generic.Traceback */
+.codehilite .kc { color: #66D9EF } /* Keyword.Constant */
+.codehilite .kd { color: #66D9EF } /* Keyword.Declaration */
+.codehilite .kn { color: #FF4689 } /* Keyword.Namespace */
+.codehilite .kp { color: #66D9EF } /* Keyword.Pseudo */
+.codehilite .kr { color: #66D9EF } /* Keyword.Reserved */
+.codehilite .kt { color: #66D9EF } /* Keyword.Type */
+.codehilite .ld { color: #E6DB74 } /* Literal.Date */
+.codehilite .m { color: #AE81FF } /* Literal.Number */
+.codehilite .s { color: #E6DB74 } /* Literal.String */
+.codehilite .na { color: #A6E22E } /* Name.Attribute */
+.codehilite .nb { color: #F8F8F2 } /* Name.Builtin */
+.codehilite .nc { color: #A6E22E } /* Name.Class */
+.codehilite .no { color: #66D9EF } /* Name.Constant */
+.codehilite .nd { color: #A6E22E } /* Name.Decorator */
+.codehilite .ni { color: #F8F8F2 } /* Name.Entity */
+.codehilite .ne { color: #A6E22E } /* Name.Exception */
+.codehilite .nf { color: #A6E22E } /* Name.Function */
+.codehilite .nl { color: #F8F8F2 } /* Name.Label */
+.codehilite .nn { color: #F8F8F2 } /* Name.Namespace */
+.codehilite .nx { color: #A6E22E } /* Name.Other */
+.codehilite .py { color: #F8F8F2 } /* Name.Property */
+.codehilite .nt { color: #FF4689 } /* Name.Tag */
+.codehilite .nv { color: #F8F8F2 } /* Name.Variable */
+.codehilite .ow { color: #FF4689 } /* Operator.Word */
+.codehilite .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.codehilite .w { color: #F8F8F2 } /* Text.Whitespace */
+.codehilite .mb { color: #AE81FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #AE81FF } /* Literal.Number.Float */
+.codehilite .mh { color: #AE81FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #AE81FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #AE81FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #E6DB74 } /* Literal.String.Affix */
+.codehilite .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.codehilite .sc { color: #E6DB74 } /* Literal.String.Char */
+.codehilite .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #E6DB74 } /* Literal.String.Doc */
+.codehilite .s2 { color: #E6DB74 } /* Literal.String.Double */
+.codehilite .se { color: #AE81FF } /* Literal.String.Escape */
+.codehilite .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.codehilite .si { color: #E6DB74 } /* Literal.String.Interpol */
+.codehilite .sx { color: #E6DB74 } /* Literal.String.Other */
+.codehilite .sr { color: #E6DB74 } /* Literal.String.Regex */
+.codehilite .s1 { color: #E6DB74 } /* Literal.String.Single */
+.codehilite .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.codehilite .bp { color: #F8F8F2 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #A6E22E } /* Name.Function.Magic */
+.codehilite .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.codehilite .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.codehilite .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.codehilite .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.codehilite .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.codehilite { background: var(--term-bg) !important; }
+</style>
+
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <a class="brand" href="../../index.html">BENE</a>
+  <a class="nav" href="../../index.html">Landing</a>
+  <a class="nav" href="../index.html">Docs index</a>
+  <a class="nav" href="../../SKILL.md" target="_blank" rel="noopener noreferrer" title="Hand BENE to your agent in one URL">SKILL.md ↗</a>
+  <button class="nav copy-llms" data-llms-url="../../llms.txt" data-copied-label="✓ copied" data-opened-label="↗ opened" title="Copy the llms.txt site map (an LLM-friendly index pointing at SKILL.md + every doc). Paste it into your agent's context.">Copy llms.txt</button>
+  <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="GitHub"><svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="vertical-align:text-bottom"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg></a>
+  <a class="nav" href="../../zh/docs/zh/schema.html" title="切换到中文" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">文</a>
+</div></div>
+
+<script>
+(function() {
+  document.querySelectorAll('button.copy-llms').forEach(function(btn) {
+    var original = btn.textContent;
+    btn.addEventListener('click', function() {
+      var url = btn.getAttribute('data-llms-url');
+      fetch(url, { cache: 'no-cache' })
+        .then(function(r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.text(); })
+        .then(function(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).then(function() {
+              btn.textContent = btn.getAttribute('data-copied-label') || '✓ copied';
+              setTimeout(function() { btn.textContent = original; }, 2200);
+            });
+          }
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        })
+        .catch(function() {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        });
+    });
+  });
+})();
+</script>
+<div class="wrap">
+<aside class="sb"><h4>Start, operate, recover</h4>
+<a href="../README.html">README</a>
+<a href="../architecture.html">architecture</a>
+<a href="../checkpoints.html">checkpoints</a>
+<a href="../cli-reference.html">cli-reference</a>
+<a href="../codegen.html">codegen</a>
+<a href="../dashboard.html">dashboard</a>
+<a href="../deployment.html">deployment</a>
+<a href="../integrating-bene.html">integrating-bene</a>
+<a href="../mcp-integration.html">mcp-integration</a>
+<a href="../memory.html">memory</a>
+<a href="../meta-harness.html">meta-harness</a>
+<a href="../philosophy.html">philosophy</a>
+<a href="../primitive-review-cycle.html">primitive-review-cycle</a>
+<a href="../probe-authoring.html">probe-authoring</a>
+<a href="../schema.html">schema</a>
+<a href="../shared-log.html">shared-log</a>
+<a href="../skills.html">skills</a>
+<a href="../use-cases.html">use-cases</a>
+<h4>Recipes</h4>
+<a href="../recipes/atomic-completion.html">atomic-completion</a>
+<h4>Design and claims</h4>
+<a href="../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
+<a href="../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
+<a href="../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
+<a href="../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
+<h4>Evidence and research</h4>
+<a href="../research/GAP-AUDIT.html">GAP-AUDIT</a>
+<a href="../research/SYNTHESIS.html">SYNTHESIS</a>
+<a href="../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<h4>Benchmarks and gates</h4>
+<a href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
+<a href="../benchmarks/PREREG.html">PREREG</a>
+<h4>Tutorial playbooks</h4>
+<a href="../tutorials/t00-bene-e2e-walkthrough.html">t00-bene-e2e-walkthrough</a>
+<a href="../tutorials/t01-bene-meta-harness.html">t01-bene-meta-harness</a>
+<a href="../tutorials/t02-e2e-self-healing.html">t02-e2e-self-healing</a>
+<a href="../tutorials/t03-security-swarm.html">t03-security-swarm</a>
+<a href="../tutorials/t04-migration-rollback.html">t04-migration-rollback</a>
+<a href="../tutorials/t05-incident-response.html">t05-incident-response</a>
+<a href="../tutorials/t06-ml-research-lab.html">t06-ml-research-lab</a>
+<a href="../tutorials/t07-regression-guard.html">t07-regression-guard</a>
+<a href="../tutorials/t08-hundred-agents-scale.html">t08-hundred-agents-scale</a>
+<a href="../tutorials/t10-ci-overnight-bene-swarm.html">t10-ci-overnight-bene-swarm</a>
+<a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
+<h4>Case studies</h4>
+<a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
+<h4>Infrastructure</h4>
+<a href="../infra/DNS.html">DNS</a></aside>
+<main>
+<div class="crumbs"><a href="../index.html">docs</a> / zh/schema.md</div>
+<h1 id="benedb">探秘 bene.db</h1>
+<p>用任何一款 SQLite 客户端直接打开 <code>bene.db</code>，你就能用最纯粹的 SQL 回答你的 agents 能引发的所有疑问：它们到底干了什么，写了哪些文件，脑子里记住了什么，以及你能把它们回滚到哪个时间点。本页面将 11 张表的使命全部拆解，为你指明它们能回答什么问题，详细记录每一个字段，并且备好了一堆可以直接复制粘贴的查询语句。</p>
+<blockquote>
+<p><strong>你整支 agent 舰队的所有状态，全部被打包在这唯一一个 SQLite 文件里 —— 查询它，用 <code>cp</code> 备份它；没有半个字节的数据会离开你的机器。</strong></p>
+</blockquote>
+<p>当前的 Schema 已经推进到了 <strong>v4</strong> 版本，具体定义见 <code>bene/schema.py</code>。</p>
+<hr />
+<p><a id="overview"></a></p>
+<h2 id="_1">一份文件，十一张表</h2>
+<p>bene 将所有的数据统统放进一个开启了 WAL (预写式日志) 模式的 SQLite 数据库里。这里以 <code>agents</code> 表为核心，向下挂载了多张表 (<code>files</code>, <code>events</code>, <code>tool_calls</code>, <code>state</code>, <code>checkpoints</code>, <code>memory</code>, <code>agent_skills</code>)；<code>blobs</code> 则专门负责屯放 <code>files</code> 所指向的二进制字节肉身。<code>shared_log</code> 则用来记录 A2A 总线 (bus) 上的协同共识事件（虽然 <code>shared_log.agent_id</code> 记录的是发起方 agent 的名字，但出于解耦它并没有挂载指向 <code>agents</code> 的外键约束）：</p>
+<div class="codehilite"><pre><span></span><code>agents  ----&lt;  files         (1:N - 每个 agent 拥有多份文件)
+        ----&lt;  tool_calls    (1:N - 每个 agent 发起多次工具调用)
+        ----&lt;  state         (1:N - 每个 agent 维护多对 KV 状态)
+        ----&lt;  events        (1:N - 每个 agent 产生多条事件流)
+        ----&lt;  checkpoints   (1:N - 每个 agent 留下多个检查点)
+
+blobs   &lt;----  files         (1:N - 多个文件可能共享同一个内容 blob)
+</code></pre></div>
+
+<p>这两条铁律贯穿全局：</p>
+<ul>
+<li><strong>Timestamps (时间戳)</strong> 全部采用携带毫秒精度的 ISO 8601 文本格式，统一由 <code>strftime('%Y-%m-%dT%H:%M:%f', 'now')</code> 生成。</li>
+<li><strong>JSON 字段</strong> —— 包括 <code>config</code>, <code>metadata</code>, <code>input</code>, <code>output</code>, <code>payload</code>, <code>value</code>, <code>file_manifest</code>, <code>state_snapshot</code> —— 必须永远塞入合法的 JSON 文本。</li>
+</ul>
+<hr />
+<h2 id="_2">问题导向查询指南</h2>
+<table>
+<thead>
+<tr>
+<th>遇到这个问题时...</th>
+<th>请查阅</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>这个 agent 到底干了什么？</td>
+<td><a href="#events">events 事件流</a></td>
+</tr>
+<tr>
+<td>跑了什么 tool？输入是什么？耗时多久？</td>
+<td><a href="#tool_calls-every-tool-invocation">tool_calls 调用账本</a></td>
+</tr>
+<tr>
+<td>到底生了几个 agent？它们还活着吗？</td>
+<td><a href="#agents-the-roster">agents 花名册</a></td>
+</tr>
+<tr>
+<td>agent 当前的作业状态 (短期记忆草稿) 是什么？</td>
+<td><a href="#state-per-agent-key-value-memory">state 专属键值存储</a></td>
+</tr>
+<tr>
+<td>agent 跨 session 还能记住啥？</td>
+<td>查 <code>memory</code> + <code>memory_fts</code> —— 支持全文检索 (<code>SELECT … FROM memory_fts WHERE memory_fts MATCH '…'</code>); 详见 <a href="memory.html">memory.md</a></td>
+</tr>
+<tr>
+<td>我能回滚到哪里？</td>
+<td><a href="#checkpoints-snapshots-you-can-return-to">checkpoints 状态快照</a></td>
+</tr>
+<tr>
+<td>这个 agent 到底写了什么东西？</td>
+<td><a href="#files-the-virtual-filesystem">files 虚拟文件系统</a></td>
+</tr>
+<tr>
+<td>文件的字节肉身到底是怎么存的？</td>
+<td><a href="#blobs-deduplicated-content">blobs 去重内容块</a></td>
+</tr>
+<tr>
+<td>这份文件经历过几次数据库迁移？</td>
+<td><a href="#schema_version-the-migration-record">schema_version 迁移大账本</a></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="events">events</h2>
+<p>这就是 bene 的审计账本 (audit trail)。agent 的一举一动 —— 写文件、调 tool、生命周期切换、打 checkpoint —— 统统只能向这里追加写入 (append-only) 且永不篡改，因此你查出来的这串流水就是铁一般的事实。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">events</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">event_id</span><span class="w">        </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="n">AUTOINCREMENT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">agent_id</span><span class="w">        </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">agents</span><span class="p">(</span><span class="n">agent_id</span><span class="p">),</span>
+<span class="w">    </span><span class="n">event_type</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">payload</span><span class="w">         </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="k">timestamp</span><span class="w">       </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="p">(</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%dT%H:%M:%f&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;now&#39;</span><span class="p">)),</span>
+<span class="w">    </span><span class="n">idempotency_key</span><span class="w"> </span><span class="nb">TEXT</span>
+<span class="p">);</span>
+<span class="c1">-- v4 版本的 schema 补上了一个部分唯一索引，以支撑安全的 (Temporal) 重试机制:</span>
+<span class="c1">-- CREATE UNIQUE INDEX idx_events_idem ON events(agent_id, idempotency_key)</span>
+<span class="c1">--   WHERE idempotency_key IS NOT NULL;</span>
+<span class="c1">-- 同样的 `idempotency_key TEXT` 字段及部分唯一索引，在 `tool_calls` 和 `files` 表里也有。</span>
+</code></pre></div>
+
+<h3 id="_3">字段说明</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>约束</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>event_id</code></td>
+<td>INTEGER</td>
+<td>PRIMARY KEY AUTOINCREMENT</td>
+<td>单调递增，天然充当全局事件排序器。</td>
+</tr>
+<tr>
+<td><code>agent_id</code></td>
+<td>TEXT</td>
+<td>NOT NULL, FK -&gt; agents</td>
+<td>该事件的肇事者。</td>
+</tr>
+<tr>
+<td><code>event_type</code></td>
+<td>TEXT</td>
+<td>NOT NULL</td>
+<td>下文列出的各类事件标识符。</td>
+</tr>
+<tr>
+<td><code>payload</code></td>
+<td>TEXT</td>
+<td>NOT NULL, 默认 <code>'{}'</code></td>
+<td>事件相关的细节，统统打成 JSON 对象。</td>
+</tr>
+<tr>
+<td><code>timestamp</code></td>
+<td>TEXT</td>
+<td>NOT NULL, 自动生成</td>
+<td>自动写入的 ISO 8601 毫秒级时间戳。</td>
+</tr>
+<tr>
+<td><code>idempotency_key</code></td>
+<td>TEXT</td>
+<td>可空, 若有值则在单个 agent 内必须唯一 (v4)</td>
+<td>带着相同 key 复用的写入会被无视而不是产生重复数据 —— 这是支撑 Temporal 任务安全重试的核心。<code>tool_calls</code> 和 <code>files</code> 同样搭载此字段。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="event-types">事件类型 (Event types)</h3>
+<p>bene 默认发射的标准 <code>event_type</code> 以及各自的 payload 长相（如果挂了 Temporal runtime，还会多吐几个额外类型）：</p>
+<table>
+<thead>
+<tr>
+<th>Event Type 事件类型</th>
+<th>Payload 示例</th>
+<th>触发场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent_spawn</code></td>
+<td><code>{"name": "...", "parent_id": null, "config": {...}}</code></td>
+<td>通过 <code>spawn()</code> 新建 agent 时</td>
+</tr>
+<tr>
+<td><code>agent_pause</code></td>
+<td><code>{}</code></td>
+<td>Agent 被暂停时</td>
+</tr>
+<tr>
+<td><code>agent_resume</code></td>
+<td><code>{}</code></td>
+<td>Agent 被唤醒恢复时</td>
+</tr>
+<tr>
+<td><code>agent_kill</code></td>
+<td><code>{}</code></td>
+<td>Agent 被强制处决时</td>
+</tr>
+<tr>
+<td><code>agent_complete</code></td>
+<td><code>{}</code></td>
+<td>Agent 顺利完工退场时</td>
+</tr>
+<tr>
+<td><code>agent_fail</code></td>
+<td><code>{"error": "..."}</code></td>
+<td>Agent 干砸了报错时</td>
+</tr>
+<tr>
+<td><code>state_change</code></td>
+<td><code>{"field": "status", "from": "initialized", "to": "running"}</code></td>
+<td>发生状态跃迁时</td>
+</tr>
+<tr>
+<td><code>file_read</code></td>
+<td><code>{"path": "/src/app.py"}</code></td>
+<td>从 VFS 里读文件时</td>
+</tr>
+<tr>
+<td><code>file_write</code></td>
+<td><code>{"path": "/src/app.py", "size": 1234, "version": 2}</code></td>
+<td>往 VFS 里写文件时</td>
+</tr>
+<tr>
+<td><code>file_delete</code></td>
+<td><code>{"path": "/tmp/scratch.txt"}</code></td>
+<td>从 VFS 删文件时</td>
+</tr>
+<tr>
+<td><code>tool_call_start</code></td>
+<td><code>{"call_id": "...", "tool_name": "fs_read"}</code></td>
+<td>开始调 tool 时</td>
+</tr>
+<tr>
+<td><code>tool_call_end</code></td>
+<td><code>{"call_id": "...", "status": "success"}</code></td>
+<td>调完 tool 时</td>
+</tr>
+<tr>
+<td><code>llm_call</code></td>
+<td><code>{"model": "...", "prompt_len": 1234, "input_tokens": 800, "output_tokens": 120, "cache_read_tokens": 0, "cache_creation_tokens": 0}</code></td>
+<td>完成一次模型调用时 (仅 Temporal 运行时会发)</td>
+</tr>
+<tr>
+<td><code>checkpoint_create</code></td>
+<td><code>{"checkpoint_id": "...", "label": "pre-refactor"}</code></td>
+<td>刚切完一张 checkpoint 快照时</td>
+</tr>
+<tr>
+<td><code>checkpoint_restore</code></td>
+<td><code>{"checkpoint_id": "..."}</code></td>
+<td>刚恢复完一次 checkpoint 快照时</td>
+</tr>
+<tr>
+<td><code>error</code></td>
+<td><code>{"message": "..."}</code></td>
+<td>遇到运行时严重错误时</td>
+</tr>
+<tr>
+<td><code>warning</code></td>
+<td><code>{"message": "..."}</code></td>
+<td>抛出运行时警告时</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_4">开箱即用的查询语句</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 抽调某个 agent 完整的时间轴流水</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">event_id</span><span class="p">,</span><span class="w"> </span><span class="n">event_type</span><span class="p">,</span><span class="w"> </span><span class="n">payload</span><span class="p">,</span><span class="w"> </span><span class="k">timestamp</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">events</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;01HXYZ...&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">event_id</span><span class="p">;</span>
+
+<span class="c1">-- 这个 agent 在过去一小时里到底搞了什么名堂？</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">event_type</span><span class="p">,</span><span class="w"> </span><span class="n">payload</span><span class="p">,</span><span class="w"> </span><span class="k">timestamp</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">events</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;01HXYZ...&#39;</span>
+<span class="k">AND</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%dT%H:%M:%f&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;now&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;-1 hour&#39;</span><span class="p">)</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">event_id</span><span class="p">;</span>
+
+<span class="c1">-- 统计某个 agent 发出的各类事件数量</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">event_type</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">count</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">events</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;01HXYZ...&#39;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">event_type</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">count</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+
+<span class="c1">-- 全局系统活动概览</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">event_type</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">count</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">events</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">event_type</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">count</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+
+<span class="c1">-- 跨越所有 agent 找出所有的文件写入动作</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">agent_id</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">       </span><span class="n">json_extract</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">payload</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;$.path&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">file_path</span><span class="p">,</span>
+<span class="w">       </span><span class="n">json_extract</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">payload</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;$.size&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">size</span><span class="p">,</span>
+<span class="w">       </span><span class="n">e</span><span class="p">.</span><span class="k">timestamp</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">events</span><span class="w"> </span><span class="n">e</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">agent_id</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">event_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;file_write&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="k">timestamp</span><span class="w"> </span><span class="k">DESC</span>
+<span class="k">LIMIT</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
+</code></pre></div>
+
+<p><em>背后的索引支撑: <code>idx_events_agent_time</code> (<code>agent_id, timestamp</code>) 以及 <code>idx_events_type</code> (<code>event_type</code>) —— 详情查阅文末的 <a href="#index-catalog">索引目录</a>。</em></p>
+<hr />
+<h2 id="tool_calls">tool_calls: 每一笔工具调用账单</h2>
+<p>agent 调用工具的每一个动作都会带着它的输入、输出、耗时以及 token 花销一起入账 —— 一旦遇到卡死或是崩溃的调用，你完全可以逐笔核查，甚至能把嵌套调用还原成一条清晰的调用链。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">tool_calls</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">call_id</span><span class="w">         </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">agent_id</span><span class="w">        </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">agents</span><span class="p">(</span><span class="n">agent_id</span><span class="p">),</span>
+<span class="w">    </span><span class="n">tool_name</span><span class="w">       </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="k">input</span><span class="w">           </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="k">output</span><span class="w">          </span><span class="nb">TEXT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">status</span><span class="w">          </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;pending&#39;</span>
+<span class="w">                    </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;pending&#39;</span><span class="p">,</span><span class="s1">&#39;running&#39;</span><span class="p">,</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="s1">&#39;error&#39;</span><span class="p">,</span><span class="s1">&#39;timeout&#39;</span><span class="p">)),</span>
+<span class="w">    </span><span class="n">started_at</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="p">(</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%dT%H:%M:%f&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;now&#39;</span><span class="p">)),</span>
+<span class="w">    </span><span class="n">completed_at</span><span class="w">    </span><span class="nb">TEXT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">duration_ms</span><span class="w">     </span><span class="nb">INTEGER</span><span class="p">,</span>
+<span class="w">    </span><span class="n">token_count</span><span class="w">     </span><span class="nb">INTEGER</span><span class="p">,</span>
+<span class="w">    </span><span class="n">cost_usd</span><span class="w">        </span><span class="nb">REAL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">.</span><span class="mi">0</span><span class="p">,</span>
+<span class="w">    </span><span class="n">parent_call_id</span><span class="w">  </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tool_calls</span><span class="p">(</span><span class="n">call_id</span><span class="p">),</span>
+<span class="w">    </span><span class="n">error_message</span><span class="w">   </span><span class="nb">TEXT</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<h3 id="_5">字段说明</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>约束</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>call_id</code></td>
+<td>TEXT</td>
+<td>PRIMARY KEY</td>
+<td>ULID，每次调用独一无二。</td>
+</tr>
+<tr>
+<td><code>agent_id</code></td>
+<td>TEXT</td>
+<td>NOT NULL, FK -&gt; agents</td>
+<td>发起调用的 agent。</td>
+</tr>
+<tr>
+<td><code>tool_name</code></td>
+<td>TEXT</td>
+<td>NOT NULL</td>
+<td>跑的到底是什么 tool (比如 <code>fs_read</code>, <code>shell_exec</code>, <code>fs_write</code>)。</td>
+</tr>
+<tr>
+<td><code>input</code></td>
+<td>TEXT</td>
+<td>NOT NULL</td>
+<td>入参，直接序列化成 JSON。</td>
+</tr>
+<tr>
+<td><code>output</code></td>
+<td>TEXT</td>
+<td>可空</td>
+<td>出参 JSON；调用结束前保持 NULL。</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>TEXT</td>
+<td>NOT NULL, CHECK 约束</td>
+<td>必须是 <code>pending</code>, <code>running</code>, <code>success</code>, <code>error</code>, <code>timeout</code> 其中之一。</td>
+</tr>
+<tr>
+<td><code>started_at</code></td>
+<td>TEXT</td>
+<td>NOT NULL, 自动生成</td>
+<td>记录调用的初始时间戳。</td>
+</tr>
+<tr>
+<td><code>completed_at</code></td>
+<td>TEXT</td>
+<td>可空</td>
+<td>调用收摊时填入。</td>
+</tr>
+<tr>
+<td><code>duration_ms</code></td>
+<td>INTEGER</td>
+<td>可空</td>
+<td>调用收摊时算出的真实耗时 (毫秒)。</td>
+</tr>
+<tr>
+<td><code>token_count</code></td>
+<td>INTEGER</td>
+<td>可空</td>
+<td>触发本次 tool 使用的那次模型请求究竟烧了多少个 token。</td>
+</tr>
+<tr>
+<td><code>cost_usd</code></td>
+<td>REAL</td>
+<td>默认 0.0</td>
+<td>预留的美元计价估算字段。</td>
+</tr>
+<tr>
+<td><code>parent_call_id</code></td>
+<td>TEXT</td>
+<td>FK -&gt; tool_calls(call_id), 可空</td>
+<td>指向父级调用，借此把嵌套调用串成一条清晰的跟踪链。</td>
+</tr>
+<tr>
+<td><code>error_message</code></td>
+<td>TEXT</td>
+<td>可空</td>
+<td>只有当状态变成 <code>error</code> 时才会填入的错误明细。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_6">开箱即用的查询语句</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 抓取某个 agent 最近的 tool 账单</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">call_id</span><span class="p">,</span><span class="w"> </span><span class="n">tool_name</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">,</span><span class="w"> </span><span class="n">duration_ms</span><span class="p">,</span><span class="w"> </span><span class="n">token_count</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tool_calls</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;01HXYZ...&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">started_at</span><span class="w"> </span><span class="k">DESC</span>
+<span class="k">LIMIT</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
+
+<span class="c1">-- 算算各 agent 的 token 燃烧账单</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">tc</span><span class="p">.</span><span class="n">token_count</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">total_tokens</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">calls</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tool_calls</span><span class="w"> </span><span class="n">tc</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tc</span><span class="p">.</span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">agent_id</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">tc</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;success&#39;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">tc</span><span class="p">.</span><span class="n">agent_id</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">total_tokens</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+
+<span class="c1">-- 把失败的 tool 调用连同报错细则全翻出来</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">agent_id</span><span class="p">,</span><span class="w"> </span><span class="n">tool_name</span><span class="p">,</span><span class="w"> </span><span class="n">error_message</span><span class="p">,</span><span class="w"> </span><span class="n">started_at</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tool_calls</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;error&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">started_at</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+
+<span class="c1">-- 按照工具类别看平均耗时</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">tool_name</span><span class="p">,</span><span class="w"> </span><span class="k">AVG</span><span class="p">(</span><span class="n">duration_ms</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">avg_ms</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">calls</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tool_calls</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;success&#39;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">tool_name</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">avg_ms</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+
+<span class="c1">-- 追踪一条 tool 嵌套调用链 (通过递归 CTE)</span>
+<span class="k">WITH</span><span class="w"> </span><span class="k">RECURSIVE</span><span class="w"> </span><span class="k">chain</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">call_id</span><span class="p">,</span><span class="w"> </span><span class="n">tool_name</span><span class="p">,</span><span class="w"> </span><span class="n">parent_call_id</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">depth</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tool_calls</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">call_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;target-call-id&#39;</span>
+<span class="w">    </span><span class="k">UNION</span><span class="w"> </span><span class="k">ALL</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">tc</span><span class="p">.</span><span class="n">call_id</span><span class="p">,</span><span class="w"> </span><span class="n">tc</span><span class="p">.</span><span class="n">tool_name</span><span class="p">,</span><span class="w"> </span><span class="n">tc</span><span class="p">.</span><span class="n">parent_call_id</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">depth</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tool_calls</span><span class="w"> </span><span class="n">tc</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="k">chain</span><span class="w"> </span><span class="k">c</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tc</span><span class="p">.</span><span class="n">parent_call_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">call_id</span>
+<span class="p">)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="k">chain</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">depth</span><span class="p">;</span>
+</code></pre></div>
+
+<p><em>背后的索引支撑: <code>idx_tool_calls_agent</code> (<code>agent_id, started_at</code>), <code>idx_tool_calls_tool</code> (<code>tool_name</code>), 以及 <code>idx_tool_calls_status</code> (<code>status</code>) —— 详情查阅文末的 <a href="#index-catalog">索引目录</a>。</em></p>
+<hr />
+<h2 id="agents">agents: 花名册</h2>
+<p>一表包揽所有 agent 户口：到底有谁存在，谁生了谁，以及此刻它们各自处于何种生命体征状态。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">agent_id</span><span class="w">        </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">name</span><span class="w">            </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">parent_id</span><span class="w">       </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">agents</span><span class="p">(</span><span class="n">agent_id</span><span class="p">),</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="p">(</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%dT%H:%M:%f&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;now&#39;</span><span class="p">)),</span>
+<span class="w">    </span><span class="n">status</span><span class="w">          </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;initialized&#39;</span>
+<span class="w">                    </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;initialized&#39;</span><span class="p">,</span><span class="s1">&#39;running&#39;</span><span class="p">,</span><span class="s1">&#39;paused&#39;</span><span class="p">,</span><span class="s1">&#39;completed&#39;</span><span class="p">,</span><span class="s1">&#39;failed&#39;</span><span class="p">,</span><span class="s1">&#39;killed&#39;</span><span class="p">)),</span>
+<span class="w">    </span><span class="n">config</span><span class="w">          </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">metadata</span><span class="w">        </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">pid</span><span class="w">             </span><span class="nb">INTEGER</span><span class="p">,</span>
+<span class="w">    </span><span class="n">last_heartbeat</span><span class="w">  </span><span class="nb">TEXT</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<h3 id="_7">字段说明</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>约束</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent_id</code></td>
+<td>TEXT</td>
+<td>PRIMARY KEY</td>
+<td>ULID —— 唯一且原生自带时间排序能力。</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>TEXT</td>
+<td>NOT NULL</td>
+<td>你赋予它的代号 (比如 "test-writer")。</td>
+</tr>
+<tr>
+<td><code>parent_id</code></td>
+<td>TEXT</td>
+<td>FK -&gt; agents(agent_id), 可空</td>
+<td>如果它是被别的 agent 孵化出来的，这里就有值；根节点则为 NULL。</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>TEXT</td>
+<td>NOT NULL, 自动生成</td>
+<td>诞生时刻敲下的 ISO 8601 钢印。</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>TEXT</td>
+<td>NOT NULL, CHECK 约束</td>
+<td>必须是 <code>initialized</code>, <code>running</code>, <code>paused</code>, <code>completed</code>, <code>failed</code>, <code>killed</code> 其中之一。</td>
+</tr>
+<tr>
+<td><code>config</code></td>
+<td>TEXT</td>
+<td>NOT NULL, 默认 <code>'{}'</code></td>
+<td>该 agent 专属的 JSON 配置文件 (例如 <code>{"force_model": "deepseek-r1-70b"}</code>)。</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td>TEXT</td>
+<td>NOT NULL, 默认 <code>'{}'</code></td>
+<td>一块任你塞入任意格式化信息的自由 JSON 空地。</td>
+</tr>
+<tr>
+<td><code>pid</code></td>
+<td>INTEGER</td>
+<td>可空</td>
+<td>该 agent 苟活在操作系统里时对应的进程 ID。</td>
+</tr>
+<tr>
+<td><code>last_heartbeat</code></td>
+<td>TEXT</td>
+<td>可空</td>
+<td>最后的脉搏跳动时间，ISO 8601 格式。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_8">开箱即用的查询语句</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 揪出所有还在奔跑的 agents</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">agent_id</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">last_heartbeat</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;running&#39;</span><span class="p">;</span>
+
+<span class="c1">-- 查找被某位 &quot;父辈&quot; 孵化出的所有徒子徒孙</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">agent_id</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">status</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">parent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;01HXYZ...&#39;</span><span class="p">;</span>
+
+<span class="c1">-- 看看所有 agent 目前生死状态的盘点</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">status</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">count</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">status</span><span class="p">;</span>
+
+<span class="c1">-- 抓出那些心跳骤停的僵尸 agent (5分钟没心跳的)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">agent_id</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">last_heartbeat</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">agents</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;running&#39;</span>
+<span class="k">AND</span><span class="w"> </span><span class="n">last_heartbeat</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%dT%H:%M:%f&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;now&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;-5 minutes&#39;</span><span class="p">);</span>
+</code></pre></div>
+
+<p><em>背后的索引支撑: <code>idx_agents_status</code> (<code>status</code>) 以及 <code>idx_agents_parent</code> (<code>parent_id</code>) —— 详情查阅文末的 <a href="#index-catalog">索引目录</a>。</em></p>
+<hr />
+<h2 id="state">state: 专属的键值存储草稿本</h2>
+<p>只要是一个能写进 JSON 里的数据，就能存在这里：每个 agent 都会圈定一块自己的专属键值命名空间，把脑子里随时要查的进度和状态记在账上。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="k">state</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">agent_id</span><span class="w">        </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">agents</span><span class="p">(</span><span class="n">agent_id</span><span class="p">),</span>
+<span class="w">    </span><span class="k">key</span><span class="w">             </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">value</span><span class="w">           </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="p">(</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%dT%H:%M:%f&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;now&#39;</span><span class="p">)),</span>
+<span class="w">    </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span><span class="w"> </span><span class="k">key</span><span class="p">)</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<h3 id="_9">字段说明</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>约束</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent_id</code></td>
+<td>TEXT</td>
+<td>NOT NULL, FK -&gt; agents, PK 的一半</td>
+<td>领地主人 —— 主键的前半段。</td>
+</tr>
+<tr>
+<td><code>key</code></td>
+<td>TEXT</td>
+<td>NOT NULL, PK 的另一半</td>
+<td>键名 (比如 <code>conversation</code>, <code>iteration</code>, <code>progress</code>)。</td>
+</tr>
+<tr>
+<td><code>value</code></td>
+<td>TEXT</td>
+<td>NOT NULL</td>
+<td>塞进去的 JSON 文本：字符串、数字、数组或者是嵌套对象。</td>
+</tr>
+<tr>
+<td><code>updated_at</code></td>
+<td>TEXT</td>
+<td>NOT NULL, 自动生成</td>
+<td>只要有修改就立马刷新这根时间轴。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_10">运作机制拆解</h3>
+<ul>
+<li>这个由 <code>(agent_id, key)</code> 咬合而成的联合主键既保证了键名在 agent 地界内的唯一性，也成为了支撑 <code>ON CONFLICT</code> 覆写操作的核心基石。</li>
+<li><code>set_state()</code> 方法实际上是在执行 <code>INSERT ... ON CONFLICT DO UPDATE</code>，因此，重新塞入一个已存在的 key 就能直接完成一次原子级别的旧值换血。</li>
+<li>CCR 会顺手把 <code>conversation</code>、<code>iteration</code>、<code>task</code> 和 <code>result</code> 等记录丢在这里 —— 于是，你距离把一个 agent 的祖宗八代聊天记录全翻出来，只差一句 SELECT。</li>
+</ul>
+<h3 id="_11">开箱即用的查询语句</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 掏空某个 agent 的所有底牌</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">key</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span>
+<span class="k">FROM</span><span class="w"> </span><span class="k">state</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;01HXYZ...&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">key</span><span class="p">;</span>
+
+<span class="c1">-- 单独撬开某个指定的值</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="k">state</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;01HXYZ...&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;iteration&#39;</span><span class="p">;</span>
+
+<span class="c1">-- 看看哪几个 agent 熬到了多少个迭代轮次</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">agent_id</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">value</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">iteration</span>
+<span class="k">FROM</span><span class="w"> </span><span class="k">state</span><span class="w"> </span><span class="n">s</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">agent_id</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="k">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;iteration&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">CAST</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">value</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="nb">INTEGER</span><span class="p">)</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+
+<span class="c1">-- 盘点一共有哪些 key 最受全场 agent 欢迎</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">key</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">agent_count</span>
+<span class="k">FROM</span><span class="w"> </span><span class="k">state</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">key</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">agent_count</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+</code></pre></div>
+
+<hr />
+<h2 id="checkpoints">checkpoints: 随时退回的时空快照</h2>
+<p>所谓的 checkpoint 就是把某个 agent 的文件系统和所有 state 数据直接冻成一块标本，这就意味着任何一记昏招都不再是末日：还原它，对比它，然后装作什么都没发生过一样继续跑。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">checkpoints</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">checkpoint_id</span><span class="w">   </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">agent_id</span><span class="w">        </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">agents</span><span class="p">(</span><span class="n">agent_id</span><span class="p">),</span>
+<span class="w">    </span><span class="n">label</span><span class="w">           </span><span class="nb">TEXT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="p">(</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%dT%H:%M:%f&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;now&#39;</span><span class="p">)),</span>
+<span class="w">    </span><span class="n">event_id</span><span class="w">        </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">events</span><span class="p">(</span><span class="n">event_id</span><span class="p">),</span>
+<span class="w">    </span><span class="n">file_manifest</span><span class="w">   </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">state_snapshot</span><span class="w">  </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">metadata</span><span class="w">        </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<h3 id="_12">字段说明</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>约束</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>checkpoint_id</code></td>
+<td>TEXT</td>
+<td>PRIMARY KEY</td>
+<td>ULID。</td>
+</tr>
+<tr>
+<td><code>agent_id</code></td>
+<td>TEXT</td>
+<td>NOT NULL, FK -&gt; agents</td>
+<td>快照从属人。</td>
+</tr>
+<tr>
+<td><code>label</code></td>
+<td>TEXT</td>
+<td>可空</td>
+<td>可选的标签注释 (比如 <code>"pre-refactor"</code>, <code>"auto-iter-10"</code>)。</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>TEXT</td>
+<td>NOT NULL, 自动生成</td>
+<td>拍下快照的刹那，ISO 8601。</td>
+</tr>
+<tr>
+<td><code>event_id</code></td>
+<td>INTEGER</td>
+<td>FK -&gt; events(event_id), 可空</td>
+<td>死死锚定在当时事件流里的高水位标记；你要做 diff 就得靠它。</td>
+</tr>
+<tr>
+<td><code>file_manifest</code></td>
+<td>TEXT</td>
+<td>NOT NULL</td>
+<td>一长串文件花名册的 JSON 数组：<code>[{"path": "...", "content_hash": "...", "version": N}, ...]</code>。</td>
+</tr>
+<tr>
+<td><code>state_snapshot</code></td>
+<td>TEXT</td>
+<td>NOT NULL</td>
+<td>拍快照时的 KV 状态底包：<code>{"key1": value1, "key2": value2, ...}</code>。</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td>TEXT</td>
+<td>NOT NULL, 默认 <code>'{}'</code></td>
+<td>额外的 JSON 数据，随你怎么用。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_13">开箱即用的查询语句</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 罗列某个 agent 留下的所有快照足迹</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">checkpoint_id</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span><span class="w"> </span><span class="n">event_id</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">checkpoints</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;01HXYZ...&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">created_at</span><span class="p">;</span>
+
+<span class="c1">-- 把某个快照拿去体检 (算算打包了多少文件，多少个 state 键)</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">checkpoint_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">label</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">    </span><span class="n">json_array_length</span><span class="p">(</span><span class="n">file_manifest</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">file_count</span><span class="p">,</span>
+<span class="w">    </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">json_each</span><span class="p">(</span><span class="n">state_snapshot</span><span class="p">))</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">state_keys</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">checkpoints</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;01HXYZ...&#39;</span><span class="p">;</span>
+
+<span class="c1">-- 捞出那些由系统自动定期生成的 checkpoints</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">checkpoint_id</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">checkpoints</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;auto-iter-%&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">created_at</span><span class="p">;</span>
+
+<span class="c1">-- 拆包检视某一个快照里究竟藏了哪些文件</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">json_extract</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;$.path&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">path</span><span class="p">,</span>
+<span class="w">    </span><span class="n">json_extract</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;$.content_hash&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">hash</span><span class="p">,</span>
+<span class="w">    </span><span class="n">json_extract</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;$.version&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">version</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">checkpoints</span><span class="p">,</span><span class="w"> </span><span class="n">json_each</span><span class="p">(</span><span class="n">file_manifest</span><span class="p">)</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">checkpoint_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;01HABC...&#39;</span><span class="p">;</span>
+</code></pre></div>
+
+<p><em>背后的索引支撑: <code>idx_checkpoints_agent</code> (<code>agent_id, created_at</code>) —— 详情查阅文末的 <a href="#index-catalog">索引目录</a>。</em></p>
+<hr />
+<h2 id="files">files: 虚拟文件系统</h2>
+<p>agent 敲下的任何一个字节，都会在这条专属赛道里生出崭新的版本号记录 —— 所有陈旧版本的尸骨都仍旧躺在那里任你查询；并且哪怕你下了删除指令，所谓的删除也不过是把它雪藏 (soft delete) 起来而已，它的身世历史绝不会因此陪葬。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">files</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">file_id</span><span class="w">         </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="n">AUTOINCREMENT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">agent_id</span><span class="w">        </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">agents</span><span class="p">(</span><span class="n">agent_id</span><span class="p">),</span>
+<span class="w">    </span><span class="n">path</span><span class="w">            </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">is_dir</span><span class="w">          </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">    </span><span class="n">content_hash</span><span class="w">    </span><span class="nb">TEXT</span><span class="p">,</span>
+<span class="w">    </span><span class="k">size</span><span class="w">            </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">    </span><span class="k">mode</span><span class="w">            </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">33188</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="p">(</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%dT%H:%M:%f&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;now&#39;</span><span class="p">)),</span>
+<span class="w">    </span><span class="n">modified_at</span><span class="w">     </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="p">(</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%dT%H:%M:%f&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;now&#39;</span><span class="p">)),</span>
+<span class="w">    </span><span class="k">version</span><span class="w">         </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="n">deleted</span><span class="w">         </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">    </span><span class="k">UNIQUE</span><span class="p">(</span><span class="n">agent_id</span><span class="p">,</span><span class="w"> </span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="k">version</span><span class="p">)</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<h3 id="_14">字段说明</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>约束</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>file_id</code></td>
+<td>INTEGER</td>
+<td>PRIMARY KEY AUTOINCREMENT</td>
+<td>内部主键标号。</td>
+</tr>
+<tr>
+<td><code>agent_id</code></td>
+<td>TEXT</td>
+<td>NOT NULL, FK -&gt; agents</td>
+<td>领地主人；一切查找必须以此起手过滤。</td>
+</tr>
+<tr>
+<td><code>path</code></td>
+<td>TEXT</td>
+<td>NOT NULL</td>
+<td>强制绝对路径并经由 POSIX 规格化处理 (例如 <code>/src/main.py</code>)。</td>
+</tr>
+<tr>
+<td><code>is_dir</code></td>
+<td>INTEGER</td>
+<td>NOT NULL, 默认 0</td>
+<td>标为 1 则意味着这是个目录。</td>
+</tr>
+<tr>
+<td><code>content_hash</code></td>
+<td>TEXT</td>
+<td>可空</td>
+<td>拿到这个去 <code>blobs</code> 里提取正主的 SHA-256 钥匙；对于目录则恒为 NULL。</td>
+</tr>
+<tr>
+<td><code>size</code></td>
+<td>INTEGER</td>
+<td>NOT NULL, 默认 0</td>
+<td>没做压缩之前的文件裸字节数。</td>
+</tr>
+<tr>
+<td><code>mode</code></td>
+<td>INTEGER</td>
+<td>NOT NULL, 默认 33188</td>
+<td>Unix 风格权限位；33188 等价于 <code>0o100644</code> (常规文件, rw-r--r--)。</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>TEXT</td>
+<td>NOT NULL, 自动生成</td>
+<td>记录这具版本化化身降生那一刻。</td>
+</tr>
+<tr>
+<td><code>modified_at</code></td>
+<td>TEXT</td>
+<td>NOT NULL, 自动生成</td>
+<td>记录你最后一次去戳它的时刻。</td>
+</tr>
+<tr>
+<td><code>version</code></td>
+<td>INTEGER</td>
+<td>NOT NULL, 默认 1</td>
+<td>对同一条路径每次下笔，这里就乖乖 +1。</td>
+</tr>
+<tr>
+<td><code>deleted</code></td>
+<td>INTEGER</td>
+<td>NOT NULL, 默认 0</td>
+<td>标为 1 即为软删除雪藏：在常规列表查询里蒸发，但作为历史陈迹保留，以便 checkpoint 随时诈尸还魂。</td>
+</tr>
+</tbody>
+</table>
+<p>这个压住全场的 <code>UNIQUE(agent_id, path, version)</code> 约束牢牢守死了版本更替的底线 —— 一切都必须是一个 agent 下面、一条路径里面独一无二的版本号。</p>
+<h3 id="_15">开箱即用的查询语句</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 把某个 agent 辖区内还活着的活动文件统统列出来</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="k">size</span><span class="p">,</span><span class="w"> </span><span class="k">version</span><span class="p">,</span><span class="w"> </span><span class="n">modified_at</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">files</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;01HXYZ...&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">deleted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">is_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">path</span><span class="p">;</span>
+
+<span class="c1">-- 把某个特定文件的过往版本底裤也给翻出来</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">version</span><span class="p">,</span><span class="w"> </span><span class="n">content_hash</span><span class="p">,</span><span class="w"> </span><span class="k">size</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span><span class="w"> </span><span class="n">deleted</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">files</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;01HXYZ...&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;/src/app.py&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">version</span><span class="p">;</span>
+
+<span class="c1">-- 查看某个目录下面一层的直系子集内容</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">is_dir</span><span class="p">,</span><span class="w"> </span><span class="k">size</span><span class="p">,</span><span class="w"> </span><span class="n">modified_at</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">files</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;01HXYZ...&#39;</span>
+<span class="k">AND</span><span class="w"> </span><span class="n">deleted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="k">AND</span><span class="w"> </span><span class="n">path</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;/src/%&#39;</span>
+<span class="k">AND</span><span class="w"> </span><span class="n">path</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;/src/%/%&#39;</span>
+<span class="k">AND</span><span class="w"> </span><span class="n">path</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s1">&#39;/src&#39;</span><span class="p">;</span>
+
+<span class="c1">-- 盘点各个 agent 的仓库究竟吃掉了多少硬盘配额</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">agent_id</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="k">size</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">total_bytes</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">file_count</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">files</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">deleted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">is_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">agent_id</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">total_bytes</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+</code></pre></div>
+
+<p><em>背后的索引支撑: <code>idx_files_agent_path</code> (<code>agent_id, path</code>，带有局部过滤 <code>WHERE deleted = 0</code>) 以及 <code>idx_files_agent</code> (<code>agent_id</code>) —— 详情查阅文末的 <a href="#index-catalog">索引目录</a>。</em></p>
+<hr />
+<h2 id="blobs">blobs: 彻底去重的内容块</h2>
+<p>文件里的肉身字节被死死地捏在 SHA-256 哈希值名下保管，只此一份 —— 如果两个 agent 碰巧写了丝毫不差的内容，系统只会在磁盘里落下唯一一份 blob，而且还是被压缩封印过的。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">blobs</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">content_hash</span><span class="w">    </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">content</span><span class="w">         </span><span class="nb">BLOB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">compressed</span><span class="w">      </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ref_count</span><span class="w">       </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">1</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<h3 id="_16">字段说明</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>约束</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>content_hash</code></td>
+<td>TEXT</td>
+<td>PRIMARY KEY</td>
+<td>未压缩裸数据的 SHA-256 十六进制签名。</td>
+</tr>
+<tr>
+<td><code>content</code></td>
+<td>BLOB</td>
+<td>NOT NULL</td>
+<td>实打实的字节 —— 如果压缩标记被点亮，这就是一段 zstd 压缩包。</td>
+</tr>
+<tr>
+<td><code>compressed</code></td>
+<td>INTEGER</td>
+<td>NOT NULL, 默认 0</td>
+<td>1 = 该段数据已遭 zstd 压缩，0 = 原汁原味的裸片。</td>
+</tr>
+<tr>
+<td><code>ref_count</code></td>
+<td>INTEGER</td>
+<td>NOT NULL, 默认 1</td>
+<td>有多少条 files 里的记录是指向这里的；删掉文件记录就递减，跌落到 &lt;= 0 随时准备拉去火化 (回收)。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_17">运作机制拆解</h3>
+<ul>
+<li><strong>极致去重。</strong> 第二次尝试把一模一样的东西塞进来，系统连一根毛都不会往下存，只会在 <code>ref_count</code> 上无情地加个一。</li>
+<li><strong>全系压缩。</strong> 默认强制开启：所有字节在落盘前先被抓去过一遍 zstandard level 3，同时那个 <code>compressed</code> 标签负责告诉读取端在提取时别忘了先过个解压漏斗。</li>
+<li><strong>冷酷回收 (Garbage collection)。</strong> <code>BlobStore.gc()</code> 发作起来，所有 <code>ref_count &lt;= 0</code> 的行统统灰飞烟灭。这样做没一点毛病，因为所谓的软删除文件依旧会死死拽着自己的 <code>content_hash</code>，所以哪怕是被扔进垃圾桶的文件，凭 checkpoint 依然能顺理成章地捞出全尸。</li>
+</ul>
+<h3 id="_18">开箱即用的查询语句</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 调出 Blob 存储仓库的大体检报表</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">total_blobs</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="k">LENGTH</span><span class="p">(</span><span class="n">content</span><span class="p">))</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">total_stored_bytes</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">ref_count</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">total_references</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">blobs</span><span class="p">;</span>
+
+<span class="c1">-- 抓出那些无家可归随时会被物理超度的幽灵 blob</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">content_hash</span><span class="p">,</span><span class="w"> </span><span class="k">LENGTH</span><span class="p">(</span><span class="n">content</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">stored_size</span><span class="p">,</span><span class="w"> </span><span class="n">ref_count</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">blobs</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">ref_count</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="c1">-- 拉出按体量排名的全场前十大巨兽 blob</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">content_hash</span><span class="p">,</span><span class="w"> </span><span class="k">LENGTH</span><span class="p">(</span><span class="n">content</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">stored_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">ref_count</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">blobs</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">LENGTH</span><span class="p">(</span><span class="n">content</span><span class="p">)</span><span class="w"> </span><span class="k">DESC</span>
+<span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
+
+<span class="c1">-- 看看哪些 blob 被不止一个文件高频白嫖</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">content_hash</span><span class="p">,</span><span class="w"> </span><span class="n">ref_count</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">blobs</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">ref_count</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">ref_count</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+</code></pre></div>
+
+<hr />
+<h2 id="schema_version">schema_version: 迁移大账本</h2>
+<p>一横一竖只记录一条迁移指令，这样随便抛出一个 <code>bene.db</code> 的克隆体，它自己就能用这本账册自证清白：我究竟搭载了哪个阶段的骨架。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">schema_version</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="k">version</span><span class="w">         </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">applied_at</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="p">(</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%dT%H:%M:%f&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;now&#39;</span><span class="p">))</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<h3 id="_19">字段说明</h3>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>约束</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>version</code></td>
+<td>INTEGER</td>
+<td>PRIMARY KEY</td>
+<td>迁移序列号。当前最新推进到了: 4。</td>
+</tr>
+<tr>
+<td><code>applied_at</code></td>
+<td>TEXT</td>
+<td>NOT NULL, 自动生成</td>
+<td>执行这波迁移的确切时刻。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_20">迁移动力学机制</h3>
+<ul>
+<li>初次开荒建库时，直接把版本 4 硬凿进表里。</li>
+<li>在后续启动时，如果库里记载的版本落后于当前代码里锁定的 <code>SCHEMA_VERSION</code>，系统就会通过 <code>_apply_migrations()</code> 一阶一阶地把它暴力推向前沿。</li>
+<li>未来的更新，会在 <code>bene/schema.py</code> 里统一按 <code>if from_version &lt; N:</code> 规矩落座。</li>
+</ul>
+<h3 id="_21">开箱即用的查询语句</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 查查当前的 schema 究竟推进到了哪一版</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">MAX</span><span class="p">(</span><span class="k">version</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">current_version</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">schema_version</span><span class="p">;</span>
+
+<span class="c1">-- 拉出整个从古到今的迁移编年史</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">version</span><span class="p">,</span><span class="w"> </span><span class="n">applied_at</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">schema_version</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">version</span><span class="p">;</span>
+</code></pre></div>
+
+<hr />
+<p><a id="relationships"></a></p>
+<h2 id="_22">表与表是如何在暗中咬合的</h2>
+<p>schema 内部的每根引线，在这里一览无遗：</p>
+<div class="codehilite"><pre><span></span><code>agents.agent_id    ----&lt;  files.agent_id           (一个 agent 坐拥多份文件)
+agents.agent_id    ----&lt;  tool_calls.agent_id      (一个 agent 发起多笔 tool 调用)
+agents.agent_id    ----&lt;  state.agent_id           (一个 agent 维系多条 state 状态键)
+agents.agent_id    ----&lt;  events.agent_id          (一个 agent 产生多条流转事件)
+agents.agent_id    ----&lt;  checkpoints.agent_id     (一个 agent 刻下多座 checkpoint 墓碑)
+agents.agent_id    &lt;---   agents.parent_id         (血脉相连的自我嵌套)
+blobs.content_hash &lt;---   files.content_hash       (同一坨血肉对应多张皮囊)
+tool_calls.call_id &lt;---   tool_calls.parent_call_id (层层嵌套的调用闭环链条)
+events.event_id    &lt;---   checkpoints.event_id     (把 checkpoint 钢钉直接打穿事件流)
+</code></pre></div>
+
+<p>这些连线可不是画在纸上的涂鸦。所有的牵扯都会被强制通过 <code>PRAGMA foreign_keys=ON</code> 让底层的 SQLite 执行冷血拒签 —— 任何文件休想去投靠一个根本不存在的幽灵 agent。</p>
+<hr />
+<p><a id="index-reference"></a></p>
+<h2 id="_23">索引目录</h2>
+<p>随着 schema 下发的每一把索引利器，以及它们所背负的特定狩猎指标：</p>
+<table>
+<thead>
+<tr>
+<th>所在表</th>
+<th>索引代号</th>
+<th>横跨字段</th>
+<th>是否偏袒 (Partial)</th>
+<th>服役使命</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>agents</td>
+<td><code>idx_agents_status</code></td>
+<td><code>status</code></td>
+<td>否</td>
+<td>借用生命周期大类去大筛 agent</td>
+</tr>
+<tr>
+<td>agents</td>
+<td><code>idx_agents_parent</code></td>
+<td><code>parent_id</code></td>
+<td>否</td>
+<td>揪出子嗣</td>
+</tr>
+<tr>
+<td>files</td>
+<td><code>idx_files_agent_path</code></td>
+<td><code>agent_id, path</code></td>
+<td>是 (<code>deleted=0</code>)</td>
+<td>排除掉软删除垃圾后的极速文件拔查</td>
+</tr>
+<tr>
+<td>files</td>
+<td><code>idx_files_agent</code></td>
+<td><code>agent_id</code></td>
+<td>否</td>
+<td>把某个 agent 名下的破烂全抖搂出来</td>
+</tr>
+<tr>
+<td>tool_calls</td>
+<td><code>idx_tool_calls_agent</code></td>
+<td><code>agent_id, started_at</code></td>
+<td>否</td>
+<td>依照时间轴铺开的调用长卷</td>
+</tr>
+<tr>
+<td>tool_calls</td>
+<td><code>idx_tool_calls_tool</code></td>
+<td><code>tool_name</code></td>
+<td>否</td>
+<td>认清具体到底用了哪件法宝</td>
+</tr>
+<tr>
+<td>tool_calls</td>
+<td><code>idx_tool_calls_status</code></td>
+<td><code>status</code></td>
+<td>否</td>
+<td>顺着状态把调用抠出来</td>
+</tr>
+<tr>
+<td>events</td>
+<td><code>idx_events_agent_time</code></td>
+<td><code>agent_id, timestamp</code></td>
+<td>否</td>
+<td>把事件串联回时间长河</td>
+</tr>
+<tr>
+<td>events</td>
+<td><code>idx_events_type</code></td>
+<td><code>event_type</code></td>
+<td>否</td>
+<td>依据事件种姓展开过滤</td>
+</tr>
+<tr>
+<td>checkpoints</td>
+<td><code>idx_checkpoints_agent</code></td>
+<td><code>agent_id, created_at</code></td>
+<td>否</td>
+<td>按资排辈地罗列出来的快照履历</td>
+</tr>
+</tbody>
+</table>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/zh/schema.md" target="_blank" rel="noopener noreferrer">docs/zh/schema.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+</main>
+</div>
+<footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>
+<a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer">Building something on bene? Open a Discussion.</a></div></footer>
+</body>
+</html>

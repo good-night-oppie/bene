@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>跨代记忆库 (Cross-Agent Memory) — BENE docs</title>
+<meta name="description" content="BENE 0.2.0 documentation — 跨代记忆库 (Cross-Agent Memory)" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+:root { --bg:#F0EEE8; --surface:#EDE9E4; --border:#CFCCC8; --ink:#1F1D1C; --mute:#62666D; --accent:#EE6018; --gold:#B46A35; --term-bg:#332E2B; --term-fg:#EDE9E4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 Geist,ui-sans-serif,system-ui,sans-serif; }
+a { color:var(--gold); text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent); text-underline-offset:3px; }
+a:hover { color:var(--accent); }
+.top { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+.top-in { max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+.brand { font-family:Geist,ui-sans-serif,sans-serif; font-weight:700; letter-spacing:.12em; color:var(--ink); text-decoration:none; }
+.top a.nav { color:var(--mute); text-decoration:none; font-size:14px; }
+.top a.nav:hover { color:var(--accent); }
+.wrap { max-width:1200px; margin:0 auto; padding:24px; display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; }
+aside.sb { position:sticky; top:80px; align-self:start; max-height:calc(100vh - 100px); overflow-y:auto; font-size:13.5px; border-left:1px solid var(--border); padding-left:16px; }
+.sb h4 { margin:18px 0 6px; font:600 11px/1 "Geist Mono",ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+.sb a { display:block; padding:3px 0; color:var(--mute); text-decoration:none; }
+.sb a:hover { color:var(--accent); }
+.sb a.cur { color:var(--ink); font-weight:600; }
+main { min-width:0; max-width:760px; }
+main h1 { font-family:Geist,ui-sans-serif,sans-serif; font-size:2.1rem; line-height:1.2; margin:.2em 0 .5em; }
+main h2 { font-family:Geist,ui-sans-serif,sans-serif; font-size:1.45rem; margin-top:2em; border-bottom:1px solid var(--border); padding-bottom:.35em; }
+main h3 { font-size:1.12rem; margin-top:1.7em; }
+main img { max-width:100%; border:1px solid var(--border); border-radius:8px; }
+main table { border-collapse:collapse; width:100%; font-size:14.5px; display:block; overflow-x:auto; }
+main th, main td { border:1px solid var(--border); padding:8px 12px; text-align:left; vertical-align:top; }
+main th { background:var(--surface); font-weight:600; }
+main blockquote { margin:1em 0; padding:.2em 1.2em; border-left:3px solid var(--accent); color:var(--mute); background:var(--surface); border-radius:0 4px 4px 0; }
+main :not(pre) > code { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:.08em .35em; font:.86em "Geist Mono",ui-monospace,monospace; }
+.codehilite, main pre { background:var(--term-bg); color:var(--term-fg); border-radius:6px; padding:16px 18px; overflow-x:auto; font:13.5px/1.55 "Geist Mono",ui-monospace,monospace; }
+.codehilite pre, pre code { background:none; padding:0; margin:0; border:none; }
+.demo-embed { margin:20px 0 28px; }
+.demo-embed .frame { background:var(--term-bg); border-radius:6px; padding:14px; }
+.demo-embed .dots { display:flex; gap:6px; margin-bottom:10px; }
+.demo-embed .dots i { width:10px; height:10px; border-radius:50%; background:#3a3344; }
+.demo-embed img { border:none; border-radius:6px; display:block; width:100%; }
+.demo-embed p { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:8px 2px 0; }
+.crumbs { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-bottom:8px; }
+.crumbs a { color:var(--mute); }
+.src { font:12.5px "Geist Mono",ui-monospace,monospace; margin-top:48px; padding-top:16px; border-top:1px solid var(--border); color:var(--mute); }
+footer.ft { border-top:1px solid var(--border); margin-top:40px; }
+footer.ft .in { max-width:1200px; margin:0 auto; padding:24px; font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.idx-group h2 { font-family:Geist,ui-sans-serif,sans-serif; border:none; margin-top:1.6em; }
+.idx-group ul { list-style:none; padding:0; margin:.4em 0; }
+.idx-group li { padding:6px 0; border-bottom:1px dashed var(--border); }
+.idx-group .path { font:11.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-left:8px; }
+/* Mobile overrides — kept at the end so source order beats base rules.
+   Earlier this rule sat between base rules and got overridden by a later
+   `aside.sb { position:sticky }`, leaving the sidebar stuck on top of
+   main content on phones. */
+@media (max-width: 860px) {
+  .wrap { grid-template-columns:1fr; gap:24px; padding:16px; }
+  aside.sb { position:static; max-height:none; border-left:none; border-bottom:1px solid var(--border); padding-left:0; padding-bottom:16px; font-size:13px; }
+  .sb h4 { margin:12px 0 4px; }
+  main { max-width:none; }
+  main h1 { font-size:1.6rem; }
+  main h2 { font-size:1.2rem; }
+  main h3 { font-size:1.05rem; }
+  .top-in { padding:0 16px; gap:14px; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #49483e }
+.codehilite { background: #272822; color: #F8F8F2 }
+.codehilite .c { color: #959077 } /* Comment */
+.codehilite .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.codehilite .esc { color: #F8F8F2 } /* Escape */
+.codehilite .g { color: #F8F8F2 } /* Generic */
+.codehilite .k { color: #66D9EF } /* Keyword */
+.codehilite .l { color: #AE81FF } /* Literal */
+.codehilite .n { color: #F8F8F2 } /* Name */
+.codehilite .o { color: #FF4689 } /* Operator */
+.codehilite .x { color: #F8F8F2 } /* Other */
+.codehilite .p { color: #F8F8F2 } /* Punctuation */
+.codehilite .ch { color: #959077 } /* Comment.Hashbang */
+.codehilite .cm { color: #959077 } /* Comment.Multiline */
+.codehilite .cp { color: #959077 } /* Comment.Preproc */
+.codehilite .cpf { color: #959077 } /* Comment.PreprocFile */
+.codehilite .c1 { color: #959077 } /* Comment.Single */
+.codehilite .cs { color: #959077 } /* Comment.Special */
+.codehilite .gd { color: #FF4689 } /* Generic.Deleted */
+.codehilite .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F8F8F2 } /* Generic.Error */
+.codehilite .gh { color: #F8F8F2 } /* Generic.Heading */
+.codehilite .gi { color: #A6E22E } /* Generic.Inserted */
+.codehilite .go { color: #66D9EF } /* Generic.Output */
+.codehilite .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #959077 } /* Generic.Subheading */
+.codehilite .gt { color: #F8F8F2 } /* Generic.Traceback */
+.codehilite .kc { color: #66D9EF } /* Keyword.Constant */
+.codehilite .kd { color: #66D9EF } /* Keyword.Declaration */
+.codehilite .kn { color: #FF4689 } /* Keyword.Namespace */
+.codehilite .kp { color: #66D9EF } /* Keyword.Pseudo */
+.codehilite .kr { color: #66D9EF } /* Keyword.Reserved */
+.codehilite .kt { color: #66D9EF } /* Keyword.Type */
+.codehilite .ld { color: #E6DB74 } /* Literal.Date */
+.codehilite .m { color: #AE81FF } /* Literal.Number */
+.codehilite .s { color: #E6DB74 } /* Literal.String */
+.codehilite .na { color: #A6E22E } /* Name.Attribute */
+.codehilite .nb { color: #F8F8F2 } /* Name.Builtin */
+.codehilite .nc { color: #A6E22E } /* Name.Class */
+.codehilite .no { color: #66D9EF } /* Name.Constant */
+.codehilite .nd { color: #A6E22E } /* Name.Decorator */
+.codehilite .ni { color: #F8F8F2 } /* Name.Entity */
+.codehilite .ne { color: #A6E22E } /* Name.Exception */
+.codehilite .nf { color: #A6E22E } /* Name.Function */
+.codehilite .nl { color: #F8F8F2 } /* Name.Label */
+.codehilite .nn { color: #F8F8F2 } /* Name.Namespace */
+.codehilite .nx { color: #A6E22E } /* Name.Other */
+.codehilite .py { color: #F8F8F2 } /* Name.Property */
+.codehilite .nt { color: #FF4689 } /* Name.Tag */
+.codehilite .nv { color: #F8F8F2 } /* Name.Variable */
+.codehilite .ow { color: #FF4689 } /* Operator.Word */
+.codehilite .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.codehilite .w { color: #F8F8F2 } /* Text.Whitespace */
+.codehilite .mb { color: #AE81FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #AE81FF } /* Literal.Number.Float */
+.codehilite .mh { color: #AE81FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #AE81FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #AE81FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #E6DB74 } /* Literal.String.Affix */
+.codehilite .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.codehilite .sc { color: #E6DB74 } /* Literal.String.Char */
+.codehilite .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #E6DB74 } /* Literal.String.Doc */
+.codehilite .s2 { color: #E6DB74 } /* Literal.String.Double */
+.codehilite .se { color: #AE81FF } /* Literal.String.Escape */
+.codehilite .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.codehilite .si { color: #E6DB74 } /* Literal.String.Interpol */
+.codehilite .sx { color: #E6DB74 } /* Literal.String.Other */
+.codehilite .sr { color: #E6DB74 } /* Literal.String.Regex */
+.codehilite .s1 { color: #E6DB74 } /* Literal.String.Single */
+.codehilite .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.codehilite .bp { color: #F8F8F2 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #A6E22E } /* Name.Function.Magic */
+.codehilite .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.codehilite .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.codehilite .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.codehilite .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.codehilite .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.codehilite { background: var(--term-bg) !important; }
+</style>
+
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <a class="brand" href="../../index.html">BENE</a>
+  <a class="nav" href="../../index.html">Landing</a>
+  <a class="nav" href="../index.html">Docs index</a>
+  <a class="nav" href="../../SKILL.md" target="_blank" rel="noopener noreferrer" title="Hand BENE to your agent in one URL">SKILL.md ↗</a>
+  <button class="nav copy-llms" data-llms-url="../../llms.txt" data-copied-label="✓ copied" data-opened-label="↗ opened" title="Copy the llms.txt site map (an LLM-friendly index pointing at SKILL.md + every doc). Paste it into your agent's context.">Copy llms.txt</button>
+  <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="GitHub"><svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="vertical-align:text-bottom"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg></a>
+  <a class="nav" href="../../zh/docs/zh/memory.html" title="切换到中文" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">文</a>
+</div></div>
+
+<script>
+(function() {
+  document.querySelectorAll('button.copy-llms').forEach(function(btn) {
+    var original = btn.textContent;
+    btn.addEventListener('click', function() {
+      var url = btn.getAttribute('data-llms-url');
+      fetch(url, { cache: 'no-cache' })
+        .then(function(r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.text(); })
+        .then(function(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).then(function() {
+              btn.textContent = btn.getAttribute('data-copied-label') || '✓ copied';
+              setTimeout(function() { btn.textContent = original; }, 2200);
+            });
+          }
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        })
+        .catch(function() {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        });
+    });
+  });
+})();
+</script>
+<div class="wrap">
+<aside class="sb"><h4>Start, operate, recover</h4>
+<a href="../README.html">README</a>
+<a href="../architecture.html">architecture</a>
+<a href="../checkpoints.html">checkpoints</a>
+<a href="../cli-reference.html">cli-reference</a>
+<a href="../codegen.html">codegen</a>
+<a href="../dashboard.html">dashboard</a>
+<a href="../deployment.html">deployment</a>
+<a href="../integrating-bene.html">integrating-bene</a>
+<a href="../mcp-integration.html">mcp-integration</a>
+<a href="../memory.html">memory</a>
+<a href="../meta-harness.html">meta-harness</a>
+<a href="../philosophy.html">philosophy</a>
+<a href="../primitive-review-cycle.html">primitive-review-cycle</a>
+<a href="../probe-authoring.html">probe-authoring</a>
+<a href="../schema.html">schema</a>
+<a href="../shared-log.html">shared-log</a>
+<a href="../skills.html">skills</a>
+<a href="../use-cases.html">use-cases</a>
+<h4>Recipes</h4>
+<a href="../recipes/atomic-completion.html">atomic-completion</a>
+<h4>Design and claims</h4>
+<a href="../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
+<a href="../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
+<a href="../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
+<a href="../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
+<h4>Evidence and research</h4>
+<a href="../research/GAP-AUDIT.html">GAP-AUDIT</a>
+<a href="../research/SYNTHESIS.html">SYNTHESIS</a>
+<a href="../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<h4>Benchmarks and gates</h4>
+<a href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
+<a href="../benchmarks/PREREG.html">PREREG</a>
+<h4>Tutorial playbooks</h4>
+<a href="../tutorials/t00-bene-e2e-walkthrough.html">t00-bene-e2e-walkthrough</a>
+<a href="../tutorials/t01-bene-meta-harness.html">t01-bene-meta-harness</a>
+<a href="../tutorials/t02-e2e-self-healing.html">t02-e2e-self-healing</a>
+<a href="../tutorials/t03-security-swarm.html">t03-security-swarm</a>
+<a href="../tutorials/t04-migration-rollback.html">t04-migration-rollback</a>
+<a href="../tutorials/t05-incident-response.html">t05-incident-response</a>
+<a href="../tutorials/t06-ml-research-lab.html">t06-ml-research-lab</a>
+<a href="../tutorials/t07-regression-guard.html">t07-regression-guard</a>
+<a href="../tutorials/t08-hundred-agents-scale.html">t08-hundred-agents-scale</a>
+<a href="../tutorials/t10-ci-overnight-bene-swarm.html">t10-ci-overnight-bene-swarm</a>
+<a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
+<h4>Case studies</h4>
+<a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
+<h4>Infrastructure</h4>
+<a href="../infra/DNS.html">DNS</a></aside>
+<main>
+<div class="crumbs"><a href="../index.html">docs</a> / zh/memory.md</div>
+<h1 id="cross-agent-memory">跨代记忆库 (Cross-Agent Memory)</h1>
+<p>把踩过的坑记下来一次，之后无论是下一轮迭代、下一个 session 还是另外一台 worker 上跑的任何 agent，都能直接把它翻出来。</p>
+<blockquote>
+<p><strong>一个 agent 吃过的亏，直接变成全场 agent 的共有 context：这就是整个项目共享的、支持全文检索的唯一记忆总库。</strong></p>
+</blockquote>
+<p>本方案的核心构想，是对 <a href="https://github.com/thedotmack/claude-mem">claude-mem</a> (AGPL-3.0) 的一次 clean-room 级别的重构演进 —— 详见 <a href="#credits">致谢</a>。</p>
+<hr />
+<h2 id="_1">快速起步</h2>
+<p>把你的数据库连接塞给 <code>MemoryStore</code>；只要是跟这个 <code>.db</code> 绑在同一个绳上的 agent，就能同享这份记忆。</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bene</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bene.memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryStore</span>
+
+<span class="n">bene</span> <span class="o">=</span> <span class="n">Bene</span><span class="p">(</span><span class="s2">&quot;project.db&quot;</span><span class="p">)</span>
+<span class="n">mem</span>  <span class="o">=</span> <span class="n">MemoryStore</span><span class="p">(</span><span class="n">bene</span><span class="o">.</span><span class="n">conn</span><span class="p">)</span>
+
+<span class="c1"># 兵马未动粮草先行，得先有个 agent_id —— memory 的每一条记录都得靠外键死死咬住一个主人</span>
+<span class="n">agent_id</span> <span class="o">=</span> <span class="n">bene</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="s2">&quot;proposer-iter-3&quot;</span><span class="p">)</span>
+
+<span class="c1"># 任何一个 agent 都能往里头塞战果</span>
+<span class="n">mid</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+    <span class="n">agent_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">,</span>
+    <span class="n">content</span><span class="o">=</span><span class="s2">&quot;Ensemble voting with 3 Sonnet calls achieved accuracy=0.847.&quot;</span><span class="p">,</span>
+    <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;result&quot;</span><span class="p">,</span>
+    <span class="n">key</span><span class="o">=</span><span class="s2">&quot;iter3-best&quot;</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;accuracy&quot;</span><span class="p">:</span> <span class="mf">0.847</span><span class="p">,</span> <span class="s2">&quot;cost&quot;</span><span class="p">:</span> <span class="mf">18.2</span><span class="p">},</span>
+<span class="p">)</span>
+
+<span class="c1"># 而其它任意 agent 都能在全量记忆池里进行打捞</span>
+<span class="n">hits</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;ensemble accuracy&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+
+<p>想看活的？去跑 <a href="../examples/memory_search.py">examples/memory_search.py</a>。</p>
+<hr />
+<h2 id="type">下笔前，先选好门派 (Type)</h2>
+<p>每一条记下来的账都得带个出处门派；那些专职扫雷的 agent 往往起手就是一句 filter to <code>error</code>。</p>
+<table>
+<thead>
+<tr>
+<th>门派 (Type)</th>
+<th>适用战场</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>observation</code></td>
+<td>运行时摸查到的底细，跑出来的一半结果</td>
+</tr>
+<tr>
+<td><code>result</code></td>
+<td>尘埃落定的最终产出，打出来的 benchmark 成绩</td>
+</tr>
+<tr>
+<td><code>skill</code></td>
+<td>能被反复白嫖的套路，可以直接抄的代码模板</td>
+</tr>
+<tr>
+<td><code>insight</code></td>
+<td>深度复盘，血泪教训</td>
+</tr>
+<tr>
+<td><code>error</code></td>
+<td>确认过眼神的死胡同，必须绕道走的坑</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_2">翻找先辈们的遗产</h2>
+<h3 id="memorystoresearchquery-limit-type-agent_id-listmemoryentry"><code>MemoryStore.search(query, limit, type, agent_id) -&gt; list[MemoryEntry]</code></h3>
+<p>发出去的查询会直接硬撞 SQLite 的 FTS5 引擎 (自带 porter 词干提取)，然后乖乖按 BM25 相关度评分排好队。</p>
+<p>FTS5 原生的查询语法在这直接管用：</p>
+<ul>
+<li>词组连坐: <code>"chain of thought"</code></li>
+<li>坚决不要: <code>reasoning NOT error</code></li>
+<li>兼收并蓄: <code>ensemble OR majority</code></li>
+<li>模糊通配: <code>accurac*</code></li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 跨越血统门派的无差别撒网</span>
+<span class="n">hits</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;ensemble voting math&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+<span class="c1"># 专捞那些标了 &#39;error&#39; 的案底</span>
+<span class="n">errors</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;JSON decode&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;error&quot;</span><span class="p">)</span>
+
+<span class="c1"># 死盯着某一个特定 agent 查</span>
+<span class="n">hits</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;ensemble&quot;</span><span class="p">,</span> <span class="n">agent_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="_3">录入、查阅和抹杀</h2>
+<h3 id="memorystorewriteagent_id-content-type-key-metadata-int"><code>MemoryStore.write(agent_id, content, type, key, metadata) -&gt; int</code></h3>
+<p>把一条记录钉进账本，并返回它的 <code>memory_id</code> 铭牌。</p>
+<div class="codehilite"><pre><span></span><code><span class="n">mid</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+    <span class="n">agent_id</span><span class="o">=</span><span class="s2">&quot;agent-01&quot;</span><span class="p">,</span>
+    <span class="n">content</span><span class="o">=</span><span class="s2">&quot;Chain-of-thought prompting reduces errors by 23%.&quot;</span><span class="p">,</span>
+    <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;skill&quot;</span><span class="p">,</span>
+    <span class="n">key</span><span class="o">=</span><span class="s2">&quot;cot-numbered-steps&quot;</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;benchmark&quot;</span><span class="p">:</span> <span class="s2">&quot;math_rag&quot;</span><span class="p">},</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<h3 id="memorystorelistagent_id-type-limit-offset-listmemoryentry"><code>MemoryStore.list(agent_id, type, limit, offset) -&gt; list[MemoryEntry]</code></h3>
+<p>新来的排前面；可以用 agent 或者 type 收拢范围，还能用 <code>offset</code> 来翻页。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 把家底全亮出来</span>
+<span class="n">entries</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">list</span><span class="p">()</span>
+
+<span class="c1"># 只挑能当 skill 用的</span>
+<span class="n">skills</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">list</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;skill&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+
+<span class="c1"># 直接翻到第二页</span>
+<span class="n">page2</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">list</span><span class="p">(</span><span class="n">offset</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="memorystoregetmemory_id-memoryentry-none"><code>MemoryStore.get(memory_id) -&gt; MemoryEntry | None</code></h3>
+<p>拿着主键 ID 去精准捞人。</p>
+<h3 id="memorystoreget_by_keykey-agent_id-memoryentry-none"><code>MemoryStore.get_by_key(key, agent_id) -&gt; MemoryEntry | None</code></h3>
+<p>把挂着指定 key 的最新那条记录翻出来。</p>
+<h3 id="memorystoredeletememory_id-bool"><code>MemoryStore.delete(memory_id) -&gt; bool</code></h3>
+<p>抹除一条记忆；底层的触发器 (trigger) 会顺手把 FTS 里的搜索底根也一块烧掉。</p>
+<h3 id="memorystorestats-dict"><code>MemoryStore.stats() -&gt; dict</code></h3>
+<p>拉出一份包含总数以及各大门派人丁细分的总账单。</p>
+<hr />
+<h2 id="meta-harness">让 Meta-Harness 替你记账</h2>
+<p>每一轮肉搏打完，meta-harness 都会自觉把变强了的 harnesses 和确诊的死穴全记下来；下一次 proposer 构思新点子时，它的 prompt 里就会凭空多出一块由过往搜索拼凑出来的 "跨世代记忆 (Cross-Session Memory)" 外挂模块。</p>
+<p><strong>哪怕你中途重启过搜寻进程，再活过来的 proposer 脑子里依然清清楚楚地记得前辈们试过啥。</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 这两步是全自动的：</span>
+<span class="c1"># 发现 harness 变强或者翻车时，_store_result() 会自动落笔写 memory</span>
+<span class="c1"># 构思新变种时，proposer._load_memory_context() 会自动去捞 memory</span>
+</code></pre></div>
+
+<hr />
+<h2 id="_4">从黑框框里直接下令</h2>
+<p>录入、查询和列表这三招都在 Shell 下留了后门；挂上 <code>--json</code> 就能直接串进你的自动化管道里。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 录入一条新的长远记忆</span>
+uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>memory<span class="w"> </span>write<span class="w"> </span>&lt;agent_id&gt;<span class="w"> </span><span class="s2">&quot;Ensemble voting improved accuracy by 12%.&quot;</span><span class="w"> </span>--type<span class="w"> </span>insight<span class="w"> </span>--key<span class="w"> </span>ensemble-v1
+
+<span class="c1"># 掏出全文检索引擎直接开查</span>
+uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>memory<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;ensemble accuracy&quot;</span>
+uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>memory<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;JSON error&quot;</span><span class="w"> </span>--type<span class="w"> </span>error
+
+<span class="c1"># 看看最近大家都记了些啥</span>
+uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>memory<span class="w"> </span>ls
+uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>memory<span class="w"> </span>ls<span class="w"> </span>--type<span class="w"> </span>result<span class="w"> </span>--limit<span class="w"> </span><span class="m">5</span>
+
+<span class="c1"># 强行吐出 JSON 格式以便接上 JQ 处理</span>
+uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>--json<span class="w"> </span>memory<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;ensemble&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.[].content&#39;</span>
+</code></pre></div>
+
+<hr />
+<h2 id="claude-code">在 Claude Code 里呼叫火力</h2>
+<p>任何通过 MCP 连上 BENE 的 agent，手里天然就攥着这三把针对 memory 的 tool:</p>
+<div class="codehilite"><pre><span></span><code>agent_memory_write   — 钉死一条记忆
+agent_memory_search  — 跨越全场 agent 发动 FTS5 搜索
+agent_memory_read    — 根据 memory_id 精准抓取或者直接列出近期流水
+</code></pre></div>
+
+<hr />
+<h2 id="_5">扒底：你的数据到底在哪？</h2>
+<p>一滴数据都走不出你的机器：所谓的记忆，无非就是跟你的 agent 们挤在同一个 <code>.db</code> 文件里的那张 SQLite 数据表 —— 你把这个文件考走，这满脑子的记忆也就跟着考走了。支撑搜索的则是一张 FTS5 虚拟表，背后的同步全靠数据库的原生触发器 (triggers) 硬扛。</p>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">memory</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">memory_id</span><span class="w">   </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="n">AUTOINCREMENT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">agent_id</span><span class="w">    </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">agents</span><span class="p">(</span><span class="n">agent_id</span><span class="p">),</span>
+<span class="w">    </span><span class="k">type</span><span class="w">        </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;observation&#39;</span>
+<span class="w">                </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="k">type</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;observation&#39;</span><span class="p">,</span><span class="s1">&#39;result&#39;</span><span class="p">,</span><span class="s1">&#39;skill&#39;</span><span class="p">,</span><span class="s1">&#39;insight&#39;</span><span class="p">,</span><span class="s1">&#39;error&#39;</span><span class="p">)),</span>
+<span class="w">    </span><span class="k">key</span><span class="w">         </span><span class="nb">TEXT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">content</span><span class="w">     </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">metadata</span><span class="w">    </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w">  </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="p">(</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-%dT%H:%M:%f&#39;</span><span class="p">,</span><span class="s1">&#39;now&#39;</span><span class="p">))</span>
+<span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="n">VIRTUAL</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">memory_fts</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">fts5</span><span class="p">(</span>
+<span class="w">    </span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="k">key</span><span class="p">,</span>
+<span class="w">    </span><span class="k">type</span><span class="w"> </span><span class="n">UNINDEXED</span><span class="p">,</span><span class="w"> </span><span class="n">agent_id</span><span class="w"> </span><span class="n">UNINDEXED</span><span class="p">,</span><span class="w"> </span><span class="n">memory_id</span><span class="w"> </span><span class="n">UNINDEXED</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="n">UNINDEXED</span><span class="p">,</span>
+<span class="w">    </span><span class="n">tokenize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;porter unicode61&#39;</span>
+<span class="p">);</span>
+<span class="c1">-- FTS 的同步脏活，由 INSERT/UPDATE/DELETE triggers 统统包揽</span>
+</code></pre></div>
+
+<hr />
+<h2 id="_6">致谢</h2>
+<p>让 agent 留下高度紧凑、随时可被检索的便签，以供后人白嫖 —— 这颗灵感的火种直接来自 Alex Newman 的开源项目 <a href="https://github.com/thedotmack/claude-mem">claude-mem</a> (<a href="https://github.com/thedotmack">@thedotmack</a>)，遵从 AGPL-3.0 协议。但 BENE 在这颗种子上长出了截然不同的枝干：</p>
+<ul>
+<li>底座直接换成了 SQLite FTS5，而不是在外面另起一套杂乱的文件堆。</li>
+<li>打破了单体牢笼：支持一堆 agent 疯狂写入，另一堆 agent 疯狂读取。</li>
+<li>引入了门派标签 (result, skill, error, insight, observation)，让信息检索时自带结构化的过滤网。</li>
+<li>彻底让 meta-harness 学会了全自动吞吐和读取记忆。</li>
+</ul>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/zh/memory.md" target="_blank" rel="noopener noreferrer">docs/zh/memory.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+</main>
+</div>
+<footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>
+<a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer">Building something on bene? Open a Discussion.</a></div></footer>
+</body>
+</html>

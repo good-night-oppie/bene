@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>BENE CLI Reference — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — BENE CLI Reference" />
+<title>BENE 命令行兵器谱 (CLI Reference) — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — BENE 命令行兵器谱 (CLI Reference)" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -248,249 +248,249 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="infra/DNS.html">DNS</a></aside>
 <main>
 <div class="crumbs"><a href="index.html">docs</a> / cli-reference.md</div>
-<h1 id="bene-cli-reference">BENE CLI Reference</h1><div class="demo-embed"><div class="frame"><div class="dots"><i></i><i></i><i></i></div><img src="../../assets/demos/demo-litany.gif" alt="Demo — rewind a bad turn: an agent scaled replicas 3 → 0; checkpoint → diff → restore puts it back." loading="lazy" onerror="this.closest('.demo-embed').style.display='none'"></div><p>Demo — rewind a bad turn: an agent scaled replicas 3 → 0; checkpoint → diff → restore puts it back.</p></div>
-<p>Launch, watch, rewind, and query a fleet of agents from your terminal — every command works against the same local <code>bene.db</code> file.</p>
+<h1 id="bene-cli-reference">BENE 命令行兵器谱 (CLI Reference)</h1><div class="demo-embed"><div class="frame"><div class="dots"><i></i><i></i><i></i></div><img src="../assets/demos/demo-litany.gif" alt="Demo — rewind a bad turn: an agent scaled replicas 3 → 0; checkpoint → diff → restore puts it back." loading="lazy" onerror="this.closest('.demo-embed').style.display='none'"></div><p>Demo — rewind a bad turn: an agent scaled replicas 3 → 0; checkpoint → diff → restore puts it back.</p></div>
+<p>从黑框终端里一键拉起、盯梢、回滚并拷问你的 agent 狼群 —— 且所有的命令，全都死死咬住同一个本地的 <code>bene.db</code> 数据库文件。</p>
 <blockquote>
-<p><strong>Running from a clone:</strong> <code>bene</code> isn't on your <code>PATH</code> after <code>uv sync</code> — prefix every command below with <code>uv run</code> (e.g. <code>uv run bene init</code>), or <code>source .venv/bin/activate</code> once so the bare <code>bene</code> commands shown here resolve. (Or just <code>pip install bene</code>.)</p>
-<p><strong><code>--json</code> is a global flag — put it <em>before</em> the subcommand</strong> (<code>bene --json ls</code>, not <code>bene ls --json</code>, which errors <code>No such option</code>). Any output can then feed <code>jq</code>, scripts, or another agent framework. (Piped output auto-emits JSON even without the flag.)</p>
+<p><strong>如果你是从源码跑的：</strong> 刚跑完 <code>uv sync</code> 后，<code>bene</code> 这条命令是不会自动塞进你的 <code>PATH</code> 里的。所以，你要么在下面的每一条命令前面乖乖加上 <code>uv run</code> (比如 <code>uv run bene init</code>)，要么就老老实实 <code>source .venv/bin/activate</code> 一次激活环境，这样就能直接敲 <code>bene</code> 了。(当然，直接 <code>pip install bene</code> 也能解决烦恼。)</p>
+<p><strong><code>--json</code> 是一面全局大旗 —— 请务必把它插在子命令的 <em>前面</em></strong> (<code>bene --json ls</code> 才是对的；要是写成 <code>bene ls --json</code>，系统会直接劈头盖脸骂你 <code>No such option</code>)。挂上这面大旗后，所有的输出都能直接塞给 <code>jq</code>、脚本流水线或者是隔壁的其他 agent 框架。(只要输出被管道接盘，就算你忘写这面旗，系统也会非常识相地自动吐 JSON。)</p>
 </blockquote>
-<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>--json<span class="w"> </span>&lt;command&gt;
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>--json<span class="w"> </span>&lt;命令&gt;
 </code></pre></div>
 
 <hr />
-<h2 id="get-set-up">Get set up</h2>
+<h2 id="_1">建营扎寨</h2>
 <h3 id="bene-setup"><code>bene setup</code></h3>
-<p>One wizard: pick a model preset, get <code>bene.yaml</code> generated, the database initialized, and the MCP server auto-installed into Claude Code.</p>
+<p>一步到位的傻瓜向导：挑一个大模型预设，自动把 <code>bene.yaml</code> 给搓出来，顺手把数据库建好，最后再贴心地把 MCP server 强行注入进你的 Claude Code 里。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>setup
 </code></pre></div>
 
-<p>Preset choices: Claude (Sonnet), OpenAI (GPT-4o), a local vLLM (7B/70B), or a custom endpoint.</p>
+<p>你能在预设里挑：Claude (Sonnet), OpenAI (GPT-4o), 本地跑的 vLLM (7B/70B), 或者是你自己搭的野鸡 API 接口。</p>
 <h3 id="bene-init"><code>bene init</code></h3>
-<p>Create the database — at <code>./bene.db</code> by default, or anywhere you point it.</p>
+<p>开天辟地建库 —— 默认建在当前的 <code>./bene.db</code>，或者你指哪它建哪。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>init
 bene<span class="w"> </span>init<span class="w"> </span>--db<span class="w"> </span>./my-project.db
 </code></pre></div>
 
 <h3 id="bene-demo"><code>bene demo</code></h3>
-<p>Zero API keys needed. Stage 1 always runs a keyless (&lt;60s) "kernel story" first — engrams, a falsifiable probe, one round of evolution, consolidation, a trust report, and a senses manifest — then Stage 2 seeds <code>demo.db</code> and opens the web dashboard (skip it with <code>--no-ui</code>).</p>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>demo<span class="w">                </span><span class="c1"># kernel story, then the dashboard</span>
-bene<span class="w"> </span>demo<span class="w"> </span>--no-ui<span class="w">        </span><span class="c1"># run the keyless story and exit (CI-friendly)</span>
+<p>一滴 API Key 都不用掏。第 1 阶段永远是先跑一段不烧 key 的极限极速 (&lt;60秒) "内核大赏" —— engrams (记忆痕迹)、一条可证伪的探针 (probe)、跑一轮进化 (evolution)、然后收敛固化 (consolidation)、交出一份信任报告 (trust report) 以及感官清单 (senses manifest) —— 接着第 2 阶段会自动给 <code>demo.db</code> 塞点种子数据，并当场弹开你的浏览器切进仪表盘 (嫌烦可以用 <code>--no-ui</code> 憋回去)。</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>demo<span class="w">                </span><span class="c1"># 看大赏，看仪表盘</span>
+bene<span class="w"> </span>demo<span class="w"> </span>--no-ui<span class="w">        </span><span class="c1"># 纯看不烧 key 的大赏，跑完就退 (简直是 CI 的天作之合)</span>
 bene<span class="w"> </span>demo<span class="w"> </span>--port<span class="w"> </span><span class="m">9000</span>
 bene<span class="w"> </span>demo<span class="w"> </span>--no-browser
 </code></pre></div>
 
-<p>Inside: 3 execution waves — a code review swarm, a parallel refactor, and prod triage.</p>
+<p>这壳子里到底装了啥：3 波接力执行的浪潮 —— 一群代码审查蜂群、一场并发重构战役、以及生产环境的工单急诊。</p>
 <hr />
-<h2 id="start-agents">Start agents</h2>
+<h2 id="_2">放狗咬人</h2>
 <h3 id="bene-run"><code>bene run</code></h3>
-<p>One prompt, one agent.</p>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>run<span class="w"> </span><span class="s2">&quot;Refactor auth.py to use JWT tokens&quot;</span><span class="w"> </span>--name<span class="w"> </span>auth-agent
-bene<span class="w"> </span>run<span class="w"> </span><span class="s2">&quot;Find security vulnerabilities&quot;</span><span class="w"> </span>--name<span class="w"> </span>security<span class="w"> </span>--db<span class="w"> </span>./project.db
+<p>一句话，放出去一只 agent。</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>run<span class="w"> </span><span class="s2">&quot;把 auth.py 统统重构成 JWT tokens&quot;</span><span class="w"> </span>--name<span class="w"> </span>auth-agent
+bene<span class="w"> </span>run<span class="w"> </span><span class="s2">&quot;滚去找安全漏洞&quot;</span><span class="w"> </span>--name<span class="w"> </span>security<span class="w"> </span>--db<span class="w"> </span>./project.db
 </code></pre></div>
 
-<p>Flags:</p>
+<p>你能挂的旗:</p>
 <ul>
-<li><code>--name</code>, <code>-n</code> — the agent's name (required)</li>
-<li><code>--db</code> — database path (default: <code>./bene.db</code>)</li>
+<li><code>--name</code>, <code>-n</code> — 给 agent 赐名 (敢不写试试)</li>
+<li><code>--db</code> — 数据库路径 (默认: <code>./bene.db</code>)</li>
 </ul>
 <h3 id="bene-parallel"><code>bene parallel</code></h3>
-<p>Several agents at once; each <code>-t name "prompt"</code> pair adds one.</p>
+<p>一声令下放出去一群 agent；每对 <code>-t 名字 "口令"</code> 就能多拉起一只。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>parallel<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-t<span class="w"> </span>security<span class="w">  </span><span class="s2">&quot;Find vulnerabilities in auth.py&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-t<span class="w"> </span>tests<span class="w">     </span><span class="s2">&quot;Write unit tests for auth.py&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-t<span class="w"> </span>docs<span class="w">      </span><span class="s2">&quot;Update API documentation&quot;</span>
+<span class="w">  </span>-t<span class="w"> </span>security<span class="w">  </span><span class="s2">&quot;去 auth.py 里扒漏洞&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-t<span class="w"> </span>tests<span class="w">     </span><span class="s2">&quot;去给 auth.py 补单元测试&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-t<span class="w"> </span>docs<span class="w">      </span><span class="s2">&quot;去把 API 文档给更新了&quot;</span>
 </code></pre></div>
 
-<p>Flags:</p>
+<p>你能挂的旗:</p>
 <ul>
-<li><code>-t name prompt</code> — one agent per pair (repeatable)</li>
-<li><code>--db</code> — which database to use</li>
+<li><code>-t name prompt</code> — 每个 agent 占坑一对 (可疯狂复读)</li>
+<li><code>--db</code> — 咬住哪个数据库</li>
 </ul>
 <hr />
-<h2 id="watch-them-live">Watch them live</h2>
+<h2 id="_3">现场盯梢</h2>
 <h3 id="bene-ui"><code>bene ui</code></h3>
-<p>Web dashboard in a browser tab: Gantt timeline, live event feed, agent inspector.</p>
+<p>直接在浏览器里砸开一个仪表盘：有 Gantt 甘特图时间线、活蹦乱跳的事件信息流、以及能把你 agent 祖宗十八代都扒光的检查器。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>ui
 bene<span class="w"> </span>ui<span class="w"> </span>--port<span class="w"> </span><span class="m">9000</span>
 bene<span class="w"> </span>ui<span class="w"> </span>--db<span class="w"> </span>./project.db<span class="w"> </span>--no-browser
 </code></pre></div>
 
-<p>More in the <a href="dashboard.html">Dashboard guide</a>.</p>
+<p>想看更深的？去翻 <a href="dashboard.html">Dashboard 导读</a>。</p>
 <h3 id="bene-dashboard"><code>bene dashboard</code></h3>
-<p>The same monitoring, as a terminal TUI.</p>
+<p>原汁原味的盯梢，只不过换成了极客狂喜的终端 TUI 界面。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>dashboard
 bene<span class="w"> </span>dashboard<span class="w"> </span>--db<span class="w"> </span>./project.db
 </code></pre></div>
 
 <hr />
-<h2 id="see-what-an-agent-did">See what an agent did</h2>
+<h2 id="_4">扒它的底裤</h2>
 <h3 id="bene-ls"><code>bene ls</code></h3>
-<p>Every agent, with status and creation time.</p>
+<p>拉出所有的 agent 编制，连同它们的死活状态和生辰八字。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>ls
 bene<span class="w"> </span>ls<span class="w"> </span>--db<span class="w"> </span>./project.db
 bene<span class="w"> </span>--json<span class="w"> </span>ls<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.[] | select(.status == &quot;failed&quot;)&#39;</span>
 </code></pre></div>
 
 <h3 id="bene-status"><code>bene status</code></h3>
-<p>One agent, in detail.</p>
+<p>把某一只 agent 扒个精光细看。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>status<span class="w"> </span>&lt;agent-id&gt;
 bene<span class="w"> </span>--json<span class="w"> </span>status<span class="w"> </span>&lt;agent-id&gt;
 </code></pre></div>
 
 <h3 id="bene-logs"><code>bene logs</code></h3>
-<p>The agent's conversation plus its event timeline.</p>
+<p>拉出这只 agent 跟大模型的对话记录，附带整条作案时间线。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>logs<span class="w"> </span>&lt;agent-id&gt;
-bene<span class="w"> </span>logs<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>--tail<span class="w"> </span><span class="m">20</span><span class="w">    </span><span class="c1"># last 20 events</span>
+bene<span class="w"> </span>logs<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>--tail<span class="w"> </span><span class="m">20</span><span class="w">    </span><span class="c1"># 只瞄最后 20 条事记</span>
 </code></pre></div>
 
 <h3 id="bene-read"><code>bene read</code></h3>
-<p>Pull one file out of an agent's virtual filesystem.</p>
+<p>直接把手伸进 agent 的私有 VFS 领地里，把文件抽出来。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span><span class="nb">read</span><span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>/path/to/file
 bene<span class="w"> </span><span class="nb">read</span><span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>/src/auth.py
 </code></pre></div>
 
 <h3 id="bene-failure-localize"><code>bene failure localize</code></h3>
-<p>Blame the earliest decisive step in a failed run. It reads the agent's trace engrams — every <code>run_agent</code> turn lands one, plus one per tool call (<code>tool_name</code>, <code>status</code>, <code>error_message</code>) by default — builds a timeline, and points at the first error everything downstream followed from.</p>
+<p>追责神器：在一场翻车的战役里，精准揪出一切罪恶源头的那一案。它会生啃 agent 的 trace engrams (执行踪迹) —— 每次 <code>run_agent</code> 甩出一根线，每次 tool 跑完又留一笔案底 (包含 <code>tool_name</code>, <code>status</code>, <code>error_message</code>) —— 系统会拼出一条时间线，然后恶狠狠地指着那个引发雪崩的初始节点。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>failure<span class="w"> </span>localize<span class="w"> </span>&lt;agent-id&gt;
-bene<span class="w"> </span>failure<span class="w"> </span>localize<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>--persist<span class="w">    </span><span class="c1"># record the verdict as a tier-1 episodic engram</span>
+bene<span class="w"> </span>failure<span class="w"> </span>localize<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>--persist<span class="w">    </span><span class="c1"># 把这次判案的结果死死刻进 tier-1 (第一层) 情景记忆里</span>
 bene<span class="w"> </span>--json<span class="w"> </span>failure<span class="w"> </span>localize<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.localized, .index&#39;</span>
 </code></pre></div>
 
-<p>This works on a <strong>real run by default</strong> (no opt-in, no hand-seeding) because the runner emits the per-tool trace engrams <code>localize</code> keys on. If a run was executed with <code>emit_engrams=False</code> / <code>kernel.emit_engrams: false</code>, there are no trace engrams to read and it returns <code>localized: false</code>.</p>
+<p>这玩意<strong>默认就能在真正的实盘上直接用</strong> (不用 opt-in，也不用你人肉塞数据)，因为执行引擎本来就会无脑吐出那些带有报错案底的 trace engrams 供 <code>localize</code> 当罪证。如果之前那盘你手贱加了 <code>emit_engrams=False</code> / 或者是配了 <code>kernel.emit_engrams: false</code>，那对不起，没有案底可以啃，它只能摆摆手回一句 <code>localized: false</code>。</p>
 <hr />
-<h2 id="find-anything">Find anything</h2>
+<h2 id="_5">掘地三尺</h2>
 <h3 id="bene-search"><code>bene search</code></h3>
-<p>Full-text search over every agent's files and state.</p>
+<p>对着所有 agent 的文件和脑容量，发动降维打击级别的全文检索。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;SQL injection&quot;</span>
 bene<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;ConnectionError&quot;</span><span class="w"> </span>--db<span class="w"> </span>./project.db
 bene<span class="w"> </span>--json<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;keyword&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.[].path&#39;</span>
 </code></pre></div>
 
 <h3 id="bene-query"><code>bene query</code></h3>
-<p>Run read-only SQL against the database — safe to hand to an agent. Reads are enforced at the SQLite engine level (<code>PRAGMA query_only</code>), so any write — <code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code>, a <code>WITH … DELETE</code> CTE, or a comment-prefixed statement — is rejected by the engine, not by a keyword check that can be worded around. A blocked write raises <code>PermissionError</code>.</p>
+<p>直接拿裸 SQL 对着数据库狂轰滥炸 —— 这玩意安全到甚至可以直接甩给 agent 去玩。所有查水表的操作在 SQLite 引擎层就被上了锁 (<code>PRAGMA query_only</code>)，所以任何企图篡改历史的动作 —— <code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code>、带了 <code>WITH … DELETE</code> 的 CTE，哪怕是用注释伪装的恶意语句 —— 统统会在引擎底层被直接击毙，根本轮不到被那种能被绕开的正则表达式去拦截。谁敢越界，当场报 <code>PermissionError</code> 枪毙。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>query<span class="w"> </span><span class="s2">&quot;SELECT name, status FROM agents&quot;</span>
 bene<span class="w"> </span>query<span class="w"> </span><span class="s2">&quot;SELECT SUM(token_count) FROM tool_calls&quot;</span>
 bene<span class="w"> </span>query<span class="w"> </span><span class="s2">&quot;SELECT * FROM events WHERE agent_id = &#39;abc123&#39; ORDER BY timestamp&quot;</span>
 </code></pre></div>
 
-<p>Tables are listed in the <a href="schema.html">schema reference</a>.</p>
+<p>数据库里到底有哪些表？去翻 <a href="schema.html">核心血肉解剖图 (Schema)</a>。</p>
 <h3 id="bene-index"><code>bene index</code></h3>
-<p>Write an <code>/index.md</code> summary of an agent's files into its VFS, so searches land faster.</p>
+<p>强行给 agent 的 VFS 领地生成一份 <code>/index.md</code> 目录摘要，让后续的搜索快如闪电。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>index<span class="w"> </span>&lt;agent-id&gt;
 </code></pre></div>
 
 <hr />
-<h2 id="undo-mistakes">Undo mistakes</h2>
+<h2 id="_6">给我一颗后悔药</h2>
 <h3 id="bene-checkpoint"><code>bene checkpoint</code></h3>
-<p>Snapshot an agent's files and state under a label.</p>
+<p>把 agent 脑容量和名下所有的文件全盘冻结，并挂上一个标签。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>checkpoint<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>--label<span class="w"> </span><span class="s2">&quot;before-migration&quot;</span>
 bene<span class="w"> </span>checkpoint<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>-l<span class="w"> </span><span class="s2">&quot;pre-refactor&quot;</span>
 </code></pre></div>
 
 <h3 id="bene-checkpoints"><code>bene checkpoints</code></h3>
-<p>Every checkpoint an agent has.</p>
+<p>把这只 agent 裤兜里揣着的所有存根快照全抖搂出来。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>checkpoints<span class="w"> </span>&lt;agent-id&gt;
 bene<span class="w"> </span>--json<span class="w"> </span>checkpoints<span class="w"> </span>&lt;agent-id&gt;
 </code></pre></div>
 
 <h3 id="bene-diff"><code>bene diff</code></h3>
-<p>Compare two checkpoints — files added/removed/modified, state changes.</p>
+<p>把两次时空切片按在桌上对比 —— 哪些文件无中生有、哪些毁尸灭迹、哪些被动过手脚，连带记忆状态的篡改，一览无余。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>diff<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>--from<span class="w"> </span>&lt;checkpoint-id-A&gt;<span class="w"> </span>--to<span class="w"> </span>&lt;checkpoint-id-B&gt;
 </code></pre></div>
 
 <h3 id="bene-restore"><code>bene restore</code></h3>
-<p>Rewind one agent to a checkpoint; every other agent is untouched.</p>
+<p>把时间强行倒推，让该 agent 在指定的快照点复活；且绝对不波及隔壁的其他 agent。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>restore<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>--checkpoint<span class="w"> </span>&lt;checkpoint-id&gt;
 </code></pre></div>
 
-<p>Checkpoint IDs come from <code>bene checkpoints &lt;agent-id&gt;</code>.</p>
+<p>不知道 ID？用 <code>bene checkpoints &lt;agent-id&gt;</code> 去找。</p>
 <hr />
-<h2 id="stop-move-share">Stop, move, share</h2>
+<h2 id="_7">停机，切片，跑路</h2>
 <h3 id="bene-kill"><code>bene kill</code></h3>
-<p>Stop a running agent.</p>
+<p>一发子弹，干掉正在跑的 agent。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span><span class="nb">kill</span><span class="w"> </span>&lt;agent-id&gt;
 </code></pre></div>
 
 <h3 id="bene-export"><code>bene export</code></h3>
-<p>Write one agent's full state into its own standalone database file.</p>
+<p>连锅端：把这只 agent 所有的身家性命单独打包成一个极致便携的数据库文件。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span><span class="nb">export</span><span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span>--output<span class="w"> </span>agent-snapshot.db
 </code></pre></div>
 
 <h3 id="bene-import"><code>bene import</code></h3>
-<p>Bring an exported agent back in.</p>
+<p>招魂：把导出的 agent 原封不动地请回来。</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>import<span class="w"> </span>agent-snapshot.db
 </code></pre></div>
 
 <hr />
-<h2 id="plug-into-claude-code">Plug into Claude Code</h2>
+<h2 id="claude-code">怼进 Claude Code 肚子里</h2>
 <h3 id="bene-serve"><code>bene serve</code></h3>
-<p>Expose bene to Claude Code — or any MCP-compatible client — as an MCP server with 37 tools.</p>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>serve<span class="w"> </span>--transport<span class="w"> </span>stdio<span class="w">       </span><span class="c1"># for Claude Code / most clients</span>
-bene<span class="w"> </span>serve<span class="w"> </span>--transport<span class="w"> </span>sse<span class="w">         </span><span class="c1"># HTTP/SSE transport</span>
-bene<span class="w"> </span>serve<span class="w"> </span>--port<span class="w"> </span><span class="m">8765</span><span class="w">             </span><span class="c1"># custom port (SSE only)</span>
+<p>化身为拥兵 37 把专武的 MCP server，全裸暴露给 Claude Code —— 或者是任何 MCP 兼容的客户端。</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>serve<span class="w"> </span>--transport<span class="w"> </span>stdio<span class="w">       </span><span class="c1"># 喂给 Claude Code / 以及绝大多数客户端的标配</span>
+bene<span class="w"> </span>serve<span class="w"> </span>--transport<span class="w"> </span>sse<span class="w">         </span><span class="c1"># 走 HTTP/SSE 总线</span>
+bene<span class="w"> </span>serve<span class="w"> </span>--port<span class="w"> </span><span class="m">8765</span><span class="w">             </span><span class="c1"># 换个端口玩 (仅限 SSE 模式)</span>
 </code></pre></div>
 
-<p>Setup steps: <a href="mcp-integration.html">MCP integration guide</a>.</p>
+<p>想知道怎么装进去？翻翻 <a href="mcp-integration.html">MCP 植入指南</a>。</p>
 <hr />
-<h2 id="breed-better-harnesses">Breed better harnesses</h2>
-<p>Automated prompt/strategy optimization searches, from the CLI.</p>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>&lt;benchmark&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;iterations&gt;<span class="w">   </span><span class="c1"># start a search</span>
-bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>text_classify<span class="w"> </span>-n<span class="w"> </span><span class="m">10</span><span class="w"> </span>-k<span class="w"> </span><span class="m">2</span><span class="w">      </span><span class="c1"># 10 iterations, 2 candidates each</span>
-bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>agentic_coding<span class="w"> </span>-n<span class="w"> </span><span class="m">20</span><span class="w"> </span>--background<span class="w">   </span><span class="c1"># run detached</span>
-bene<span class="w"> </span>mh<span class="w"> </span>status<span class="w"> </span>&lt;search-agent-id&gt;<span class="w">                 </span><span class="c1"># poll progress</span>
-bene<span class="w"> </span>mh<span class="w"> </span>frontier<span class="w"> </span>&lt;search-agent-id&gt;<span class="w">               </span><span class="c1"># view best harnesses</span>
-bene<span class="w"> </span>mh<span class="w"> </span>knowledge<span class="w">                                </span><span class="c1"># view persistent knowledge base</span>
-bene<span class="w"> </span>mh<span class="w"> </span>resume<span class="w"> </span>&lt;search-agent-id&gt;<span class="w"> </span>-b<span class="w"> </span>&lt;benchmark&gt;<span class="w">  </span><span class="c1"># resume (benchmark must match original)</span>
+<h2 id="harness">给脚手架 (Harness) 配种催化</h2>
+<p>在终端里直接拉起 prompt 和策略全自动演化寻优的狂潮。</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>&lt;考卷名&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;轮数&gt;<span class="w">   </span><span class="c1"># 鸣枪开战</span>
+bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>text_classify<span class="w"> </span>-n<span class="w"> </span><span class="m">10</span><span class="w"> </span>-k<span class="w"> </span><span class="m">2</span><span class="w">      </span><span class="c1"># 干 10 轮，每轮憋 2 个变种</span>
+bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>agentic_coding<span class="w"> </span>-n<span class="w"> </span><span class="m">20</span><span class="w"> </span>--background<span class="w">   </span><span class="c1"># 丢到后台自己卷</span>
+bene<span class="w"> </span>mh<span class="w"> </span>status<span class="w"> </span>&lt;search-agent-id&gt;<span class="w">                 </span><span class="c1"># 盯梢战局</span>
+bene<span class="w"> </span>mh<span class="w"> </span>frontier<span class="w"> </span>&lt;search-agent-id&gt;<span class="w">               </span><span class="c1"># 膜拜处于帕累托巅峰的变种</span>
+bene<span class="w"> </span>mh<span class="w"> </span>knowledge<span class="w">                                </span><span class="c1"># 翻看战役里攒下来的千古绝活</span>
+bene<span class="w"> </span>mh<span class="w"> </span>resume<span class="w"> </span>&lt;search-agent-id&gt;<span class="w"> </span>-b<span class="w"> </span>&lt;考卷名&gt;<span class="w">  </span><span class="c1"># 断线重连 (考卷名必须跟开局一致)</span>
 </code></pre></div>
 
-<p>Details in the <a href="meta-harness.html">Meta-Harness guide</a>.</p>
+<p>更多血腥细节，去翻 <a href="meta-harness.html">演化脚手架 (Meta-Harness) 导读</a>。</p>
 <hr />
-<h2 id="flags-that-work-everywhere">Flags that work everywhere</h2>
+<h2 id="_8">哪都能插的通用大旗</h2>
 <table>
 <thead>
 <tr>
-<th>Flag</th>
-<th>Description</th>
+<th>大旗</th>
+<th>到底是干嘛的</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>--json</code></td>
-<td>Output structured JSON (auto-enabled when stdout is piped)</td>
+<td>强行逼迫输出成结构化 JSON (接了管道时会自动觉醒)</td>
 </tr>
 <tr>
 <td><code>--db PATH</code></td>
-<td>Database file (default: <code>$BENE_DB</code> or <code>./bene.db</code>)</td>
+<td>咬死数据库文件 (默认: <code>$BENE_DB</code> 或者 <code>./bene.db</code>)</td>
 </tr>
 <tr>
 <td><code>--version</code></td>
-<td>Print version</td>
+<td>报上名号版本</td>
 </tr>
 <tr>
 <td><code>--help</code></td>
-<td>Help for any command</td>
+<td>凡事不决直接敲</td>
 </tr>
 </tbody>
 </table>
-<h3 id="environment-variables">Environment variables</h3>
+<h3 id="_9">环境暗号 (环境变量)</h3>
 <table>
 <thead>
 <tr>
-<th>Variable</th>
-<th>Default</th>
-<th>Description</th>
+<th>暗号</th>
+<th>默认值</th>
+<th>到底是干嘛的</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>BENE_DB</code></td>
 <td><code>./bene.db</code></td>
-<td>Default database path</td>
+<td>默认的数据库归宿</td>
 </tr>
 <tr>
 <td><code>BENE_CONFIG</code></td>
 <td><code>./bene.yaml</code></td>
-<td>Config file path</td>
+<td>配置文件该去哪找</td>
 </tr>
 </tbody>
 </table>

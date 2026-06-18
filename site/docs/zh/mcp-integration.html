@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BENE 作为 MCP 服务器 — BENE docs</title>
+<meta name="description" content="BENE 0.2.0 documentation — BENE 作为 MCP 服务器" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+:root { --bg:#F0EEE8; --surface:#EDE9E4; --border:#CFCCC8; --ink:#1F1D1C; --mute:#62666D; --accent:#EE6018; --gold:#B46A35; --term-bg:#332E2B; --term-fg:#EDE9E4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 Geist,ui-sans-serif,system-ui,sans-serif; }
+a { color:var(--gold); text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent); text-underline-offset:3px; }
+a:hover { color:var(--accent); }
+.top { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+.top-in { max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+.brand { font-family:Geist,ui-sans-serif,sans-serif; font-weight:700; letter-spacing:.12em; color:var(--ink); text-decoration:none; }
+.top a.nav { color:var(--mute); text-decoration:none; font-size:14px; }
+.top a.nav:hover { color:var(--accent); }
+.wrap { max-width:1200px; margin:0 auto; padding:24px; display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; }
+aside.sb { position:sticky; top:80px; align-self:start; max-height:calc(100vh - 100px); overflow-y:auto; font-size:13.5px; border-left:1px solid var(--border); padding-left:16px; }
+.sb h4 { margin:18px 0 6px; font:600 11px/1 "Geist Mono",ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+.sb a { display:block; padding:3px 0; color:var(--mute); text-decoration:none; }
+.sb a:hover { color:var(--accent); }
+.sb a.cur { color:var(--ink); font-weight:600; }
+main { min-width:0; max-width:760px; }
+main h1 { font-family:Geist,ui-sans-serif,sans-serif; font-size:2.1rem; line-height:1.2; margin:.2em 0 .5em; }
+main h2 { font-family:Geist,ui-sans-serif,sans-serif; font-size:1.45rem; margin-top:2em; border-bottom:1px solid var(--border); padding-bottom:.35em; }
+main h3 { font-size:1.12rem; margin-top:1.7em; }
+main img { max-width:100%; border:1px solid var(--border); border-radius:8px; }
+main table { border-collapse:collapse; width:100%; font-size:14.5px; display:block; overflow-x:auto; }
+main th, main td { border:1px solid var(--border); padding:8px 12px; text-align:left; vertical-align:top; }
+main th { background:var(--surface); font-weight:600; }
+main blockquote { margin:1em 0; padding:.2em 1.2em; border-left:3px solid var(--accent); color:var(--mute); background:var(--surface); border-radius:0 4px 4px 0; }
+main :not(pre) > code { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:.08em .35em; font:.86em "Geist Mono",ui-monospace,monospace; }
+.codehilite, main pre { background:var(--term-bg); color:var(--term-fg); border-radius:6px; padding:16px 18px; overflow-x:auto; font:13.5px/1.55 "Geist Mono",ui-monospace,monospace; }
+.codehilite pre, pre code { background:none; padding:0; margin:0; border:none; }
+.demo-embed { margin:20px 0 28px; }
+.demo-embed .frame { background:var(--term-bg); border-radius:6px; padding:14px; }
+.demo-embed .dots { display:flex; gap:6px; margin-bottom:10px; }
+.demo-embed .dots i { width:10px; height:10px; border-radius:50%; background:#3a3344; }
+.demo-embed img { border:none; border-radius:6px; display:block; width:100%; }
+.demo-embed p { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:8px 2px 0; }
+.crumbs { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-bottom:8px; }
+.crumbs a { color:var(--mute); }
+.src { font:12.5px "Geist Mono",ui-monospace,monospace; margin-top:48px; padding-top:16px; border-top:1px solid var(--border); color:var(--mute); }
+footer.ft { border-top:1px solid var(--border); margin-top:40px; }
+footer.ft .in { max-width:1200px; margin:0 auto; padding:24px; font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.idx-group h2 { font-family:Geist,ui-sans-serif,sans-serif; border:none; margin-top:1.6em; }
+.idx-group ul { list-style:none; padding:0; margin:.4em 0; }
+.idx-group li { padding:6px 0; border-bottom:1px dashed var(--border); }
+.idx-group .path { font:11.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-left:8px; }
+/* Mobile overrides — kept at the end so source order beats base rules.
+   Earlier this rule sat between base rules and got overridden by a later
+   `aside.sb { position:sticky }`, leaving the sidebar stuck on top of
+   main content on phones. */
+@media (max-width: 860px) {
+  .wrap { grid-template-columns:1fr; gap:24px; padding:16px; }
+  aside.sb { position:static; max-height:none; border-left:none; border-bottom:1px solid var(--border); padding-left:0; padding-bottom:16px; font-size:13px; }
+  .sb h4 { margin:12px 0 4px; }
+  main { max-width:none; }
+  main h1 { font-size:1.6rem; }
+  main h2 { font-size:1.2rem; }
+  main h3 { font-size:1.05rem; }
+  .top-in { padding:0 16px; gap:14px; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #49483e }
+.codehilite { background: #272822; color: #F8F8F2 }
+.codehilite .c { color: #959077 } /* Comment */
+.codehilite .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.codehilite .esc { color: #F8F8F2 } /* Escape */
+.codehilite .g { color: #F8F8F2 } /* Generic */
+.codehilite .k { color: #66D9EF } /* Keyword */
+.codehilite .l { color: #AE81FF } /* Literal */
+.codehilite .n { color: #F8F8F2 } /* Name */
+.codehilite .o { color: #FF4689 } /* Operator */
+.codehilite .x { color: #F8F8F2 } /* Other */
+.codehilite .p { color: #F8F8F2 } /* Punctuation */
+.codehilite .ch { color: #959077 } /* Comment.Hashbang */
+.codehilite .cm { color: #959077 } /* Comment.Multiline */
+.codehilite .cp { color: #959077 } /* Comment.Preproc */
+.codehilite .cpf { color: #959077 } /* Comment.PreprocFile */
+.codehilite .c1 { color: #959077 } /* Comment.Single */
+.codehilite .cs { color: #959077 } /* Comment.Special */
+.codehilite .gd { color: #FF4689 } /* Generic.Deleted */
+.codehilite .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F8F8F2 } /* Generic.Error */
+.codehilite .gh { color: #F8F8F2 } /* Generic.Heading */
+.codehilite .gi { color: #A6E22E } /* Generic.Inserted */
+.codehilite .go { color: #66D9EF } /* Generic.Output */
+.codehilite .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #959077 } /* Generic.Subheading */
+.codehilite .gt { color: #F8F8F2 } /* Generic.Traceback */
+.codehilite .kc { color: #66D9EF } /* Keyword.Constant */
+.codehilite .kd { color: #66D9EF } /* Keyword.Declaration */
+.codehilite .kn { color: #FF4689 } /* Keyword.Namespace */
+.codehilite .kp { color: #66D9EF } /* Keyword.Pseudo */
+.codehilite .kr { color: #66D9EF } /* Keyword.Reserved */
+.codehilite .kt { color: #66D9EF } /* Keyword.Type */
+.codehilite .ld { color: #E6DB74 } /* Literal.Date */
+.codehilite .m { color: #AE81FF } /* Literal.Number */
+.codehilite .s { color: #E6DB74 } /* Literal.String */
+.codehilite .na { color: #A6E22E } /* Name.Attribute */
+.codehilite .nb { color: #F8F8F2 } /* Name.Builtin */
+.codehilite .nc { color: #A6E22E } /* Name.Class */
+.codehilite .no { color: #66D9EF } /* Name.Constant */
+.codehilite .nd { color: #A6E22E } /* Name.Decorator */
+.codehilite .ni { color: #F8F8F2 } /* Name.Entity */
+.codehilite .ne { color: #A6E22E } /* Name.Exception */
+.codehilite .nf { color: #A6E22E } /* Name.Function */
+.codehilite .nl { color: #F8F8F2 } /* Name.Label */
+.codehilite .nn { color: #F8F8F2 } /* Name.Namespace */
+.codehilite .nx { color: #A6E22E } /* Name.Other */
+.codehilite .py { color: #F8F8F2 } /* Name.Property */
+.codehilite .nt { color: #FF4689 } /* Name.Tag */
+.codehilite .nv { color: #F8F8F2 } /* Name.Variable */
+.codehilite .ow { color: #FF4689 } /* Operator.Word */
+.codehilite .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.codehilite .w { color: #F8F8F2 } /* Text.Whitespace */
+.codehilite .mb { color: #AE81FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #AE81FF } /* Literal.Number.Float */
+.codehilite .mh { color: #AE81FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #AE81FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #AE81FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #E6DB74 } /* Literal.String.Affix */
+.codehilite .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.codehilite .sc { color: #E6DB74 } /* Literal.String.Char */
+.codehilite .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #E6DB74 } /* Literal.String.Doc */
+.codehilite .s2 { color: #E6DB74 } /* Literal.String.Double */
+.codehilite .se { color: #AE81FF } /* Literal.String.Escape */
+.codehilite .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.codehilite .si { color: #E6DB74 } /* Literal.String.Interpol */
+.codehilite .sx { color: #E6DB74 } /* Literal.String.Other */
+.codehilite .sr { color: #E6DB74 } /* Literal.String.Regex */
+.codehilite .s1 { color: #E6DB74 } /* Literal.String.Single */
+.codehilite .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.codehilite .bp { color: #F8F8F2 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #A6E22E } /* Name.Function.Magic */
+.codehilite .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.codehilite .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.codehilite .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.codehilite .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.codehilite .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.codehilite { background: var(--term-bg) !important; }
+</style>
+
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <a class="brand" href="../../index.html">BENE</a>
+  <a class="nav" href="../../index.html">Landing</a>
+  <a class="nav" href="../index.html">Docs index</a>
+  <a class="nav" href="../../SKILL.md" target="_blank" rel="noopener noreferrer" title="Hand BENE to your agent in one URL">SKILL.md ↗</a>
+  <button class="nav copy-llms" data-llms-url="../../llms.txt" data-copied-label="✓ copied" data-opened-label="↗ opened" title="Copy the llms.txt site map (an LLM-friendly index pointing at SKILL.md + every doc). Paste it into your agent's context.">Copy llms.txt</button>
+  <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="GitHub"><svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="vertical-align:text-bottom"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg></a>
+  <a class="nav" href="../../zh/docs/zh/mcp-integration.html" title="切换到中文" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">文</a>
+</div></div>
+
+<script>
+(function() {
+  document.querySelectorAll('button.copy-llms').forEach(function(btn) {
+    var original = btn.textContent;
+    btn.addEventListener('click', function() {
+      var url = btn.getAttribute('data-llms-url');
+      fetch(url, { cache: 'no-cache' })
+        .then(function(r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.text(); })
+        .then(function(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).then(function() {
+              btn.textContent = btn.getAttribute('data-copied-label') || '✓ copied';
+              setTimeout(function() { btn.textContent = original; }, 2200);
+            });
+          }
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        })
+        .catch(function() {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        });
+    });
+  });
+})();
+</script>
+<div class="wrap">
+<aside class="sb"><h4>Start, operate, recover</h4>
+<a href="../README.html">README</a>
+<a href="../architecture.html">architecture</a>
+<a href="../checkpoints.html">checkpoints</a>
+<a href="../cli-reference.html">cli-reference</a>
+<a href="../codegen.html">codegen</a>
+<a href="../dashboard.html">dashboard</a>
+<a href="../deployment.html">deployment</a>
+<a href="../integrating-bene.html">integrating-bene</a>
+<a href="../mcp-integration.html">mcp-integration</a>
+<a href="../memory.html">memory</a>
+<a href="../meta-harness.html">meta-harness</a>
+<a href="../philosophy.html">philosophy</a>
+<a href="../primitive-review-cycle.html">primitive-review-cycle</a>
+<a href="../probe-authoring.html">probe-authoring</a>
+<a href="../schema.html">schema</a>
+<a href="../shared-log.html">shared-log</a>
+<a href="../skills.html">skills</a>
+<a href="../use-cases.html">use-cases</a>
+<h4>Recipes</h4>
+<a href="../recipes/atomic-completion.html">atomic-completion</a>
+<h4>Design and claims</h4>
+<a href="../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
+<a href="../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
+<a href="../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
+<a href="../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
+<h4>Evidence and research</h4>
+<a href="../research/GAP-AUDIT.html">GAP-AUDIT</a>
+<a href="../research/SYNTHESIS.html">SYNTHESIS</a>
+<a href="../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<h4>Benchmarks and gates</h4>
+<a href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
+<a href="../benchmarks/PREREG.html">PREREG</a>
+<h4>Tutorial playbooks</h4>
+<a href="../tutorials/t00-bene-e2e-walkthrough.html">t00-bene-e2e-walkthrough</a>
+<a href="../tutorials/t01-bene-meta-harness.html">t01-bene-meta-harness</a>
+<a href="../tutorials/t02-e2e-self-healing.html">t02-e2e-self-healing</a>
+<a href="../tutorials/t03-security-swarm.html">t03-security-swarm</a>
+<a href="../tutorials/t04-migration-rollback.html">t04-migration-rollback</a>
+<a href="../tutorials/t05-incident-response.html">t05-incident-response</a>
+<a href="../tutorials/t06-ml-research-lab.html">t06-ml-research-lab</a>
+<a href="../tutorials/t07-regression-guard.html">t07-regression-guard</a>
+<a href="../tutorials/t08-hundred-agents-scale.html">t08-hundred-agents-scale</a>
+<a href="../tutorials/t10-ci-overnight-bene-swarm.html">t10-ci-overnight-bene-swarm</a>
+<a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
+<h4>Case studies</h4>
+<a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
+<h4>Infrastructure</h4>
+<a href="../infra/DNS.html">DNS</a></aside>
+<main>
+<div class="crumbs"><a href="../index.html">docs</a> / zh/mcp-integration.md</div>
+<h1 id="bene-mcp">BENE 作为 MCP 服务器</h1>
+<p><a id="overview"></a></p>
+<p>只要将 BENE 跟 Claude Code 挂载一次，从那一刻起，你就可以直接用自然语言来驱动你的 agents —— 喊一个出来写测试，在动高风险手术前打个 checkpoint，一旦搞砸了立马无缝回滚，更能在不切断聊天上下文的情况下用 SQL 查个底朝天。</p>
+<blockquote>
+<p><strong>只需在 <code>settings.json</code> 里加一段配置，Claude Code 就能瞬间觉醒 37 个 BENE 专属 tool —— agents, 文件系统, checkpoints, SQL 直查, meta-harness 演化搜寻, 跨世代 memory, shared log 还有 skills。而这一切的肉身，全在这台机器的一个 SQLite 文件里。</strong></p>
+</blockquote>
+<p>这些 tool 染指的所有数据，死死锁在你自己电脑的 <code>bene.db</code> 里。默认的 stdio 传输通道根本不会去开什么网络端口，并且 <code>agent_query</code> 在架构底层被硬锁成了只读状态 —— 敢发写指令直接吃一个 <code>PermissionError</code>。除非你刻意作死选了 SSE 通道并把服务暴露出去，否则绝对不会有一滴数据碰到网卡。</p>
+<p>本页导览:</p>
+<ul>
+<li><a href="#connect-claude-code">接入 Claude Code</a></li>
+<li><a href="#run-the-server-directly">如何直接拉起服务端</a></li>
+<li><a href="#the-cheaper-path-the-json-cli">更廉价的平替：JSON CLI</a></li>
+<li><a href="#tool-reference">Tool 全阵列参考</a></li>
+<li><a href="#conversations-that-work-today">现在就能跑的实战对话</a></li>
+<li><a href="#what-the-cli-first-path-adds">CLI-First 这条路到底赚了什么</a></li>
+</ul>
+<p>原版锚点映射: <a href="#overview">Overview</a>, <a href="#cli-alternative">CLI Alternative</a>, <a href="#starting-the-mcp-server">Starting the MCP Server</a>, <a href="#claude-code-integration">Claude Code Integration</a>, <a href="#available-tools">Available Tools</a>, <a href="#example-conversation-flows">Example Conversation Flows</a>.</p>
+<p>引擎盖下：这套服务端代码盘踞在 <code>bene/mcp/server.py</code>，底层骑的是官方的 <code>mcp</code> Python 包。它把一个 <code>Bene</code> 实例外加一个 <code>ClaudeCodeRunner</code> 裹在一起，一口气往外放了涵盖 9 大矩阵的 37 个 tool：生命周期、VFS (虚拟文件系统)、Checkpoints、Query 直查、编排指挥、Meta-Harness 演化、Memory、Shared Log 和 Skills。任何一个遵循 <a href="https://modelcontextprotocol.io/">Model Context Protocol</a> 规范的客户端连上来，都能拿到一模一样的重火力。</p>
+<hr />
+<p><a id="claude-code-integration"></a></p>
+<h2 id="claude-code">接入 Claude Code</h2>
+<h3 id="_1">注册服务端</h3>
+<p>把这段硬塞进 <code>~/.claude/settings.json</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;bene&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bene&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;serve&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--transport&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;stdio&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="_2">强行指认数据库和配置表</h3>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;bene&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bene&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;serve&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;--transport&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;stdio&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;--db&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/path/to/project/bene.db&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;--config-file&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/path/to/project/bene.yaml&quot;</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="uv">拿着源码树直接用 uv 拉起</h3>
+<p>没装全局包？那就直接用 <code>uv run</code> 从源码树里硬起：</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;bene&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uv&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;run&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;--project&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/path/to/bene&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;bene&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;serve&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--transport&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;stdio&quot;</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="_3">验明正身</h3>
+<p>改完 settings 之后把 Claude Code 重启，直接怼脸问它：</p>
+<blockquote>
+<p>"What BENE tools are available?"</p>
+</blockquote>
+<p>要是 37 个 tool 全吐出来了，就算接稳了。</p>
+<hr />
+<p><a id="starting-the-mcp-server"></a></p>
+<h2 id="_4">如何直接拉起服务端</h2>
+<p>底层备了两条通道。跑 <strong>stdio</strong> 时，MCP 客户端会把 <code>bene serve</code> 当成自己的子进程直接拽起来，一切交流走 stdin/stdout —— 这就是 Claude Code 的御用通道。要是切到 <strong>SSE</strong>，一台飙着 Server-Sent Events 的 Starlette/uvicorn HTTP 服务器就会拔地而起，专门伺候那些需要走网络来连接 BENE 的客户端。</p>
+<h3 id="stdio">stdio (默认通道)</h3>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>serve<span class="w"> </span>--transport<span class="w"> </span>stdio
+</code></pre></div>
+
+<p>MCP 的报文从 stdin 砸进来；从 stdout 吐回去；Claude Code 像个暴君一样包办了这个进程从生到死。</p>
+<p><strong>带参数版本:</strong></p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>serve<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--transport<span class="w"> </span>stdio<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--db<span class="w"> </span>./bene.db<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--config-file<span class="w"> </span>./bene.yaml
+</code></pre></div>
+
+<h3 id="sse">SSE (开启网络暴露)</h3>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>serve<span class="w"> </span>--transport<span class="w"> </span>sse<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">3100</span>
+</code></pre></div>
+
+<p>这台 HTTP 服务器会给你开两个口子:</p>
+<ul>
+<li><code>GET /sse</code> — MCP 客户端从这里推门进来建立事件流。</li>
+<li><code>POST /messages</code> — MCP 客户端把报文往这里丢。</li>
+</ul>
+<p><strong>带参数版本:</strong></p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>serve<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--transport<span class="w"> </span>sse<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--port<span class="w"> </span><span class="m">3100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--db<span class="w"> </span>./bene.db<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--config-file<span class="w"> </span>./bene.yaml
+</code></pre></div>
+
+<h3 id="_5">环境变量</h3>
+<table>
+<thead>
+<tr>
+<th>变量名</th>
+<th>默认值</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BENE_DB</code></td>
+<td><code>./bene.db</code></td>
+<td>数据库的肉身路径 (会被 <code>--db</code> 参数当场覆盖)。</td>
+</tr>
+<tr>
+<td><code>BENE_CONFIG</code></td>
+<td><code>./bene.yaml</code></td>
+<td>配置文件路径 (会被 <code>--config-file</code> 当场覆盖)。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="beneyaml">没给 <code>bene.yaml</code>？照跑不误</h3>
+<p>当系统抓不到 <code>bene.yaml</code> 时，服务端会毫不犹豫地降级 fallback 到 <code>claude_code</code> provider (绑死 claude-sonnet-4-6)。哪怕在这种残缺状态下，文件管理、checkpoints、还有 SQL 直查统统都能照常运转 —— 因为它们根本不跟大模型打交道，完全不需要你搞定什么 vLLM 部署。</p>
+<hr />
+<p><a id="cli-alternative"></a></p>
+<h2 id="json-cli">更廉价的平替：JSON CLI</h2>
+<p>只要是个 BENE 的指令，就能硬吃 <code>--json</code> 参数。这意味着任何一只能调 shell 的 agent，都能直接用结构化的输出反向操控 BENE —— 去他的 MCP 客户端，去他的 schema 解析开销：</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 纯结构化 JSON 输出 —— 是个 agent 就能把这玩意拆个明白</span>
+bene<span class="w"> </span>--json<span class="w"> </span>ls
+bene<span class="w"> </span>--json<span class="w"> </span>status<span class="w"> </span>&lt;agent-id&gt;
+bene<span class="w"> </span>--json<span class="w"> </span>query<span class="w"> </span><span class="s2">&quot;SELECT * FROM agents WHERE status=&#39;running&#39;&quot;</span>
+bene<span class="w"> </span>--json<span class="w"> </span>mh<span class="w"> </span>status<span class="w"> </span>&lt;search-agent-id&gt;
+
+<span class="c1"># 丢进后台 —— 哪怕爹死了它照样跑</span>
+bene<span class="w"> </span>mh<span class="w"> </span>search<span class="w"> </span>-b<span class="w"> </span>text_classify<span class="w"> </span>-n<span class="w"> </span><span class="m">10</span><span class="w"> </span>--background
+</code></pre></div>
+
+<p>什么情况下你应该毫不犹豫地抓起 CLI 而不是 MCP？</p>
+<ul>
+<li>token 预算吃紧时 —— 用 shell 把指令踢出去，彻底省掉 MCP 庞大的 schema 解析开销。</li>
+<li>一场拉锯战一样的搜寻任务，必须得活过主进程的重启。</li>
+<li>你手头的 agent 框架压根就没学会说 MCP 这门外语。</li>
+</ul>
+<hr />
+<p><a id="available-tools"></a></p>
+<h2 id="tool">Tool 全阵列参考</h2>
+<p>37 个 tool，全按你想干什么排好了队。下面这张长桌详细拆解了核心 workflow 的常用武器；至于被同一个 server 挂载出来的 memory、shared-log、skill 以及拆分得很细的 meta-harness 单步工具，全塞在底下的附加列表里了。</p>
+<h3 id="agents">拉起和操纵 agents</h3>
+<h4 id="agent_spawn">agent_spawn</h4>
+<p>一声令下，直接在一个跟外面绝对物理隔离的虚拟文件系统里拉起一个 agent 并把任务拍给它。</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>string</td>
+<td>是</td>
+<td>给这个 agent 的代号。</td>
+</tr>
+<tr>
+<td><code>task</code></td>
+<td>string</td>
+<td>是</td>
+<td>它要拿命去拼的任务描述。</td>
+</tr>
+<tr>
+<td><code>config</code></td>
+<td>object</td>
+<td>否</td>
+<td>agent 配置文件 (模型, temperature 什么的)。默认: <code>{}</code>。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> 打包好的 <code>agent_id</code> 和 <code>result</code> 的 JSON。</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;test-writer&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;task&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Write unit tests for the authentication module&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;force_model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deepseek-r1-70b&quot;</span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Response:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;I&#39;ve written 12 unit tests covering...&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4 id="agent_spawn_only">agent_spawn_only</h4>
+<p>光把 agent 生出来但是先别让它动 —— 当你需要先往它的 VFS 里塞点粮草代码进去时，用这一手。</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>string</td>
+<td>是</td>
+<td>给这个 agent 的代号。</td>
+</tr>
+<tr>
+<td><code>config</code></td>
+<td>object</td>
+<td>否</td>
+<td>agent 配置文件。默认: <code>{}</code>。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> <code>agent_id</code> 和 <code>status</code> 的 JSON。</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;code-analyzer&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Response:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;initialized&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4 id="agent_parallel">agent_parallel</h4>
+<p>一口气撒出去一票 agent 并行干活，然后坐收全部结果。</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tasks</code></td>
+<td>array</td>
+<td>是</td>
+<td>task 对象数组，每个都要带 <code>name</code> (string, 必填)、<code>prompt</code> (string, 必填)，以及可选的 <code>config</code> (object)。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> 一份按顺序排好的结果 JSON 数组。</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;tasks&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;test-writer&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Write unit tests for payments&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;doc-writer&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Update payment API documentation&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;refactorer&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Refactor payments to use Stripe v3&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;force_model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deepseek-r1-70b&quot;</span><span class="p">}}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Response:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span><span class="nt">&quot;index&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;I&#39;ve written 8 test cases covering...&quot;</span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="nt">&quot;index&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Updated the API docs with...&quot;</span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="nt">&quot;index&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Refactored the payments module to...&quot;</span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<h4 id="agent_status">agent_status</h4>
+<p>单拎一个 agent 出来查成分 —— 或者直接留空，让它们排队点名。</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent_id</code></td>
+<td>string</td>
+<td>否</td>
+<td>Agent ID。留空则返回全员名单。</td>
+</tr>
+<tr>
+<td><code>status_filter</code></td>
+<td>string</td>
+<td>否</td>
+<td>状态过滤器 (<code>running</code>, <code>completed</code>, <code>failed</code> 等)。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> 查单个就是个 JSON 对象；查全部就是一个 JSON 数组。</p>
+<p><strong>Example — 查单个:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Response:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;test-writer&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;parent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-03-30T10:00:00.000&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;completed&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;force_model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deepseek-r1-70b&quot;</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">  </span><span class="nt">&quot;pid&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12345</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;last_heartbeat&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-03-30T10:05:00.000&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Example — 抓取全场活人:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;status_filter&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;running&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4 id="agent_pause">agent_pause</h4>
+<p>当场冻结一个活着的 agent；回头用 <code>agent_resume</code> 再给它解冻。</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent_id</code></td>
+<td>string</td>
+<td>是</td>
+<td>待冻结的 Agent ID。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> 一句确认回执。</p>
+<h4 id="agent_resume">agent_resume</h4>
+<p>解冻。</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent_id</code></td>
+<td>string</td>
+<td>是</td>
+<td>待解冻的 Agent ID。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> 一句确认回执。</p>
+<h4 id="agent_kill">agent_kill</h4>
+<p>直接对一个活着的 agent 执行死刑。</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent_id</code></td>
+<td>string</td>
+<td>是</td>
+<td>待处决的 Agent ID。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> 一句确认回执。</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Response:</strong></p>
+<div class="codehilite"><pre><span></span><code>Agent 01HXY... killed
+</code></pre></div>
+
+<h3 id="_6">文件出入控制</h3>
+<h4 id="agent_read">agent_read</h4>
+<p>从某个 agent 的 VFS 里活生生把一份文件抽出来。</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent_id</code></td>
+<td>string</td>
+<td>是</td>
+<td>Agent ID。</td>
+</tr>
+<tr>
+<td><code>path</code></td>
+<td>string</td>
+<td>是</td>
+<td>待读取的文件路径。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> 文件的 UTF-8 文本死尸。</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/src/auth.py&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4 id="agent_write">agent_write</h4>
+<p>强行把一份文件塞进某个 agent 的 VFS 里。</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent_id</code></td>
+<td>string</td>
+<td>是</td>
+<td>Agent ID。</td>
+</tr>
+<tr>
+<td><code>path</code></td>
+<td>string</td>
+<td>是</td>
+<td>文件路径。</td>
+</tr>
+<tr>
+<td><code>content</code></td>
+<td>string</td>
+<td>是</td>
+<td>文件内容。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> 一句带着字节开销的确认回执。</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/src/auth.py&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;def authenticate(user, password):\n    ...&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Response:</strong></p>
+<div class="codehilite"><pre><span></span><code>Written 41 bytes to 01HXY...:/src/auth.py
+</code></pre></div>
+
+<h4 id="agent_ls">agent_ls</h4>
+<p>把 agent 肚子里的某一层目录抖搂出来。</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent_id</code></td>
+<td>string</td>
+<td>是</td>
+<td>Agent ID。</td>
+</tr>
+<tr>
+<td><code>path</code></td>
+<td>string</td>
+<td>否</td>
+<td>目录路径。默认: <code>/</code>。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> JSON 数组；每一项死死咬住 path, name, is_dir, size, modified_at 还有 version。</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/src&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Response:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/src/auth.py&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;auth.py&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;is_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1234</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;modified_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-03-30T10:00:00.000&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/src/utils&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;utils&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;is_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;modified_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-03-30T09:55:00.000&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<h3 id="_7">冻结与时空倒流</h3>
+<h4 id="agent_checkpoint">agent_checkpoint</h4>
+<p>把这个 agent 当前的文件系统和 KV 脑容量连皮带肉一起打个包。</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent_id</code></td>
+<td>string</td>
+<td>是</td>
+<td>Agent ID。</td>
+</tr>
+<tr>
+<td><code>label</code></td>
+<td>string</td>
+<td>否</td>
+<td>给这个快照贴个标签 (可选)。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> 带着崭新 checkpoint ID 的确认回执。</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;pre-refactor&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Response:</strong></p>
+<div class="codehilite"><pre><span></span><code>Checkpoint 01HABC... created for agent 01HXY...
+</code></pre></div>
+
+<h4 id="agent_checkpoints">agent_checkpoints</h4>
+<p>把一个 agent 留下的所有时空坐标系底裤翻出来。</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent_id</code></td>
+<td>string</td>
+<td>是</td>
+<td>Agent ID。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> JSON 数组；每个快照都死带着 <code>checkpoint_id</code>, <code>label</code>, <code>created_at</code>, <code>event_id</code>, 以及 <code>metadata</code>。</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Response:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span><span class="nt">&quot;checkpoint_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HABC...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;pre-refactor&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-03-31T10:00:00.000&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;event_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{}},</span>
+<span class="w">  </span><span class="p">{</span><span class="nt">&quot;checkpoint_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HDEF...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;post-refactor&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-03-31T10:15:00.000&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;event_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">87</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{}}</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<h4 id="agent_restore">agent_restore</h4>
+<p>强行把一个 agent 拽回到你早早拍好快照的过去。</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent_id</code></td>
+<td>string</td>
+<td>是</td>
+<td>Agent ID。</td>
+</tr>
+<tr>
+<td><code>checkpoint_id</code></td>
+<td>string</td>
+<td>是</td>
+<td>待复活的 Checkpoint ID。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> 确认回执。</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;checkpoint_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HABC...&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Response:</strong></p>
+<div class="codehilite"><pre><span></span><code>Agent 01HXY... restored to checkpoint 01HABC...
+</code></pre></div>
+
+<h4 id="agent_diff">agent_diff</h4>
+<p>对比两个时空坐标之间究竟发生了什么畸变 —— 包括文件、KV 状态键，还有夹在中间的全部 tool call。</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent_id</code></td>
+<td>string</td>
+<td>是</td>
+<td>Agent ID。</td>
+</tr>
+<tr>
+<td><code>from_checkpoint</code></td>
+<td>string</td>
+<td>是</td>
+<td>起点快照 ID。</td>
+</tr>
+<tr>
+<td><code>to_checkpoint</code></td>
+<td>string</td>
+<td>是</td>
+<td>终点快照 ID。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> 一份把文件更替、状态变更还有中间的 tool calls 扒得干干净净的 JSON。</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;from_checkpoint&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HABC...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;to_checkpoint&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HDEF...&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Response:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;files&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;added&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;/src/new_module.py&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;removed&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">    </span><span class="nt">&quot;modified&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;/src/auth.py&quot;</span><span class="p">]</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;added&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;new_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;value&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;removed&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">    </span><span class="nt">&quot;modified&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;iteration&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;from&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;to&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">15</span><span class="p">}}</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;tool_calls&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;call_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fs_write&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;success&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;duration_ms&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;token_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">500</span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="_8">直接逼供数据库</h3>
+<h4 id="agent_query">agent_query</h4>
+<p>把 SQL 查询直插进 <code>bene.db</code> 的只读通道。</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sql</code></td>
+<td>string</td>
+<td>是</td>
+<td>SQL SELECT 查询语句。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> 以 JSON 数组形式吐出来的结果集。</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;sql&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SELECT name, status, created_at FROM agents ORDER BY created_at DESC LIMIT 5&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Response:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;test-writer&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;completed&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-03-30T10:00:00.000&quot;</span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;refactorer&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;running&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-03-30T09:55:00.000&quot;</span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<p><strong>Note:</strong> 这是纯天然的只读口。只有 SELECT 能进，你想混进 INSERT, UPDATE, DELETE, DROP, ALTER, 或者是 CREATE？等着吃 <code>PermissionError</code> 吧。</p>
+<h3 id="harness">繁育更强悍的 Harness</h3>
+<h4 id="mh_search">mh_search</h4>
+<p>踹起一脚 Meta-Harness 搜寻引擎：初代 harness 种子会被丢进 benchmark 靶场打分，接着每一轮迭代都会利用完整的执行 trace 去提炼改进点并提出新的变异提案。</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>benchmark</code></td>
+<td>string</td>
+<td>是</td>
+<td>Benchmark 靶场名: <code>text_classify</code>, <code>math_rag</code>, <code>agentic_coding</code>，或是你随便捏的自定义 benchmark。</td>
+</tr>
+<tr>
+<td><code>max_iterations</code></td>
+<td>integer</td>
+<td>否</td>
+<td>搜寻轮次数。默认: 10。</td>
+</tr>
+<tr>
+<td><code>candidates_per_iteration</code></td>
+<td>integer</td>
+<td>否</td>
+<td>每轮提几个新提案出来卷。默认: 2。</td>
+</tr>
+<tr>
+<td><code>config</code></td>
+<td>object</td>
+<td>否</td>
+<td>用来强行覆盖 SearchConfig 的配置。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> 带有 <code>status</code>, <code>pid</code>, <code>log_path</code> 还有 <code>message</code> 的 JSON。</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;benchmark&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;text_classify&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;max_iterations&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;candidates_per_iteration&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">}</span>
+</code></pre></div>
+
+<h4 id="mh_frontier">mh_frontier</h4>
+<p>等搜寻收官，直接把帕累托前沿 (Pareto frontier) 给拽下来。</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>search_agent_id</code></td>
+<td>string</td>
+<td>是</td>
+<td>跑 <code>mh_search</code> 拿到的那个 search agent ID。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> 满载着 harness IDs、打分、轮次的帕累托前沿 JSON。</p>
+<h4 id="mh_resume">mh_resume</h4>
+<p>从一趟意外中断的搜寻中抓出最后那个打完收工的轮次，然后就地复活接茬跑。没有任何一滴心血会白流：之前的 harness 评估记录、traces，以及前沿状态都会无损继承；连 benchmark 靶场名、轮次提案数以及目标设定都会丝毫不差地接管过来。</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>是否必填</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>search_agent_id</code></td>
+<td>string</td>
+<td>是</td>
+<td>那个遭遇不测中断的 search agent ID。</td>
+</tr>
+<tr>
+<td><code>benchmark</code></td>
+<td>string</td>
+<td>是</td>
+<td>这个 search 当初发家的 benchmark (<code>text_classify</code>, <code>math_rag</code>, 或 <code>agentic_coding</code>) —— worker 恢复打分时得认准这道门。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Returns:</strong> 带有 <code>search_agent_id</code>, <code>status</code>, <code>pid</code>, <code>log_path</code> 和 <code>message</code> 的 JSON。</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;search_agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;benchmark&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;text_classify&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Response:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;search_agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;resuming&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;pid&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12345</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;log_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/path/to/bene-worker-12345.log&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Resume worker launched (PID 12345). Log: /path/to/bene-worker-12345.log.&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="server">同一个 Server 吐出来的隐藏弹药库</h3>
+<p>除了上面铺开的核心 workflow 表单，这套 MCP 阵列里还藏着额外的 19 把单发手枪：</p>
+<ul>
+<li>Meta-Harness 步进特战队: <code>mh_start_search</code>, <code>mh_submit_candidate</code>, <code>mh_next_iteration</code>, <code>mh_write_skill</code>, <code>mh_spawn_coevolution</code>, <code>mh_hub_sync</code></li>
+<li>Agent 记忆库: <code>agent_memory_write</code>, <code>agent_memory_search</code>, <code>agent_memory_read</code></li>
+<li>Shared log 总线: <code>shared_log_intent</code>, <code>shared_log_vote</code>, <code>shared_log_decide</code>, <code>shared_log_append</code>, <code>shared_log_read</code></li>
+<li>经验沉淀 Skills: <code>skill_save</code>, <code>skill_search</code>, <code>skill_apply</code>, <code>skill_list</code>, <code>skill_outcome</code></li>
+</ul>
+<p>想核对当前仓库里的真枪实弹？拿这把尺子量：</p>
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;&#39;PY&#39;</span>
+<span class="s">import asyncio</span>
+<span class="s">from bene.mcp.server import list_tools</span>
+<span class="s">async def main():</span>
+<span class="s">    tools = await list_tools()</span>
+<span class="s">    print(len(tools))</span>
+<span class="s">    print(&quot;\n&quot;.join(t.name for t in tools))</span>
+<span class="s">asyncio.run(main())</span>
+<span class="s">PY</span>
+</code></pre></div>
+
+<hr />
+<p><a id="example-conversation-flows"></a></p>
+<h2 id="_9">现在就能跑的实战对话</h2>
+<p>九段行云流水的端到端交火实录。排列顺序完全依着最真实的作战逻辑：拉起、撒网、微操、侦查、反悔、终极进化。</p>
+<h3 id="agent">丢个 Agent 出去把测试填满</h3>
+<p><strong>You:</strong> "Spin up a BENE agent to cover my auth module with unit tests."</p>
+<p><strong>Claude Code 抬手就是一记:</strong> <code>agent_spawn</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;auth-tester&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;task&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Write comprehensive unit tests for the authentication module covering login, logout, token refresh, and edge cases.&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Claude Code 抓取回执:</strong> 名为 <code>auth-tester</code> 的 agent (ID: 01HXY...) 产出了 15 个 unit test，并且反手给你吐了一段测试覆盖率摘要。</p>
+<h3 id="_10">先塞粮草，后动刀子</h3>
+<p><strong>You:</strong> "I want an agent loaded with code I already have — the refactor comes after."</p>
+<p><strong>Claude Code 开始只生不养:</strong> <code>agent_spawn_only</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;refactorer&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Claude Code 开始硬塞代码:</strong> <code>agent_write</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/src/payments.py&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;def charge(amount): ...&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Claude Code 继续塞:</strong> <code>agent_write</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/tests/test_payments.py&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;def test_charge(): ...&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Claude Code 直接打好止血绷带:</strong> <code>agent_checkpoint</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;before-refactor&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>You:</strong> "Now let it refactor."</p>
+<p><strong>Claude Code 这才下发攻击指令:</strong> <code>agent_spawn</code>，顺带着发了一个直接去啃刚才塞进去的那些文件的新鲜任务。</p>
+<h3 id="_11">拉起四面夹击的火力网审代码</h3>
+<p><strong>You:</strong> "Give me four reviews of this code in parallel — security, performance, style, test coverage."</p>
+<p><strong>Claude Code 撒出一把豆子:</strong> <code>agent_parallel</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;tasks&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;security-reviewer&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Review this code for security vulnerabilities: ...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;force_model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;deepseek-r1-70b&quot;</span><span class="p">}},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;performance-reviewer&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Review this code for performance issues: ...&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;style-reviewer&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Review this code for style and best practices: ...&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;test-reviewer&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Suggest test cases needed for this code: ...&quot;</span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>四面八方的战报砸回来；Claude Code 当场揉成一份滴水不漏的总决议案。</strong></p>
+<h3 id="_12">按下暂停键，扒拉完了再接着跑</h3>
+<p><strong>You:</strong> "Hold the refactorer for a moment — I want to look over its progress."</p>
+<p><strong>Claude Code 直接下冻结令:</strong> <code>agent_pause</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>You:</strong> "Looks fine. Carry on."</p>
+<p><strong>Claude Code 解除封印:</strong> <code>agent_resume</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<h3 id="agent_1">把一个 agent 的老底掀个底朝天</h3>
+<p><strong>You:</strong> "Walk me through everything the refactorer changed."</p>
+<p><strong>Claude Code 直插数据库大动脉:</strong> <code>agent_query</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;sql&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SELECT event_type, payload, timestamp FROM events WHERE agent_id = &#39;01HXY...&#39; ORDER BY event_id&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Claude Code 翻箱倒柜:</strong> <code>agent_ls</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Claude Code 拉出文件尸首:</strong> <code>agent_read</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/src/payments.py&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>然后 Claude Code 就跟解剖师一样，领着你把所有的事件流水和现在这坨文件的死状盘得清清楚楚。</strong></p>
+<h3 id="token">揪出当前战场所有的 token 吸血鬼</h3>
+<p><strong>You:</strong> "Which agents are live right now, and what have they spent in tokens?"</p>
+<p><strong>Claude Code 全场点名:</strong> <code>agent_status</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;status_filter&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;running&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Claude Code 强拉对账单:</strong> <code>agent_query</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;sql&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SELECT a.name, SUM(tc.token_count) as tokens, COUNT(tc.call_id) as calls FROM agents a LEFT JOIN tool_calls tc ON a.agent_id = tc.agent_id WHERE a.status = &#39;running&#39; GROUP BY a.agent_id&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Claude Code 把还在喘气的 agent 名单连带他们烧掉的账单重重地拍在你面前。</strong></p>
+<h3 id="_13">一键抹除灾难级重构</h3>
+<p><strong>You:</strong> "That refactor was a mistake. Take the agent back to the earlier checkpoint."</p>
+<p><strong>Claude Code 去翻后悔药存根:</strong> <code>agent_query</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;sql&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SELECT checkpoint_id, label, created_at FROM checkpoints WHERE agent_id = &#39;01HXY...&#39; ORDER BY created_at&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Claude Code 一眼咬住了那个贴着 "before-refactor" 标签的时空锚点。</strong></p>
+<p><strong>Claude Code 拉动时间机器拉杆:</strong> <code>agent_restore</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;checkpoint_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HABC...&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Claude Code 拉出时空裂隙对比单:</strong> <code>agent_diff</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;from_checkpoint&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HABC...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;to_checkpoint&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HDEF...&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Claude Code 平静地通报回滚战损:</strong> 回到那重构前的时空，被改的 3 个文件和新加的 1 个文件（现已灰飞烟灭）—— 统统抹除干净，就当没发生过。</p>
+<h3 id="meta-harness">让 Meta-Harness 替你这只猴子去敲键盘</h3>
+<p><strong>You:</strong> "Optimize my text-classification harness with a Meta-Harness search."</p>
+<p><strong>Claude Code 一脚踹起进化池:</strong> <code>mh_search</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;benchmark&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;text_classify&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;max_iterations&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;candidates_per_iteration&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>进化前沿的战报糊脸:</strong> 10 轮肉搏里足足卷了 23 套 harnesses；最高准确率杀到了 87% (harness 01HXY1F...)；性价比之王压到了 45 token 算一次 (harness 01HXY1G...)。</p>
+<p><strong>You:</strong> "Full frontier, please."</p>
+<p><strong>Claude Code 把战利品端上来:</strong> <code>mh_frontier</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;search_agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<h3 id="_14">从死人堆里爬起来接着卷</h3>
+<p><strong>You:</strong> "The search died at iteration 4 — pick it up where it stopped."</p>
+<p><strong>Claude Code 直接给死人做电击复苏:</strong> <code>mh_resume</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;search_agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01HXY...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;benchmark&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;text_classify&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Claude Code 报告接续战况:</strong> 从第 4 轮爬起来接力，一路杀穿 10 轮满贯，全场共卷 23 套 harnesses，天花板准确率 87% (harness 01HXY1F...)，帕累托前沿线上站着 4 套毕业装。</p>
+<hr />
+<h2 id="cli-first">CLI-First 这条路到底赚了什么</h2>
+<ul>
+<li><strong>一切为了 CLI 优先。</strong> 所有 command 都能咽下 <code>--json</code>，这说明哪怕一个再寒酸的 agent 也能直接扔一条 <code>bene --json ls</code> 的 shell 出去，而不用把海量的 MCP schemas 硬塞进它可怜的脑容量里 —— 光这一手就砍掉了巨大的单次调用 schema 解析税。</li>
+<li><strong>肥硕的数据尸体绝不弄脏网络通讯口。</strong> 当一个 agent 吐出的垃圾话长过 4KB 时，真正的全尸会被悄悄沉到它的 VFS 里的 <code>/result.txt</code> 底下；而 MCP 通道上只挂着一小段预览和一个叫你去 <code>agent_read</code> 捞全尸的门牌号。</li>
+<li><strong>纯粹且具有洁癖的 JSON-RPC 事件流。</strong> 在 stdio 通道刚苏醒的那一瞬，服务端直接把 <code>sys.stdout</code> 的导管暴力切到了 <code>sys.stderr</code> 上，这直接从物理隔离上保证了再也不会有哪个没教养第三方库乱拉日志污染这套神圣的协议。</li>
+<li><strong>搜寻任务能把活人熬死。</strong> <code>mh_search</code> 和 <code>mh_resume</code> 是直接把活儿塞进脱缰在后台的 worker 进程嘴里；你哪怕把 MCP 的线给拔了也休想弄死它。这帮打工人会自己把日志吞吐到 <code>bene-worker-*.log</code> 里。</li>
+<li><strong>又有三条新指令加入了这支 CLI 大军:</strong> <code>bene read</code>、<code>bene logs</code>，以及 <code>bene mh search --dry-run</code>。</li>
+</ul>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/zh/mcp-integration.md" target="_blank" rel="noopener noreferrer">docs/zh/mcp-integration.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+</main>
+</div>
+<footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>
+<a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer">Building something on bene? Open a Discussion.</a></div></footer>
+</body>
+</html>

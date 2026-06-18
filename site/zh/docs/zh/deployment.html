@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>部署 BENE (Deployment) — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — 部署 BENE (Deployment)" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+:root { --bg:#F0EEE8; --surface:#EDE9E4; --border:#CFCCC8; --ink:#1F1D1C; --mute:#62666D; --accent:#EE6018; --gold:#B46A35; --term-bg:#332E2B; --term-fg:#EDE9E4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 Geist,ui-sans-serif,system-ui,sans-serif; }
+a { color:var(--gold); text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent); text-underline-offset:3px; }
+a:hover { color:var(--accent); }
+.top { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+.top-in { max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+.brand { font-family:Geist,ui-sans-serif,sans-serif; font-weight:700; letter-spacing:.12em; color:var(--ink); text-decoration:none; }
+.top a.nav { color:var(--mute); text-decoration:none; font-size:14px; }
+.top a.nav:hover { color:var(--accent); }
+.wrap { max-width:1200px; margin:0 auto; padding:24px; display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; }
+aside.sb { position:sticky; top:80px; align-self:start; max-height:calc(100vh - 100px); overflow-y:auto; font-size:13.5px; border-left:1px solid var(--border); padding-left:16px; }
+.sb h4 { margin:18px 0 6px; font:600 11px/1 "Geist Mono",ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+.sb a { display:block; padding:3px 0; color:var(--mute); text-decoration:none; }
+.sb a:hover { color:var(--accent); }
+.sb a.cur { color:var(--ink); font-weight:600; }
+main { min-width:0; max-width:760px; }
+main h1 { font-family:Geist,ui-sans-serif,sans-serif; font-size:2.1rem; line-height:1.2; margin:.2em 0 .5em; }
+main h2 { font-family:Geist,ui-sans-serif,sans-serif; font-size:1.45rem; margin-top:2em; border-bottom:1px solid var(--border); padding-bottom:.35em; }
+main h3 { font-size:1.12rem; margin-top:1.7em; }
+main img { max-width:100%; border:1px solid var(--border); border-radius:8px; }
+main table { border-collapse:collapse; width:100%; font-size:14.5px; display:block; overflow-x:auto; }
+main th, main td { border:1px solid var(--border); padding:8px 12px; text-align:left; vertical-align:top; }
+main th { background:var(--surface); font-weight:600; }
+main blockquote { margin:1em 0; padding:.2em 1.2em; border-left:3px solid var(--accent); color:var(--mute); background:var(--surface); border-radius:0 4px 4px 0; }
+main :not(pre) > code { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:.08em .35em; font:.86em "Geist Mono",ui-monospace,monospace; }
+.codehilite, main pre { background:var(--term-bg); color:var(--term-fg); border-radius:6px; padding:16px 18px; overflow-x:auto; font:13.5px/1.55 "Geist Mono",ui-monospace,monospace; }
+.codehilite pre, pre code { background:none; padding:0; margin:0; border:none; }
+.demo-embed { margin:20px 0 28px; }
+.demo-embed .frame { background:var(--term-bg); border-radius:6px; padding:14px; }
+.demo-embed .dots { display:flex; gap:6px; margin-bottom:10px; }
+.demo-embed .dots i { width:10px; height:10px; border-radius:50%; background:#3a3344; }
+.demo-embed img { border:none; border-radius:6px; display:block; width:100%; }
+.demo-embed p { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:8px 2px 0; }
+.crumbs { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-bottom:8px; }
+.crumbs a { color:var(--mute); }
+.src { font:12.5px "Geist Mono",ui-monospace,monospace; margin-top:48px; padding-top:16px; border-top:1px solid var(--border); color:var(--mute); }
+footer.ft { border-top:1px solid var(--border); margin-top:40px; }
+footer.ft .in { max-width:1200px; margin:0 auto; padding:24px; font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.idx-group h2 { font-family:Geist,ui-sans-serif,sans-serif; border:none; margin-top:1.6em; }
+.idx-group ul { list-style:none; padding:0; margin:.4em 0; }
+.idx-group li { padding:6px 0; border-bottom:1px dashed var(--border); }
+.idx-group .path { font:11.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-left:8px; }
+/* Mobile overrides — kept at the end so source order beats base rules.
+   Earlier this rule sat between base rules and got overridden by a later
+   `aside.sb { position:sticky }`, leaving the sidebar stuck on top of
+   main content on phones. */
+@media (max-width: 860px) {
+  .wrap { grid-template-columns:1fr; gap:24px; padding:16px; }
+  aside.sb { position:static; max-height:none; border-left:none; border-bottom:1px solid var(--border); padding-left:0; padding-bottom:16px; font-size:13px; }
+  .sb h4 { margin:12px 0 4px; }
+  main { max-width:none; }
+  main h1 { font-size:1.6rem; }
+  main h2 { font-size:1.2rem; }
+  main h3 { font-size:1.05rem; }
+  .top-in { padding:0 16px; gap:14px; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #49483e }
+.codehilite { background: #272822; color: #F8F8F2 }
+.codehilite .c { color: #959077 } /* Comment */
+.codehilite .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.codehilite .esc { color: #F8F8F2 } /* Escape */
+.codehilite .g { color: #F8F8F2 } /* Generic */
+.codehilite .k { color: #66D9EF } /* Keyword */
+.codehilite .l { color: #AE81FF } /* Literal */
+.codehilite .n { color: #F8F8F2 } /* Name */
+.codehilite .o { color: #FF4689 } /* Operator */
+.codehilite .x { color: #F8F8F2 } /* Other */
+.codehilite .p { color: #F8F8F2 } /* Punctuation */
+.codehilite .ch { color: #959077 } /* Comment.Hashbang */
+.codehilite .cm { color: #959077 } /* Comment.Multiline */
+.codehilite .cp { color: #959077 } /* Comment.Preproc */
+.codehilite .cpf { color: #959077 } /* Comment.PreprocFile */
+.codehilite .c1 { color: #959077 } /* Comment.Single */
+.codehilite .cs { color: #959077 } /* Comment.Special */
+.codehilite .gd { color: #FF4689 } /* Generic.Deleted */
+.codehilite .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F8F8F2 } /* Generic.Error */
+.codehilite .gh { color: #F8F8F2 } /* Generic.Heading */
+.codehilite .gi { color: #A6E22E } /* Generic.Inserted */
+.codehilite .go { color: #66D9EF } /* Generic.Output */
+.codehilite .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #959077 } /* Generic.Subheading */
+.codehilite .gt { color: #F8F8F2 } /* Generic.Traceback */
+.codehilite .kc { color: #66D9EF } /* Keyword.Constant */
+.codehilite .kd { color: #66D9EF } /* Keyword.Declaration */
+.codehilite .kn { color: #FF4689 } /* Keyword.Namespace */
+.codehilite .kp { color: #66D9EF } /* Keyword.Pseudo */
+.codehilite .kr { color: #66D9EF } /* Keyword.Reserved */
+.codehilite .kt { color: #66D9EF } /* Keyword.Type */
+.codehilite .ld { color: #E6DB74 } /* Literal.Date */
+.codehilite .m { color: #AE81FF } /* Literal.Number */
+.codehilite .s { color: #E6DB74 } /* Literal.String */
+.codehilite .na { color: #A6E22E } /* Name.Attribute */
+.codehilite .nb { color: #F8F8F2 } /* Name.Builtin */
+.codehilite .nc { color: #A6E22E } /* Name.Class */
+.codehilite .no { color: #66D9EF } /* Name.Constant */
+.codehilite .nd { color: #A6E22E } /* Name.Decorator */
+.codehilite .ni { color: #F8F8F2 } /* Name.Entity */
+.codehilite .ne { color: #A6E22E } /* Name.Exception */
+.codehilite .nf { color: #A6E22E } /* Name.Function */
+.codehilite .nl { color: #F8F8F2 } /* Name.Label */
+.codehilite .nn { color: #F8F8F2 } /* Name.Namespace */
+.codehilite .nx { color: #A6E22E } /* Name.Other */
+.codehilite .py { color: #F8F8F2 } /* Name.Property */
+.codehilite .nt { color: #FF4689 } /* Name.Tag */
+.codehilite .nv { color: #F8F8F2 } /* Name.Variable */
+.codehilite .ow { color: #FF4689 } /* Operator.Word */
+.codehilite .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.codehilite .w { color: #F8F8F2 } /* Text.Whitespace */
+.codehilite .mb { color: #AE81FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #AE81FF } /* Literal.Number.Float */
+.codehilite .mh { color: #AE81FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #AE81FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #AE81FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #E6DB74 } /* Literal.String.Affix */
+.codehilite .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.codehilite .sc { color: #E6DB74 } /* Literal.String.Char */
+.codehilite .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #E6DB74 } /* Literal.String.Doc */
+.codehilite .s2 { color: #E6DB74 } /* Literal.String.Double */
+.codehilite .se { color: #AE81FF } /* Literal.String.Escape */
+.codehilite .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.codehilite .si { color: #E6DB74 } /* Literal.String.Interpol */
+.codehilite .sx { color: #E6DB74 } /* Literal.String.Other */
+.codehilite .sr { color: #E6DB74 } /* Literal.String.Regex */
+.codehilite .s1 { color: #E6DB74 } /* Literal.String.Single */
+.codehilite .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.codehilite .bp { color: #F8F8F2 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #A6E22E } /* Name.Function.Magic */
+.codehilite .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.codehilite .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.codehilite .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.codehilite .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.codehilite .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.codehilite { background: var(--term-bg) !important; }
+</style>
+
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <a class="brand" href="../../../index.html">BENE</a>
+  <a class="nav" href="../../../index.html">Landing</a>
+  <a class="nav" href="../index.html">文档索引</a>
+  <a class="nav" href="../../../SKILL.md" target="_blank" rel="noopener noreferrer" title="把 BENE 交给你的 agent，一个 URL">SKILL.md ↗</a>
+  <button class="nav copy-llms" data-llms-url="../../../llms.txt" data-copied-label="✓ 已复制" data-opened-label="↗ 已打开" title="把 llms.txt 索引拷到剪贴板 — 粘贴进你 agent 的 context">复制 llms.txt</button>
+  <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="GitHub"><svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="vertical-align:text-bottom"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg></a>
+  <a class="nav" href="../../../docs/zh/deployment.html" title="Switch to English" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">EN</a>
+</div></div>
+<div class="zh-banner" style="background:rgba(238,96,24,.07);border-bottom:1px solid rgba(238,96,24,.2);padding:12px 24px;font-size:13px;line-height:1.5;color:rgb(var(--muted))"><strong style="color:rgb(var(--text))">本页中文版正在按照 4-book methodology 翻译（Mom Test / Pressfield / Zinsser / Dicks）—— 不放 AI 翻译稿。</strong> 下方是英文原文，点上方 <a href="../../../docs/zh/deployment.html" style="color:rgb(var(--accent));text-decoration:underline">EN</a> 直接到英文页面， 或在 <a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer" style="color:rgb(var(--accent));text-decoration:underline">Discussions</a> 里贡献翻译。</div>
+<script>
+(function() {
+  document.querySelectorAll('button.copy-llms').forEach(function(btn) {
+    var original = btn.textContent;
+    btn.addEventListener('click', function() {
+      var url = btn.getAttribute('data-llms-url');
+      fetch(url, { cache: 'no-cache' })
+        .then(function(r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.text(); })
+        .then(function(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).then(function() {
+              btn.textContent = btn.getAttribute('data-copied-label') || '✓ copied';
+              setTimeout(function() { btn.textContent = original; }, 2200);
+            });
+          }
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        })
+        .catch(function() {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        });
+    });
+  });
+})();
+</script>
+<div class="wrap">
+<aside class="sb"><h4>Start, operate, recover</h4>
+<a href="../README.html">README</a>
+<a href="../architecture.html">architecture</a>
+<a href="../checkpoints.html">checkpoints</a>
+<a href="../cli-reference.html">cli-reference</a>
+<a href="../codegen.html">codegen</a>
+<a href="../dashboard.html">dashboard</a>
+<a href="../deployment.html">deployment</a>
+<a href="../integrating-bene.html">integrating-bene</a>
+<a href="../mcp-integration.html">mcp-integration</a>
+<a href="../memory.html">memory</a>
+<a href="../meta-harness.html">meta-harness</a>
+<a href="../philosophy.html">philosophy</a>
+<a href="../primitive-review-cycle.html">primitive-review-cycle</a>
+<a href="../probe-authoring.html">probe-authoring</a>
+<a href="../schema.html">schema</a>
+<a href="../shared-log.html">shared-log</a>
+<a href="../skills.html">skills</a>
+<a href="../use-cases.html">use-cases</a>
+<h4>Recipes</h4>
+<a href="../recipes/atomic-completion.html">atomic-completion</a>
+<h4>Design and claims</h4>
+<a href="../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
+<a href="../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
+<a href="../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
+<a href="../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
+<h4>Evidence and research</h4>
+<a href="../research/GAP-AUDIT.html">GAP-AUDIT</a>
+<a href="../research/SYNTHESIS.html">SYNTHESIS</a>
+<a href="../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<h4>Benchmarks and gates</h4>
+<a href="../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
+<a href="../benchmarks/PREREG.html">PREREG</a>
+<h4>Tutorial playbooks</h4>
+<a href="../tutorials/t00-bene-e2e-walkthrough.html">t00-bene-e2e-walkthrough</a>
+<a href="../tutorials/t01-bene-meta-harness.html">t01-bene-meta-harness</a>
+<a href="../tutorials/t02-e2e-self-healing.html">t02-e2e-self-healing</a>
+<a href="../tutorials/t03-security-swarm.html">t03-security-swarm</a>
+<a href="../tutorials/t04-migration-rollback.html">t04-migration-rollback</a>
+<a href="../tutorials/t05-incident-response.html">t05-incident-response</a>
+<a href="../tutorials/t06-ml-research-lab.html">t06-ml-research-lab</a>
+<a href="../tutorials/t07-regression-guard.html">t07-regression-guard</a>
+<a href="../tutorials/t08-hundred-agents-scale.html">t08-hundred-agents-scale</a>
+<a href="../tutorials/t10-ci-overnight-bene-swarm.html">t10-ci-overnight-bene-swarm</a>
+<a href="../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
+<h4>Case studies</h4>
+<a href="../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
+<h4>Infrastructure</h4>
+<a href="../infra/DNS.html">DNS</a></aside>
+<main>
+<div class="crumbs"><a href="../index.html">docs</a> / zh/deployment.md</div>
+<h1 id="bene-deployment">部署 BENE (Deployment)</h1>
+<p>这篇指南将手把手带你从一台光秃秃的裸机，一路杀进生产环境：装好 BENE、拉起模型服务端、把它们俩都做成能自动诈尸重启的后台服务、以及在炸机时该去哪里翻垃圾桶。</p>
+<blockquote>
+<p><strong>BENE 脑子里的所有东西全被死死锁在一个 SQLite 文件里 —— <code>cp</code> 一下就等于做了全量备份；除非你故意把它指向外网，否则没有任何一滴数据会流出你的机器。</strong></p>
+</blockquote>
+<p>原版导航传送门: <a href="#prerequisites">前置要求 (Prerequisites)</a>, <a href="#installation-from-source">源码安装 (Installation from Source)</a>, <a href="#vllm-setup">搞定 vLLM (vLLM Setup)</a>, <a href="#configuration-walkthrough">扒光配置文件 (Configuration Walkthrough)</a>, <a href="#running-as-a-service-systemd">做成系统服务 (Running as a Service)</a>, <a href="#docker-deployment">Docker 部署 (Docker Deployment)</a>, <a href="#performance-tuning">性能榨汁机 (Performance Tuning)</a>, <a href="#troubleshooting">排雷自救手册 (Troubleshooting)</a>.</p>
+<hr />
+<p><a id="installation-from-source"></a></p>
+<h2 id="_1">三步装完，废话少说</h2>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/good-night-oppie/bene.git
+<span class="nb">cd</span><span class="w"> </span>bene
+uv<span class="w"> </span>sync
+</code></pre></div>
+
+<p><code>uv sync</code> 会就地捏出一个 <code>.venv</code> 虚拟环境，把所有的包全塞进去。</p>
+<p><a id="prerequisites"></a></p>
+<h3 id="_2">你这破机器得满足什么条件</h3>
+<table>
+<thead>
+<tr>
+<th>硬性要求</th>
+<th>及格线</th>
+<th>推荐配置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python</td>
+<td>3.11</td>
+<td>3.12+</td>
+</tr>
+<tr>
+<td>uv</td>
+<td>0.4+</td>
+<td>最新版</td>
+</tr>
+<tr>
+<td>SQLite</td>
+<td>3.35+ (必须带 WAL 模式)</td>
+<td>系统自带的就行</td>
+</tr>
+<tr>
+<td>操作系统</td>
+<td>Linux, macOS, Windows</td>
+<td>Linux (只有它才能玩 Tier 2 结界)</td>
+</tr>
+</tbody>
+</table>
+<p>如果你打算在本地跑 LLM 推理，还得加上：</p>
+<table>
+<thead>
+<tr>
+<th>额外要求</th>
+<th>拿来干嘛的</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NVIDIA 显卡</td>
+<td>在本地跑 vLLM 暴力推理</td>
+</tr>
+<tr>
+<td>CUDA 12.1+</td>
+<td>vLLM 的底层引擎</td>
+</tr>
+<tr>
+<td>vLLM 0.4+</td>
+<td>模型服务端</td>
+</tr>
+<tr>
+<td>fusepy</td>
+<td>Tier 2 级别的 FUSE 沙盒隔离 (Linux 专属)</td>
+</tr>
+<tr>
+<td>uvicorn + starlette</td>
+<td>给 MCP 服务端跑 SSE 通讯隧道的</td>
+</tr>
+</tbody>
+</table>
+<p>没装 <code>uv</code>？一句话搞定：</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># macOS / Linux</span>
+curl<span class="w"> </span>-LsSf<span class="w"> </span>https://astral.sh/uv/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
+
+<span class="c1"># Windows</span>
+powershell<span class="w"> </span>-ExecutionPolicy<span class="w"> </span>ByPass<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;irm https://astral.sh/uv/install.ps1 | iex&quot;</span>
+
+<span class="c1"># 验货</span>
+uv<span class="w"> </span>--version
+</code></pre></div>
+
+<h3 id="optional-extras">选装包 (Optional extras)</h3>
+<p>带上 <code>dev</code> 后缀，就能把 pytest、pytest-asyncio、pytest-cov 和 ruff 这帮开发用的老哥请进来：</p>
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>sync<span class="w"> </span>--extra<span class="w"> </span>dev
+</code></pre></div>
+
+<p>如果你想玩 Tier 2 级别的 FUSE 沙盒隔离 (仅限 Linux)，那就得把 <code>fusepy</code> 扯进来：</p>
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>sync<span class="w"> </span>--extra<span class="w"> </span>fuse
+</code></pre></div>
+
+<h3 id="_3">验验成色</h3>
+<p>查三样：CLI 活没活、测试能不能跑、以及一次纯内存里的生死轮回：</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 看看 CLI 死没死</span>
+uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>--version
+
+<span class="c1"># 把测试套件抽一遍</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest
+
+<span class="c1"># 极速点火试车 (Smoke test)</span>
+uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+<span class="s2">from bene import Bene</span>
+<span class="s2">afs = Bene(&#39;:memory:&#39;)</span>
+<span class="s2">agent = afs.spawn(&#39;smoke-test&#39;)</span>
+<span class="s2">afs.write(agent, &#39;/hello.txt&#39;, b&#39;Hello from BENE!&#39;)</span>
+<span class="s2">print(afs.read(agent, &#39;/hello.txt&#39;))</span>
+<span class="s2">afs.close()</span>
+<span class="s2">print(&#39;OK&#39;)</span>
+<span class="s2">&quot;</span>
+</code></pre></div>
+
+<h3 id="uv-run">甩掉 <code>uv run</code> 这个拐杖</h3>
+<p>如果你想在终端里直接裸敲 <code>bene</code>，而不是每次都拖着个 <code>uv run</code>：</p>
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</code></pre></div>
+
+<hr />
+<p><a id="vllm-setup"></a></p>
+<h2 id="_4">把模型端上来</h2>
+<p>只要它长着一张兼容 OpenAI 的脸，BENE 就能把它当牛使。我们官方推荐的标配是本地 vLLM —— 每个难度梯队独享一个服务端进程 —— 不过你先拿单张显卡跑跑也凑合。</p>
+<h3 id="_5">单卡单模型的穷人玩法</h3>
+<p>就一张显卡，就一个模型？那就把所有的难度分级全砸在它头上：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">my-model</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">vllm_endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8000/v1</span>
+<span class="w">    </span><span class="nt">max_context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32768</span>
+<span class="w">    </span><span class="nt">use_for</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">trivial</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">moderate</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">complex</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">critical</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<h3 id="_6">阶级森严：三梯队全量编队</h3>
+<p>梯队路由器 (tier router) 的杀手锏，就在于能把便宜的破事全扔给不要钱的破模型：</p>
+<table>
+<thead>
+<tr>
+<th>梯队</th>
+<th>样板模型</th>
+<th>脑容量</th>
+<th>vLLM 端口</th>
+<th>拿来干嘛的</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>矮子 (7B)</td>
+<td>Qwen/Qwen2.5-Coder-7B-Instruct</td>
+<td>32K</td>
+<td>8000</td>
+<td>无脑脏活、给任务贴标签、当分诊员</td>
+</tr>
+<tr>
+<td>中产 (32B)</td>
+<td>Qwen/Qwen2.5-Coder-32B-Instruct</td>
+<td>128K</td>
+<td>8001</td>
+<td>敲日常代码、写测试用例</td>
+</tr>
+<tr>
+<td>大佛 (70B)</td>
+<td>deepseek-ai/DeepSeek-R1-70B</td>
+<td>128K</td>
+<td>8002</td>
+<td>骨灰级推理、系统架构、画大饼</td>
+</tr>
+</tbody>
+</table>
+<p>7B — 专门负责分诊和打杂的底层苦力：</p>
+<div class="codehilite"><pre><span></span><code>vllm<span class="w"> </span>serve<span class="w"> </span>Qwen/Qwen2.5-Coder-7B-Instruct<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--max-model-len<span class="w"> </span><span class="m">32768</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--gpu-memory-utilization<span class="w"> </span><span class="m">0</span>.85<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--tensor-parallel-size<span class="w"> </span><span class="m">1</span>
+</code></pre></div>
+
+<p>32B — 干活的主力牛马：</p>
+<div class="codehilite"><pre><span></span><code>vllm<span class="w"> </span>serve<span class="w"> </span>Qwen/Qwen2.5-Coder-32B-Instruct<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--port<span class="w"> </span><span class="m">8001</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--max-model-len<span class="w"> </span><span class="m">131072</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--gpu-memory-utilization<span class="w"> </span><span class="m">0</span>.90<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--tensor-parallel-size<span class="w"> </span><span class="m">2</span>
+</code></pre></div>
+
+<p>70B — 供起来专门啃骨头的：</p>
+<div class="codehilite"><pre><span></span><code>vllm<span class="w"> </span>serve<span class="w"> </span>deepseek-ai/DeepSeek-R1-70B<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--port<span class="w"> </span><span class="m">8002</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--max-model-len<span class="w"> </span><span class="m">131072</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--gpu-memory-utilization<span class="w"> </span><span class="m">0</span>.90<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--tensor-parallel-size<span class="w"> </span><span class="m">4</span>
+</code></pre></div>
+
+<h3 id="vram">这帮祖宗要吃多少显存 (VRAM)</h3>
+<table>
+<thead>
+<tr>
+<th>模型体型</th>
+<th>砸锅卖铁底线</th>
+<th>推荐配置</th>
+<th>张量并行 (Tensor Parallel)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>7B</td>
+<td>16 GB (1张卡)</td>
+<td>24 GB</td>
+<td>1</td>
+</tr>
+<tr>
+<td>32B</td>
+<td>48 GB (2张卡)</td>
+<td>80 GB</td>
+<td>2</td>
+</tr>
+<tr>
+<td>70B</td>
+<td>160 GB (4张卡)</td>
+<td>320 GB</td>
+<td>4-8</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_7">拿棍子戳戳看死活</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 把每个口子都戳一遍</span>
+curl<span class="w"> </span>http://localhost:8000/v1/models
+curl<span class="w"> </span>http://localhost:8001/v1/models
+curl<span class="w"> </span>http://localhost:8002/v1/models
+</code></pre></div>
+
+<p>没死的话，它会吐一坨 JSON 出来，大声报出自己的名号。</p>
+<h3 id="_8">本地没卡？花钱去外面找只鸡</h3>
+<p>接外面的远程接口跟本地玩是一模一样的 —— 换个网址就行了：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">remote-model</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">vllm_endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://my-gpu-server.example.com/v1</span>
+<span class="w">    </span><span class="nt">max_context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">131072</span>
+<span class="w">    </span><span class="nt">use_for</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">complex</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">critical</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<hr />
+<p><a id="configuration-walkthrough"></a></p>
+<h2 id="beneyaml">扒光 bene.yaml 的底裤</h2>
+<p>先把随代码附赠的那个样板抄一份，然后对着它开刀：</p>
+<div class="codehilite"><pre><span></span><code>cp<span class="w"> </span>bene.yaml.example<span class="w"> </span>bene.yaml
+</code></pre></div>
+
+<h3 id="_9">全文无死角解剖</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># ── 数据库 (Database) ────────────────────────────────────────</span>
+<span class="nt">database</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./bene.db</span><span class="w">              </span><span class="c1"># SQLite 那个破文件的落脚点</span>
+<span class="w">  </span><span class="nt">wal_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">                </span><span class="c1"># 强开 WAL 模式防卡死 (极其推荐开着)</span>
+<span class="w">  </span><span class="nt">busy_timeout_ms</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5000</span><span class="w">         </span><span class="c1"># 抢不到写锁时，挣扎多久才放弃 (毫秒)</span>
+<span class="w">  </span><span class="nt">max_blob_size_mb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span><span class="w">         </span><span class="c1"># 死活不准超过这个体型的单体巨物</span>
+<span class="w">  </span><span class="nt">compression</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">zstd</span><span class="w">             </span><span class="c1"># 榨汁机选项: &quot;zstd&quot; 还是 &quot;none&quot;</span>
+<span class="w">  </span><span class="nt">gc_interval_minutes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span><span class="w">       </span><span class="c1"># 扫地大妈多久出来清理一次没主的孤儿碎片</span>
+
+<span class="c1"># ── 隔离结界 (Isolation) ───────────────────────────────────────</span>
+<span class="nt">isolation</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">logical</span><span class="w">                 </span><span class="c1"># &quot;logical&quot; (默认), &quot;fuse&quot;, 或者 &quot;namespace&quot;</span>
+<span class="w">  </span><span class="nt">fuse_mount_base</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/bene</span><span class="w"> </span><span class="c1"># FUSE 结界的老巢 (Linux 专属黑科技)</span>
+<span class="w">  </span><span class="nt">cgroups</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">              </span><span class="c1"># 强行戴上 cgroups v2 的镣铐</span>
+<span class="w">    </span><span class="nt">memory_limit_mb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4096</span><span class="w">       </span><span class="c1"># 饿死 agent 前最多给多少内存</span>
+<span class="w">    </span><span class="nt">cpu_shares</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1024</span><span class="w">            </span><span class="c1"># 抢 CPU 时的权重</span>
+
+<span class="c1"># ── 模型巢穴 (Model Endpoints) ──────────────────────────────────────────</span>
+<span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">qwen2.5-coder-7b</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">vllm_endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8000/v1</span>
+<span class="w">    </span><span class="nt">max_context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32768</span><span class="w">          </span><span class="c1"># 脑容量极限 (tokens)</span>
+<span class="w">    </span><span class="nt">use_for</span><span class="p">:</span><span class="w">                    </span><span class="c1"># 认领的脏活累活</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">trivial</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">code_completion</span>
+
+<span class="w">  </span><span class="nt">qwen2.5-coder-32b</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">vllm_endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8001/v1</span>
+<span class="w">    </span><span class="nt">max_context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">131072</span>
+<span class="w">    </span><span class="nt">use_for</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">moderate</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">code_generation</span>
+
+<span class="w">  </span><span class="nt">deepseek-r1-70b</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">vllm_endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8002/v1</span>
+<span class="w">    </span><span class="nt">max_context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">131072</span>
+<span class="w">    </span><span class="nt">use_for</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">complex</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">critical</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">planning</span>
+
+<span class="c1"># ── 梯队路由 (Tier Router) ────────────────────────────────────</span>
+<span class="nt">router</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tier</span><span class="w">                    </span><span class="c1"># 阶级社会路由 (目前只有这个)</span>
+<span class="w">  </span><span class="nt">classifier_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">qwen2.5-coder-7b</span><span class="w">   </span><span class="c1"># 抓个模型来当分诊员</span>
+<span class="w">  </span><span class="nt">fallback_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deepseek-r1-70b</span><span class="w">      </span><span class="c1"># 大家都跑路的时候，用来擦屁股的大哥</span>
+<span class="w">  </span><span class="nt">context_compression</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">     </span><span class="c1"># 强开脑容量压缩机</span>
+<span class="w">  </span><span class="nt">max_retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w">                </span><span class="c1"># 放弃治疗前的挣扎次数</span>
+
+<span class="c1"># ── 跑圈引擎 (CCR) ────────────────────────────</span>
+<span class="nt">ccr</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">max_iterations</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span><span class="w">           </span><span class="c1"># 逼死 agent 前最多让它绕多少圈 (plan-act-observe)</span>
+<span class="w">  </span><span class="nt">checkpoint_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span><span class="w">       </span><span class="c1"># 每熬过 N 圈就强制按头存个档</span>
+<span class="w">  </span><span class="nt">timeout_seconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3600</span><span class="w">         </span><span class="c1"># Agent 的阳寿极限 (1 小时)</span>
+<span class="w">  </span><span class="nt">max_parallel_agents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span><span class="w">        </span><span class="c1"># 并排狂飙的冲锋阵列人数上限</span>
+
+<span class="c1"># ── MCP 服务端 ─────────────────────────────────────</span>
+<span class="nt">mcp</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3100</span><span class="w">                    </span><span class="c1"># SSE 隧道的破门</span>
+<span class="w">  </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">127.0.0.1</span><span class="w">              </span><span class="c1"># 绑死的门牌号</span>
+
+<span class="c1"># ── 碎碎念 (Logging) ──────────────────────────────────────────────────</span>
+<span class="nt">logging</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">INFO</span><span class="w">                   </span><span class="c1"># 碎碎念的下限: DEBUG, INFO, WARNING, ERROR</span>
+<span class="w">  </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./bene.log</span><span class="w">             </span><span class="c1"># 日志文件扔哪</span>
+</code></pre></div>
+
+<h3 id="_10">决定生死的那四个旋钮</h3>
+<p><strong><code>database.compression</code></strong> — <code>zstd</code> (默认项) 会拿着三档压缩死命榨干每一块碎片：体积能缩极多，CPU 也不怎么喊疼。只有当你那台破服务器 CPU 已经被榨干、并且你还在疯狂往里塞垃圾时，才去切成 <code>none</code>。</p>
+<p><strong><code>isolation.mode</code></strong> — 三重结界，一层比一层丧心病狂：</p>
+<ul>
+<li><code>logical</code> (默认) 纯靠 SQL 语法硬防 —— 一分钱不用花，随便什么系统都能跑。</li>
+<li><code>fuse</code> 强行挂载一个单兵专属 VFS；这玩意只认 Linux 和 fusepy。只要你的 agent 会跑点奇奇怪怪的系统命令、并且指望硬盘上真有这个文件，你就得捏着鼻子选它。</li>
+<li><code>namespace</code> 直接动用 Linux 命名空间外加 cgroups 戴镣铐；必须有 Linux 和 root 权限。专门用来关押那些你极度不信任的脏活。</li>
+</ul>
+<p><strong><code>router.classifier_model</code></strong> — 把这活丢给你池子里最小、最快的那个模型。它的提示词极短，而且被死死掐在了 <code>max_tokens=10</code>，所以哪怕是个 7B 也能秒回且算得很准。如果你连这个都不写，BENE 就会退化成纯正则匹配的老古董 (纯看长相，一行 LLM 都不跑)。</p>
+<p><strong><code>router.context_compression</code></strong> — 把它打开，BENE 就会在每次发包前极其残暴地修剪上下文：把之前工具吐出来的长篇大论全截断、并且抛弃最早的闲聊记录，保证你永远不会撞到爆显存的南墙。它会死死卡住模型 <code>max_context</code> 的 85% 来下刀，留出余量让模型能把话说完。</p>
+<hr />
+<p><a id="running-as-a-service-systemd"></a></p>
+<h2 id="systemd">塞进 systemd 当成牛马使唤</h2>
+<h3 id="bene-mcp">BENE MCP 隧道服务</h3>
+<p>把这坨东西糊到 <code>/etc/systemd/system/bene-mcp.service</code> 去：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">[Unit]</span>
+<span class="na">Description</span><span class="o">=</span><span class="s">BENE MCP Server</span>
+<span class="na">After</span><span class="o">=</span><span class="s">network.target</span>
+
+<span class="k">[Service]</span>
+<span class="na">Type</span><span class="o">=</span><span class="s">simple</span>
+<span class="na">User</span><span class="o">=</span><span class="s">bene</span>
+<span class="na">Group</span><span class="o">=</span><span class="s">bene</span>
+<span class="na">WorkingDirectory</span><span class="o">=</span><span class="s">/opt/bene</span>
+<span class="na">ExecStart</span><span class="o">=</span><span class="s">/opt/bene/.venv/bin/bene serve --transport sse --host 127.0.0.1 --port 3100 --db /var/lib/bene/bene.db --config-file /etc/bene/bene.yaml</span>
+<span class="na">Restart</span><span class="o">=</span><span class="s">on-failure</span>
+<span class="na">RestartSec</span><span class="o">=</span><span class="s">5</span>
+<span class="na">Environment</span><span class="o">=</span><span class="s">BENE_DB=/var/lib/bene/bene.db</span>
+<span class="na">Environment</span><span class="o">=</span><span class="s">BENE_CONFIG=/etc/bene/bene.yaml</span>
+
+<span class="c1"># 铁桶防御 (Security hardening)</span>
+<span class="na">NoNewPrivileges</span><span class="o">=</span><span class="s">true</span>
+<span class="na">ProtectSystem</span><span class="o">=</span><span class="s">strict</span>
+<span class="na">ReadWritePaths</span><span class="o">=</span><span class="s">/var/lib/bene</span>
+<span class="na">ProtectHome</span><span class="o">=</span><span class="s">true</span>
+
+<span class="k">[Install]</span>
+<span class="na">WantedBy</span><span class="o">=</span><span class="s">multi-user.target</span>
+</code></pre></div>
+
+<p>底下那一堆防黑客选项能确保它就算抽风了也造不了反：绝不允许提权、系统盘只读、想撒野只能在 <code>/var/lib/bene</code> 那个笼子里撒。</p>
+<h3 id="_11">每个梯队的模型各占一个坑</h3>
+<p>这是 7B 的笼子，塞进 <code>/etc/systemd/system/vllm-7b.service</code>：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">[Unit]</span>
+<span class="na">Description</span><span class="o">=</span><span class="s">vLLM 7B Model Server</span>
+<span class="na">After</span><span class="o">=</span><span class="s">network.target</span>
+
+<span class="k">[Service]</span>
+<span class="na">Type</span><span class="o">=</span><span class="s">simple</span>
+<span class="na">User</span><span class="o">=</span><span class="s">vllm</span>
+<span class="na">Group</span><span class="o">=</span><span class="s">vllm</span>
+<span class="na">ExecStart</span><span class="o">=</span><span class="s">/opt/vllm/.venv/bin/vllm serve Qwen/Qwen2.5-Coder-7B-Instruct --port 8000 --max-model-len 32768 --gpu-memory-utilization 0.85</span>
+<span class="na">Restart</span><span class="o">=</span><span class="s">on-failure</span>
+<span class="na">RestartSec</span><span class="o">=</span><span class="s">10</span>
+<span class="na">Environment</span><span class="o">=</span><span class="s">CUDA_VISIBLE_DEVICES=0</span>
+
+<span class="k">[Install]</span>
+<span class="na">WantedBy</span><span class="o">=</span><span class="s">multi-user.target</span>
+</code></pre></div>
+
+<p>剩下的两尊大佛如法炮制：32B 霸占 8001 端口并且绑死 <code>CUDA_VISIBLE_DEVICES=1,2</code>，70B 盘踞在 8002 端口并且骑着 <code>CUDA_VISIBLE_DEVICES=3,4,5,6</code>。</p>
+<h3 id="_12">全军出击</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 捏个没法登系统的僵尸账号，顺便把狗窝建好</span>
+sudo<span class="w"> </span>useradd<span class="w"> </span>-r<span class="w"> </span>-s<span class="w"> </span>/bin/false<span class="w"> </span>bene
+sudo<span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/var/lib/bene<span class="w"> </span>/etc/bene
+sudo<span class="w"> </span>chown<span class="w"> </span>bene:bene<span class="w"> </span>/var/lib/bene
+
+<span class="c1"># 把配置抄过去</span>
+sudo<span class="w"> </span>cp<span class="w"> </span>bene.yaml<span class="w"> </span>/etc/bene/bene.yaml
+
+<span class="c1"># 开机自启</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>daemon-reload
+sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>--now<span class="w"> </span>vllm-7b<span class="w"> </span>vllm-32b<span class="w"> </span>vllm-70b
+sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>--now<span class="w"> </span>bene-mcp
+
+<span class="c1"># 验尸</span>
+sudo<span class="w"> </span>systemctl<span class="w"> </span>status<span class="w"> </span>bene-mcp
+sudo<span class="w"> </span>journalctl<span class="w"> </span>-u<span class="w"> </span>bene-mcp<span class="w"> </span>-f
+</code></pre></div>
+
+<hr />
+<p><a id="docker-deployment"></a></p>
+<h2 id="docker">躲在 Docker 壳子里跑</h2>
+<p>下面这张镜像会把通过 SSE 协议暴露 MCP，并且把那个破数据库甩到外挂卷里。</p>
+<h3 id="_13">捏镜像</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.12-slim</span>
+
+<span class="c"># 把 uv 生拽过来</span>
+<span class="k">COPY</span><span class="w"> </span>--from<span class="o">=</span>ghcr.io/astral-sh/uv:latest<span class="w"> </span>/uv<span class="w"> </span>/usr/local/bin/uv
+
+<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span>
+
+<span class="c"># 把家当搬进去</span>
+<span class="k">COPY</span><span class="w"> </span>pyproject.toml<span class="w"> </span>uv.lock<span class="w"> </span>./
+<span class="k">COPY</span><span class="w"> </span>bene/<span class="w"> </span>bene/
+
+<span class="c"># 把包全打进去</span>
+<span class="k">RUN</span><span class="w"> </span>uv<span class="w"> </span>sync<span class="w"> </span>--frozen<span class="w"> </span>--no-dev
+
+<span class="c"># 给数据库留个坑</span>
+<span class="k">RUN</span><span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/data
+
+<span class="c"># 默认开打：SSE 模式的 MCP 隧道</span>
+<span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;uv&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;run&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;bene&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;serve&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--transport&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;sse&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--host&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--port&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;3100&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--db&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/data/bene.db&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--config-file&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/app/bene.yaml&quot;</span><span class="p">]</span>
+
+<span class="k">EXPOSE</span><span class="w"> </span><span class="s">3100</span>
+
+<span class="k">VOLUME</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;/data&quot;</span><span class="p">]</span>
+</code></pre></div>
+
+<h3 id="compose-bene-7b">Compose 大礼包：BENE 挂着一只 7B 模型</h3>
+<div class="codehilite"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">bene</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">build</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;3100:3100&quot;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bene-data:/data</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./bene.yaml:/app/bene.yaml:ro</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vllm-7b</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+
+<span class="w">  </span><span class="nt">vllm-7b</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vllm/vllm-openai:latest</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">      </span><span class="no">--model Qwen/Qwen2.5-Coder-7B-Instruct</span>
+<span class="w">      </span><span class="no">--port 8000</span>
+<span class="w">      </span><span class="no">--max-model-len 32768</span>
+<span class="w">      </span><span class="no">--gpu-memory-utilization 0.85</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8000:8000&quot;</span>
+<span class="w">    </span><span class="nt">deploy</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">reservations</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">devices</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">driver</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nvidia</span>
+<span class="w">              </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">              </span><span class="nt">capabilities</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">gpu</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+
+<span class="nt">volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">bene-data</span><span class="p">:</span>
+</code></pre></div>
+
+<h3 id="_14">踢一脚看看</h3>
+<div class="codehilite"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d
+
+<span class="c1"># 蹲点看日记</span>
+docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>bene
+
+<span class="c1"># 隔着壳子执行命令</span>
+docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>bene<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>ls<span class="w"> </span>--db<span class="w"> </span>/data/bene.db
+</code></pre></div>
+
+<h3 id="_15">被网络坑死的雷区</h3>
+<p>在 Compose 的世界里，<code>localhost</code> 会直接撞到自己脸上。你得在 <code>bene.yaml</code> 里老老实实拿服务名去点名：</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">qwen2.5-coder-7b</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">vllm_endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://vllm-7b:8000/v1</span>
+<span class="w">    </span><span class="nt">max_context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32768</span>
+<span class="w">    </span><span class="nt">use_for</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">trivial</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">moderate</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">complex</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">critical</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<hr />
+<h2 id="_16">拿什么证明系统没死</h2>
+<p>既然它把整条命都拴在一个 SQLite 身上，那所谓的健康检查无非就是敲几行 SQL 的事 —— 连狗屁仪表盘都不需要：</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 查骨架版本</span>
+bene<span class="w"> </span>query<span class="w"> </span><span class="s2">&quot;SELECT * FROM schema_version&quot;</span>
+
+<span class="c1"># 看看这头猪到底吃了多少斤的料</span>
+bene<span class="w"> </span>query<span class="w"> </span><span class="s2">&quot;</span>
+<span class="s2">SELECT &#39;agents&#39; as tbl, COUNT(*) as rows FROM agents</span>
+<span class="s2">UNION ALL SELECT &#39;files&#39;, COUNT(*) FROM files</span>
+<span class="s2">UNION ALL SELECT &#39;blobs&#39;, COUNT(*) FROM blobs</span>
+<span class="s2">UNION ALL SELECT &#39;tool_calls&#39;, COUNT(*) FROM tool_calls</span>
+<span class="s2">UNION ALL SELECT &#39;state&#39;, COUNT(*) FROM state</span>
+<span class="s2">UNION ALL SELECT &#39;events&#39;, COUNT(*) FROM events</span>
+<span class="s2">UNION ALL SELECT &#39;checkpoints&#39;, COUNT(*) FROM checkpoints</span>
+<span class="s2">&quot;</span>
+
+<span class="c1"># 查 WAL 到底开没开</span>
+bene<span class="w"> </span>query<span class="w"> </span><span class="s2">&quot;PRAGMA journal_mode&quot;</span>
+
+<span class="c1"># 全身体检</span>
+bene<span class="w"> </span>query<span class="w"> </span><span class="s2">&quot;PRAGMA integrity_check&quot;</span>
+</code></pre></div>
+
+<p>这套查询接口 (query) 是被焊死在只读模式的，所以就算你闭着眼睛敲健康检查，也绝对搞不坏任何东西。</p>
+<hr />
+<p><a id="performance-tuning"></a></p>
+<h2 id="_17">性能榨汁机</h2>
+<h3 id="sqlite">给 SQLite 喂猛药</h3>
+<p><code>Bene.__init__()</code> 每次握手时都会强塞这几口药：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA journal_mode=WAL&quot;</span><span class="p">)</span>     <span class="c1"># 众人拾柴齐发力 (Concurrent reads)</span>
+<span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA foreign_keys=ON&quot;</span><span class="p">)</span>       <span class="c1"># 别特么乱指空坟 (Referential integrity)</span>
+<span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA busy_timeout=30000&quot;</span><span class="p">)</span>    <span class="c1"># 抢不到锁先忍 30 秒</span>
+<span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA wal_autocheckpoint=100&quot;</span><span class="p">)</span> <span class="c1"># 满 100 滴血就清一次账</span>
+</code></pre></div>
+
+<p>还在嫌并发不够变态？那就在继承 <code>Bene</code> 或者搞连接池时，再给它糊上这几剂禁药：</p>
+<div class="codehilite"><pre><span></span><code><span class="n">PRAGMA</span><span class="w"> </span><span class="n">synchronous</span><span class="o">=</span><span class="n">NORMAL</span><span class="p">;</span><span class="w">       </span><span class="c1">-- 拿命换速度 (断电可能会丢最后一秒的档)</span>
+<span class="n">PRAGMA</span><span class="w"> </span><span class="n">cache_size</span><span class="o">=-</span><span class="mi">64000</span><span class="p">;</span><span class="w">        </span><span class="c1">-- 赏它 64MB 的页缓存 (平时抠门到只给 2MB)</span>
+<span class="n">PRAGMA</span><span class="w"> </span><span class="n">mmap_size</span><span class="o">=</span><span class="mi">268435456</span><span class="p">;</span><span class="w">      </span><span class="c1">-- 256MB 的内存映射暴搜</span>
+<span class="n">PRAGMA</span><span class="w"> </span><span class="n">temp_store</span><span class="o">=</span><span class="n">MEMORY</span><span class="p">;</span><span class="w">        </span><span class="c1">-- 临时烂账全在内存里糊</span>
+</code></pre></div>
+
+<h3 id="db">那个 <code>.db</code> 文件放哪极其致命</h3>
+<ul>
+<li>老老实实把它放在 <strong>本地固态硬盘 (SSD)</strong> 上。WAL 模式只要一闻到网络文件系统的味道就会当场暴毙 —— 别特么想着 NFS 或者 SMB。</li>
+<li>放在 tmpfs/ramfs (纯内存盘) 里跑得飞起，代价是你重启之后就只剩一条内裤了。</li>
+<li>拿 Docker 跑的时候，必须挂上命名卷 (named volume) 或者直接绑在本地 SSD 上的目录里。</li>
+</ul>
+<h3 id="_18">榨汁机选项：要命还是要空间</h3>
+<table>
+<thead>
+<tr>
+<th>怎么选</th>
+<th>写的有多疼</th>
+<th>读的有多疼</th>
+<th>到底能压多扁</th>
+<th>什么时候上</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>zstd</code></td>
+<td>稍微有点卡</td>
+<td>稍微有点卡</td>
+<td>原体积的 40-70%</td>
+<td>万金油默认项</td>
+</tr>
+<tr>
+<td><code>none</code></td>
+<td>快到飞起</td>
+<td>快到飞起</td>
+<td>原封不动的大肉块</td>
+<td>你的破 CPU 已经被榨干了，而且文件都是指甲盖大小的</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_19">手动油门上的三个转速表</h3>
+<ul>
+<li><code>ccr.max_parallel_agents</code> 捏着异步信号量的咽喉。这玩意必须看你显存和 vLLM 的脸色行事 —— 每一匹在跑的狼，都会把它的整套黑历史硬塞在你显存里。</li>
+<li><code>database.busy_timeout_ms</code> 当你开始狂飙并发、而且屏幕上频频闪过 <code>database is locked</code> 时，把它往上狂拉；拉到 10000 甚至 30000 都不丢人。</li>
+<li>vLLM 里的 <code>--max-num-seqs</code> 卡着模型那边能同时接多少客。让它跟 <code>max_parallel_agents</code> 并驾齐驱，免得两头互相干等着浪费青春。</li>
+</ul>
+<h3 id="_20">收尸大队清理乱葬岗</h3>
+<p>被覆盖掉的旧文件和被直接删掉的尸体，会留下满地的孤儿碎片 (orphaned blobs)。时不时去给它们扫个墓：</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bene</span>
+
+<span class="n">afs</span> <span class="o">=</span> <span class="n">Bene</span><span class="p">(</span><span class="s2">&quot;bene.db&quot;</span><span class="p">)</span>
+<span class="n">removed</span> <span class="o">=</span> <span class="n">afs</span><span class="o">.</span><span class="n">blobs</span><span class="o">.</span><span class="n">gc</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Removed </span><span class="si">{</span><span class="n">removed</span><span class="si">}</span><span class="s2"> orphaned blobs&quot;</span><span class="p">)</span>
+<span class="n">afs</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</code></pre></div>
+
+<p>看看底下还烂了多少无主之物等着你去扫：</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>query<span class="w"> </span><span class="s2">&quot;SELECT COUNT(*) as orphaned FROM blobs WHERE ref_count &lt;= 0&quot;</span>
+</code></pre></div>
+
+<p>虽然 <code>gc_interval_minutes</code> 已经写在配置文件里了，但全自动垃圾回收的定时器目前还没装上 —— 所以在那之前，这种扫地的工作只能你自己亲自动手了。</p>
+<hr />
+<p><a id="troubleshooting"></a></p>
+<h2 id="_21">排雷自救手册</h2>
+<h3 id="vllm-connection-refused">vLLM 抵死不从 (Connection refused)</h3>
+<p>BENE 在你指的那个口子上扑了个空。</p>
+<ol>
+<li>亲自拿棍子去捅那个口子：<code>curl http://localhost:8000/v1/models</code></li>
+<li>去翻 <code>bene.yaml</code>，看看那个端口是不是写串行了。</li>
+<li>如果是在 Docker 壳子里，别傻敲 <code>localhost</code>，拿它的名字去敲门 —— <code>http://vllm-7b:8000/v1</code>。</li>
+<li>滚去看 vLLM 的日记，看看是不是显存爆了或者模型压根就没加载起来。</li>
+</ol>
+<h3 id="database-is-locked">门锁死了进不去 ("database is locked")</h3>
+<p>一群大老粗抢写锁，而且死皮赖脸抢的时间超过了超时极限。</p>
+<ol>
+<li>去 <code>bene.yaml</code> 里把 <code>busy_timeout_ms</code> 往死里拉 —— 15000 或者 30000 都行。</li>
+<li>拿命去查 WAL 到底开没开 —— <code>bene query "PRAGMA journal_mode"</code> 必须老老实实回你一个 <code>wal</code>。</li>
+<li>保证那个 <code>.db</code> 是长在本地硬盘上的，绝对不是从 NFS/SMB 里伸出来的触手。</li>
+<li>把 <code>max_parallel_agents</code> 往下按一按，别让那么多人一起去抢门把手。</li>
+</ol>
+<h3 id="out-of-context-window">脑容量溢出了 (Out of context window)</h3>
+<p>这段漫长而又废话连篇的对话，把模型的脑子给撑爆了。</p>
+<ol>
+<li>强开截肢手术：<code>router.context_compression: true</code></li>
+<li>把 <code>ccr.max_iterations</code> 掐死点，别让这破对话聊到天荒地老。</li>
+<li>把 <code>ccr.checkpoint_interval</code> 往上拉 —— 自动存盘的次数少了，废话就少了。</li>
+<li>如果真是个宏篇巨著的任务，把它扔给脑容量更大的老大哥模型去办。</li>
+</ol>
+<h3 id="_22">内存吃爆了</h3>
+<p>场上还活着的特种兵太多了，或者那个垃圾场里的碎片已经堆成了山。</p>
+<ol>
+<li>把 <code>ccr.max_parallel_agents</code> 往下砍。</li>
+<li>喊收尸大队出来干活：<code>afs.blobs.gc()</code></li>
+<li>那些已经结案的老东西，全都给我导出到废纸篓数据库里去：<code>bene export &lt;agent_id&gt; -o archive.db</code></li>
+<li>心里得有点数，你拨给 <code>PRAGMA cache_size</code> 的那个天价内存，就是生生从系统里抠出来的。</li>
+</ol>
+<h3 id="fuse">FUSE 结界立不起来</h3>
+<p>想玩 Tier 2 隔离？它只认 Linux，而且必须带上 fusepy 那个包。</p>
+<ol>
+<li>验明正身：<code>uname -s</code></li>
+<li>把缺失的组件给我补上：<code>uv sync --extra fuse</code></li>
+<li>看看内核模块长齐了没：<code>lsmod | grep fuse</code></li>
+<li>如果是权限被打回来了，去 <code>/etc/fuse.conf</code> 里加上 <code>user_allow_other</code>。</li>
+<li>只要你不是在正经的 Linux 里跑，老老实实退回去用 <code>isolation.mode: logical</code>。</li>
+</ol>
+<h3 id="_23">"查无此人: <id>"</h3>
+<p>你在名册上点了个压根就不存在的名字。</p>
+<ol>
+<li>睁眼看看名册上都有谁：<code>bene ls</code></li>
+<li>Agent ID 是那种极其反人类的 26 位 ULID 乱码 —— 你打错一个字都很正常。</li>
+<li>拍拍脑子想想，这哥们是不是已经被你导出扔掉了，或者你现在是不是跑错片场（连错 <code>.db</code>）了？</li>
+</ol>
+<h3 id="only-read-only-queries-are-allowed-via-query">"只能用只读命令来拷问 (Only read-only queries are allowed via query())"</h3>
+<p>这特么是故意的：<code>query()</code> 和那个叫 <code>agent_query</code> 的 MCP 兵器只能接只读的 SQL。想往里面写东西？滚去走 Python API；这个拷问接口的存在，纯粹是为了让你查房、盯盘、和验尸的。</p>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/zh/deployment.md" target="_blank" rel="noopener noreferrer">docs/zh/deployment.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+</main>
+</div>
+<footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>
+<a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer">Building something on bene? Open a Discussion.</a></div></footer>
+</body>
+</html>

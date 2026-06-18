@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>t11 — Local Agents with vLLM: a Zero-Cost, Auditable Multi-Agent Stack — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — t11 — Local Agents with vLLM: a Zero-Cost, Auditable Multi-Agent Stack" />
+<title>教程 t11 — 驾驭本地 vLLM 狼群：零成本、可全量审计的多 Agent 底座 — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — 教程 t11 — 驾驭本地 vLLM 狼群：零成本、可全量审计的多 Agent 底座" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -248,76 +248,76 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="../infra/DNS.html">DNS</a></aside>
 <main>
 <div class="crumbs"><a href="../index.html">docs</a> / tutorials/t11-local-agents-vllm.md</div>
-<h1 id="t11-local-agents-with-vllm-a-zero-cost-auditable-multi-agent-stack">t11 — Local Agents with vLLM: a Zero-Cost, Auditable Multi-Agent Stack</h1>
-<p><em>Tutorial · beginner · ~30 min</em></p>
+<h1 id="t11-vllm-agent">教程 t11 — 驾驭本地 vLLM 狼群：零成本、可全量审计的多 Agent 底座</h1>
+<p><em>入门教程 · 耗时约 30 分钟</em></p>
 <hr />
-<p>Put autonomous bene agents to work on a GPU you already own, steer them from Claude Code, and pay nothing per token. Thirty minutes from now you will have three agents building the same project side by side, a rollback you have personally exercised, and an audit trail you can interrogate with ordinary SQL.</p>
+<p>教你把你手头那张吃灰的显卡压榨到极致，跑起具有全自动化能力的 BENE 特种兵，并且直接从 Claude Code 里去发号施令，最爽的是：不用给模型供应商交哪怕一分钱的 token 费。不出 30 分钟，你就能亲手搭出一个拥有 3 只特种兵背对背写代码的施工队、能体验一次沙盒级的读档重来，外加一套用纯 SQL 就能拷问出所有真相的审计系统。</p>
 <blockquote>
-<p><strong>The whole system's state is one SQLite file on your disk — <code>cp bene.db backup.db</code> is a complete backup, and nothing leaves your machine.</strong></p>
-<p><strong>At the end of this tutorial, you will have:</strong></p>
+<p><strong>这一整套系统的所有状态，全部浓缩在你硬盘上的一个 SQLite 文件里 —— <code>cp bene.db backup.db</code> 就等于完成了全库备份，没有任何一个字节会流出你的机器。</strong></p>
+<p><strong>走完这篇教程，你将喜提：</strong></p>
 <ul>
-<li>vLLM serving a 7B model on your GPU (or any OpenAI-compatible endpoint pointed at remotely).</li>
-<li>BENE configured with Tier routing — single-model, multi-model, or hybrid local/cloud.</li>
-<li>Claude Code talking to BENE over MCP with all 18 BENE tools registered.</li>
-<li>One Python "hello world" agent run end-to-end via Claude Code.</li>
-<li>3 parallel agents (test-writer / implementer / doc-writer) with per-agent VFS isolation, proven with SQL.</li>
-<li>A working checkpoint and rollback on a deliberately-broken refactor.</li>
-<li>A SQL audit trail you can query with <code>bene query</code> or any SQLite client.</li>
+<li>一个拿 vLLM 跑在你本地显卡上的 7B 大模型 (或者任何一个套着 OpenAI 兼容壳子的远端接口)。</li>
+<li>一套被你捏成了 Tier (梯队) 路由的 BENE 底座 —— 随你是单模型、多模型混合、还是本地+云端杂交。</li>
+<li>一个能跟 BENE 拿 MCP 协议愉快聊天的 Claude Code，而且 18 把 BENE 兵器全部实装。</li>
+<li>一只通过 Claude Code 亲手唤醒并跑到通关的 "hello world" 测试版 agent。</li>
+<li>3 只并发冲锋的特种兵 (写测试的 / 写实现的 / 写文档的) 体验极度隔离的 VFS，外加用 SQL 验证它们真的没串门。</li>
+<li>一次为了演示而故意弄砸的重构，外加一次极其丝滑的读档回滚 (rollback)。</li>
+<li>一本能被你用 <code>bene query</code> 或任何 SQLite 客户端拷问的 SQL 审计流水账。</li>
 </ul>
 </blockquote>
-<p>Claude Code is optional until Step 4 — everything before that is driveable from the bene CLI alone, so the first half of this page doubles as a pure-CLI quickstart.</p>
-<h2 id="before-you-start">Before you start</h2>
+<p>Claude Code 这种外接神器直到第 4 步才会登场 —— 在那之前的活儿，光靠 bene CLI 自己就能干完，所以这篇教程的前半部分，其实也是一份纯命令行玩法的快速上手指南。</p>
+<h2 id="_1">进场前的行囊</h2>
 <ul>
-<li>Linux or macOS workstation.</li>
-<li>One GPU with <strong>≥16 GB VRAM</strong> for a 7B model, or <strong>≥48 GB</strong> (multi-GPU OK) for a 70B model.</li>
-<li>Python ≥3.10 and <a href="https://github.com/astral-sh/uv"><code>uv</code></a> (<code>curl -LsSf https://astral.sh/uv/install.sh | sh</code>).</li>
-<li>~15 GB free disk (model weights cache in <code>~/.cache/huggingface/</code>).</li>
-<li>Claude Code installed locally — only needed for sections 5 onward.</li>
+<li>一台跑 Linux 或 macOS 的工作站。</li>
+<li>一张 <strong>显存 ≥16 GB</strong> 的 GPU 用来伺候 7B 模型，或者 <strong>≥48 GB</strong> (插几张卡拼起来也行) 来伺候 70B 大爷。</li>
+<li>装好 Python ≥3.10 以及 <a href="https://github.com/astral-sh/uv"><code>uv</code></a> 极速包管理器 (<code>curl -LsSf https://astral.sh/uv/install.sh | sh</code>)。</li>
+<li>腾出大约 15 GB 硬盘空间 (模型的权重会被塞进 <code>~/.cache/huggingface/</code> 里)。</li>
+<li>在本地装好 Claude Code —— 第 5 步往后才会用到。</li>
 </ul>
 <blockquote>
-<p><strong>Tip.</strong> GPU-less? The setup, config, and audit material here still applies — set <code>endpoint:</code> to any OpenAI-compatible URL (Together, Anyscale, Fireworks, RunPod, llama.cpp/ollama on a different host) and ignore everything vLLM-specific.</p>
+<p><strong>没显卡怎么办？</strong> 这篇教程里的所有调度、配置和审计招数你照样能玩 —— 只要把配置文件里的 <code>endpoint:</code> 指向任何一个兼容 OpenAI 格式的远端接口 (比如 Together, Anyscale, Fireworks, RunPod，甚至是别人机器上的 llama.cpp/ollama) 就行，假装没看见那些 vLLM 专属的黑话。</p>
 </blockquote>
-<h2 id="step-1-serve-a-model-5-min-plus-first-run-download">Step 1 — Serve a model (5 min, plus first-run download)</h2>
-<p>The model download is the slowest part of the whole tutorial, so kick it off before anything else. vLLM exposes the standard OpenAI HTTP surface; bene reaches it through raw <code>httpx</code> — neither the <code>openai</code> SDK nor <code>litellm</code> is anywhere in the stack.</p>
-<h3 id="one-model-one-gpu-the-default-path">One model, one GPU — the default path</h3>
+<h2 id="step-1-5">Step 1 — 把模型端上来 (5 分钟，外加第一次拉权重的漫长等待)</h2>
+<p>下载模型是这篇教程里最熬人的环节，所以你最好现在就把它踢去后台跑。vLLM 暴露出来的接口跟 OpenAI 是一模一样的；BENE 是直接拿最底层的 <code>httpx</code> 去跟它裸聊的 —— 什么臃肿的 <code>openai</code> SDK、什么 <code>litellm</code> 胶水层，这套系统里压根就没有。</p>
+<h3 id="_2">一张卡，一个模型 —— 最原教旨主义的跑法</h3>
 <div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>vllm
 vllm<span class="w"> </span>serve<span class="w"> </span>Qwen/Qwen2.5-Coder-7B-Instruct<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
 </code></pre></div>
 
-<p>Confirm it answers:</p>
+<p>拿棍子戳它一下看看死活：</p>
 <div class="codehilite"><pre><span></span><code>curl<span class="w"> </span>http://localhost:8000/v1/models
-<span class="c1"># Should return JSON listing the served model.</span>
+<span class="c1"># 正常的话，它会吐一坨 JSON 出来，里面写着它挂着的模型名字。</span>
 </code></pre></div>
 
 <blockquote>
-<p><strong>Tip.</strong> First launch pulls the weights into <code>~/.cache/huggingface/</code> (~14 GB for the 7B). On a slow link, pre-stage them with <code>huggingface-cli download Qwen/Qwen2.5-Coder-7B-Instruct</code>; a warm cache cuts startup to seconds.</p>
+<p><strong>实战套路。</strong> 第一次拉起时它会把模型权重生拽到 <code>~/.cache/huggingface/</code> 里 (7B 模型大概要吃掉 14 GB)。如果你家网速不行，推荐先拿 <code>huggingface-cli download Qwen/Qwen2.5-Coder-7B-Instruct</code> 在后台慢慢拉；一旦缓存热了，启动也就几秒钟的事。</p>
 </blockquote>
-<h3 id="three-models-three-complexity-tiers-for-48-gb-vram">Three models, three complexity tiers — for ≥48 GB VRAM</h3>
-<div class="codehilite"><pre><span></span><code><span class="c1"># Terminal 1 — small model for trivial tasks + routing classifier</span>
+<h3 id="48-gb-vram">阶级森严：三梯队模型伺候 —— 显存大户 (≥48 GB VRAM) 专享</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 终端 1 — 抓个小模型来应付脏活累活，兼职当路由器的分拣员</span>
 vllm<span class="w"> </span>serve<span class="w"> </span>Qwen/Qwen2.5-Coder-7B-Instruct<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
 
-<span class="c1"># Terminal 2 — medium model for moderate tasks</span>
+<span class="c1"># 终端 2 — 抓个中等个子的模型来扛起普通难度</span>
 vllm<span class="w"> </span>serve<span class="w"> </span>Qwen/Qwen2.5-Coder-32B-Instruct<span class="w"> </span>--port<span class="w"> </span><span class="m">8001</span>
 
-<span class="c1"># Terminal 3 — large model for complex tasks</span>
+<span class="c1"># 终端 3 — 供一尊大佛，专解那种骨灰级难题</span>
 vllm<span class="w"> </span>serve<span class="w"> </span>deepseek-ai/DeepSeek-R1-70B<span class="w"> </span>--port<span class="w"> </span><span class="m">8002</span>
 </code></pre></div>
 
 <blockquote>
-<p><strong>See also.</strong> <a href="t06-ml-research-lab.html">tutorials/t06 — ML Research Lab</a> runs this exact 3-GPU layout with 6 parallel hypothesis agents overnight; the config you write in Step 3 is essentially the t06 one.</p>
+<p><strong>顺藤摸瓜。</strong> <a href="t06-ml-research-lab.html">教程/t06 — ML 炼丹实验室</a> 就是拿这套极其奢华的 3 卡阵容，同时跑着 6 只科研 agent 熬了个通宵；你在第 3 步里要写的那个配置文件，其实就是从 t06 那边抄来的。</p>
 </blockquote>
-<h3 id="no-vllm-any-v1chatcompletions-server-qualifies">No vLLM? Any <code>/v1/chat/completions</code> server qualifies</h3>
-<p>Because the client side is plain httpx, the server side is interchangeable:</p>
+<h3 id="vllm-v1chatcompletions">没 vLLM？只要长了个 <code>/v1/chat/completions</code> 的嘴，谁来都行</h3>
+<p>因为 BENE 客户端这边极其克制地只用了纯正的 httpx，所以服务器那边你随便换什么阿猫阿狗都行：</p>
 <ul>
-<li><strong>vLLM</strong> (recommended) — fastest batched inference.</li>
-<li><strong>llama.cpp</strong> / <strong>ollama</strong> — small enough for consumer hardware.</li>
-<li><strong>text-generation-webui</strong> — fine when it is already part of your setup.</li>
-<li><strong>LocalAI</strong> — drop-in OpenAI replacement.</li>
-<li>Remote OpenAI-compatible providers — Together, Fireworks, Anyscale, RunPod, etc.</li>
+<li><strong>vLLM</strong> (强烈推荐) — 打包推理 (batched inference) 速度最变态的怪物。</li>
+<li><strong>llama.cpp</strong> / <strong>ollama</strong> — 极其下沉，家用破电脑都能跑。</li>
+<li><strong>text-generation-webui</strong> — 如果你早就装了这破玩意，将就着用也行。</li>
+<li><strong>LocalAI</strong> — 专门拿来假冒 OpenAI 的李鬼。</li>
+<li>各种云端平替厂牌 — Together, Fireworks, Anyscale, RunPod, 等等。</li>
 </ul>
-<p>Point <code>endpoint:</code> at the URL.</p>
-<h2 id="step-2-install-bene-2-min">Step 2 — Install bene (2 min)</h2>
-<p>Run <code>uv sync</code> after cloning so the local virtualenv matches the project lockfile.</p>
+<p>把 <code>endpoint:</code> 指向那边的 URL 即可。</p>
+<h2 id="step-2-bene-2">Step 2 — 装配 bene (2 分钟)</h2>
+<p>把代码克隆下来后，顺手敲一发 <code>uv sync</code>，这能保证你本地的虚拟环境跟项目锁定的版本一模一样，免得出幺蛾子。</p>
 <div class="codehilite"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/good-night-oppie/bene.git
 <span class="nb">cd</span><span class="w"> </span>bene
 uv<span class="w"> </span>sync
@@ -325,25 +325,25 @@ uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span
 <span class="c1"># bene, version 0.1.0</span>
 </code></pre></div>
 
-<p>Create the database — wizard or manual, your pick:</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># Interactive wizard — picks a preset, generates bene.yaml, initializes the DB.</span>
+<p>去捏一个数据库出来 —— 随你喜欢互动式向导还是纯手工打造：</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 懒人专用向导 — 挑个预设，自动生成 bene.yaml，外加把 DB 给你建好。</span>
 uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>setup
 
-<span class="c1"># Or manually — default config + empty DB.</span>
+<span class="c1"># 纯手工老炮 — 空白数据库，外加默认配置。</span>
 uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>init
 <span class="c1"># Initialized BENE database: ./bene.db</span>
 </code></pre></div>
 
-<p>The dependency footprint is deliberately small: <code>httpx</code>, <code>click</code>, <code>rich</code>, <code>textual</code>, <code>mcp</code>, <code>pyyaml</code>, <code>zstandard</code>, <code>ulid-py</code> — 44 packages total, under 30 s to sync cold and single-digit seconds warm. There is no heavy AI SDK chain to drag in.</p>
+<p>它的依赖列表被砍得极其短小精悍：<code>httpx</code>, <code>click</code>, <code>rich</code>, <code>textual</code>, <code>mcp</code>, <code>pyyaml</code>, <code>zstandard</code>, <code>ulid-py</code> —— 满打满算 44 个包，冷启动装完不到 30 秒，热启动只要各位数秒。这里绝对没有任何那种动不动上百兆的臃肿 AI SDK 全家桶。</p>
 <blockquote>
-<p><strong>Tip.</strong> <code>bene setup</code> is the fastest path. It writes <code>bene.yaml</code> for you and runs <code>bene init</code>. Pick the preset closest to your goal: <code>local</code>, <code>local-multi</code>, <code>anthropic</code>, <code>openai</code>, or <code>hybrid</code>.</p>
+<p><strong>实战套路。</strong> <code>bene setup</code> 绝对是最快的捷径。它会帮你把 <code>bene.yaml</code> 糊好，顺便帮你把 <code>bene init</code> 敲了。选一个最对你胃口的预设板子：<code>local</code>, <code>local-multi</code>, <code>anthropic</code>, <code>openai</code>, 或者是 <code>hybrid</code>。</p>
 </blockquote>
-<h2 id="step-3-tell-bene-where-the-models-live-3-min">Step 3 — Tell bene where the models live (3 min)</h2>
-<p>Already ran <code>bene setup</code>? Then <code>bene.yaml</code> exists — skim to the wiring check at the bottom of this step. Otherwise start from the example:</p>
+<h2 id="step-3-bene-3">Step 3 — 给 bene 指明模型的巢穴 (3 分钟)</h2>
+<p>刚刚已经用过 <code>bene setup</code> 了？那 <code>bene.yaml</code> 早就在那了 —— 直接跳到这一步最底下的那个连通性测试。如果你是手工老炮，先从样例文件抄一份：</p>
 <div class="codehilite"><pre><span></span><code>cp<span class="w"> </span>bene.yaml.example<span class="w"> </span>bene.yaml
 </code></pre></div>
 
-<h3 id="single-model">Single-model</h3>
+<h3 id="_3">单机单模型</h3>
 <div class="codehilite"><pre><span></span><code><span class="nt">database</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./bene.db</span>
 <span class="w">  </span><span class="nt">wal_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
@@ -365,7 +365,7 @@ uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span
 <span class="w">  </span><span class="nt">max_parallel_agents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
 </code></pre></div>
 
-<h3 id="multi-model">Multi-model</h3>
+<h3 id="_4">梯队化多模型编队</h3>
 <div class="codehilite"><pre><span></span><code><span class="nt">database</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./bene.db</span>
 <span class="w">  </span><span class="nt">wal_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
@@ -388,8 +388,8 @@ uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span
 <span class="w">    </span><span class="nt">use_for</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">complex</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">critical</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">planning</span><span class="p p-Indicator">]</span>
 
 <span class="nt">router</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">classifier_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">qwen2.5-coder-7b</span><span class="w">   </span><span class="c1"># the small model classifies task complexity</span>
-<span class="w">  </span><span class="nt">fallback_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deepseek-r1-70b</span><span class="w">       </span><span class="c1"># the big model is the safety net</span>
+<span class="w">  </span><span class="nt">classifier_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">qwen2.5-coder-7b</span><span class="w">   </span><span class="c1"># 拿这个最廉价的 7B 去做难度分诊</span>
+<span class="w">  </span><span class="nt">fallback_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deepseek-r1-70b</span><span class="w">       </span><span class="c1"># 把大佛当成最后的兜底防线</span>
 <span class="w">  </span><span class="nt">context_compression</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 
 <span class="nt">ccr</span><span class="p">:</span>
@@ -398,18 +398,18 @@ uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span
 <span class="w">  </span><span class="nt">max_parallel_agents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
 </code></pre></div>
 
-<p>What the Tier router does with an incoming task:</p>
+<p>来看看 Tier (梯队) 路由器在接到活时到底在背地里干了啥：</p>
 <ol>
-<li>It asks the <code>classifier_model</code> (the 7B) to label the task: trivial, moderate, complex, or critical.</li>
-<li>It then selects a model whose <code>use_for</code> list contains that label.</li>
-<li>If the classifier itself fails, a keyword heuristic takes over (<code>refactor</code>, <code>security</code>, <code>format</code>, …).</li>
-<li>If the chosen model fails, the request falls through to <code>fallback_model</code>.</li>
+<li>它先去问 <code>classifier_model</code> (分诊员，也就是那个 7B)：这活大概是个什么难度？(trivial/无脑, moderate/中等, complex/复杂, critical/致命)。</li>
+<li>然后它去模型池里翻牌子，看看哪个模型的 <code>use_for</code> 名单里认领了这个难度标签。</li>
+<li>万一那个当分诊员的模型自己都脑梗了，系统会降级到纯靠关键字猜谜 (<code>refactor</code>, <code>security</code>, <code>format</code>, …)。</li>
+<li>万一接单的那个模型中途跑路报错了，这破摊子会直接丢给 <code>fallback_model</code> (兜底老大哥) 去擦屁股。</li>
 </ol>
 <blockquote>
-<p><strong>Tip.</strong> The classifier only needs to be smart enough to label tasks. A 7B is plenty and stays warm in VRAM. Reserve the 70B for actual work, not for "is this hard?"</p>
+<p><strong>实战套路。</strong> 分诊员唯一的职责就是贴标签，所以用 7B 绰绰有余，而且放在显存里热启动极快。那种 70B 的神仙算力，请省下来用在真正干活的地方，别拿它去问 "这活难不难？" 这种蠢问题。</p>
 </blockquote>
-<h3 id="hybrid-local-cloud">Hybrid — local + cloud</h3>
-<p>Send trivial work to the free local GPU; escalate to a paid cloud model only when the task earns it.</p>
+<h3 id="hybrid">本地+云端双修 (Hybrid)</h3>
+<p>把那些无脑的改名、调参脏活全甩给不花钱的本地 GPU；只有遇到真正值得烧钱的硬骨头时，才去请云端大模型出山。</p>
 <div class="codehilite"><pre><span></span><code><span class="nt">models</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">claude-sonnet</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">anthropic</span>
@@ -440,19 +440,19 @@ uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span
 </code></pre></div>
 
 <blockquote>
-<p><strong>Tip.</strong> Hybrid pays off when trivial volume is high. Route 80 % of "rename this variable" calls to the free local model and 20 % of hard ones to Claude — your monthly bill drops by roughly the same ratio. Measure before tuning: the Tier router records classifier output in the event journal, and a query against the <code>events</code> table tells you the actual split, not the assumed one.</p>
+<p><strong>实战套路。</strong> 双修流最大的红利，就在于你代码库里那种纯粹靠堆人力的脏活极其多。如果你能把 80% 类似 "帮我把这堆变量名全改了" 的需求全塞给免费的本地模型，剩下的 20% 硬骨头丢给 Claude —— 你每个月的账单能被极其粗暴地砍掉这 80%。在瞎调参之前，请拿真实数据说话：Tier 路由器每次分诊的记录都会极其诚实地记在流水账里，你只需要去 <code>events</code> 表里跑一句 SQL，就能算出真实的拦截率，而不是你坐在电脑前凭空意淫出来的拦截率。</p>
 </blockquote>
-<h3 id="cloud-only">Cloud-only</h3>
-<p>No GPU anywhere? Skip vLLM entirely: take the <code>anthropic</code>, <code>openai</code>, or <code>hybrid</code> preset and aim every model entry at a cloud endpoint.</p>
-<h3 id="prove-the-wiring">Prove the wiring</h3>
-<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>run<span class="w"> </span><span class="s2">&quot;Say hello and list the tools available to you&quot;</span><span class="w"> </span>--name<span class="w"> </span>test-agent
+<h3 id="_5">穷到底：纯云端</h3>
+<p>穷到连一张显卡都拿不出手？那就别管 vLLM 了：去挑个 <code>anthropic</code>, <code>openai</code>, 或者 <code>hybrid</code> 预设，把所有模型的端点全指向云服务商。</p>
+<h3 id="_6">点把火试车</h3>
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>run<span class="w"> </span><span class="s2">&quot;给我打个招呼，然后把你能调用的那些破兵器全列出来看看&quot;</span><span class="w"> </span>--name<span class="w"> </span>test-agent
 </code></pre></div>
 
-<p>Structured agent output plus a freshly populated <code>bene.db</code> means the model-to-bene path is sound. Fix this before touching MCP — debugging both layers at once is miserable.</p>
-<h2 id="step-4-hand-claude-code-the-controls-3-min">Step 4 — Hand Claude Code the controls (3 min)</h2>
-<p>Registering bene as an MCP server gives Claude Code native access to all 18 bene tools.</p>
-<h3 id="register-the-server">Register the server</h3>
-<p><code>~/.claude/settings.json</code> (create the file if missing):</p>
+<p>只要你能看到 agent 极其规整地吐出结果，而且 <code>bene.db</code> 里冒出了一堆新鲜的记录，那就说明从模型到 bene 的这条血管已经打通了。在去折腾 MCP 之前，必须确保这步是顺畅的 —— 不然的话，两头同时查 bug 绝对会让你生不如死。</p>
+<h2 id="step-4-claude-code-3">Step 4 — 把指挥权移交给 Claude Code (3 分钟)</h2>
+<p>把 bene 伪装成一个 MCP 服务端挂载上去之后，Claude Code 就能直接使唤 bene 军火库里的那 18 把兵器。</p>
+<h3 id="_7">挂载服务端</h3>
+<p>打开 <code>~/.claude/settings.json</code> (没这破文件就自己建一个)：</p>
 <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;bene&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -468,8 +468,8 @@ uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span
 <span class="p">}</span>
 </code></pre></div>
 
-<p>Replace <code>/path/to/your/bene</code> with your clone path.</p>
-<p>If you installed BENE globally (<code>uv tool install .</code>):</p>
+<p>把 <code>/path/to/your/bene</code> 换成你当年 clone 下来那个仓库的真实路径。</p>
+<p>如果你是暴发户装法 (<code>uv tool install .</code> 挂在了全局)：</p>
 <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;bene&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -480,142 +480,142 @@ uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span
 <span class="p">}</span>
 </code></pre></div>
 
-<h3 id="confirm-the-37-tools">Confirm the 37 tools</h3>
-<p>Restart Claude Code, then ask:</p>
+<h3 id="37">清点 37 把兵器</h3>
+<p>把 Claude Code 关了重开，然后拷问它：</p>
 <blockquote>
-<p><em>"What BENE tools are available?"</em></p>
+<p><em>"BENE 都给你配了些什么杀器？(What BENE tools are available?)"</em></p>
 </blockquote>
-<p>The full set should come back: <code>agent_spawn</code>, <code>agent_spawn_only</code>, <code>agent_kill</code>, <code>agent_pause</code>, <code>agent_resume</code>, <code>agent_status</code>, <code>agent_read</code>, <code>agent_write</code>, <code>agent_ls</code>, <code>agent_checkpoint</code>, <code>agent_restore</code>, <code>agent_diff</code>, <code>agent_checkpoints</code>, <code>agent_query</code>, <code>agent_parallel</code>, <code>mh_search</code>, <code>mh_frontier</code>, <code>mh_resume</code>, <code>mh_start_search</code>, <code>mh_submit_candidate</code>, <code>mh_next_iteration</code>, <code>mh_write_skill</code>, <code>mh_spawn_coevolution</code>, <code>mh_hub_sync</code>, <code>agent_memory_write</code>, <code>agent_memory_search</code>, <code>agent_memory_read</code>, <code>shared_log_intent</code>, <code>shared_log_vote</code>, <code>shared_log_decide</code>, <code>shared_log_append</code>, <code>shared_log_read</code>, <code>skill_save</code>, <code>skill_search</code>, <code>skill_apply</code>, <code>skill_list</code>, <code>skill_outcome</code>.</p>
+<p>它应该会如数家珍地给你报上这一长串名单：<code>agent_spawn</code>, <code>agent_spawn_only</code>, <code>agent_kill</code>, <code>agent_pause</code>, <code>agent_resume</code>, <code>agent_status</code>, <code>agent_read</code>, <code>agent_write</code>, <code>agent_ls</code>, <code>agent_checkpoint</code>, <code>agent_restore</code>, <code>agent_diff</code>, <code>agent_checkpoints</code>, <code>agent_query</code>, <code>agent_parallel</code>, <code>mh_search</code>, <code>mh_frontier</code>, <code>mh_resume</code>, <code>mh_start_search</code>, <code>mh_submit_candidate</code>, <code>mh_next_iteration</code>, <code>mh_write_skill</code>, <code>mh_spawn_coevolution</code>, <code>mh_hub_sync</code>, <code>agent_memory_write</code>, <code>agent_memory_search</code>, <code>agent_memory_read</code>, <code>shared_log_intent</code>, <code>shared_log_vote</code>, <code>shared_log_decide</code>, <code>shared_log_append</code>, <code>shared_log_read</code>, <code>skill_save</code>, <code>skill_search</code>, <code>skill_apply</code>, <code>skill_list</code>, <code>skill_outcome</code>。</p>
 <blockquote>
-<p><strong>Tip.</strong> If the MCP wiring fails, the fastest split is to run the server standalone first: <code>uv run --project /path/to/bene bene serve --transport stdio</code>. If that starts cleanly, the bug is in <code>settings.json</code> (most often a JSON syntax error). If it fails standalone, the bug is in BENE or <code>bene.yaml</code>.</p>
+<p><strong>排雷指南。</strong> 如果 MCP 连不上，最暴力的排雷手段就是抛开 Claude，自己跑到命令行里干拉服务端：<code>uv run --project /path/to/bene bene serve --transport stdio</code>。如果能拉起来没报错，那绝逼是你的 <code>settings.json</code> 没写对 (八成是逗号漏了之类的 JSON 低级错误)。如果干拉都起不来，那就是 BENE 的问题或者是 <code>bene.yaml</code> 写残了。</p>
 </blockquote>
-<h2 id="the-map-of-what-you-just-assembled">The map of what you just assembled</h2>
+<h2 id="_8">来看看你刚刚拼出了一台什么神仙机器</h2>
 <div class="codehilite"><pre><span></span><code>┌──────────────────────────────┐
-│        Claude Code           │  ← you talk to this (sections 5+)
-│  (your terminal / IDE)       │
+│        Claude Code           │  ← 你的金口玉言全对它说 (第5步之后)
+│  (你的黑窗口 / IDE 里)         │
 └─────────┬────────────────────┘
-          │ MCP protocol (stdio)
+          │ MCP 军用通讯协议 (stdio)
           ▼
 ┌──────────────────────────────┐
-│       BENE MCP Server       │  ← 37 tools: spawn, read, write,
-│  agent_spawn, agent_parallel,│     checkpoint, query, pause,
-│  agent_checkpoint, mh_search │     resume, mh_search, …
+│       BENE MCP Server       │  ← 军火库 37 把兵器: 放狼(spawn), 读写,
+│  agent_spawn, agent_parallel,│     拍快照(checkpoint), 拷问(query),
+│  agent_checkpoint, mh_search │     叫停(pause), 搜寻(mh_search) 等等
 └─────────┬────────────────────┘
           │
           ▼
 ┌──────────────────────────────┐
-│       BENE core + CCR       │  ← isolated VFS, event journal,
-│  SQLite, blob store, events  │     checkpoints, blob dedup
+│       BENE core + CCR       │  ← 私人结界(VFS), 死亡日记(event journal),
+│  SQLite, 二进制库, 事件引擎    │     快照存盘, 二进制去重黑科技
 └─────────┬────────────────────┘
-          │ Tier router (raw httpx)
+          │ 梯队路由 (原始粗暴的 httpx)
           ▼
 ┌──────────────────────────────┐
-│           vLLM               │  ← your local GPU(s)
-│  Qwen, DeepSeek, Llama, …    │     or any /v1/chat/completions
+│           vLLM               │  ← 你家那张发烫的显卡
+│  Qwen, DeepSeek, Llama, …    │     或者任何接 /v1/chat/completions 的口子
 └──────────────────────────────┘
 </code></pre></div>
 
-<p>Reading top to bottom: your prompts become MCP tool calls; each tool call lands in bene core, which keeps one isolated VFS per agent; the Tier router grades the task and dispatches it to a model; the model is your GPU. Every hop is journaled in SQLite, and no hop crosses the network edge of your machine.</p>
+<p>从上往下顺一遍：你在嘴上吹的牛逼，变成了 MCP 的刀光剑影；每一刀都稳稳地砍进了 bene core 里面，而 core 会给每一只出战的特种兵圈出一个带墙的 VFS 结界；梯队路由器给这活儿贴上难度标签，然后把它发包给某个最般配的模型；这个模型，其实就是在你显卡上跑着的那团肉块。每一次这套系统里发生了任何风吹草动，全都会被死死记进 SQLite 的流水账里，而且自始至终，绝没有任何一滴数据曾经溜出过你的网线。</p>
 <blockquote>
-<p><strong>See also.</strong> <a href="t00-bene-e2e-walkthrough.html">tutorials/t00 — End-to-End Walkthrough</a> for a spawn → checkpoint → audit → restore round-trip that does <strong>not</strong> need vLLM. Good warm-up: it isolates audit-DB skills from LLM behavior.</p>
+<p><strong>顺藤摸瓜。</strong> 去看 <a href="t00-bene-e2e-walkthrough.html">教程/t00 — 端到端通关大纲</a>，那里演示了一套极度硬核的 <code>空降(spawn) → 拍快照(checkpoint) → 拷问(audit) → 逆转时空(restore)</code> 的闭环大戏，而且<strong>连大模型都不需要开</strong>。这绝对是热身的极品：你能极其干净地把 "审计库的玩法" 和 "大模型的间歇性发癫" 彻底剥离开来。</p>
 </blockquote>
-<h2 id="step-5-one-agent-end-to-end-2-min">Step 5 — One agent, end to end (2 min)</h2>
-<p>In Claude Code:</p>
+<h2 id="step-5-2">Step 5 — 单狼出击，一条龙跑通 (2 分钟)</h2>
+<p>在 Claude Code 里面发号施令：</p>
 <blockquote>
-<p><em>"Use BENE to spawn an agent called 'hello-world' that writes a Python hello world program to /src/main.py."</em></p>
+<p><em>"用 BENE 放一只代号叫 'hello-world' 的特种兵出去，让它在 /src/main.py 里面用 Python 写个 hello world 的脚本出来。"</em></p>
 </blockquote>
-<p>What that one sentence triggers:</p>
+<p>你轻飘飘的一句话，在底下掀起了什么滔天巨浪：</p>
 <ol>
-<li>An <code>agent_spawn</code> call goes out, carrying <code>name="hello-world"</code> plus the task text.</li>
-<li>bene allocates the agent its own blank, walled-off VFS.</li>
-<li>The Tier router grades the task "trivial" and hands it to the 7B.</li>
-<li>The agent loops plan → act → observe: decide, <code>fs_write</code> to <code>/src/main.py</code>, inspect the result, finish.</li>
-<li>Each of those moves becomes a row in the <code>events</code> table.</li>
+<li>一记 <code>agent_spawn</code> 被轰了出去，包裹里揣着 <code>name="hello-world"</code> 和你那句原味的指令。</li>
+<li>bene 极其熟练地划了一块处女地，给这只特种兵圈出了一个绝对隔离的 VFS 结界。</li>
+<li>梯队路由器看了一眼指令，打上了 "无脑 (trivial)" 标签，顺手就甩给了 7B。</li>
+<li>这只特种兵开始了它死循环般的一生 (计划 → 动手 → 看看行不行)：做决定，一记 <code>fs_write</code> 把字刻进 <code>/src/main.py</code>，看看有没有写歪，然后打卡下班。</li>
+<li>它的每一次抽搐，都被极其冷血地钉进了 <code>events</code> 表的日志里。</li>
 </ol>
-<p>Read it back:</p>
+<p>把战利品掏出来看看：</p>
 <blockquote>
-<p><em>"Read the file /src/main.py from the hello-world agent."</em></p>
+<p><em>"从那个叫 hello-world 的特种兵结界里，把 /src/main.py 给我拿出来读一遍。"</em></p>
 </blockquote>
-<p>See the timeline:</p>
+<p>查它的流水账：</p>
 <blockquote>
-<p><em>"Show me the event timeline for the hello-world agent."</em></p>
+<p><em>"给我把 hello-world 这个特种兵的一生，按时间线列出来看看。"</em></p>
 </blockquote>
-<p>Claude Code calls <code>agent_query</code>:</p>
+<p>Claude Code 反手就是一发 <code>agent_query</code> 砸进数据库：</p>
 <div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="k">timestamp</span><span class="p">,</span><span class="w"> </span><span class="n">event_type</span><span class="p">,</span><span class="w"> </span><span class="n">payload</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">events</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;...&#39;</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">event_id</span><span class="p">;</span>
 </code></pre></div>
 
-<p>Nothing the agent did is missing from this list: <code>agent_spawn</code>, <code>file_write</code>, <code>tool_call_start</code>, <code>tool_call_end</code>, <code>agent_complete</code>.</p>
+<p>这只特种兵这辈子干过的任何一点见不得人的勾当，在这里都无所遁形：被放出笼子 (<code>agent_spawn</code>)，动了文件 (<code>file_write</code>)，抄起了兵器 (<code>tool_call_start</code> 到 <code>tool_call_end</code>)，寿终正寝 (<code>agent_complete</code>)。</p>
 <blockquote>
-<p><strong>See also.</strong> <a href="t00-bene-e2e-walkthrough.html">tutorials/t00 — End-to-End Walkthrough</a> walks the same spawn → read → audit loop without an LLM. Good for grokking the audit DB shape before you also have to interpret model output.</p>
+<p><strong>顺藤摸瓜。</strong> <a href="t00-bene-e2e-walkthrough.html">教程/t00 — 端到端通关大纲</a> 在没有大模型搅局的纯净环境里，把这套 <code>空降 → 读取 → 拷问</code> 的动作极其冰冷地走了一遍。这绝对能让你在被大模型那难以捉摸的回复绕晕之前，先摸透那个审计库的骨架到底长什么样。</p>
 </blockquote>
-<h2 id="step-6-fan-out-three-agents-at-once-5-min">Step 6 — Fan out: three agents at once (5 min)</h2>
-<p>In Claude Code:</p>
+<h2 id="step-6-5">Step 6 — 多路齐进：三狼并排冲锋 (5 分钟)</h2>
+<p>在 Claude Code 里面发号施令：</p>
 <blockquote>
-<p><em>"Use BENE to run 3 agents in parallel:</em>
-<em>1. 'test-writer' — write unit tests for a REST payments endpoint.</em>
-<em>2. 'implementer' — implement the REST payments endpoint.</em>
-<em>3. 'doc-writer' — write API documentation for the payments endpoint."</em></p>
+<p><em>"用 BENE 一口气放出 3 只特种兵，让它们分头同时跑:</em>
+<em>1. 代号 'test-writer' — 专门给支付系统的 REST 接口写单元测试。</em>
+<em>2. 代号 'implementer' — 专门去把那个支付接口的逻辑写出来。</em>
+<em>3. 代号 'doc-writer' — 专门给那个支付接口写 API 文档。"</em></p>
 </blockquote>
-<p>Under the hood:</p>
+<p>幕后的腥风血雨：</p>
 <ol>
-<li>One <code>agent_parallel</code> call carries the 3 tasks.</li>
-<li>Three agents come up, each behind its own VFS wall.</li>
-<li>Tier grades every task independently and matches it to a model.</li>
-<li>Execution is concurrent, capped by the semaphore (default 8).</li>
-<li>A checkpoint lands automatically every 10 iterations.</li>
+<li>一记巨大的 <code>agent_parallel</code> 把这 3 个任务包在同一个炸药包里扔了出去。</li>
+<li>三只特种兵被同时唤醒，每一只都待在只有自己的 VFS 结界里。</li>
+<li>路由器对每个任务进行独立分诊，并精准派发给相应的模型。</li>
+<li>三匹狼并排狂飙，速度极限取决于那个信号量阀门 (默认允许 8 只并排跑)。</li>
+<li>每跑满 10 个回合，系统极其冷血地强行按着它们的头存个盘 (checkpoint)。</li>
 </ol>
-<h3 id="token-spend-per-agent">Token spend, per agent</h3>
+<h3 id="_9">算算这帮牲口各自吃了你多少算力</h3>
 <blockquote>
-<p><em>"How many tokens did each agent use?"</em></p>
+<p><em>"这三只特种兵各自烧了我多少 token？"</em></p>
 </blockquote>
 <div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">tc</span><span class="p">.</span><span class="n">token_count</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">tokens</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="n">tc</span><span class="p">.</span><span class="n">call_id</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">calls</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tool_calls</span><span class="w"> </span><span class="n">tc</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tc</span><span class="p">.</span><span class="n">agent_id</span>
 <span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">agent_id</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">tokens</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
 </code></pre></div>
 
-<h3 id="who-wrote-what">Who wrote what</h3>
+<h3 id="_10">谁背着你写了些什么破东西</h3>
 <blockquote>
-<p><em>"Show me the files each agent created."</em></p>
+<p><em>"列出这几只特种兵到底往硬盘里塞了哪些文件。"</em></p>
 </blockquote>
 <div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">path</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">files</span><span class="w"> </span><span class="n">f</span>
 <span class="k">JOIN</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">agent_id</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">deleted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">path</span><span class="p">;</span>
 </code></pre></div>
 
-<p>Notice what did <strong>not</strong> happen: <code>/src/payments.py</code> and <code>/tests/test_payments.py</code> were written by different agents into identically-named paths, and nothing collided. Each name resolves inside that agent's private namespace — a guarantee the SQL schema enforces, not a politeness agents are asked to observe.</p>
+<p>看清楚在这场混战里 <strong>没</strong> 发生什么：写业务逻辑的和写测试的都往同一个名叫 <code>/src/payments.py</code> 或 <code>/tests/test_payments.py</code> 的路标上塞了东西，但是，没有任何人撞了任何人的车。每一条文件路径，只在那只特种兵自己的私有领域里生效 —— 这特么是底层的 SQL 结构强行焊死的铁律，而不是靠劝这帮大模型 "你们要讲武德，别动别人的文件" 求来的假象。</p>
 <blockquote>
-<p><strong>Tip.</strong> Default <code>max_parallel_agents: 8</code>. Bump it carefully — every running agent holds GPU memory for its KV cache. Multi-GPU vLLM with tensor parallelism lifts the ceiling at the cost of per-request latency.</p>
-<p><strong>See also.</strong> <a href="t03-security-swarm.html">tutorials/t03 — Security Swarm</a> uses the same role-split pattern and proves zero cross-agent reads with a single SQL query. Anchor for "isolation is real, not a convention."</p>
+<p><strong>实战套路。</strong> 系统默认的 <code>max_parallel_agents</code> 是 8。你要是想把这数往上拉，悠着点 —— 每一头在跑的狼，都在极其粗暴地吃着你显卡上的 KV 缓存空间。那种拿多张显卡拼在一起的 vLLM 倒是能靠张量并行 (tensor parallelism) 强行把这个天花板顶碎，代价是你每发一个请求的延迟会变得贼难看。</p>
+<p><strong>顺藤摸瓜。</strong> <a href="t03-security-swarm.html">教程/t03 — 安全攻防特种部队</a> 玩了完全一样的人格分裂套路，并极其霸道地用一条 SQL 证明了它们绝对没看过隔壁老王的卷子。把它当成 "物理隔离绝对不是吹水" 的实证来看。</p>
 </blockquote>
-<h3 id="watch-it-live-1-min">Watch it live (1 min)</h3>
+<h3 id="1">全景视窗现场盯盘 (1 分钟)</h3>
 <div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>dashboard
 </code></pre></div>
 
-<p>A Textual TUI tracking every agent — running, completed, failed, killed — with a streaming event feed. Handy during a fan-out, when re-running <code>SELECT</code>s by hand gets old.</p>
-<h2 id="step-7-undo-checkpoint-restore-diff-5-min">Step 7 — Undo: checkpoint, restore, diff (5 min)</h2>
-<h3 id="scenario-safe-refactor-with-rollback">Scenario: safe refactor with rollback</h3>
+<p>一个用 Textual 糊出来的纯命令行看板，死死盯着每一匹狼的死活 —— 是在狂奔，是凯旋了，是阵亡了，还是被活活卡死了 —— 外加一个永远在滚动的事件流水账。当你在玩大兵团冲锋时，这玩意儿能保你一命，毕竟谁特么愿意在黑窗口里一次次狂敲 <code>SELECT</code> 刷新啊。</p>
+<h2 id="step-7-5">Step 7 — 吃后悔药：快照、时光倒流与清算 (5 分钟)</h2>
+<h3 id="_11">实景演练：带着反悔机制的无损重构</h3>
 <blockquote>
-<p><em>"Use BENE to: (1) spawn an agent 'refactorer'. (2) Write this code to /src/auth.py: [paste code]. (3) Checkpoint with label 'original'. (4) Have it refactor to add error handling."</em></p>
+<p><em>"用 BENE 给我干这几件事：(1) 放一只代号 'refactorer' 的特种兵。 (2) 把这段代码写进 /src/auth.py 里：[贴代码]。 (3) 拍个快照，贴个标签叫 'original'。 (4) 叫它重构这段代码，把缺失的错误处理全加上。"</em></p>
 </blockquote>
-<p>Suppose the result is a mess:</p>
+<p>假设它重构完的代码跟狗啃的一样：</p>
 <blockquote>
-<p><em>"The refactor doesn't look right. Restore the refactorer agent to the 'original' checkpoint."</em></p>
+<p><em>"这破重构没法看。把那个 refactorer 的特种兵，连人带文件全部回滚到 'original' 的快照状态。"</em></p>
 </blockquote>
-<p>One <code>agent_restore</code> later, the VFS is byte-for-byte back at the labeled snapshot. Sibling agents never notice.</p>
-<h3 id="diff-two-checkpoints">Diff two checkpoints</h3>
+<p>一记 <code>agent_restore</code> 砸下去，整个 VFS 在字节层面上瞬间被拨回了打标签时的那个瞬间。旁边跑着的其他特种兵连一根汗毛都没被惊动。</p>
+<h3 id="_12">扒开两个快照看看这中间到底发生了什么</h3>
 <blockquote>
-<p><em>"Show me what changed between the 'original' checkpoint and the current state."</em></p>
+<p><em>"把 'original' 快照和现在它搞出的烂摊子之间的差异 (diff) 全给我扒出来。"</em></p>
 </blockquote>
-<p>The <code>agent_diff</code> answer has three parts: which files appeared, vanished, or changed (compared by content hash); which KV state entries moved, with before and after values; and which tool calls fired in the window between the two snapshots.</p>
-<p>Read it as time travel for debugging — replay the agent's path move by move, then erase it without touching anything that ran beside it.</p>
+<p><code>agent_diff</code> 给出的验尸报告分极其残暴的三截：哪些文件冒出来了、蒸发了、或是被篡改了 (靠内容哈希对齐)；哪些 KV 状态的破键值挪了窝，前脚长啥样，后脚长啥样；以及在这两张快照之间，这只畜生到底抄起兵器乱砍了多少下 (调用链)。</p>
+<p>把它当成一种为了查 bug 而存在的时光机器就行了 —— 把这只特种兵每走一步的脚印全放在显微镜下，看完后一把火烧干净，绝不会殃及隔壁任何无辜的兄弟。</p>
 <blockquote>
-<p><strong>See also.</strong> <a href="t02-e2e-self-healing.html">tutorials/t02 — End-to-End Self-Healing</a> — wrong-fix detection, surgical rollback, root cause from the audit trail in one worked example. Per-agent restore in 0.3 s.</p>
+<p><strong>顺藤摸瓜。</strong> <a href="t02-e2e-self-healing.html">教程/t02 — 端到端自愈实战</a> —— 从一眼看穿那个修歪了的破补丁，到极其暴力的外科手术级回滚，再到去流水账里揪出罪魁祸首，全部一套连招带走。极其残暴的 0.3 秒沙盒级单兵回滚。</p>
 </blockquote>
-<h2 id="step-8-investigate-sql-against-a-failure-3-min">Step 8 — Investigate: SQL against a failure (3 min)</h2>
-<p>When an agent fails, the evidence is already in the database. Four prompts cover most post-mortems:</p>
+<h2 id="step-8-sql-3">Step 8 — 升堂拷问：拿 SQL 给尸检定谳 (3 分钟)</h2>
+<p>一旦有特种兵翻车了，所有的罪证早就在数据库里躺好了。这 4 个极其毒辣的提示词 (prompt) 几乎能罩住所有的灾后复盘：</p>
 <blockquote>
-<p><em>"Show me all failed tool calls across all agents."</em></p>
+<p><em>"把所有特种兵里，那些报错了的兵器挥动记录 (tool calls) 全给我揪出来。"</em></p>
 </blockquote>
 <div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">tc</span><span class="p">.</span><span class="n">tool_name</span><span class="p">,</span><span class="w"> </span><span class="n">tc</span><span class="p">.</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">tc</span><span class="p">.</span><span class="k">timestamp</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tool_calls</span><span class="w"> </span><span class="n">tc</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tc</span><span class="p">.</span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">agent_id</span>
@@ -624,14 +624,14 @@ uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span
 </code></pre></div>
 
 <blockquote>
-<p><em>"Show me the full event timeline for the failed agent."</em></p>
+<p><em>"把那个翻车阵亡的特种兵，生平所有的流水账按时间线给我列出来。"</em></p>
 </blockquote>
 <div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="k">timestamp</span><span class="p">,</span><span class="w"> </span><span class="n">event_type</span><span class="p">,</span><span class="w"> </span><span class="n">payload</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">events</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;...&#39;</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">event_id</span><span class="p">;</span>
 </code></pre></div>
 
 <blockquote>
-<p><em>"Which agent used the most tokens?"</em></p>
+<p><em>"到底哪个畜生吃的 token 最多？"</em></p>
 </blockquote>
 <div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">tc</span><span class="p">.</span><span class="n">token_count</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">tokens</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">agents</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tool_calls</span><span class="w"> </span><span class="n">tc</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tc</span><span class="p">.</span><span class="n">agent_id</span>
@@ -639,160 +639,160 @@ uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span
 </code></pre></div>
 
 <blockquote>
-<p><em>"What files did the rogue agent modify?"</em></p>
+<p><em>"那只发疯的特种兵到底弄脏了哪些文件？"</em></p>
 </blockquote>
 <div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="k">version</span><span class="p">,</span><span class="w"> </span><span class="n">modified_at</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">files</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;...&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">deleted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">modified_at</span><span class="p">;</span>
 </code></pre></div>
 
-<p>The same questions work straight from the shell:</p>
+<p>这同样的拷问，你可以直接绕过大模型，在命令行里亲手敲：</p>
 <div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>query<span class="w"> </span><span class="s2">&quot;SELECT name, status FROM agents&quot;</span>
 uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>query<span class="w"> </span><span class="s2">&quot;SELECT event_type, COUNT(*) FROM events GROUP BY event_type&quot;</span>
 </code></pre></div>
 
-<p>And because <code>bene.db</code> is ordinary SQLite, any client you already like — DBeaver, DataGrip, the <code>sqlite3</code> CLI — opens it directly.</p>
+<p>而且，既然 <code>bene.db</code> 就是一个比白开水还普通的 SQLite 文件，你那些早就用顺手的极品老哥 —— DBeaver、DataGrip、甚至是极其复古的 <code>sqlite3</code> CLI —— 全都能直接把它怼开。</p>
 <blockquote>
-<p><strong>See also.</strong> <a href="t05-incident-response.html">tutorials/t05 — Incident Response</a> walks the same SQL patterns at root-cause speed — 12 seconds from incident to fix candidate. Reuse those queries in your runbook.</p>
+<p><strong>顺藤摸瓜。</strong> <a href="t05-incident-response.html">教程/t05 — 凌晨两点急救手册</a> 里展现了拿这些原模原样的 SQL 咒语去极其冷血地排障的极速流程 —— 从警报响起，到抓出真凶抛出修复方案，全程仅仅 12 秒。直接把那些 SQL 拷过去塞进你的排障手册 (runbook) 里。</p>
 </blockquote>
-<h2 id="what-this-setup-buys-you">What this setup buys you</h2>
+<h2 id="_13">你到底折腾出了一件什么神仙兵器</h2>
 <table>
 <thead>
 <tr>
-<th>Capability</th>
-<th>How</th>
+<th>拿到的超能力</th>
+<th>是靠什么黑魔法搞定的</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Multi-agent orchestration</td>
-<td>Claude Code + BENE MCP tools</td>
+<td>多 Agent 指挥权</td>
+<td>Claude Code + BENE MCP 全套兵器</td>
 </tr>
 <tr>
-<td>Agent isolation</td>
-<td>Per-agent VFS, SQL-enforced</td>
+<td>铁桶般的沙盒隔离</td>
+<td>人手一个 VFS 结界，被 SQL 的物理约束死死按住</td>
 </tr>
 <tr>
-<td>Intelligent routing</td>
-<td>Tier classifies tasks → right model</td>
+<td>长着脑子的路由分发</td>
+<td>梯队 (Tier) 给任务贴难度标签 → 派发给最门当户对的模型</td>
 </tr>
 <tr>
-<td>Parallel execution</td>
-<td>Up to 8 concurrent agents (configurable)</td>
+<td>并排狂飙的冲锋阵列</td>
+<td>一口气能放 8 只 (想拉爆的话随便改)</td>
 </tr>
 <tr>
-<td>Checkpoint and restore</td>
-<td>Snapshot + rollback any agent</td>
+<td>时光机级别的读档重来</td>
+<td>任何一只 agent 都能被随时拍快照、随时踹回过去</td>
 </tr>
 <tr>
-<td>Full audit trail</td>
-<td>Append-only event journal, 14 event types</td>
+<td>无法篡改的底裤账本</td>
+<td>只能硬塞不能篡改的事件台账，涵盖 14 种死法与活法</td>
 </tr>
 <tr>
-<td>SQL-queryable everything</td>
-<td>Token usage, errors, files, events</td>
+<td>万物皆可 SQL 拷问</td>
+<td>烧掉的代币、报错、文件修改、每一次抽搐，全能查</td>
 </tr>
 <tr>
-<td>Content deduplication</td>
-<td>SHA-256 blobs, zstd-compressed</td>
+<td>重复劳动的究极去重</td>
+<td>靠 SHA-256 哈希寻址块，叠加 zstd 极限压缩</td>
 </tr>
 <tr>
-<td>Single-file runtime</td>
-<td><code>cp bene.db backup.db</code> = full backup</td>
+<td>装在口袋里的运行库</td>
+<td><code>cp bene.db backup.db</code> = 这就是全部家当的备份</td>
 </tr>
 <tr>
-<td>Zero API costs</td>
-<td>Everything on your GPU</td>
+<td>永远账单为零</td>
+<td>全在你的本地显卡上死命跑</td>
 </tr>
 <tr>
-<td>Data stays local</td>
-<td>Nothing leaves your machine</td>
+<td>底裤绝对不外露的数据隐私</td>
+<td>没有任何一滴数据能爬出你这台机器的网卡</td>
 </tr>
 </tbody>
 </table>
-<h2 id="reference">Reference</h2>
-<h3 id="beneyaml-full-options"><code>bene.yaml</code> — full options</h3>
+<h2 id="reference">极简说明书 (Reference)</h2>
+<h3 id="beneyaml"><code>bene.yaml</code> — 扒光所有的配置项</h3>
 <div class="codehilite"><pre><span></span><code><span class="nt">database</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./bene.db</span><span class="w">              </span><span class="c1"># database file path</span>
-<span class="w">  </span><span class="nt">wal_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">               </span><span class="c1"># WAL mode for concurrent reads (recommended)</span>
-<span class="w">  </span><span class="nt">busy_timeout_ms</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5000</span><span class="w">        </span><span class="c1"># SQLite busy timeout</span>
-<span class="w">  </span><span class="nt">max_blob_size_mb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span><span class="w">        </span><span class="c1"># max file size in blob store</span>
-<span class="w">  </span><span class="nt">compression</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">zstd</span><span class="w">            </span><span class="c1"># blob compression: zstd | none</span>
-<span class="w">  </span><span class="nt">gc_interval_minutes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span><span class="w">      </span><span class="c1"># blob garbage-collection interval</span>
+<span class="w">  </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./bene.db</span><span class="w">              </span><span class="c1"># 数据库的藏身处</span>
+<span class="w">  </span><span class="nt">wal_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">               </span><span class="c1"># 强开 WAL 模式防卡死 (极其推荐开着)</span>
+<span class="w">  </span><span class="nt">busy_timeout_ms</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5000</span><span class="w">        </span><span class="c1"># SQLite 抢不到锁时的挣扎时间</span>
+<span class="w">  </span><span class="nt">max_blob_size_mb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span><span class="w">        </span><span class="c1"># 数据库里死活不准超过这个大小的巨物</span>
+<span class="w">  </span><span class="nt">compression</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">zstd</span><span class="w">            </span><span class="c1"># 二进制大块的压榨机: zstd | none</span>
+<span class="w">  </span><span class="nt">gc_interval_minutes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span><span class="w">      </span><span class="c1"># 扫地大妈过来清垃圾的频率</span>
 
 <span class="nt">isolation</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">logical</span><span class="w">                </span><span class="c1"># logical (default) | fuse (Linux only)</span>
-<span class="w">  </span><span class="nt">fuse_mount_base</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/bene</span><span class="w">   </span><span class="c1"># FUSE mount-point base (Linux only)</span>
+<span class="w">  </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">logical</span><span class="w">                </span><span class="c1"># 逻辑结界 (默认) | fuse 挂载 (Linux 专属黑科技)</span>
+<span class="w">  </span><span class="nt">fuse_mount_base</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/bene</span><span class="w">   </span><span class="c1"># FUSE 挂载点的老巢 (Linux 专属)</span>
 <span class="w">  </span><span class="nt">cgroups</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">             </span><span class="c1"># cgroup resource limits (Linux only)</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">             </span><span class="c1"># 靠 cgroup 暴力掐资源 (Linux 专属)</span>
 <span class="w">    </span><span class="nt">memory_limit_mb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4096</span>
 <span class="w">    </span><span class="nt">cpu_shares</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1024</span>
 
 <span class="nt">models</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">&lt;model-name&gt;</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local | openai | anthropic</span><span class="w">       </span><span class="c1"># provider type (default: local)</span>
-<span class="w">    </span><span class="nt">vllm_endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8000/v1</span><span class="w">    </span><span class="c1"># for local provider (legacy key)</span>
-<span class="w">    </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8000/v1</span><span class="w">         </span><span class="c1"># for local provider (new key)</span>
-<span class="w">    </span><span class="nt">model_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4o</span><span class="w">                           </span><span class="c1"># for openai / anthropic providers</span>
-<span class="w">    </span><span class="nt">api_key_env</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OPENAI_API_KEY</span><span class="w">                </span><span class="c1"># env var containing the API key</span>
-<span class="w">    </span><span class="nt">max_context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32768</span><span class="w">                         </span><span class="c1"># max context window (tokens)</span>
-<span class="w">    </span><span class="nt">use_for</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">trivial</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">moderate</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">...</span><span class="p p-Indicator">]</span><span class="w">          </span><span class="c1"># complexity levels routed here</span>
+<span class="w">  </span><span class="nt">&lt;给它起个响亮的名字&gt;</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local | openai | anthropic</span><span class="w">       </span><span class="c1"># 找谁拜码头 (默认是本地的 local)</span>
+<span class="w">    </span><span class="nt">vllm_endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8000/v1</span><span class="w">    </span><span class="c1"># 本地主子的老接口 (留着擦屁股用的)</span>
+<span class="w">    </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8000/v1</span><span class="w">         </span><span class="c1"># 本地主子的新接口</span>
+<span class="w">    </span><span class="nt">model_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4o</span><span class="w">                           </span><span class="c1"># 云端阔佬 (openai / anthropic) 专用的名号</span>
+<span class="w">    </span><span class="nt">api_key_env</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OPENAI_API_KEY</span><span class="w">                </span><span class="c1"># 供着密钥的环境变量名字</span>
+<span class="w">    </span><span class="nt">max_context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32768</span><span class="w">                         </span><span class="c1"># 脑容量极限 (tokens)</span>
+<span class="w">    </span><span class="nt">use_for</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">trivial</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">moderate</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">...</span><span class="p p-Indicator">]</span><span class="w">          </span><span class="c1"># 接客名单：什么难度的活归它管</span>
 
 <span class="nt">router</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tier</span><span class="w">                    </span><span class="c1"># only tier for now</span>
-<span class="w">  </span><span class="nt">classifier_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;name&gt;</span><span class="w">      </span><span class="c1"># model that classifies task complexity</span>
-<span class="w">  </span><span class="nt">fallback_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;name&gt;</span><span class="w">        </span><span class="c1"># fallback when the selected model fails</span>
-<span class="w">  </span><span class="nt">context_compression</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">     </span><span class="c1"># enable multi-stage context compression</span>
-<span class="w">  </span><span class="nt">max_retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w">                </span><span class="c1"># retry count before giving up</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tier</span><span class="w">                    </span><span class="c1"># 阶级社会路由 (目前只有这个能选)</span>
+<span class="w">  </span><span class="nt">classifier_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;名字&gt;</span><span class="w">       </span><span class="c1"># 给任务贴难度条形码的打工人</span>
+<span class="w">  </span><span class="nt">fallback_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;名字&gt;</span><span class="w">         </span><span class="c1"># 大家都跑路的时候，出来擦屁股的兜底老哥</span>
+<span class="w">  </span><span class="nt">context_compression</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">     </span><span class="c1"># 强开记忆摘要多段压缩机</span>
+<span class="w">  </span><span class="nt">max_retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w">                </span><span class="c1"># 放弃治疗前的挣扎次数</span>
 
 <span class="nt">ccr</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">max_iterations</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span><span class="w">           </span><span class="c1"># max agent-loop iterations</span>
-<span class="w">  </span><span class="nt">checkpoint_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span><span class="w">       </span><span class="c1"># auto-checkpoint every N iterations</span>
-<span class="w">  </span><span class="nt">timeout_seconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3600</span><span class="w">         </span><span class="c1"># agent timeout (1 hour)</span>
-<span class="w">  </span><span class="nt">max_parallel_agents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span><span class="w">        </span><span class="c1"># max concurrent agents</span>
+<span class="w">  </span><span class="nt">max_iterations</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span><span class="w">           </span><span class="c1"># 逼死 agent 前最多让它绕多少圈</span>
+<span class="w">  </span><span class="nt">checkpoint_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span><span class="w">       </span><span class="c1"># 每熬过 N 圈就强制按头存个档</span>
+<span class="w">  </span><span class="nt">timeout_seconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3600</span><span class="w">         </span><span class="c1"># agent 的阳寿极限 (默认 1 小时)</span>
+<span class="w">  </span><span class="nt">max_parallel_agents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span><span class="w">        </span><span class="c1"># 同时在外面撒野的狼群上限</span>
 
 <span class="nt">mcp</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3100</span><span class="w">                    </span><span class="c1"># SSE transport port</span>
-<span class="w">  </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">127.0.0.1</span><span class="w">               </span><span class="c1"># SSE transport host</span>
+<span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3100</span><span class="w">                    </span><span class="c1"># SSE 通讯隧道的破门</span>
+<span class="w">  </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">127.0.0.1</span><span class="w">               </span><span class="c1"># SSE 通讯隧道的门牌号</span>
 
 <span class="nt">logging</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">INFO</span>
 <span class="w">  </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./bene.log</span>
 </code></pre></div>
 
-<h3 id="environment-variables">Environment variables</h3>
+<h3 id="_14">能够操控生死的环境变量</h3>
 <table>
 <thead>
 <tr>
-<th>Variable</th>
-<th>Default</th>
-<th>Description</th>
+<th>变量名</th>
+<th>默认值</th>
+<th>到底是干嘛的</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>BENE_DB</code></td>
 <td><code>./bene.db</code></td>
-<td>database file path</td>
+<td>数据库的藏身处</td>
 </tr>
 <tr>
 <td><code>BENE_CONFIG</code></td>
 <td><code>./bene.yaml</code></td>
-<td>config file path</td>
+<td>配置文件的藏身处</td>
 </tr>
 <tr>
 <td><code>ANTHROPIC_API_KEY</code></td>
 <td>—</td>
-<td>API key for <code>provider: anthropic</code> models</td>
+<td><code>provider: anthropic</code> 云端大户的敲门砖</td>
 </tr>
 <tr>
 <td><code>OPENAI_API_KEY</code></td>
 <td>—</td>
-<td>API key for <code>provider: openai</code> models</td>
+<td><code>provider: openai</code> 云端大户的敲门砖</td>
 </tr>
 </tbody>
 </table>
-<h3 id="claude-code-settingsjson">Claude Code <code>settings.json</code></h3>
+<h3 id="claude-code-settingsjson">给 Claude Code 开门的 <code>settings.json</code></h3>
 <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;bene&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -808,68 +808,68 @@ uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span
 <span class="p">}</span>
 </code></pre></div>
 
-<h2 id="when-something-breaks">When something breaks</h2>
+<h2 id="_15">排雷自救手册</h2>
 <table>
 <thead>
 <tr>
-<th>Symptom</th>
-<th>Likely cause</th>
-<th>Fix</th>
+<th>被什么糊了一脸 (Symptom)</th>
+<th>八成是哪个倒霉催的弄的 (Likely cause)</th>
+<th>该怎么抢救 (Fix)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>Connection refused</code> on <code>localhost:8000</code></td>
-<td>vLLM not running</td>
-<td><code>vllm serve &lt;model&gt; --port 8000</code>; <code>curl /v1/models</code> to confirm</td>
+<td><code>Connection refused</code> 咬死了 <code>localhost:8000</code></td>
+<td>vLLM 压根就没爬起来</td>
+<td>去跑 <code>vllm serve &lt;model&gt; --port 8000</code>；拿 <code>curl /v1/models</code> 戳一下看死没死</td>
 </tr>
 <tr>
-<td>Claude Code does not see BENE tools</td>
-<td>Bad <code>settings.json</code> syntax or wrong path</td>
-<td>Validate JSON; restart Claude Code; run the server standalone to bisect (see Step 4 tip)</td>
+<td>Claude Code 眼瞎看不见 BENE 兵器谱</td>
+<td><code>settings.json</code> 被你写了个错别字，或者路径瞎指</td>
+<td>滚去查 JSON 格式；把 Claude Code 掐死重开；去干拉一下服务端 (看 Step 4 里的排雷指南)</td>
 </tr>
 <tr>
-<td>Agent stuck or never completes</td>
-<td>Tool loop or runaway iteration</td>
-<td><code>uv run bene ls</code> → <code>uv run bene kill &lt;id&gt;</code>; lower <code>max_iterations</code></td>
+<td>Agent 像智障一样死循环或者装死</td>
+<td>工具调用链卡死了，或者它在疯狂鬼畜</td>
+<td><code>uv run bene ls</code> 查一下 → <code>uv run bene kill &lt;id&gt;</code> 强制超度；把 <code>max_iterations</code> 往下压一压</td>
 </tr>
 <tr>
-<td>Out of GPU memory</td>
-<td>Model too big or too many parallel agents</td>
-<td>Smaller model; <code>--gpu-memory-utilization 0.8</code> on vLLM; lower <code>max_parallel_agents</code>; try a quantized variant (GPTQ, AWQ)</td>
+<td>显卡被活生生撑爆 (OOM)</td>
+<td>模型太肥，或者你放出的狼太多了</td>
+<td>换个瘦点的模型；在 vLLM 那加个 <code>--gpu-memory-utilization 0.8</code>；把 <code>max_parallel_agents</code> 给掐小点；或者去搞个被压榨过的模型 (GPTQ, AWQ) 凑合一下</td>
 </tr>
 <tr>
-<td><code>Model not found</code></td>
-<td>Name in <code>bene.yaml</code> does not match what vLLM reports</td>
-<td><code>curl /v1/models \| jq</code> and use that exact name</td>
+<td><code>Model not found</code> 找不到模型</td>
+<td>你在 <code>bene.yaml</code> 里写的名字，跟 vLLM 那边报上来的名字对不上暗号</td>
+<td>去跑一把 <code>curl /v1/models \| jq</code>，一字不差地把里面的名号抄过来</td>
 </tr>
 <tr>
-<td>Database locked</td>
-<td>Multiple writers without WAL mode</td>
-<td>Confirm <code>wal_mode: true</code>; avoid network filesystems for <code>bene.db</code></td>
+<td>数据库被死死锁住 (Database locked)</td>
+<td>一群人在那抢写入权，但你却没开 WAL 模式</td>
+<td>赶紧把 <code>wal_mode: true</code> 焊上去；千万别特么把 <code>bene.db</code> 放在网络共享盘上作死</td>
 </tr>
 <tr>
-<td>Context too long</td>
-<td>Prompt overflow</td>
-<td>Enable <code>context_compression: true</code> in router; shorten prompts; raise <code>max_context</code> to match what vLLM was started with</td>
+<td>上下文太长 (Context too long)</td>
+<td>提示词长得跟裹脚布一样，装不下了</td>
+<td>在 router 里把 <code>context_compression: true</code> 给我开起来；把废话砍短；或者把 <code>max_context</code> 拉高，跟 vLLM 那边的数字对齐</td>
 </tr>
 </tbody>
 </table>
-<h2 id="where-to-go-next">Where to go next</h2>
-<p>Annotated by what each link gives you fastest:</p>
+<h2 id="_16">接下来的坑在哪里</h2>
+<p>挑你最缺的东西看：</p>
 <ul>
-<li><a href="t00-bene-e2e-walkthrough.html">tutorials/t00 — End-to-End Walkthrough</a> — <em>spawn → checkpoint → audit → restore in 5 minutes,</em> without an LLM. Cleanest way to internalize the audit DB shape.</li>
-<li><a href="t02-e2e-self-healing.html">tutorials/t02 — End-to-End Self-Healing</a> — <em>the rollback model.</em> Per-agent restore in 0.3 s, demonstrated end-to-end.</li>
-<li><a href="t03-security-swarm.html">tutorials/t03 — Security Swarm</a> — <em>role split with proof.</em> Zero cross-agent reads, anchoring-bias measurements, SQL aggregation.</li>
-<li><a href="t05-incident-response.html">tutorials/t05 — Incident Response</a> — <em>audit-DB SQL patterns</em> you can paste into your runbook.</li>
-<li><a href="t06-ml-research-lab.html">tutorials/t06 — ML Research Lab</a> — <em>N parallel hypothesis agents overnight.</em> Where local multi-model orchestration earns its setup cost.</li>
-<li><a href="t10-ci-overnight-bene-swarm.html">tutorials/t10 — Self-Healing CI Overnight</a> — <em>advanced; production CI integration.</em> GitHub Actions wiring on top of the same primitives.</li>
-<li><a href="../architecture.html">Architecture</a>, <a href="../schema.html">Schema</a>, <a href="../cli-reference.html">CLI Reference</a> — the primitive references.</li>
-<li>Runnable examples: <a href="../../../examples/code_review_swarm.py"><code>examples/code_review_swarm.py</code></a>, <a href="../../../examples/parallel_refactor.py"><code>examples/parallel_refactor.py</code></a>, <a href="../../../examples/self_healing_agent.py"><code>examples/self_healing_agent.py</code></a>, <a href="../../../examples/post_mortem.py"><code>examples/post_mortem.py</code></a>.</li>
+<li><a href="t00-bene-e2e-walkthrough.html">教程/t00 — 端到端通关大纲</a> — <em>在 5 分钟内极其丝滑地走完 <code>空降 → 快照 → 拷问 → 时光倒流</code> 的流程，</em> 而且根本不带 LLM 玩。这是你这辈子最快摸清那本流水账怎么读的捷径。</li>
+<li><a href="t02-e2e-self-healing.html">教程/t02 — 端到端自愈实战</a> — <em>沙盒里的时光倒流。</em> 一场残暴的 0.3 秒沙盒级单兵回滚实盘教学。</li>
+<li><a href="t03-security-swarm.html">教程/t03 — 安全攻防特种部队</a> — <em>极其冷血的人格分裂实证。</em> 零跨界偷看、严苛的锚定偏差 (anchoring-bias) 量化测量、还有霸气的 SQL 聚合统计。</li>
+<li><a href="t05-incident-response.html">教程/t05 — 凌晨两点急救手册</a> — <em>那些拿着纯 SQL 拷问审计库的神级咒语</em>，直接 Ctrl+C / Ctrl+V 到你的排障手册 (runbook) 里。</li>
+<li><a href="t06-ml-research-lab.html">教程/t06 — ML 炼丹实验室</a> — <em>派出 N 匹脑洞大开的 agent 熬夜炼丹。</em> 这里才是那套本地阶级化模型路由编队真正值回票价的地方。</li>
+<li><a href="t10-ci-overnight-bene-swarm.html">教程/t10 — 具备自愈能力的 CI 守夜人</a> — <em>高阶绝活；把这套玩意焊死在生产级 CI 里。</em> 教你怎么把同样的这堆零件，极其残暴地镶嵌在 GitHub Actions 上。</li>
+<li><a href="../architecture.html">深层架构</a>, <a href="../schema.html">数据库解剖图</a>, <a href="../cli-reference.html">CLI 指令大黄页</a> — 这三本是用来垫桌脚的底层说明书。</li>
+<li>拿去就能跑的硬核实战脚本: <a href="../../examples/code_review_swarm.py"><code>examples/code_review_swarm.py</code></a>, <a href="../../examples/parallel_refactor.py"><code>examples/parallel_refactor.py</code></a>, <a href="../../examples/self_healing_agent.py"><code>examples/self_healing_agent.py</code></a>, <a href="../../examples/post_mortem.py"><code>examples/post_mortem.py</code></a>。</li>
 </ul>
 <hr />
-<p><em>BENE is MIT-licensed and runs entirely locally. No data leaves your machine.</em></p>
-<p><em>GitHub: <a href="https://github.com/good-night-oppie/bene">github.com/good-night-oppie/bene</a></em></p>
+<p><em>BENE 基于 MIT 协议开源，并且是一个极端的纯本地原教旨主义者。没有任何一滴数据能溜出你的网线。</em></p>
+<p><em>源码老家 GitHub: <a href="https://github.com/good-night-oppie/bene">github.com/good-night-oppie/bene</a></em></p>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/tutorials/t11-local-agents-vllm.md" target="_blank" rel="noopener noreferrer">docs/tutorials/t11-local-agents-vllm.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>
 </div>

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Integrating BENE — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — Integrating BENE" />
+<title>接入 BENE (Integrating BENE) — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — 接入 BENE (Integrating BENE)" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -248,88 +248,88 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="infra/DNS.html">DNS</a></aside>
 <main>
 <div class="crumbs"><a href="index.html">docs</a> / integrating-bene.md</div>
-<h1 id="integrating-bene">Integrating BENE</h1>
-<p>BENE goes <em>under</em> your agent — keep LangGraph, CrewAI, AutoGen, smolagents, Letta, or your own loop on top. This page is the honest map of what you get for free versus what you wire yourself, so you can scope an integration before you start.</p>
-<p>The short version: <strong>the agent loop is turnkey; everything else is lego.</strong> BENE gives you real primitives for five stages of a coding-agent system, but only the loop is chained together for you. The rest are parts you assemble — there is no single adapter package that wires all five.</p>
-<h2 id="turnkey-on-by-default-zero-wiring">Turnkey — on by default, zero wiring</h2>
+<h1 id="bene-integrating-bene">接入 BENE (Integrating BENE)</h1>
+<p>BENE 是垫在你现有的 Agent 框架<strong>底下</strong>的一层底座 —— 上面那层你爱用 LangGraph、CrewAI、AutoGen、smolagents、Letta，或者是你自己手撸的死循环，全随你高兴。这篇文档就是一张极其诚实的底牌图：哪些东西是你开箱即得的白嫖福利，哪些东西是得你自己捏着鼻子写胶水代码焊上去的。看懂这张图，你就知道这趟水到底有多深。</p>
+<p>长话短说：<strong>Agent 的跑圈引擎 (loop) 是拧钥匙就走的；剩下的其他功能全是一地散装的乐高积木。</strong> BENE 给你提供了足以支撑一个写码 Agent 系统在 5 个生命周期里所需的硬核底层原语，但只有那个跑圈引擎是系统帮你串好的。其他的原语你得自己拿胶水去粘 —— 这里绝对没有那种一键打包全家桶的所谓 "适配器"。</p>
+<h2 id="turnkey">拧钥匙就走 —— 默认开启，零胶水代码 (Turnkey)</h2>
 <table>
 <thead>
 <tr>
-<th>Stage</th>
-<th>What you get with no setup</th>
+<th>阶段</th>
+<th>什么是你什么都不干就能白嫖到的</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Agent loop</strong></td>
-<td>Run through <code>ClaudeCodeRunner</code> (or attach the kernel to your own loop) and every turn lands a tier-0 trace engram, plus one trace engram per tool call (<code>tool_name</code>, <code>status</code>, <code>error_message</code>), plus the append-only event journal. Opt out per run with <code>emit_engrams=False</code> / <code>kernel.emit_engrams: false</code>.</td>
+<td><strong>Agent 跑圈引擎 (Agent loop)</strong></td>
+<td>只要任务是在 <code>ClaudeCodeRunner</code> 里跑的（或者你把内核强行挂到了你自己的循环上），每绕一圈，系统就会极其冷血地砸下一个 tier-0 级别的踪迹印记 (trace engram)；不仅如此，它还会给每一次工具调用 (tool call) 都配一个专属的印记（里面记着 <code>tool_name</code>, <code>status</code>, <code>error_message</code>），外加那本只能往里塞不能改的只读事件流水账。嫌烦的话可以在跑的时候关掉：<code>emit_engrams=False</code> / <code>kernel.emit_engrams: false</code>。</td>
 </tr>
 <tr>
-<td><strong>Failure localization</strong></td>
-<td>Because the loop leaves per-tool trace engrams by default, <code>bene failure localize &lt;agent&gt;</code> finds the earliest decisive failing step on a <strong>real run</strong> — no opt-in, no hand-seeded traces. (See <a href="cli-reference.html#bene-failure-localize">cli-reference</a>.)</td>
+<td><strong>锁定真凶 (Failure localization)</strong></td>
+<td>就因为跑圈引擎默认会给每个工具留下印记，所以你拿着 <code>bene failure localize &lt;agent&gt;</code> 去抓虫时，它能在<strong>真实的运行现场</strong>里，一眼揪出那个最早让系统开始崩盘的致命失误 —— 这玩意不用你开启任何开关，也不用你去手动伪造现场。（去查阅 <a href="#bene-failure-localize">CLI 指令大黄页 (cli-reference.md)</a>。）</td>
 </tr>
 <tr>
-<td><strong>Read-only inspection</strong></td>
-<td><code>bene query</code> is read-only at the SQLite engine level (<code>PRAGMA query_only</code>) — safe to hand to an agent. <code>bene ls</code> / <code>status</code> / <code>logs</code> / <code>read</code> / <code>search</code> all read the same one file.</td>
+<td><strong>只读盯盘 (Read-only inspection)</strong></td>
+<td>那个 <code>bene query</code> 命令在 SQLite 引擎那一层就被物理阉割成了纯只读 (<code>PRAGMA query_only</code>) —— 把它当成工具递给一头发疯的 Agent 都绝对安全。<code>bene ls</code> / <code>status</code> / <code>logs</code> / <code>read</code> / <code>search</code> 这堆命令全是在对着同一个文件读来读去。</td>
 </tr>
 </tbody>
 </table>
-<h2 id="wire-yourself-real-primitives-you-assemble-them">Wire-yourself — real primitives, you assemble them</h2>
+<h2 id="wire-yourself">自己动手丰衣足食 —— 硬核原语，但你得自己拼装 (Wire-yourself)</h2>
 <table>
 <thead>
 <tr>
-<th>Stage</th>
-<th>Primitive</th>
-<th>The glue you write</th>
+<th>阶段</th>
+<th>提供的底层原语 (Primitive)</th>
+<th>你得手写糊上去的胶水</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Fault</strong> (recovery beyond localize)</td>
-<td><code>bene.checkpoints</code> (checkpoint / diff / restore), pollution recovery</td>
-<td>Decide <em>when</em> to checkpoint and <em>what</em> triggers a restore in your loop.</td>
+<td><strong>炸机与抢救 (Fault)</strong> (比单纯的锁定真凶更进了一步)</td>
+<td><code>bene.checkpoints</code> (拍快照 / 查差异 / 逆转时空), 污染截断 (pollution recovery)</td>
+<td>你得自己写代码去判断 <em>什么时候</em> 该拍快照，以及在你的循环里到底 <em>满足了什么烂摊子条件</em> 才触发回滚。</td>
 </tr>
 <tr>
-<td><strong>Harden</strong> (eval gate)</td>
-<td><code>bene.kernel.eval</code> — <code>Probe(name, [gate], fn).register(store, conn, baseline=...)</code> seals the spec under sha256; <code>bene.kernel.evolve.promote(candidate, ...)</code> runs it → ACCEPT / REJECT / VOID. Wire it into CI with <code>bene probe run --json</code> (exits non-zero on REJECT/VOID) — see <a href="probe-authoring.html">probe authoring</a>.</td>
-<td>A Python driver that defines the <code>Probe</code>, registers it, and calls <code>promote()</code> (or <code>bene probe run</code>) at your CI / promotion point.</td>
+<td><strong>淬火防线 (Harden)</strong> (也就是评测闸门)</td>
+<td><code>bene.kernel.eval</code> — 用 <code>Probe(name, [gate], fn).register(store, conn, baseline=...)</code> 把规则死死封进 sha256 签名里；然后用 <code>bene.kernel.evolve.promote(candidate, ...)</code> 去过堂审问 → 吐出 晋升 (ACCEPT) / 毙掉 (REJECT) / 废弃 (VOID) 的判决。你可以拿着 <code>bene probe run --json</code> 把它硬怼进 CI 流水线里 (遇到 REJECT/VOID 当场报错拦截) —— 详见 <a href="probe-authoring.html">如何手写一刀致命的探针 (probe-authoring.md)</a>。</td>
+<td>你得自己写个 Python 脚本，去定义那个探针 (<code>Probe</code>)、把它注册进去、并在你的 CI 或者晋升节点上去调 <code>promote()</code> (或者跑 <code>bene probe run</code>)。</td>
 </tr>
 <tr>
-<td><strong>Skills</strong></td>
-<td>skill store + distillation</td>
-<td>A driver that distills traces into skills and decides retention.</td>
+<td><strong>技能库 (Skills)</strong></td>
+<td>技能存储系统 + 技能蒸馏机制 (distillation)</td>
+<td>你得自己写个引擎去把那些跑过的印记蒸馏成技能，并且自己写逻辑去决定到底哪个技能值得留下来。</td>
 </tr>
 <tr>
-<td><strong>Data</strong> (data-driven evolution)</td>
-<td><code>bene.kernel.evolve</code> — <code>mh search</code>, genome / Pareto, gated promote</td>
-<td>Python-only drivers for distill / breed; the end-to-end bridge is manual today.</td>
+<td><strong>吃数据的进化 (Data)</strong> (靠数据喂出来的进化路线)</td>
+<td><code>bene.kernel.evolve</code> — 包括 <code>mh search</code> (元引擎搜寻), genome (基因组) / 帕累托边界 (Pareto), 以及带着闸门的晋升通道</td>
+<td>你得完全靠纯 Python 去写提纯 (distill) 和繁育 (breed) 的驱动引擎；目前这头和那头之间是断层的，得靠你手动搭桥。</td>
 </tr>
 <tr>
-<td><strong>Atomic completion</strong></td>
-<td><a href="recipes/atomic-completion.html">Atomic completion recipe</a> — idempotent append + durable-record-first completion on a plain SQLite/JSONL log</td>
-<td>Copy the substrate-agnostic pattern into your own event log; no Temporal dependency.</td>
+<td><strong>绝对不重样的落地 (Atomic completion)</strong></td>
+<td><a href="recipes/atomic-completion.html">事务级落地方案 (Atomic completion recipe)</a> — 在一个极其简陋的 SQLite/JSONL 日志文件上，做到不管怎么重试都绝对不重复的落盘机制</td>
+<td>把这套跟平台无关的黑科技抄进你自己的事件日志系统里；这里压根就没有 Temporal 什么事。</td>
 </tr>
 </tbody>
 </table>
-<h3 id="the-three-recurring-pieces-a-consumer-wires">The three recurring pieces a consumer wires</h3>
+<h3 id="_1">用户接盘时必踩的三个胶水坑</h3>
 <ol>
-<li><strong>Python-only probe / distill / breed drivers</strong> — the eval, distillation, and evolution primitives are libraries, not CLI pipelines. You call them from your own code.</li>
-<li><strong>Auto-promote / plasticity scheduling</strong> — <code>AutonomyPolicy.auto_promote()</code> exists and is opt-in (L0–L3 by trust + probe; <strong>L4 stays human-only</strong>, always). You decide when it runs; nothing schedules it for you.</li>
-<li>~~<strong>Structured failure-metadata re-emit</strong>~~ — <strong>no longer needed.</strong> Until the 0.30 runner change, a consumer had to re-emit tool outcomes as engram metadata for <code>localize</code> to work on a live run. The runner now emits per-tool trace engrams itself, so real runs are localizable out of the box.</li>
+<li><strong>必须纯手敲的 Python 驱动代码 (探针 / 提纯 / 繁育)</strong> —— 这套评测、蒸馏和进化的底座全是给代码调用的函数库，根本没有那种在终端敲一句就能一键跑通的流水线 (CLI pipelines)。你得在自己的代码里去调用它们。</li>
+<li><strong>没人管的自动晋升 / 神经可塑性定时器</strong> —— <code>AutonomyPolicy.auto_promote()</code> 这玩意是确实存在的，但你必须显式开启（它靠着信任度和探针把等级从 L0 提到 L3；<strong>但 L4 这个生杀大权永远且只能攥在活人手里</strong>）。你得自己去定个闹钟告诉它什么时候跑；没人会帮你自动调度。</li>
+<li>~~<strong>把翻车现场的元数据重新塞回去</strong>~~ —— <strong>这坑已经被填平了，不用你管了。</strong> 在 0.30 版本的引擎升级之前，用户还得自己把工具报错的结果包装成印记元数据重新塞回去，那个实盘的 <code>localize</code> 抓虫命令才能用。现在的引擎已经学会了每次调用完工具就自己吐一个 tier-0 的印记，所以现在的实盘跑完直接就能拉出来剖尸抓虫。</li>
 </ol>
-<h2 id="what-changed-in-the-030-kernel-pass">What changed in the 0.30 kernel pass</h2>
-<p>These are kernel-side fixes shipped to the runtime (the published package is still <code>0.2.0</code>; this section is the docs/landing framing for the change set):</p>
+<h2 id="030">0.30 版内核手术到底改了什么</h2>
+<p>这批是在内核层面对运行时 (runtime) 做出的修复（虽然你在包管理器里看到的版本号还是 <code>0.2.0</code>；这一节只是为了在文档门户里给这些改动一个交待）：</p>
 <ul>
-<li><strong><code>bene failure localize</code> works on a real run</strong> — the runner emits a tier-0 trace engram per tool call (<code>tool_name</code> / <code>status</code> / <code>error_message</code>) at every completion path, so the "a run leaves engrams → localize finds where it went wrong" composition is exercised end-to-end, not just on hand-seeded test traces.</li>
-<li><strong><code>bene query</code> is read-only at the engine level</strong> — enforced by <code>PRAGMA query_only</code>, so a <code>WITH … DELETE</code> CTE or a comment-prefixed write can no longer slip past a keyword guard; a blocked write raises <code>PermissionError</code>.</li>
+<li><strong><code>bene failure localize</code> 现在真的能在一地鸡毛的实盘里抓虫了</strong> —— 引擎现在学乖了，每一次从工具里爬出来，都会甩下一个 tier-0 的印记 (<code>tool_name</code> / <code>status</code> / <code>error_message</code>)。这就意味着 "跑一遍留一地印记 → 拿着 localize 去翻印记找死因" 这条链条在全链路上被彻底走通了，再也不用像以前那样靠人工去伪造那些测试用的印记了。</li>
+<li><strong><code>bene query</code> 被从底层阉割成了纯只读</strong> —— 靠着底层的 <code>PRAGMA query_only</code> 死死按住的。哪怕你拿个带着 <code>WITH … DELETE</code> 的 CTE 嵌套，或者是用注释把写命令伪装起来，都绝对骗不过底层的封锁线；任何试图搞破坏的写操作都会当场挨一记 <code>PermissionError</code> 耳光。</li>
 </ul>
-<h2 id="see-also">See also</h2>
+<h2 id="_2">顺藤摸瓜</h2>
 <ul>
-<li><a href="probe-authoring.html">Probe authoring</a> — write a kill gate that can actually fail (the admissibility rule) and wire it into CI with <code>bene probe run --json</code> / <code>bene probe ls --check-admissible</code>.</li>
-<li><a href="recipes/atomic-completion.html">Atomic completion recipe</a> — exactly-once, ghost-free completion on a plain SQLite/JSONL log (no Temporal); the pattern for the Fault/Data glue above.</li>
-<li><a href="cli-reference.html">CLI reference</a> — every command, with verify lines.</li>
-<li><a href="architecture.html">Architecture</a> — how the engram ladder, kill gate, and trust ledger sit in one SQLite file.</li>
-<li><a href="design/v0.3-roadmap-spec.html">v0.3 roadmap spec</a> — what is still wire-yourself and on the roadmap to chain.</li>
+<li><a href="probe-authoring.html">如何手写一刀致命的探针 (probe-authoring.md)</a> — 别写那种永远不会翻车的假测试，去写一个真的能把烂代码就地正法的 "击杀闸门 (kill gate)"，然后拿 <code>bene probe run --json</code> / <code>bene probe ls --check-admissible</code> 把它粗暴地焊进你的 CI 里。</li>
+<li><a href="recipes/atomic-completion.html">事务级落地方案 (Atomic completion recipe)</a> — 仅仅用一个白开水一样的 SQLite/JSONL 文件，就能做出绝对不丢、绝对不重的落地效果 (没有 Temporal 的魔法)；这也是上面提到的 炸机/数据 胶水层的标准答案。</li>
+<li><a href="cli-reference.html">CLI 指令大黄页 (cli-reference.md)</a> — 字典一样的指令大礼包，每条底下都附带了验证结果。</li>
+<li><a href="architecture.html">深层架构 (architecture.md)</a> — 扒一扒印记阶梯 (engram ladder)、击杀闸门 (kill gate) 和信任度账本 (trust ledger) 是怎么在一个极其寒酸的 SQLite 文件里和平共处的。</li>
+<li><a href="design/v0.3-roadmap-spec.html">v0.3 路线图大饼 (design/v0.3-roadmap-spec.md)</a> — 去看看这套系统里到底还有多少需要你亲手去糊的烂摊子，以及我们画饼什么时候会把它们解决。</li>
 </ul>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/integrating-bene.md" target="_blank" rel="noopener noreferrer">docs/integrating-bene.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>

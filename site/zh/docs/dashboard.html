@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>BENE Dashboard — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — BENE Dashboard" />
+<title>BENE 仪表盘 (Dashboard) — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — BENE 仪表盘 (Dashboard)" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -248,67 +248,67 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="infra/DNS.html">DNS</a></aside>
 <main>
 <div class="crumbs"><a href="index.html">docs</a> / dashboard.md</div>
-<h1 id="bene-dashboard">BENE Dashboard</h1>
-<p>One browser tab shows your whole agent fleet live: what's still working, what finished, what died — and the event trail behind every bar.</p>
+<h1 id="bene-dashboard">BENE 仪表盘 (Dashboard)</h1>
+<p>只需要一个浏览器标签页，就能让你把整支特种兵大军尽收眼底：谁还在浴血奋战，谁已经凯旋，谁不幸阵亡了 —— 并且能一眼扒出每条进度条背后的所有风吹草动。</p>
 <blockquote>
-<p><strong>From a red bar to the exact tool call that caused it — without leaving your machine.</strong></p>
+<p><strong>从一条刺眼的红色报错条，直接追溯到惹祸的那次兵器调用 (tool call) —— 这一切，连你的电脑都不需要出。</strong></p>
 </blockquote>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>ui<span class="w">           </span><span class="c1"># open the web dashboard</span>
-bene<span class="w"> </span>demo<span class="w">         </span><span class="c1"># demo data + dashboard (no setup needed)</span>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>ui<span class="w">           </span><span class="c1"># 唤醒 Web 仪表盘</span>
+bene<span class="w"> </span>demo<span class="w">         </span><span class="c1"># 塞点假数据并唤醒仪表盘 (不用做任何前置准备)</span>
 </code></pre></div>
 
-<p>Everything on screen is read from a local SQLite file; remote access stays off until you ask for it with <code>--host 0.0.0.0</code>.</p>
-<h2 id="launch-options">Launch options</h2>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>ui<span class="w"> </span>--port<span class="w"> </span><span class="m">9000</span><span class="w">         </span><span class="c1"># custom port (default: 8765)</span>
-bene<span class="w"> </span>ui<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w">     </span><span class="c1"># bind to all interfaces (for remote access)</span>
-bene<span class="w"> </span>ui<span class="w"> </span>--no-browser<span class="w">        </span><span class="c1"># don&#39;t auto-open browser</span>
-bene<span class="w"> </span>ui<span class="w"> </span>--db<span class="w"> </span>./project.db<span class="w">  </span><span class="c1"># specific database</span>
+<p>屏幕上你看到的所有东西，全是从本地那个破 SQLite 文件里扒出来的；除非你手贱敲了 <code>--host 0.0.0.0</code>，否则这玩意儿死都不会对外网开门。</p>
+<h2 id="_1">启动花样</h2>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>ui<span class="w"> </span>--port<span class="w"> </span><span class="m">9000</span><span class="w">         </span><span class="c1"># 换个门牌号 (默认: 8765)</span>
+bene<span class="w"> </span>ui<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w">     </span><span class="c1"># 敞开大门，允许外网访问 (用于远程监控)</span>
+bene<span class="w"> </span>ui<span class="w"> </span>--no-browser<span class="w">        </span><span class="c1"># 别特么自动跳出浏览器弹窗</span>
+bene<span class="w"> </span>ui<span class="w"> </span>--db<span class="w"> </span>./project.db<span class="w">  </span><span class="c1"># 强制绑死某个特定的数据库</span>
 </code></pre></div>
 
-<h2 id="read-the-timeline">Read the timeline</h2>
-<p>The centerpiece is a <strong>Gantt timeline</strong>, bucketed into <em>waves</em>: agents whose start times cluster together — in practice, one <code>bene parallel</code> invocation or one MCP-fired batch.</p>
-<h3 id="waves">Waves</h3>
-<p>Each wave gets a header card carrying:</p>
+<h2 id="_2">怎么看懂时间线</h2>
+<p>整个画面的绝对C位是一张 <strong>甘特图 (Gantt timeline)</strong>，它把所有的兵按照 <em>波次 (waves)</em> 圈了起来：只要是差不多同时起步的特种兵，就会被打包成一波 —— 翻译成人话就是，一次 <code>bene parallel</code> 命令，或者一次从 MCP 轰过来的批量任务，算作一波。</p>
+<h3 id="waves">进攻波次 (Waves)</h3>
+<p>每一波都有一个领头的表头卡片，上面刻着：</p>
 <ul>
-<li>the goal — the wave's task, described in plain English</li>
-<li>when it started, and its total duration</li>
-<li>a status bar split proportionally across completed, running, failed, and killed agents</li>
-<li>pills counting agents per status</li>
+<li>终极目标 —— 用大白话写的这波冲锋到底要干嘛</li>
+<li>发起冲锋的时间，以及鏖战了多久</li>
+<li>一根被切成了好几段的进度条，按比例涂上了完工的、还在跑的、阵亡的和被强行超度的颜色</li>
+<li>数人头的小药丸 (pills)</li>
 </ul>
-<h3 id="bars">Bars</h3>
-<p>Beneath it, each agent is one horizontal bar:</p>
+<h3 id="bars">进度条 (Bars)</h3>
+<p>在表头下面，每一只特种兵都化作了一条横杠：</p>
 <ul>
-<li>length encodes the agent's runtime, scaled to its wave</li>
-<li>color encodes status — green for completed, purple for running, red for failed, gray for killed or paused</li>
-<li>still-running bars shimmer</li>
-<li>a vertical "now" marker tracks the present moment on active waves</li>
-<li>axis ticks give the scale (0s → Xm)</li>
+<li>长度代表它活了多久，并且按这一波的整体时长做了等比缩放</li>
+<li>颜色代表死活 —— 绿色是凯旋，紫色是还在冲锋，红色是阵亡，灰色是被叫停或是强行击毙的</li>
+<li>那些还在跑的条子，会泛着一阵阵的波光</li>
+<li>一根垂直的 "现在" 游标线，死死咬住活跃波次的当下时刻</li>
+<li>底下的刻度尺给你一点时间概念 (0s → Xm)</li>
 </ul>
-<p>Hover any bar for a tooltip: name, role, task, status.</p>
-<h3 id="expand-and-filter">Expand and filter</h3>
-<p>Clicking a wave's header toggles its rows. Waves unfold on their own while agents are running, and when small (≤12 agents).</p>
-<p>The toolbar trims the view:</p>
+<p>把鼠标悬停在任何一根条子上，就能看到它的老底：代号、职能、领到的任务、以及死活状态。</p>
+<h3 id="_3">展开与筛选</h3>
+<p>点一下表头，就能把这波兵折叠或者展开。只要还有兵在跑，或者这一波人数不多 (≤12 个) 的时候，它默认就是敞开的。</p>
+<p>顶部的工具栏就是你的狙击镜：</p>
 <ul>
-<li>the <strong>search box</strong> matches against names, task text, or roles</li>
-<li>the <strong>status pills</strong> isolate a single status — running, done, failed, or killed</li>
+<li><strong>搜索框 (search box)</strong> 可以直接拿名字、任务描述或者职能去搜人</li>
+<li><strong>状态药丸 (status pills)</strong> 让你能把某种状态的人单独拎出来 —— 还在跑的、完工的、阵亡的、被击毙的</li>
 </ul>
-<h2 id="watch-the-live-feed">Watch the live feed</h2>
-<p>A strip along the bottom streams events from all agents as they land: failures, completions, tool calls, file writes. Pills in its header narrow the stream to one event type; clicking an agent ID there jumps the inspector (below) to that agent.</p>
-<h2 id="inspect-one-agent">Inspect one agent</h2>
-<p>Click a bar in the Gantt (or an ID in the feed) and an inspector panel slides in on the right. Five tabs:</p>
-<p><strong>Overview</strong> — the agent at a glance: status badge, when it was created, its last heartbeat; counters for files written, tool calls, tokens, and recorded events; the full task text; config and metadata JSON.</p>
-<p><strong>Events</strong> — everything the agent has logged, updating live over SSE: lifecycle transitions, state changes, file reads and writes, tool-call starts and ends. New entries arrive without a refresh.</p>
-<p><strong>Tool Calls</strong> — the complete call tree. Each invocation shows its input, its output, how long it took, and its token count; nesting renders as indentation. Expand any row for full input/output detail.</p>
-<p><strong>Files</strong> — a browser for the agent's virtual filesystem. Step into directories, read sizes, climb back out with the breadcrumb.</p>
-<p><strong>Checkpoints</strong> — the agent's checkpoints in order — label, creation time, metadata notes.</p>
-<h2 id="work-over-ssh-or-in-ci">Work over SSH or in CI</h2>
-<p>No browser on the box? The same data renders as a terminal UI:</p>
+<h2 id="_4">死死盯住实时战报</h2>
+<p>画面最底下的那一溜，是一台永远在滚动的事件播报机，只要有风吹草动就会弹出来：谁报错了、谁干完了、谁抽出了兵器、谁往硬盘里塞了文件。表头上的小药丸能帮你把这堆噪音过滤得只剩一种；要是你在这里点了一个特种兵的 ID，右边的审讯室 (inspector) 就会瞬间锁定这个倒霉蛋。</p>
+<h2 id="inspect-one-agent">提审单只特种兵 (Inspect one agent)</h2>
+<p>在甘特图里点一根条子 (或者在战报机里点个 ID)，右边就会极其丝滑地滑出一个审讯面板。里面分了 5 个刑房：</p>
+<p><strong>全景扫描 (Overview)</strong> — 这只兵的底裤：死活徽章、什么时候出生的、最后一次喘气是什么时候；记分牌上挂着它写了多少文件、抽了多少次兵器、烧了多少代币、留下了多少条案底；它领到的完整任务书；以及一堆没人看的配置和元数据 JSON。</p>
+<p><strong>流水账 (Events)</strong> — 这只兵这辈子留下的所有脚印，靠着 SSE (Server-Sent Events) 实时怼到你脸上：生死轮回、状态突变、读写了什么文件、拔刀和收刀的瞬间。不用你拿 F5 狂刷，新案底自己就会弹出来。</p>
+<p><strong>兵器谱 (Tool Calls)</strong> — 完整的兵器调用树。每一次挥刀都明明白白写着：它塞了什么进去、拿到了什么结果、磨蹭了多久、以及烧了多少钱的代币；套娃调用会老老实实地缩进显示。点开任何一行，就能看到极其变态的入参和出参细节。</p>
+<p><strong>翻箱倒柜 (Files)</strong> — 这只兵专属的 VFS (虚拟文件系统) 结界的浏览器。你可以踩进目录里，看看文件多大，然后顺着面包屑爬出来。</p>
+<p><strong>时光快照 (Checkpoints)</strong> — 这只兵留下的一串存档点 —— 标签名、存盘时间点、以及几句备忘录。</p>
+<h2 id="ssh-ci">只能用 SSH 或者在 CI 里干瞪眼？</h2>
+<p>机器上没装浏览器？这套一模一样的数据也能在黑不溜秋的命令行里渲染出来：</p>
 <div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>dashboard
 </code></pre></div>
 
-<p>You get a live agent table, per-agent token counts, and an event feed that scrolls.</p>
-<h2 id="switch-between-databases">Switch between databases</h2>
-<p>One dashboard serves many projects: pick a different <code>.db</code> file from the top-bar dropdown and the view swaps without a restart. <strong>+ Project</strong> loads a database from any path; the same switch works as a URL parameter:</p>
+<p>你会得到一张极其硬核的、实时刷新的特种兵存活表，每人烧了多少钱的账单，以及一台能往下滚的事件播报机。</p>
+<h2 id="_5">在不同的盘子里切来切去</h2>
+<p>一个仪表盘能管着无数个项目：直接去顶部的下拉菜单里挑另一个 <code>.db</code> 文件，画面瞬间就切过去了，连重启都不用。点一下 <strong>+ Project</strong> 就能把任何路径下的数据库生拽进来；在浏览器地址栏里这么搞也是一样的：</p>
 <p><code>http://localhost:8765/?db=/path/to/bene.db</code></p>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/dashboard.md" target="_blank" rel="noopener noreferrer">docs/dashboard.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>

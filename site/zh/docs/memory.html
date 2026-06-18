@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Cross-Agent Memory — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — Cross-Agent Memory" />
+<title>跨代记忆库 (Cross-Agent Memory) — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — 跨代记忆库 (Cross-Agent Memory)" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -248,25 +248,25 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="infra/DNS.html">DNS</a></aside>
 <main>
 <div class="crumbs"><a href="index.html">docs</a> / memory.md</div>
-<h1 id="cross-agent-memory">Cross-Agent Memory</h1>
-<p>Write a finding down once and any agent that runs later — next iteration, next session, another worker — can search for it.</p>
+<h1 id="cross-agent-memory">跨代记忆库 (Cross-Agent Memory)</h1>
+<p>把踩过的坑记下来一次，之后无论是下一轮迭代、下一个 session 还是另外一台 worker 上跑的任何 agent，都能直接把它翻出来。</p>
 <blockquote>
-<p><strong>One agent's lesson becomes every agent's context: a single shared, full-text-searchable memory for the whole project.</strong></p>
+<p><strong>一个 agent 吃过的亏，直接变成全场 agent 的共有 context：这就是整个项目共享的、支持全文检索的唯一记忆总库。</strong></p>
 </blockquote>
-<p>Clean-room build of an idea from <a href="https://github.com/thedotmack/claude-mem">claude-mem</a> (AGPL-3.0) — see <a href="#credits">Credits</a>.</p>
+<p>本方案的核心构想，是对 <a href="https://github.com/thedotmack/claude-mem">claude-mem</a> (AGPL-3.0) 的一次 clean-room 级别的重构演进 —— 详见 <a href="#credits">致谢</a>。</p>
 <hr />
-<h2 id="start-here">Start Here</h2>
-<p>Hand <code>MemoryStore</code> your connection; every agent sharing the <code>.db</code> file shares the store.</p>
+<h2 id="_1">快速起步</h2>
+<p>把你的数据库连接塞给 <code>MemoryStore</code>；只要是跟这个 <code>.db</code> 绑在同一个绳上的 agent，就能同享这份记忆。</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bene</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bene.memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryStore</span>
 
 <span class="n">bene</span> <span class="o">=</span> <span class="n">Bene</span><span class="p">(</span><span class="s2">&quot;project.db&quot;</span><span class="p">)</span>
 <span class="n">mem</span>  <span class="o">=</span> <span class="n">MemoryStore</span><span class="p">(</span><span class="n">bene</span><span class="o">.</span><span class="n">conn</span><span class="p">)</span>
 
-<span class="c1"># Spawn the agent first — memory rows FK to agents; spawn returns the id string</span>
+<span class="c1"># 兵马未动粮草先行，得先有个 agent_id —— memory 的每一条记录都得靠外键死死咬住一个主人</span>
 <span class="n">agent_id</span> <span class="o">=</span> <span class="n">bene</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="s2">&quot;proposer-iter-3&quot;</span><span class="p">)</span>
 
-<span class="c1"># Any agent writes a result</span>
+<span class="c1"># 任何一个 agent 都能往里头塞战果</span>
 <span class="n">mid</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
     <span class="n">agent_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">,</span>
     <span class="n">content</span><span class="o">=</span><span class="s2">&quot;Ensemble voting with 3 Sonnet calls achieved accuracy=0.847.&quot;</span><span class="p">,</span>
@@ -275,71 +275,71 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
     <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;accuracy&quot;</span><span class="p">:</span> <span class="mf">0.847</span><span class="p">,</span> <span class="s2">&quot;cost&quot;</span><span class="p">:</span> <span class="mf">18.2</span><span class="p">},</span>
 <span class="p">)</span>
 
-<span class="c1"># Any other agent can search across all memory</span>
+<span class="c1"># 而其它任意 agent 都能在全量记忆池里进行打捞</span>
 <span class="n">hits</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;ensemble accuracy&quot;</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
 </code></pre></div>
 
-<p>Full demo: <a href="../../examples/memory_search.py">examples/memory_search.py</a>.</p>
+<p>想看活的？去跑 <a href="../examples/memory_search.py">examples/memory_search.py</a>。</p>
 <hr />
-<h2 id="choose-a-type-before-you-write">Choose a Type Before You Write</h2>
-<p>Each entry carries a type; failure hunters filter to <code>error</code>.</p>
+<h2 id="type">下笔前，先选好门派 (Type)</h2>
+<p>每一条记下来的账都得带个出处门派；那些专职扫雷的 agent 往往起手就是一句 filter to <code>error</code>。</p>
 <table>
 <thead>
 <tr>
-<th>Type</th>
-<th>Use case</th>
+<th>门派 (Type)</th>
+<th>适用战场</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>observation</code></td>
-<td>Runtime findings, intermediate results</td>
+<td>运行时摸查到的底细，跑出来的一半结果</td>
 </tr>
 <tr>
 <td><code>result</code></td>
-<td>Final outputs, benchmark scores</td>
+<td>尘埃落定的最终产出，打出来的 benchmark 成绩</td>
 </tr>
 <tr>
 <td><code>skill</code></td>
-<td>Reusable patterns, code templates</td>
+<td>能被反复白嫖的套路，可以直接抄的代码模板</td>
 </tr>
 <tr>
 <td><code>insight</code></td>
-<td>Analysis, lessons learned</td>
+<td>深度复盘，血泪教训</td>
 </tr>
 <tr>
 <td><code>error</code></td>
-<td>Known failure modes to avoid</td>
+<td>确认过眼神的死胡同，必须绕道走的坑</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="search-what-earlier-agents-learned">Search What Earlier Agents Learned</h2>
+<h2 id="_2">翻找先辈们的遗产</h2>
 <h3 id="memorystoresearchquery-limit-type-agent_id-listmemoryentry"><code>MemoryStore.search(query, limit, type, agent_id) -&gt; list[MemoryEntry]</code></h3>
-<p>Queries hit SQLite FTS5 with porter stemming, ranked by BM25 relevance.</p>
-<p>FTS5 query syntax works as-is:</p>
+<p>发出去的查询会直接硬撞 SQLite 的 FTS5 引擎 (自带 porter 词干提取)，然后乖乖按 BM25 相关度评分排好队。</p>
+<p>FTS5 原生的查询语法在这直接管用：</p>
 <ul>
-<li>Phrase: <code>"chain of thought"</code></li>
-<li>NOT: <code>reasoning NOT error</code></li>
-<li>OR: <code>ensemble OR majority</code></li>
-<li>Wildcard: <code>accurac*</code></li>
+<li>词组连坐: <code>"chain of thought"</code></li>
+<li>坚决不要: <code>reasoning NOT error</code></li>
+<li>兼收并蓄: <code>ensemble OR majority</code></li>
+<li>模糊通配: <code>accurac*</code></li>
 </ul>
-<div class="codehilite"><pre><span></span><code><span class="c1"># Search across all agents, all types</span>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 跨越血统门派的无差别撒网</span>
 <span class="n">hits</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;ensemble voting math&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 
-<span class="c1"># Filter to only &#39;error&#39; entries</span>
+<span class="c1"># 专捞那些标了 &#39;error&#39; 的案底</span>
 <span class="n">errors</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;JSON decode&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;error&quot;</span><span class="p">)</span>
 
-<span class="c1"># Filter to one agent</span>
+<span class="c1"># 死盯着某一个特定 agent 查</span>
 <span class="n">hits</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;ensemble&quot;</span><span class="p">,</span> <span class="n">agent_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">)</span>
 </code></pre></div>
 
 <hr />
-<h2 id="record-browse-and-prune">Record, Browse, and Prune</h2>
+<h2 id="_3">录入、查阅和抹杀</h2>
 <h3 id="memorystorewriteagent_id-content-type-key-metadata-int"><code>MemoryStore.write(agent_id, content, type, key, metadata) -&gt; int</code></h3>
-<p>Stores one entry and returns its <code>memory_id</code>.</p>
+<p>把一条记录钉进账本，并返回它的 <code>memory_id</code> 铭牌。</p>
 <div class="codehilite"><pre><span></span><code><span class="n">mid</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
     <span class="n">agent_id</span><span class="o">=</span><span class="s2">&quot;agent-01&quot;</span><span class="p">,</span>
     <span class="n">content</span><span class="o">=</span><span class="s2">&quot;Chain-of-thought prompting reduces errors by 23%.&quot;</span><span class="p">,</span>
@@ -350,62 +350,63 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </code></pre></div>
 
 <h3 id="memorystorelistagent_id-type-limit-offset-listmemoryentry"><code>MemoryStore.list(agent_id, type, limit, offset) -&gt; list[MemoryEntry]</code></h3>
-<p>Newest first; narrow by agent or type, page with <code>offset</code>.</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># All entries</span>
+<p>新来的排前面；可以用 agent 或者 type 收拢范围，还能用 <code>offset</code> 来翻页。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 把家底全亮出来</span>
 <span class="n">entries</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">list</span><span class="p">()</span>
 
-<span class="c1"># Skills only</span>
+<span class="c1"># 只挑能当 skill 用的</span>
 <span class="n">skills</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">list</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;skill&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
 
-<span class="c1"># Paginate</span>
+<span class="c1"># 直接翻到第二页</span>
 <span class="n">page2</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">list</span><span class="p">(</span><span class="n">offset</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
 </code></pre></div>
 
 <h3 id="memorystoregetmemory_id-memoryentry-none"><code>MemoryStore.get(memory_id) -&gt; MemoryEntry | None</code></h3>
-<p>Looks up one entry by primary key.</p>
+<p>拿着主键 ID 去精准捞人。</p>
 <h3 id="memorystoreget_by_keykey-agent_id-memoryentry-none"><code>MemoryStore.get_by_key(key, agent_id) -&gt; MemoryEntry | None</code></h3>
-<p>Returns the newest entry carrying the given key.</p>
+<p>把挂着指定 key 的最新那条记录翻出来。</p>
 <h3 id="memorystoredeletememory_id-bool"><code>MemoryStore.delete(memory_id) -&gt; bool</code></h3>
-<p>Removes an entry; a trigger also clears its FTS row.</p>
+<p>抹除一条记忆；底层的触发器 (trigger) 会顺手把 FTS 里的搜索底根也一块烧掉。</p>
 <h3 id="memorystorestats-dict"><code>MemoryStore.stats() -&gt; dict</code></h3>
-<p>Reports total count plus a per-type breakdown.</p>
+<p>拉出一份包含总数以及各大门派人丁细分的总账单。</p>
 <hr />
-<h2 id="let-the-meta-harness-remember-for-you">Let the Meta-Harness Remember for You</h2>
-<p>After each iteration the meta-harness records improved harnesses and known failures; the proposer's prompt gains a "Cross-Session Memory" block built from prior searches.</p>
-<p><strong>Restart a search and the proposer already knows what worked before.</strong></p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># Memory is auto-written in _store_result() for improved/failed harnesses</span>
-<span class="c1"># Memory is auto-queried in proposer._load_memory_context()</span>
+<h2 id="meta-harness">让 Meta-Harness 替你记账</h2>
+<p>每一轮肉搏打完，meta-harness 都会自觉把变强了的 harnesses 和确诊的死穴全记下来；下一次 proposer 构思新点子时，它的 prompt 里就会凭空多出一块由过往搜索拼凑出来的 "跨世代记忆 (Cross-Session Memory)" 外挂模块。</p>
+<p><strong>哪怕你中途重启过搜寻进程，再活过来的 proposer 脑子里依然清清楚楚地记得前辈们试过啥。</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 这两步是全自动的：</span>
+<span class="c1"># 发现 harness 变强或者翻车时，_store_result() 会自动落笔写 memory</span>
+<span class="c1"># 构思新变种时，proposer._load_memory_context() 会自动去捞 memory</span>
 </code></pre></div>
 
 <hr />
-<h2 id="drive-it-from-the-shell">Drive It from the Shell</h2>
-<p>Write, search, and list have shell verbs; <code>--json</code> makes the output pipeable.</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># Write a memory entry</span>
+<h2 id="_4">从黑框框里直接下令</h2>
+<p>录入、查询和列表这三招都在 Shell 下留了后门；挂上 <code>--json</code> 就能直接串进你的自动化管道里。</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 录入一条新的长远记忆</span>
 uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>memory<span class="w"> </span>write<span class="w"> </span>&lt;agent_id&gt;<span class="w"> </span><span class="s2">&quot;Ensemble voting improved accuracy by 12%.&quot;</span><span class="w"> </span>--type<span class="w"> </span>insight<span class="w"> </span>--key<span class="w"> </span>ensemble-v1
 
-<span class="c1"># Full-text search</span>
+<span class="c1"># 掏出全文检索引擎直接开查</span>
 uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>memory<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;ensemble accuracy&quot;</span>
 uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>memory<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;JSON error&quot;</span><span class="w"> </span>--type<span class="w"> </span>error
 
-<span class="c1"># List recent entries</span>
+<span class="c1"># 看看最近大家都记了些啥</span>
 uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>memory<span class="w"> </span>ls
 uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>memory<span class="w"> </span>ls<span class="w"> </span>--type<span class="w"> </span>result<span class="w"> </span>--limit<span class="w"> </span><span class="m">5</span>
 
-<span class="c1"># JSON output for piping</span>
+<span class="c1"># 强行吐出 JSON 格式以便接上 JQ 处理</span>
 uv<span class="w"> </span>run<span class="w"> </span>bene<span class="w"> </span>--json<span class="w"> </span>memory<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;ensemble&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.[].content&#39;</span>
 </code></pre></div>
 
 <hr />
-<h2 id="call-it-from-claude-code">Call It from Claude Code</h2>
-<p>Agents reaching BENE over MCP get these memory tools:</p>
-<div class="codehilite"><pre><span></span><code>agent_memory_write   — persist a memory entry
-agent_memory_search  — FTS5 search across all agents
-agent_memory_read    — fetch by memory_id or list recent
+<h2 id="claude-code">在 Claude Code 里呼叫火力</h2>
+<p>任何通过 MCP 连上 BENE 的 agent，手里天然就攥着这三把针对 memory 的 tool:</p>
+<div class="codehilite"><pre><span></span><code>agent_memory_write   — 钉死一条记忆
+agent_memory_search  — 跨越全场 agent 发动 FTS5 搜索
+agent_memory_read    — 根据 memory_id 精准抓取或者直接列出近期流水
 </code></pre></div>
 
 <hr />
-<h2 id="check-where-your-data-lives">Check Where Your Data Lives</h2>
-<p>Nothing leaves your machine: memory is one SQLite table inside the same <code>.db</code> file as your agents — copy that file and you have copied the memory. An FTS5 virtual table powers search, kept in sync by triggers.</p>
+<h2 id="_5">扒底：你的数据到底在哪？</h2>
+<p>一滴数据都走不出你的机器：所谓的记忆，无非就是跟你的 agent 们挤在同一个 <code>.db</code> 文件里的那张 SQLite 数据表 —— 你把这个文件考走，这满脑子的记忆也就跟着考走了。支撑搜索的则是一张 FTS5 虚拟表，背后的同步全靠数据库的原生触发器 (triggers) 硬扛。</p>
 <div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">memory</span><span class="w"> </span><span class="p">(</span>
 <span class="w">    </span><span class="n">memory_id</span><span class="w">   </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="n">AUTOINCREMENT</span><span class="p">,</span>
 <span class="w">    </span><span class="n">agent_id</span><span class="w">    </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">agents</span><span class="p">(</span><span class="n">agent_id</span><span class="p">),</span>
@@ -422,17 +423,17 @@ agent_memory_read    — fetch by memory_id or list recent
 <span class="w">    </span><span class="k">type</span><span class="w"> </span><span class="n">UNINDEXED</span><span class="p">,</span><span class="w"> </span><span class="n">agent_id</span><span class="w"> </span><span class="n">UNINDEXED</span><span class="p">,</span><span class="w"> </span><span class="n">memory_id</span><span class="w"> </span><span class="n">UNINDEXED</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="n">UNINDEXED</span><span class="p">,</span>
 <span class="w">    </span><span class="n">tokenize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;porter unicode61&#39;</span>
 <span class="p">);</span>
-<span class="c1">-- FTS is kept in sync via INSERT/UPDATE/DELETE triggers</span>
+<span class="c1">-- FTS 的同步脏活，由 INSERT/UPDATE/DELETE triggers 统统包揽</span>
 </code></pre></div>
 
 <hr />
-<h2 id="credits">Credits</h2>
-<p>The seed idea — agents leaving compact, searchable notes for later sessions to retrieve — comes from Alex Newman's <a href="https://github.com/thedotmack/claude-mem">claude-mem</a> (<a href="https://github.com/thedotmack">@thedotmack</a>), AGPL-3.0. BENE diverges:</p>
+<h2 id="_6">致谢</h2>
+<p>让 agent 留下高度紧凑、随时可被检索的便签，以供后人白嫖 —— 这颗灵感的火种直接来自 Alex Newman 的开源项目 <a href="https://github.com/thedotmack/claude-mem">claude-mem</a> (<a href="https://github.com/thedotmack">@thedotmack</a>)，遵从 AGPL-3.0 协议。但 BENE 在这颗种子上长出了截然不同的枝干：</p>
 <ul>
-<li>storage is SQLite FTS5 rather than a separate file store</li>
-<li>many agents write and many agents read, instead of one agent</li>
-<li>entries carry a type (result, skill, error, insight, observation) so retrieval stays structured</li>
-<li>the meta-harness reads and writes memory automatically</li>
+<li>底座直接换成了 SQLite FTS5，而不是在外面另起一套杂乱的文件堆。</li>
+<li>打破了单体牢笼：支持一堆 agent 疯狂写入，另一堆 agent 疯狂读取。</li>
+<li>引入了门派标签 (result, skill, error, insight, observation)，让信息检索时自带结构化的过滤网。</li>
+<li>彻底让 meta-harness 学会了全自动吞吐和读取记忆。</li>
 </ul>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/memory.md" target="_blank" rel="noopener noreferrer">docs/memory.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>

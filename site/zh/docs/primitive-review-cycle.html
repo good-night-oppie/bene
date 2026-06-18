@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Primitive Review Cycle — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — Primitive Review Cycle" />
+<title>基础原语审查生死线 (Primitive Review Cycle) — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — 基础原语审查生死线 (Primitive Review Cycle)" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -248,82 +248,82 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="infra/DNS.html">DNS</a></aside>
 <main>
 <div class="crumbs"><a href="index.html">docs</a> / primitive-review-cycle.md</div>
-<h1 id="primitive-review-cycle">Primitive Review Cycle</h1>
-<p><strong>Status:</strong> Methodology document. Describes how to validate a new BENE runtime primitive before locking it into the boundary plan.</p>
-<p><strong>Companion to:</strong> <code>philosophy.md</code> (why BENE is structured around evolving harnesses), <code>codegen.md</code> (the IR-as-codegen-target vision), and the runtime boundary itself in <code>bene/runtime/handle.py</code> (protocol) + <code>bene/runtime/core.py</code> (DTOs).</p>
+<h1 id="primitive-review-cycle">基础原语审查生死线 (Primitive Review Cycle)</h1>
+<p><strong>状态：</strong> 方法论指导书。这篇文档讲的是：在把任何一个新的 BENE 运行时原语 (runtime primitive) 死死焊进边界计划 (boundary plan) 之前，到底该怎么去验它的成色。</p>
+<p><strong>配套读物：</strong> <code>philosophy.md</code> (扒一扒为什么 BENE 把身家性命全押在引擎的进化上), <code>codegen.md</code> (把 IR 当成代码生成靶心的终极愿景), 以及真刀真枪的运行时边界代码 <code>bene/runtime/handle.py</code> (协议) + <code>bene/runtime/core.py</code> (DTO)。</p>
 <hr />
-<h2 id="what-this-is-for">What this is for</h2>
-<p>When BENE considers adding a new primitive to the runtime boundary (a new method on <code>RunHandle</code>, a new field on a command, a new lifecycle hook), the design has at least three blind spots that no single reviewer can see:</p>
+<h2 id="_1">这套繁文缛节到底是图什么</h2>
+<p>当 BENE 考虑往运行时边界里加点新花样时 (比如给 <code>RunHandle</code> 挂个新方法，给命令包塞个新字段，或者挂个新的生命周期钩子)，无论哪个评审员来审，这套设计都绝对会带上至少三个盲区 —— 这是单兵作战绝对跨不过去的槛：</p>
 <ol>
-<li><strong>The owner blind spot.</strong> Whoever owns the abstraction designs it from the implementation side. They know what's possible to build, but they don't routinely walk through what consumer code looks like under retry, replay, or partial failure. They tend to overstate atomicity guarantees and understate boilerplate burden.</li>
-<li><strong>The consumer blind spot.</strong> Whoever uses the abstraction first sees only their own use case. They miss API smells that would matter for the second consumer, miss DTO placement issues that wouldn't surface until LocalRuntime needs to implement the same protocol, and miss reconciliation strategies for external systems they happen not to touch.</li>
-<li><strong>The facilitator blind spot.</strong> Whoever frames the design discussion (often a third party reading both sides) lacks the implementation intuition of the owner and the production experience of the consumer. They tend to invent abstractions that sound clean but don't survive contact with either real implementation or real production retry paths.</li>
+<li><strong>原作者的盲区 (The owner blind spot)。</strong> 捏出这个抽象概念的人，看问题的视角永远是从 "怎么实现它" 出发的。他们知道这玩意 "能造得出来"，但他们绝不会闲得蛋疼去把这套玩意套在业务代码里，去跑跑重试 (retry)、重放 (replay) 或者半路炸机 (partial failure) 的真实场景。这帮人极度容易吹嘘自己的原子性 (atomicity) 保证，同时又把业务方为了用它而被迫写的胶水代码 (boilerplate) 描述得轻描淡写。</li>
+<li><strong>第一口吃螃蟹者的盲区 (The consumer blind spot)。</strong> 第一个把这玩意用到生产环境的人，满眼全是自己那点破业务。他们根本看不出这套 API 稍微换个场景就会水土不服，看不出那些只有等 <code>LocalRuntime</code> 也要实现同一套协议时才会引爆的 DTO 乱放问题，更想不到那些他们自己碰巧没用上的外部系统，到底该怎么做状态对齐 (reconciliation)。</li>
+<li><strong>吃瓜主持人的盲区 (The facilitator blind spot)。</strong> 那个在中间跑腿传话、攒局讨论的人 (通常是旁观这两头吵架的第三方)，既没有原作者那种对底层实现的直觉，也没有第一线业务方那种在生产环境里被毒打过的经验。这帮人最喜欢发明那种听起来极度优雅、但只要一接触真实的实现细节，或者一遇上真实的生产环境重试风暴，就会瞬间被撕成碎片的 "完美抽象"。</li>
 </ol>
-<p>A single reviewer covering the design will reliably miss two of three blind spots. A two-stakeholder review (e.g., owner + consumer) catches more, but still misses the facilitator perspective on whether the abstraction actually shrinks the consumer surface or just relocates the complexity.</p>
-<p>The Primitive Review Cycle uses three reviewers — explicitly playing the three roles above — and rotates the design through three cycles. Each cycle is structured to surface a different class of bug.</p>
+<p>如果只找一个人来审设计，他绝对会精准地漏掉三个盲区里的两个。哪怕你把作者和业务方两个人拉到一个屋子里吵架，他们依然会漏掉第三方的那个终极拷问："你这套狗屁抽象，到底是真的帮业务方兜了底，还是只是把一堆恶心的复杂性换了个地方藏起来而已？"</p>
+<p>这套基础原语审查生死线 (Primitive Review Cycle)，就是强制拉来三个活人 —— 死死钉在上面那三个角色上 —— 然后逼着这套设计在三个绞肉机循环里滚一遍。每个循环的目的，就是为了把某种特定的 bug 从盲区里逼出来。</p>
 <hr />
-<h2 id="the-three-cycles">The three cycles</h2>
-<h3 id="cycle-1-consultative-review">Cycle 1: Consultative review</h3>
-<p><strong>Question to consumer:</strong> "Here is a sketch of the proposed primitive. Does it map cleanly onto a real use case you have? What would you change?"</p>
-<p><strong>What this cycle catches:</strong> Conceptual mismatches, missing parameters that are obvious only when the consumer pictures their actual code, opportunities for consumer-side simplification (the consumer often sees a better idiom than the owner anticipated).</p>
-<p><strong>Output:</strong> A revised primitive sketch with consumer-suggested refinements. Not yet code.</p>
-<p><strong>What this cycle does NOT catch:</strong> Implementation-time honesty about what the runtime can and cannot guarantee. Failure paths under partial crash. Cross-consumer DTO placement issues. The consumer is still operating on a sketch, not under stress.</p>
-<h3 id="cycle-2-codegen-stress-test">Cycle 2: Codegen stress test</h3>
-<p><strong>Task to consumer:</strong> "Generate complete, production-shaped code that uses the proposed primitive against your real use case. Include tests covering retry, replay, and partial failure scenarios."</p>
-<p><strong>What this cycle catches:</strong> TOCTOU races that emerge from any consumer-side multi-step operation, missing primitives that the consumer is forced to invent on the spot to fill gaps, gaps between abstract concept and runnable contract, surprising API shapes that look fine in pseudocode but feel wrong in real code.</p>
-<p><strong>Output:</strong> Real code committed to a branch. Real test cases. A self-review where the consumer flags every place they had to escape the abstraction.</p>
-<p><strong>What this cycle does NOT catch:</strong> Implementation cost. Owner-side honesty about external-system atomicity. Module placement that affects other runtimes. The consumer is writing against a single runtime backend (often the one closest to their real use case), not auditing the full protocol.</p>
-<h3 id="cycle-3-owner-ratification">Cycle 3: Owner ratification</h3>
-<p><strong>Task to owner:</strong> "Review the proposed primitive after consumer stress test. Push back specifically on (a) any guarantees the runtime cannot actually deliver, (b) any DTO placement that constrains other runtimes, (c) any abstraction surface that would be expensive to maintain across versions. Apply Design Review Gates retroactively to any pre-existing related todos."</p>
-<p><strong>What this cycle catches:</strong> Atomicity overclaims (runtime promising what only the external system can deliver), module placement that would force LocalRuntime to depend on TemporalRuntime modules, missing reconciliation strategies for external writes, version evolution constraints, doc hygiene that would confuse future readers.</p>
-<p><strong>Output:</strong> Final primitive specification with honest atomicity scope, correct DTO module placement, explicit reconciliation strategies, and Design Review Gates filled in for related todos.</p>
-<p><strong>What this cycle does NOT catch:</strong> Net new use cases the second consumer would surface. That requires a second consumer, which is the test of whether the primitive generalizes — see "When to repeat the cycle" below.</p>
+<h2 id="_2">绞肉机三部曲</h2>
+<h3 id="cycle-1-consultative-review">Cycle 1: 嘴炮局 (Consultative review)</h3>
+<p><strong>对业务方的拷问:</strong> "这是我们新想出来的原语草图。你把它往你那真实的业务逻辑里套一套，严丝合缝吗？你要是能当家，你想改什么？"</p>
+<p><strong>这轮能逼出什么病:</strong> 概念上的鸡同鸭讲；那些只有当业务方真的去脑补自己的代码时，才会发现漏掉的致命参数；以及极其宝贵的、帮业务方减负的机会 (一线干活的人，往往能想出比原作者更接地气的调包姿势)。</p>
+<p><strong>战利品:</strong> 一份吸收了业务方吐槽后修改过的原语草图。这时候还没开始写代码。</p>
+<p><strong>这轮绝对抓不到的病:</strong> 原作者在吹牛逼 (运行时到底能给多大保证，根本没法在这轮查实)。半路炸机时的惨状。跨业务方的 DTO 冲突。这轮的业务方只是在脑补一张草图，还没真正上刑具。</p>
+<h3 id="cycle-2-codegen-stress-test">Cycle 2: 代码生成压力测试 (Codegen stress test)</h3>
+<p><strong>给业务方派活:</strong> "拿着刚刚那套草图当真家伙用，给老子直接生成一套能上生产环境的、带全套业务逻辑的代码出来。测试用例必须全覆盖，重试、重放、半路炸机，一个都不能少。"</p>
+<p><strong>这轮能逼出什么病:</strong> 任何业务方需要分多步执行的操作，瞬间就会暴露出来的 TOCTOU (Time-of-check to time-of-use) 竞态灾难；业务方为了填坑，被迫在现场徒手捏出来的不存在的原语；纸上谈兵的草图和真刀真枪的契约之间的巨大鸿沟；以及那些在伪代码里看着极度优雅，一敲到 IDE 里就恶心到吐的 API 形状。</p>
+<p><strong>战利品:</strong> 活生生的代码，直接提交到一个分支上。活生生的测试用例。一份极其羞耻的自白书：业务方必须交代，在写这套代码时，到底有几次被逼得没办法，强行绕开了这套抽象。</p>
+<p><strong>这轮绝对抓不到的病:</strong> 这玩意到底有多难实现。原作者关于外部系统原子性的吹牛逼。会把其他运行时一起坑死的模块放置问题。业务方只是对着某一个运行时底座 (通常是离他们业务最近的那个) 狂敲代码，他们根本不会去操心整套协议在全局视角的死活。</p>
+<h3 id="cycle-3-owner-ratification">Cycle 3: 原作者的终极审判 (Owner ratification)</h3>
+<p><strong>给原作者派活:</strong> "拿着业务方敲出来的那堆破铜烂铁，重新审视你设计的原语。给我死死咬住这三点往死里喷：(a) 运行时到底能不能兑现你吹出去的那些保证，(b) 这些 DTO 放在这，会不会把其他运行时给坑死，(c) 这套抽象的接口表面，以后升级版本时会不会要了老命。对所有遗留的 related todos 追溯执行 Design Review Gates。"</p>
+<p><strong>这轮能逼出什么病:</strong> 被戳穿的原子性吹牛逼 (运行时大包大揽了只有外部系统才能兑现的承诺)；极度脑残的模块放置 (比如逼着 <code>LocalRuntime</code> 去依赖 <code>TemporalRuntime</code> 里的模块)；外部写入时缺失的状态对齐 (reconciliation) 策略；以后升版本时的死胡同；以及那些绝对会把以后的维护者看懵逼的狗屎文档。</p>
+<p><strong>战利品:</strong> 最终版的基础原语规格说明书 —— 带着极其诚实的原子性边界说明、极其干净的 DTO 模块归属、极其硬核的状态对齐策略、并且把所有 related todos 的 Design Review Gates 全填得清清楚楚。</p>
+<p><strong>这轮绝对抓不到的病:</strong> 第二个吃螃蟹者会带来的全新需求。这得靠活生生的第二个业务方来验货，这就是判断这套原语到底能不能泛化铺开的唯一标准 —— 请看下面的 "什么时候该重开一轮"。</p>
 <hr />
-<h2 id="worked-example-the-submit_side_effect-primitive-2026-05-04">Worked example: the <code>submit_side_effect</code> primitive (2026-05-04)</h2>
-<p>The pattern was discovered while validating four new primitives for the bene runtime boundary plan: <code>start_or_signal</code>, <code>business_idempotency_key</code>, <code>side_effect_label</code>, and (eventually) <code>submit_side_effect</code>. The discovery process was itself a Primitive Review Cycle run.</p>
-<p><strong>Cycle 1 outcome.</strong> The consumer (l3 burst aggregator session) reviewed the first three primitives in isolation. Verdict: accept all three, plus a consumer-suggested improvement — encode the time bucket directly into the workflow ID using <code>int(timestamp / delta_burst)</code>, which makes TTL semantics tumbling-window by construction and bounds workflow history naturally. This pattern was promoted into the plan as the recommended idiom for time-bounded entity actors.</p>
-<p><strong>Cycle 2 outcome.</strong> The consumer was asked to generate real code (<code>burst_aggregator.py</code>, 339 LOC + tests, 419 LOC) using the proposed primitives as if they already existed. The consumer reported back a critical gap: the proposed primitives had no atomic verb for the check-then-write pattern that external writes (Jira POST in this case) require. The consumer was forced to invent <code>runtime.check_side_effect</code> and <code>runtime.record_side_effect</code> on the spot. Between those two calls, an activity retry after a crashed worker re-executes the external write — duplicate Jira comments in production. The consumer recommended adding <code>submit_side_effect(label, business_key, execute_fn) -&gt; result</code> as a single atomic verb where the runtime owns the lock around the entire operation. This gap would not have been visible from the abstract sketch in Cycle 1.</p>
-<p><strong>Cycle 3 outcome.</strong> The owner (bene boundary plan session) ratified the consumer's <code>submit_side_effect</code> recommendation but pushed back on the framing. The runtime cannot actually guarantee atomicity across an external system like Jira — only across its own ledger and lease. The honest contract is: runtime guarantees atomic ledger transitions (<code>pending → executing → done | failed</code>) and lease exclusivity, but for external writes the <code>SideEffectLabel</code> must declare a <code>reconciliation_strategy</code> (<code>IDEMPOTENT_BY_KEY</code>, <code>READBACK_SENTINEL</code>, <code>READBACK_RESULT_KEY</code>, or <code>MANUAL</code>) that retry uses to detect whether the prior attempt actually committed. The owner also flagged that the new shared DTOs cannot live under <code>bene/temporal/</code> because LocalRuntime needs to implement the same protocol — they belong in a runtime-neutral module like <code>bene/runtime/core/</code>. Finally, the owner provided retroactive Design Review Gates for three pre-existing related todos.</p>
-<p><strong>Cycle 3 follow-up by consumer.</strong> After receiving the precision-refined <code>submit_side_effect</code> semantics plus the recommendation to use <code>READBACK_SENTINEL</code> for Jira (with sentinel template <code>&lt;!-- bene-business-key: {key} --&gt;</code>), the consumer revised both the generated code and tests. The consumer additionally surfaced a real-world implementation constraint: Jira's ADF format wraps the sentinel as a paragraph node in serialized JSON rather than preserving it as a native HTML comment, so the runtime's reconciliation scan must search the JSON representation, not rendered HTML. The same pattern is already used in <code>check_existing_advisory.py:76-84</code> of the consumer's codebase, so the constraint is well-understood domain knowledge — but it implies <code>READBACK_SENTINEL</code> as a generic strategy needs a per-external-system "where to scan" sub-parameter. Logged as a follow-up; does not block the immediate change.</p>
-<p><strong>Net result of one cycle pass:</strong> Four new boundary plan todos (one BLOCKING), three retroactive Design Review Gates filled in, one new follow-up identified for future iteration (<code>READBACK_SENTINEL</code> scan-location parameter), and a 339+419 LOC reference implementation on a feature branch. None of these outcomes would have been produced by single-reviewer review.</p>
+<h2 id="submit_side_effect-2026-05-04">案发现场复盘：<code>submit_side_effect</code> 的诞生 (2026-05-04)</h2>
+<p>这个套路，是在我们为 BENE 运行时边界计划去死磕四个新原语 (<code>start_or_signal</code>, <code>business_idempotency_key</code>, <code>side_effect_label</code>，以及最后被逼出来的 <code>submit_side_effect</code>) 时摸索出来的。这个摸索的过程本身，就是一场极度硬核的 Primitive Review Cycle 实战。</p>
+<p><strong>Cycle 1 的下场。</strong> 第一口吃螃蟹者 (l3 突发警报聚合器 session) 孤立地审了前三个原语。判决：全盘接受，并且反手塞给原作者一个极其刁钻的优化 —— 直接拿 <code>int(timestamp / delta_burst)</code> 去当工作流的 ID，这样从根本上就把 TTL 的语义锁死在了滑动时间窗 (tumbling-window) 上，并且天然地卡死了工作流的历史记录膨胀。这个极其优雅的套路被当场提拔进了边界计划里，成了时间窗实体 Actor (time-bounded entity actors) 的官方推荐写法。</p>
+<p><strong>Cycle 2 的下场。</strong> 业务方被逼着拿着那几个还在纸上的原语，去生敲真刀真枪的代码 (<code>burst_aggregator.py</code>，339 行代码 + 419 行测试)。业务方提着带血的代码回来报案：你们设计的这堆破原语里，<strong>压根就没给外部写入 (在这个场景下是对 Jira 发 POST) 最需要的那个 "检查-然后-写入" (check-then-write) 动作提供一个原子操作</strong>。业务方被逼得没办法，只能在现场徒手捏出了 <code>runtime.check_side_effect</code> 和 <code>runtime.record_side_effect</code>。在这两个调用之间，只要碰上 worker 炸机重启，Activity 一重试，外部写入就会再跑一次 —— 生产环境的 Jira 里直接喜提两条重复评论。业务方拍桌子要求：加一个 <code>submit_side_effect(label, business_key, execute_fn) -&gt; result</code>，把这个动作全包在一个原子动词里，让运行时自己去把锁给捏死。如果光靠 Cycle 1 里对着草图打嘴炮，这个致命的空门这辈子都发现不了。</p>
+<p><strong>Cycle 3 的下场。</strong> 原作者 (bene 边界计划 session) 捏着鼻子认了业务方提出的 <code>submit_side_effect</code> 原语，但在它的语义上极其霸道地怼了回去。运行时根本就没那个本事去保证外部系统 (比如 Jira) 的跨库原子性 —— 它只能管好自己的一亩三分地和租约。所以必须把牛逼收一收，诚实的契约是：运行时能死保账本流转的原子性 (<code>pending → executing → done | failed</code>) 和租约的独占性；但对于外部写入，那个 <code>SideEffectLabel</code> 必须老老实实声明一套自己的状态对齐策略 (<code>reconciliation_strategy</code>，比如 <code>IDEMPOTENT_BY_KEY</code>, <code>READBACK_SENTINEL</code>, <code>READBACK_RESULT_KEY</code>, 或 <code>MANUAL</code>)。当系统重试时，靠着这套策略去查前一次写入到底落地了没有。不仅如此，原作者还抓包指出：新加的这几个公共 DTO 绝不能塞在 <code>bene/temporal/</code> 底下，因为 <code>LocalRuntime</code> 也要实现这套协议 —— 它们必须滚去像 <code>bene/runtime/core/</code> 这种跟底层实现无关的公立地盘。最后，原作者极其负责地给三个遗留的 related todos 补上了 Design Review Gates。</p>
+<p><strong>Cycle 3 后业务方的补刀。</strong> 拿着这套被精准阉割过、语义极度清晰的 <code>submit_side_effect</code> (外加原作者建议 Jira 使用 <code>READBACK_SENTINEL</code>，也就是插个形如 <code>&lt;!-- bene-business-key: {key} --&gt;</code> 的暗号)，业务方重新去翻修了生成的代码和测试。在这波翻修里，业务方又踩中了一颗极其隐蔽的现实地雷：Jira 的 ADF 格式会在 JSON 序列化时把这个 HTML 暗号强行包在一个段落节点 (paragraph node) 里，而不是老老实实当成个原生 HTML 注释。这意味着运行时的状态对齐扫描，必须去查那坨恶心的 JSON 格式，而不是去查渲染出来的 HTML。这个雷其实在业务方自己的代码库 (<code>check_existing_advisory.py:76-84</code>) 里早就有前科了，属于这个领域的深坑 —— 但这也就意味着，<code>READBACK_SENTINEL</code> 作为一套通用策略，必须得开个口子，允许外部系统自己去指定 "去哪里扫暗号"。这件事被记进了后续的账本里，但不卡这次原语的落地。</p>
+<p><strong>跑完一整个 Cycle 的战果：</strong> 四条新加进边界计划的待办清单 (有一条是死线 BLOCKING 级别的)；三个被填上的 Design Review Gates；一个被标记出来的未来填坑计划 (<code>READBACK_SENTINEL</code> 的扫描位置参数)；以及分支上一套 339+419 行的标杆级实盘代码。如果只是找一个人随便审审，这些战果一个都捞不到。</p>
 <hr />
-<h2 id="why-this-works">Why this works</h2>
-<p>The cycle works because the three reviewers have <strong>structurally different blind spots</strong>, and the cycle structure forces each blind spot to be exercised at a different stage.</p>
-<p>The owner cannot see TOCTOU races in consumer code because the owner doesn't write consumer code. The cycle exposes this by making Cycle 2 produce real consumer code under the consumer's own design pressure.</p>
-<p>The consumer cannot see atomicity overclaims because the consumer's mental model treats the runtime as a black box — if the API says "atomic," the consumer assumes atomic. The cycle exposes this by making Cycle 3 force the owner to defend the contract against the consumer's stress-test artifacts.</p>
-<p>The facilitator (often whoever is reading both sides and writing the plan amendments) cannot see implementation-cost tradeoffs because the facilitator isn't the one shipping the code. The cycle exposes this by making the owner ratify (or amend) all facilitator-proposed wording before it locks into the plan.</p>
-<p>Each cycle's output becomes the next cycle's input. By the end of three cycles, the primitive has been challenged from three orthogonal directions — and the surviving spec has demonstrably passed all three.</p>
+<h2 id="_3">这套机制为什么能赢</h2>
+<p>这套绞肉机之所以极其有效，是因为这三个评审员<strong>在结构上有着根本互斥的盲区</strong>，而整个绞肉机的流程就是为了在不同的阶段把每个盲区逼到死角里。</p>
+<p>原作者根本看不出业务代码里会有 TOCTOU 竞态，因为原作者压根就不写业务代码。这套机制直接让 Cycle 2 逼着业务方在绝境中敲出实盘代码，把这个雷给引爆。</p>
+<p>业务方根本看不出原子性吹牛逼的风险，因为在业务方的脑子里，运行时就是一个黑盒 —— 只要 API 敢写 "原子操作"，业务方就敢闭着眼睛信。这套机制直接让 Cycle 3 逼着原作者去直面业务方的压力测试产物，自己把吹破的牛皮圆回来。</p>
+<p>主持人 (通常是那个在两边跑腿、并且最后把结论写进计划书里的人) 根本看不出实现成本的代价，因为写代码擦屁股的不是他。这套机制直接让原作者去审核 (或者暴力修改) 所有主持人提出来的漂亮空话，确认没坑了，才准写进计划书里。</p>
+<p>每个循环的残骸，就是下一个循环的炮弹。当三轮走完时，这个原语已经被从三个完全不搭界的角度拿重火力犁了一遍 —— 活下来的那份规格书，就是见识过地狱的铁证。</p>
 <hr />
-<h2 id="when-to-use-this-method-and-when-not-to">When to use this method (and when not to)</h2>
-<p><strong>Use it for:</strong> new primitives on the runtime boundary, new fields on shared command DTOs, new lifecycle hooks, new module placement decisions, anything where the design will lock in for multiple consumers and be hard to change later.</p>
-<p><strong>Skip it for:</strong> bug fixes, internal refactors that don't change the boundary, small additions that have only one consumer and are explicitly scoped as throwaway, anything where the design is already constrained by a fixed external API (e.g., implementing a third-party SDK trait).</p>
-<p>The cycle is heavyweight — it costs the time of three sessions plus the coordination overhead of the facilitator. Use it when the cost of a wrong abstraction is much higher than the cycle cost. For boundary-layer primitives that will be called by N consumers over Y years, the cycle cost is trivial. For internal utility code with one caller, it is overkill.</p>
+<h2 id="_4">什么时候该用这把杀猪刀 (什么时候千万别用)</h2>
+<p><strong>什么时候该上大刑:</strong> 只要是准备往运行时边界上加新原语；给共享的命令 DTO 塞新字段；加新的生命周期钩子；拍板新的模块放置策略；或者任何一旦落地，就会坑死无数业务方、以后想改都难如登天的大手术。</p>
+<p><strong>什么时候别吃饱了撑的:</strong> 修个破 bug；没动边界的内部重构；只有一个人在用、并且明确声明是随时扔掉的实验品；或者设计本身已经被一个根本改不了的外部 API (比如你要去接某个第三方的 SDK) 给锁死了的时候。</p>
+<p>这套绞肉机的成本极高 —— 它会活生生吃掉三个 session 的时间，外加主持人的各种跑腿调度。只有当 "设计翻车带来的灾难" 远远盖过 "跑一轮 Cycle 的成本" 时，才值得拔出这把刀。对于那种在边界上被 N 个团队用上好几年的基础原语，这点测试成本连根毛都算不上。但如果你只是在写一个只有你自己会调用的内部小脚本，用这套方法纯属杀鸡用牛刀。</p>
 <hr />
-<h2 id="how-to-actually-run-it">How to actually run it</h2>
-<p>The mechanical process used in the 2026-05-04 worked example:</p>
-<p><strong>Setup.</strong> The facilitator (cursor session in this case) reads the existing plan, identifies the proposed primitives, and prepares a focused message for the consumer session. The message contains: the proposed primitive sketch, three to five specific questions the consumer should answer concretely, references to any background documents the consumer needs.</p>
-<p><strong>Cycle 1 dispatch.</strong> The facilitator sends the message to the consumer session via tmux paste-buffer. The consumer is given context to respond in their own working session (not asked to relocate). The consumer replies with verdict per question plus suggested refinements.</p>
-<p><strong>Cycle 2 dispatch.</strong> The facilitator updates the proposed primitives based on Cycle 1 input, then sends a follow-up to the consumer asking for a real codegen attempt. The consumer is given the IR target documentation, the spec, and the directive to generate complete production-shaped artifacts (code + tests) into a clean branch. The consumer self-reviews against pass criteria the facilitator specifies.</p>
-<p><strong>Cycle 3 dispatch.</strong> The facilitator briefs the owner session on the consumer's findings, including the real artifacts and any missing-primitive reports from Cycle 2. The owner ratifies, pushes back on overclaims, applies retroactive Design Review Gates to related pre-existing todos, and (often) provides architectural constraints the facilitator missed.</p>
-<p><strong>Cycle 3 follow-up to consumer.</strong> The facilitator notifies the consumer of any precision changes from Cycle 3 so the consumer can revise their generated code. The consumer often surfaces real-world implementation constraints during this revision that become follow-up items.</p>
-<p><strong>Plan commit.</strong> The facilitator commits all amendments (new todos, updated existing todos, scope changes, design review gates, worked-example sections) to the plan file.</p>
-<p>The whole cycle takes roughly two to four hours of wall-clock time across the three sessions. Most of that is the consumer's Cycle 2 codegen work — Cycles 1 and 3 are typically minutes-to-tens-of-minutes per session.</p>
+<h2 id="_5">具体该怎么操办</h2>
+<p>拿着 2026-05-04 那个案发现场的实盘来做个示范：</p>
+<p><strong>起手式。</strong> 主持人 (这次是个 cursor session) 去把现有的计划书看透，把那些新提出来的原语圈出来，然后给业务方 session 准备一份极度聚焦的战书。战书里必须有：原语草图、3 到 5 个逼着业务方必须正面回答的死命题、以及业务方需要的任何背景文档。</p>
+<p><strong>Cycle 1 发车。</strong> 主持人通过 tmux paste-buffer 把战书拍在业务方的脸上。业务方不用切环境，就在自己手头的环境里直接回话。业务方把那几个命题一一作答，顺便丢出自己的修改意见。</p>
+<p><strong>Cycle 2 发车。</strong> 主持人拿着 Cycle 1 收集来的口水修改原语草图，然后反手甩给业务方一个大招：给我生敲一套真家伙出来。把 IR 目标文档和规格说明书拍给业务方，命令他们在一个干净的分支里，把代码和测试全敲出来。业务方敲完后，还得对着主持人列出的及格线自己做个自我检讨。</p>
+<p><strong>Cycle 3 发车。</strong> 主持人拿着业务方敲出来的那堆带着血的代码、以及 Cycle 2 里业务方在现场无中生有捏出来的不存在的原语，跑去跟原作者 session 告状。原作者拍板、把那些吹过头的承诺砍掉、把相关遗留的 todos 全拿 Design Review Gates 犁一遍，并且 (非常频繁地) 顺手把主持人漏看的底层架构雷给排了。</p>
+<p><strong>Cycle 3 的回马枪。</strong> 主持人拿着 Cycle 3 里被精准阉割过的契约，跑回去通知业务方修改代码。在这个翻修的过程中，业务方极其容易踩中一些极其隐蔽的现实地雷，这些地雷就成了以后的填坑计划。</p>
+<p><strong>计划落地 (Plan commit)。</strong> 主持人把这几轮里吵出来的所有结果 (新的 todos、修改过的老 todos、边界改动、Design Review Gates、以及案发现场复盘) 一字不差地写进计划书里，提交。</p>
+<p>把这三轮全部走完，这三个 session 加起来撑死也就花个两到四个小时 (现实世界的时间)。这其中绝大多数时间全是业务方在 Cycle 2 里生敲代码 —— Cycle 1 和 Cycle 3 这种打嘴炮的局，每个 session 也就是几分钟到十几分钟的事。</p>
 <hr />
-<h2 id="whats-open">What's open</h2>
-<p>Future iterations of this methodology should explore:</p>
+<h2 id="_6">还有什么坑没填</h2>
+<p>这套方法论以后还可以考虑往这些方向继续榨汁：</p>
 <ul>
-<li><strong>Two-consumer validation.</strong> The Primitive Review Cycle as documented uses one consumer in three cycles. The stronger validation is to run a second consumer through Cycle 1 only after the first consumer has completed all three cycles — does the primitive feel right to the second consumer too, or did it overfit the first consumer's domain? Open question: when is the right time to surface the second consumer? Too early and the cycle becomes confused; too late and overfit damage is already done.</li>
-<li><strong>Owner self-cycle.</strong> When the owner is also the only consumer (early stage of a primitive), the cycle collapses to a single reviewer and loses its blind-spot-rotation property. Open question: can a single-reviewer modified cycle still capture some of the value, or is multi-stakeholder structurally required?</li>
-<li><strong>Cycle compression for small primitives.</strong> Not every new field on a command warrants three cycles. Open question: what is the lightweight version that preserves the blind-spot-rotation property without the full ceremony?</li>
+<li><strong>抓两个小白鼠来试毒 (Two-consumer validation)。</strong> 现在文档里写的这套 Primitive Review Cycle，从头到尾只有一个业务方在被来回折腾。更变态的测法是：等第一个业务方把这三轮地狱全走完了，再抓第二个毫不相干的业务方，让他只走一遍 Cycle 1 —— 看看这套原语在第二个业务方眼里是不是依然极度优雅，还是说它已经完全被第一个业务方给带跑偏了，成了一个高度定制的奇葩？还没想明白的事：到底该在什么时候把第二个小白鼠放进来？放早了，整个 Cycle 会被搞得乌烟瘴气；放晚了，被带跑偏的雷可能已经埋下了。</li>
+<li><strong>原作者的自我审判 (Owner self-cycle)。</strong> 当这套原语压根就没有业务方，原作者就是唯一的用户时 (原语刚起步时的常态)，这套绞肉机就会瞬间坍缩，那个靠角色互斥来扫盲区的核心机制直接报废。还没想明白的事：当只有一个人时，有没有什么变种的玩法能稍微找回一点扫盲区的感觉？还是说这种活必须得有多人互砍？</li>
+<li><strong>杀鸡用牛刀的简化版 (Cycle compression for small primitives)。</strong> 只是给命令加个破字段，真犯不上拿这套大刑伺候。还没想明白的事：怎么在这个大刑里抽掉一些极其繁琐的仪式，但同时又能死死保住 "盲区轮换" 这个核心灵魂？</li>
 </ul>
-<p>These are all suitable topics for a future iteration that adds primitives to BENE (e.g., when the second entity-actor consumer arrives and exercises this same method).</p>
+<p>等哪天我们又要往 BENE 里塞新原语了 (比如那个传说中的第二个实体 Actor 终于落地，又要被拉出来用这套方法毒打时)，这些没想明白的事就可以拉出来练练了。</p>
 <hr />
-<h2 id="see-also">See also</h2>
+<h2 id="_7">顺藤摸瓜</h2>
 <ul>
-<li><code>philosophy.md</code> — Why BENE is structured around evolving harnesses; the foundation that makes primitive review possible at all</li>
-<li><code>codegen.md</code> — The codegen-into-IR vision that motivates getting primitive design honest before code locks in</li>
-<li><code>bene/runtime/handle.py</code> (protocol) + <code>bene/runtime/core.py</code> (DTOs) — the boundary the Cycle 1-3 worked example above converged on</li>
-<li>The Cycle-2 reference implementation was produced internally against a private downstream consumer (not public); the boundary primitive it drove — <code>submit_side_effect</code> — is in <code>bene/runtime/local.py</code> + <code>bene/temporal/runtime_impl.py</code></li>
+<li><code>philosophy.md</code> — 扒一扒为什么 BENE 把身家性命全押在引擎的进化上；也就是这套基础原语审查机制能立得住脚的核心逻辑。</li>
+<li><code>codegen.md</code> — 那个把 IR 当成代码生成靶心的终极愿景，也是这套机制必须在代码焊死之前把谎言全戳穿的最大动力。</li>
+<li><code>bene/runtime/handle.py</code> (协议) + <code>bene/runtime/core.py</code> (DTO) — 这就是上面那个 Cycle 1-3 案发现场最终活下来的战利品。</li>
+<li>Cycle 2 里的那套标杆级代码是在内部不对外公开的下游环境里敲的；但它生生逼出来的那个边界原语 —— <code>submit_side_effect</code> —— 就赤裸裸地躺在 <code>bene/runtime/local.py</code> + <code>bene/temporal/runtime_impl.py</code> 里。</li>
 </ul>
 <div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/primitive-review-cycle.md" target="_blank" rel="noopener noreferrer">docs/primitive-review-cycle.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
 </main>

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Skill Library — BENE 文档</title>
-<meta name="description" content="BENE 0.2.0 文档 — Skill Library" />
+<title>经验技能库 (Skill Library) — BENE 文档</title>
+<meta name="description" content="BENE 0.2.0 文档 — 经验技能库 (Skill Library)" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -248,68 +248,68 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <a href="infra/DNS.html">DNS</a></aside>
 <main>
 <div class="crumbs"><a href="index.html">docs</a> / skills.md</div>
-<h1 id="skill-library">Skill Library</h1>
-<p>When one agent in your project works out a dependable procedure, every agent after it can find that procedure, fill in the parameters, and run it — instead of re-deriving it from zero.</p>
+<h1 id="skill-library">经验技能库 (Skill Library)</h1>
+<p>如果项目里的某个 agent 趟出了一条极其稳妥的执行套路，那么跟在它后面的所有 agent 都能直接把这套路翻出来、填上参数、直接开跑 —— 根本不用每次都在冰冷的零起点重新发明轮子。</p>
 <blockquote>
-<p><strong>The point in one line:</strong> a skill is a prompt template with <code>{param}</code> holes that any project agent can locate by full-text search, render with its own values, and grade after use.</p>
+<p><strong>一句话看懂：</strong> 所谓的 skill，就是一个挖了 <code>{param}</code> 参数坑的 prompt 模板。项目里的任何 agent 都能通过全文检索把它挖出来，填上自己的业务变量，并且在用完之后给它打个分。</p>
 </blockquote>
-<p>Everything stays on your machine. The whole library is a pair of SQLite tables (<code>agent_skills</code> plus its full-text index) inside the same database file as the rest of your project state — copy the file and the skills travel with it.</p>
-<h2 id="how-agents-use-it">How agents use it</h2>
-<p>Memory records what happened; a skill records how to do it again. Without the library, a hard-won approach to text classification, async debugging, or API response shaping evaporates when its session ends. With it, the working loop is:</p>
+<p>所有数据都不会离开你的机器半步。整个技能库的实体就是潜伏在项目数据库里的两张 SQLite 数据表 (<code>agent_skills</code> 连同它的全文索引表) —— 把那个 <code>.db</code> 文件拷走，这些技能也就跟着走遍天下了。</p>
+<h2 id="agents">Agents 究竟怎么用它</h2>
+<p>记忆 (Memory) 负责记下<strong>曾经发生了什么</strong>；而技能 (Skill) 负责传授<strong>下次该怎么做</strong>。如果没有技能库，好不容易摸索出的文本分类套路、异步报错排查手法或是 API 响应清洗格式，都会在 session 结束时烟消云散。而有了它，工作流变成了这样：</p>
 <ol>
-<li><strong>Search first.</strong> Before a task begins, an agent runs <code>skill_search "task description"</code> (or <code>bene skills search</code>) to check whether the problem has already been cracked.</li>
-<li><strong>Render.</strong> <code>skill_apply</code> fills the template's <code>{param}</code> placeholders with values for the task at hand.</li>
-<li><strong>Work, then grade.</strong> Afterwards the agent reports success or failure via <code>skill_outcome</code>; the <code>use_count</code> and <code>success_count</code> counters turn repeated use into visible reliability.</li>
-<li><strong>Contribute back.</strong> When an agent lands on a fresh pattern worth keeping, it stores the template with <code>skill_save</code> (or <code>bene skills save</code>).</li>
+<li><strong>先搜为敬 (Search first)。</strong> 在动手之前，agent 会先跑一把 <code>skill_search "任务描述"</code> (或者在终端敲 <code>bene skills search</code>)，看看前人是不是早就把这个问题给干穿了。</li>
+<li><strong>渲染套壳 (Render)。</strong> 拿到模板后，用 <code>skill_apply</code> 把当下任务的真实参数塞进模板里的 <code>{param}</code> 占位符里。</li>
+<li><strong>干活，然后打分 (Work, then grade)。</strong> 任务结束后，agent 必须通过 <code>skill_outcome</code> 如实上报是成功还是搞砸了；<code>use_count</code> 和 <code>success_count</code> 这两个计数器会把重复使用的战绩，硬生生砸成清晰可见的可靠度背书。</li>
+<li><strong>反哺入库 (Contribute back)。</strong> 如果一个 agent 趟出了一条极其值得传家的崭新套路，它会用 <code>skill_save</code> (或者敲 <code>bene skills save</code>) 把它封存进库里。</li>
 </ol>
-<h2 id="run-it-from-the-shell">Run it from the shell</h2>
-<p>The <code>bene skills</code> subcommands cover most of the lifecycle — save, find, list, render, delete. (Grading isn't a shell verb: record outcomes via the <code>skill_outcome</code> MCP tool or Python <code>SkillStore.record_outcome</code>. Also: <code>skills save --agent &lt;id&gt;</code> / <code>source_agent_id</code> must reference an already-spawned agent — pass an unknown id and the FK rejects it — or omit it for a library-level skill.)</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># Save a skill</span>
+<h2 id="_1">在黑框框里直接操纵</h2>
+<p>你可以用 <code>bene skills</code> 命令行覆盖绝大多数的生命周期操作 —— 保存、寻找、罗列、渲染以及删档。（只有打分不能在命令行里做：你必须通过 <code>skill_outcome</code> MCP 工具或者 Python 里的 <code>SkillStore.record_outcome</code> 来入账。另外注意：跑 <code>skills save --agent &lt;id&gt;</code> 时传入的 <code>source_agent_id</code> 必须是指向一个已经存在的 agent —— 乱填的 ID 会被外键约束当场拍死 —— 当然，你要是想存全局通用的公共 skill，把这个参数略过就行。）</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 保存一个技能</span>
 bene<span class="w"> </span>skills<span class="w"> </span>save<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--name<span class="w"> </span>ensemble_classifier<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--description<span class="w"> </span><span class="s2">&quot;Improve classification accuracy with ensemble voting&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--template<span class="w"> </span><span class="s2">&quot;Use {n_models} models with {voting} voting on {task}.&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--tags<span class="w"> </span>classification,ensemble
 
-<span class="c1"># Search before starting work</span>
+<span class="c1"># 动手干活前先查查</span>
 bene<span class="w"> </span>skills<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;classification accuracy&quot;</span>
 bene<span class="w"> </span>skills<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;async error handling&quot;</span><span class="w"> </span>--tag<span class="w"> </span>python
 
-<span class="c1"># List all skills — sorted by most used</span>
+<span class="c1"># 拉出所有技能 —— 自动按热门程度 (使用次数) 排序</span>
 bene<span class="w"> </span>skills<span class="w"> </span>ls<span class="w"> </span>--order<span class="w"> </span>use_count
 
-<span class="c1"># Render a skill with parameters</span>
+<span class="c1"># 往模板里塞参数并渲染出来</span>
 bene<span class="w"> </span>skills<span class="w"> </span>apply<span class="w"> </span><span class="m">3</span><span class="w"> </span>-p<span class="w"> </span><span class="nv">n_models</span><span class="o">=</span><span class="m">3</span><span class="w"> </span>-p<span class="w"> </span><span class="nv">voting</span><span class="o">=</span>majority<span class="w"> </span>-p<span class="w"> </span><span class="nv">task</span><span class="o">=</span><span class="s2">&quot;sentiment&quot;</span>
 
-<span class="c1"># Delete</span>
+<span class="c1"># 删掉</span>
 bene<span class="w"> </span>skills<span class="w"> </span>delete<span class="w"> </span><span class="m">3</span>
 </code></pre></div>
 
-<h2 id="get-sharper-search-results">Get sharper search results</h2>
-<p>Search runs on SQLite FTS5 with porter stemming, and four fields feed the index:</p>
+<h2 id="_2">让搜索结果像手术刀一样精准</h2>
+<p>底层搜寻引擎是自带 porter 词干提取的 SQLite FTS5。有四个字段被卷进了索引的绞肉机里：</p>
 <ul>
-<li><code>name</code> — the snake_case identifier</li>
-<li><code>description</code> — purpose, plus the situations it fits</li>
-<li><code>tags</code> — the JSON array, tokenized like ordinary text</li>
-<li><code>template</code> — the prompt body itself, placeholder names included</li>
+<li><code>name</code> — 那个 snake_case 风格的技能代号</li>
+<li><code>description</code> — 它的使命是什么，以及它到底该用在什么节骨眼上</li>
+<li><code>tags</code> — JSON 数组，里面的词条会被当成普通文本一样分词切片</li>
+<li><code>template</code> — 就是 prompt 模板的真身，连带着里面的占位符名称</li>
 </ul>
-<p>Hits come back ranked by BM25 (lexical). Add <code>--rank weighted</code> to reorder by outcome reliability — BM25 × a Wilson-lower-bound success rate × recency decay, using the outcomes recorded through <code>skill_outcome</code> — so skills that keep working rise above lexically-similar ones that keep failing. Anything FTS5 accepts as a query works here:</p>
-<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>skills<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;ensemble accuracy&quot;</span><span class="w">        </span><span class="c1"># stemmed phrase</span>
-bene<span class="w"> </span>skills<span class="w"> </span>search<span class="w"> </span><span class="s1">&#39;&quot;gradient clipping&quot;&#39;</span><span class="w">      </span><span class="c1"># exact phrase</span>
-bene<span class="w"> </span>skills<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;classification NOT naive&quot;</span><span class="w"> </span><span class="c1"># negation</span>
-bene<span class="w"> </span>skills<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;classif*&quot;</span><span class="w">                 </span><span class="c1"># prefix wildcard</span>
+<p>搜索结果默认靠 BM25 (词法相关度) 排名。加上 <code>--rank weighted</code>，系统就会用胜率来重新洗牌 —— 计算公式是 BM25 乘上威尔逊下限胜率 (Wilson-lower-bound success rate)，再叠加上时间衰减因子。所有这些战绩数据都来自 <code>skill_outcome</code> 录入的账本。这套机制直接保证了那些<strong>久经考验极其靠谱的 skill，会残暴地碾压那些字面很像但老是翻车的花瓶</strong>。任何 FTS5 能听懂的咒语，在这都能跑：</p>
+<div class="codehilite"><pre><span></span><code>bene<span class="w"> </span>skills<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;ensemble accuracy&quot;</span><span class="w">        </span><span class="c1"># 词干提取搜索</span>
+bene<span class="w"> </span>skills<span class="w"> </span>search<span class="w"> </span><span class="s1">&#39;&quot;gradient clipping&quot;&#39;</span><span class="w">      </span><span class="c1"># 必须一字不差的短语搜索</span>
+bene<span class="w"> </span>skills<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;classification NOT naive&quot;</span><span class="w"> </span><span class="c1"># 否定词过滤</span>
+bene<span class="w"> </span>skills<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;classif*&quot;</span><span class="w">                 </span><span class="c1"># 前缀通配符</span>
 </code></pre></div>
 
-<h2 id="call-it-from-python">Call it from Python</h2>
-<p>In-process, <code>SkillStore</code> exposes the same operations:</p>
+<h2 id="python">在 Python 里调用</h2>
+<p>在代码里，<code>SkillStore</code> 提供了等价的火力网：</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">bene</span><span class="w"> </span><span class="kn">import</span> <span class="n">Bene</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bene.skills</span><span class="w"> </span><span class="kn">import</span> <span class="n">SkillStore</span>
 
 <span class="n">bene</span>  <span class="o">=</span> <span class="n">Bene</span><span class="p">(</span><span class="s2">&quot;project.db&quot;</span><span class="p">)</span>
 <span class="n">sk</span>    <span class="o">=</span> <span class="n">SkillStore</span><span class="p">(</span><span class="n">bene</span><span class="o">.</span><span class="n">conn</span><span class="p">)</span>
-<span class="n">agent</span> <span class="o">=</span> <span class="n">bene</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="s2">&quot;classifier-dev&quot;</span><span class="p">)</span>   <span class="c1"># source_agent_id is a FK → must be a real spawned agent</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">bene</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="s2">&quot;classifier-dev&quot;</span><span class="p">)</span>   <span class="c1"># source_agent_id 是个外键 → 必须是个真实存在的 agent</span>
 
-<span class="c1"># Save a skill after discovering a reliable pattern</span>
+<span class="c1"># 趟出一条可靠的血路后，赶紧存进库里</span>
 <span class="n">sid</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">save</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ensemble_classifier&quot;</span><span class="p">,</span>
     <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Improve classification accuracy with ensemble voting&quot;</span><span class="p">,</span>
@@ -321,12 +321,12 @@ bene<span class="w"> </span>skills<span class="w"> </span>search<span class="w">
     <span class="n">source_agent_id</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="c1"># Search before starting a similar task</span>
+<span class="c1"># 在碰类似任务前，先翻翻找找</span>
 <span class="n">hits</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;classification accuracy&quot;</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">params</span><span class="p">())</span>  <span class="c1"># → [&#39;n_models&#39;, &#39;task&#39;, &#39;voting&#39;, &#39;threshold&#39;]</span>
 
-<span class="c1"># Render the skill with parameters</span>
+<span class="c1"># 塞参数渲染出成品 prompt</span>
 <span class="n">skill</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">sid</span><span class="p">)</span>
 <span class="n">prompt</span> <span class="o">=</span> <span class="n">skill</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
     <span class="n">n_models</span><span class="o">=</span><span class="s2">&quot;3&quot;</span><span class="p">,</span>
@@ -335,51 +335,51 @@ bene<span class="w"> </span>skills<span class="w"> </span>search<span class="w">
     <span class="n">threshold</span><span class="o">=</span><span class="s2">&quot;0.5&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="c1"># Track outcomes so reliability accumulates</span>
+<span class="c1"># 打分入账，让它的可靠度累积发酵</span>
 <span class="n">sk</span><span class="o">.</span><span class="n">record_outcome</span><span class="p">(</span><span class="n">sid</span><span class="p">,</span> <span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-<span class="c1"># List skills — order by reliability</span>
+<span class="c1"># 拉出技能榜单 —— 直接按可靠度排座次</span>
 <span class="n">reliable</span> <span class="o">=</span> <span class="n">sk</span><span class="o">.</span><span class="n">list</span><span class="p">(</span><span class="n">order_by</span><span class="o">=</span><span class="s2">&quot;success_count&quot;</span><span class="p">)</span>
 </code></pre></div>
 
-<h2 id="wire-it-into-claude-code-or-cursor">Wire it into Claude Code or Cursor</h2>
-<p>Five MCP tools expose the library to agents running under either harness:</p>
+<h2 id="claude-code-cursor">将它直接怼进 Claude Code 或是 Cursor</h2>
+<p>5 把 MCP 专武，直接把这座武器库敞开在任何通过 MCP 接入的 agents 面前：</p>
 <table>
 <thead>
 <tr>
-<th>Tool</th>
-<th>Description</th>
+<th>MCP Tool</th>
+<th>用途</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>skill_save</code></td>
-<td>Save a new skill with name, description, template, and tags</td>
+<td>连着代号、简介、模板和标签，把一个新技能拍进库里</td>
 </tr>
 <tr>
 <td><code>skill_search</code></td>
-<td>BM25 full-text search across all skills</td>
+<td>直接打穿所有技能的 BM25 全文检索</td>
 </tr>
 <tr>
 <td><code>skill_apply</code></td>
-<td>Render a skill template with parameters</td>
+<td>往一个技能模板里塞参数并渲染出成品</td>
 </tr>
 <tr>
 <td><code>skill_list</code></td>
-<td>List skills with optional tag/agent/sort filters</td>
+<td>罗列技能清单，还能挂上 tag/agent/排序 的过滤网</td>
 </tr>
 <tr>
 <td><code>skill_outcome</code></td>
-<td>Record success or failure for a used skill</td>
+<td>给刚才用过的技能打分 (成败判定)</td>
 </tr>
 </tbody>
 </table>
-<h3 id="a-worked-session">A worked session</h3>
-<div class="codehilite"><pre><span></span><code># Before starting a refactoring task:
+<h3 id="_3">一段实战演示</h3>
+<div class="codehilite"><pre><span></span><code># 准备动手搞重构前：
 skill_search(&quot;refactoring async python&quot;)
 
-# → finds skill #7: &quot;async_refactor&quot;
-# → template: &quot;Refactor {module} to use {pattern}. Key steps: {steps}&quot;
+# → 挖出了 7 号技能: &quot;async_refactor&quot;
+# → 模板长这样: &quot;Refactor {module} to use {pattern}. Key steps: {steps}&quot;
 
 skill_apply(skill_id=7, params={
     &quot;module&quot;: &quot;auth.py&quot;,
@@ -387,66 +387,66 @@ skill_apply(skill_id=7, params={
     &quot;steps&quot;: &quot;1. replace callbacks, 2. add error boundaries, 3. update tests&quot;
 })
 
-# After completing the task:
+# 干完这票之后：
 skill_outcome(skill_id=7, success=True)
 </code></pre></div>
 
-<h2 id="skill-or-memory-entry">Skill or memory entry?</h2>
-<p>Both stores are project-wide and FTS5-searchable; what differs is the kind of knowledge each holds.</p>
+<h2 id="skill-memory">到底该记在 Skill 里还是 Memory 里？</h2>
+<p>这两座库都是全局共享的，底层也都被 FTS5 引擎驱动；它们的分野，在于它们存放的认知维度截然不同。</p>
 <table>
 <thead>
 <tr>
 <th></th>
-<th>Memory</th>
-<th>Skill</th>
+<th>Memory (记忆)</th>
+<th>Skill (技能)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>What it stores</strong></td>
-<td>Facts, observations, results</td>
-<td>Procedures, strategies, templates</td>
+<td><strong>到底存啥</strong></td>
+<td>既成的事实，观察到的现象，跑出来的战果</td>
+<td>办事的流程，制胜的策略，可复用的模板</td>
 </tr>
 <tr>
-<td><strong>Example</strong></td>
-<td>"Accuracy improved to 87% with ensemble voting"</td>
-<td>"To improve accuracy: try {n} models with {voting} voting"</td>
+<td><strong>例子</strong></td>
+<td>"上了 ensemble 投票后准确率飙到了 87%"</td>
+<td>"想要拉升准确率：用 {voting} 策略对 {n} 个模型执行..."</td>
 </tr>
 <tr>
-<td><strong>When to use</strong></td>
-<td>After an agent finishes work</td>
-<td>When an agent discovers a reusable pattern</td>
+<td><strong>何时使用</strong></td>
+<td>agent 刚干完一票活准备收工时</td>
+<td>agent 刚摸索出一条极其稳妥且能复用的套路时</td>
 </tr>
 <tr>
-<td><strong>Retrieval</strong></td>
-<td>FTS5 search by content</td>
-<td>FTS5 search by name, description, tags, template</td>
+<td><strong>打捞方式</strong></td>
+<td>基于内容正文的 FTS5 搜索</td>
+<td>针对名字、简介、标签和模板的 FTS5 搜索</td>
 </tr>
 <tr>
-<td><strong>Table</strong></td>
+<td><strong>底层表名</strong></td>
 <td><code>memory</code></td>
 <td><code>agent_skills</code></td>
 </tr>
 </tbody>
 </table>
-<p>Put it in <strong>memory</strong> when the value is the fact itself — "model achieved 87% on dataset X" is worth recording even though there is nothing to re-run. Findings, errors, and measured results belong there.</p>
-<p>Put it in a <strong>skill</strong> when the value is the procedure — a strategy the next agent should apply as a fill-in-the-blanks template rather than reconstruct from scratch.</p>
-<h2 id="whats-actually-stored">What's actually stored</h2>
-<p>Two tables: <code>agent_skills</code> holds the rows, <code>agent_skills_fts</code> indexes them.</p>
+<p>如果这玩意儿的价值就在于<strong>陈述一个既成事实</strong> —— 比如 "这套模型在 X 数据集上跑了 87%"，哪怕它根本没法拿来执行第二次，它也依然值得被记住。各种底细、报错死因和跑出来的冰冷数字，统统归 <strong>memory</strong>。</p>
+<p>如果这玩意儿的价值在于它的<strong>流程机制</strong> —— 也就是一记可以交由下一个 agent 依葫芦画瓢、填空后直接抄作业的杀招套路，而不是每次都得从零推演一次，那就丢进 <strong>skill</strong>。</p>
+<h2 id="_4">它的骨相到底长什么样</h2>
+<p>统共就两张表：<code>agent_skills</code> 存放血肉，<code>agent_skills_fts</code> 负责搜寻。</p>
 <div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">agent_skills</span><span class="w"> </span><span class="p">(</span>
 <span class="w">    </span><span class="n">skill_id</span><span class="w">        </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="n">AUTOINCREMENT</span><span class="p">,</span>
 <span class="w">    </span><span class="n">name</span><span class="w">            </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">description</span><span class="w">     </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="k">template</span><span class="w">        </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">          </span><span class="c1">-- {param} placeholders</span>
-<span class="w">    </span><span class="n">tags</span><span class="w">            </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">,</span><span class="w">  </span><span class="c1">-- JSON array</span>
-<span class="w">    </span><span class="n">source_agent_id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">agents</span><span class="p">(</span><span class="n">agent_id</span><span class="p">),</span><span class="w">  </span><span class="c1">-- FK; a real spawned agent, or omit for library-level skills</span>
+<span class="w">    </span><span class="k">template</span><span class="w">        </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">          </span><span class="c1">-- {param} 占位坑</span>
+<span class="w">    </span><span class="n">tags</span><span class="w">            </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">,</span><span class="w">  </span><span class="c1">-- JSON 数组</span>
+<span class="w">    </span><span class="n">source_agent_id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">agents</span><span class="p">(</span><span class="n">agent_id</span><span class="p">),</span><span class="w">  </span><span class="c1">-- 外键; 必须是个活着的 agent，如果想存全局通用 skill 就把它置空</span>
 <span class="w">    </span><span class="n">use_count</span><span class="w">       </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
 <span class="w">    </span><span class="n">success_count</span><span class="w">   </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
 <span class="w">    </span><span class="n">created_at</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">updated_at</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span>
 <span class="p">);</span>
 
-<span class="c1">-- FTS5 external-content index over name, description, tags, template</span>
+<span class="c1">-- FTS5 外挂索引引擎，把名字、简介、标签和模板本体统统卷进去查</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="n">VIRTUAL</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">agent_skills_fts</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">fts5</span><span class="p">(</span>
 <span class="w">    </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">description</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">,</span><span class="w"> </span><span class="k">template</span><span class="p">,</span>
 <span class="w">    </span><span class="n">content</span><span class="o">=</span><span class="s1">&#39;agent_skills&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">content_rowid</span><span class="o">=</span><span class="s1">&#39;skill_id&#39;</span><span class="p">,</span>
@@ -454,37 +454,37 @@ skill_outcome(skill_id=7, success=True)
 <span class="p">);</span>
 </code></pre></div>
 
-<h2 id="where-the-design-comes-from">Where the design comes from</h2>
-<p>The library implements the <em>skills</em> axis of the externalization framework described in:</p>
+<h2 id="_5">这套设计的渊源</h2>
+<p>技能库 (Skill Library) 是下面这篇论文中 "外部化 (Externalization)" 框架里 <strong>Skills (技能)</strong> 轴向的具象化实现：</p>
 <blockquote>
 <p>"Externalization in LLM Agents: A Unified Review of Memory, Skills, Protocols and Harness Engineering"
 Zhou, Chai, Chen, et al. (2026)
 <a href="https://arxiv.org/abs/2604.08224">arXiv:2604.08224</a></p>
 </blockquote>
-<p>That review names four externalization axes, and BENE ships a component on each one:</p>
+<p>这篇综述划定了四条向外部环境借力的轴线，而 BENE 在这四条轴上全部钉上了落地的实体系统：</p>
 <table>
 <thead>
 <tr>
-<th>Axis</th>
-<th>BENE component</th>
+<th>轴向</th>
+<th>BENE 里的具象实体</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Memory</td>
-<td><code>MemoryStore</code> — FTS5 cross-agent episodic memory</td>
+<td>Memory (记忆)</td>
+<td><code>MemoryStore</code> — 跨 agent 共享的 FTS5 情景记忆库</td>
 </tr>
 <tr>
-<td><strong>Skills</strong></td>
-<td><strong><code>SkillStore</code> — FTS5 cross-agent procedural templates</strong></td>
+<td><strong>Skills (技能)</strong></td>
+<td><strong><code>SkillStore</code> — 跨 agent 共享的 FTS5 程序化模板库</strong></td>
 </tr>
 <tr>
-<td>Protocols</td>
-<td><code>SharedLog</code> — LogAct intent/vote/decide</td>
+<td>Protocols (协议)</td>
+<td><code>SharedLog</code> — 基于 LogAct 的意图/投票/决议总线</td>
 </tr>
 <tr>
-<td>Harness</td>
-<td><code>MetaHarnessSearch</code> — evolutionary strategy optimization</td>
+<td>Harness (脚手架)</td>
+<td><code>MetaHarnessSearch</code> — 全自动的演化策略寻优器</td>
 </tr>
 </tbody>
 </table>

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>12 秒内，揪出到底是谁动了奶酪 — BENE docs</title>
+<meta name="description" content="BENE 0.2.0 documentation — 12 秒内，揪出到底是谁动了奶酪" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+:root { --bg:#F0EEE8; --surface:#EDE9E4; --border:#CFCCC8; --ink:#1F1D1C; --mute:#62666D; --accent:#EE6018; --gold:#B46A35; --term-bg:#332E2B; --term-fg:#EDE9E4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 Geist,ui-sans-serif,system-ui,sans-serif; }
+a { color:var(--gold); text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent); text-underline-offset:3px; }
+a:hover { color:var(--accent); }
+.top { position:sticky; top:0; z-index:10; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+.top-in { max-width:1200px; margin:0 auto; padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+.brand { font-family:Geist,ui-sans-serif,sans-serif; font-weight:700; letter-spacing:.12em; color:var(--ink); text-decoration:none; }
+.top a.nav { color:var(--mute); text-decoration:none; font-size:14px; }
+.top a.nav:hover { color:var(--accent); }
+.wrap { max-width:1200px; margin:0 auto; padding:24px; display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; }
+aside.sb { position:sticky; top:80px; align-self:start; max-height:calc(100vh - 100px); overflow-y:auto; font-size:13.5px; border-left:1px solid var(--border); padding-left:16px; }
+.sb h4 { margin:18px 0 6px; font:600 11px/1 "Geist Mono",ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+.sb a { display:block; padding:3px 0; color:var(--mute); text-decoration:none; }
+.sb a:hover { color:var(--accent); }
+.sb a.cur { color:var(--ink); font-weight:600; }
+main { min-width:0; max-width:760px; }
+main h1 { font-family:Geist,ui-sans-serif,sans-serif; font-size:2.1rem; line-height:1.2; margin:.2em 0 .5em; }
+main h2 { font-family:Geist,ui-sans-serif,sans-serif; font-size:1.45rem; margin-top:2em; border-bottom:1px solid var(--border); padding-bottom:.35em; }
+main h3 { font-size:1.12rem; margin-top:1.7em; }
+main img { max-width:100%; border:1px solid var(--border); border-radius:8px; }
+main table { border-collapse:collapse; width:100%; font-size:14.5px; display:block; overflow-x:auto; }
+main th, main td { border:1px solid var(--border); padding:8px 12px; text-align:left; vertical-align:top; }
+main th { background:var(--surface); font-weight:600; }
+main blockquote { margin:1em 0; padding:.2em 1.2em; border-left:3px solid var(--accent); color:var(--mute); background:var(--surface); border-radius:0 4px 4px 0; }
+main :not(pre) > code { background:var(--surface); border:1px solid var(--border); border-radius:3px; padding:.08em .35em; font:.86em "Geist Mono",ui-monospace,monospace; }
+.codehilite, main pre { background:var(--term-bg); color:var(--term-fg); border-radius:6px; padding:16px 18px; overflow-x:auto; font:13.5px/1.55 "Geist Mono",ui-monospace,monospace; }
+.codehilite pre, pre code { background:none; padding:0; margin:0; border:none; }
+.demo-embed { margin:20px 0 28px; }
+.demo-embed .frame { background:var(--term-bg); border-radius:6px; padding:14px; }
+.demo-embed .dots { display:flex; gap:6px; margin-bottom:10px; }
+.demo-embed .dots i { width:10px; height:10px; border-radius:50%; background:#3a3344; }
+.demo-embed img { border:none; border-radius:6px; display:block; width:100%; }
+.demo-embed p { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin:8px 2px 0; }
+.crumbs { font:12.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-bottom:8px; }
+.crumbs a { color:var(--mute); }
+.src { font:12.5px "Geist Mono",ui-monospace,monospace; margin-top:48px; padding-top:16px; border-top:1px solid var(--border); color:var(--mute); }
+footer.ft { border-top:1px solid var(--border); margin-top:40px; }
+footer.ft .in { max-width:1200px; margin:0 auto; padding:24px; font:13px "Geist Mono",ui-monospace,monospace; color:var(--mute); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.idx-group h2 { font-family:Geist,ui-sans-serif,sans-serif; border:none; margin-top:1.6em; }
+.idx-group ul { list-style:none; padding:0; margin:.4em 0; }
+.idx-group li { padding:6px 0; border-bottom:1px dashed var(--border); }
+.idx-group .path { font:11.5px "Geist Mono",ui-monospace,monospace; color:var(--mute); margin-left:8px; }
+/* Mobile overrides — kept at the end so source order beats base rules.
+   Earlier this rule sat between base rules and got overridden by a later
+   `aside.sb { position:sticky }`, leaving the sidebar stuck on top of
+   main content on phones. */
+@media (max-width: 860px) {
+  .wrap { grid-template-columns:1fr; gap:24px; padding:16px; }
+  aside.sb { position:static; max-height:none; border-left:none; border-bottom:1px solid var(--border); padding-left:0; padding-bottom:16px; font-size:13px; }
+  .sb h4 { margin:12px 0 4px; }
+  main { max-width:none; }
+  main h1 { font-size:1.6rem; }
+  main h2 { font-size:1.2rem; }
+  main h3 { font-size:1.05rem; }
+  .top-in { padding:0 16px; gap:14px; }
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #49483e }
+.codehilite { background: #272822; color: #F8F8F2 }
+.codehilite .c { color: #959077 } /* Comment */
+.codehilite .err { color: #ED007E; background-color: #1E0010 } /* Error */
+.codehilite .esc { color: #F8F8F2 } /* Escape */
+.codehilite .g { color: #F8F8F2 } /* Generic */
+.codehilite .k { color: #66D9EF } /* Keyword */
+.codehilite .l { color: #AE81FF } /* Literal */
+.codehilite .n { color: #F8F8F2 } /* Name */
+.codehilite .o { color: #FF4689 } /* Operator */
+.codehilite .x { color: #F8F8F2 } /* Other */
+.codehilite .p { color: #F8F8F2 } /* Punctuation */
+.codehilite .ch { color: #959077 } /* Comment.Hashbang */
+.codehilite .cm { color: #959077 } /* Comment.Multiline */
+.codehilite .cp { color: #959077 } /* Comment.Preproc */
+.codehilite .cpf { color: #959077 } /* Comment.PreprocFile */
+.codehilite .c1 { color: #959077 } /* Comment.Single */
+.codehilite .cs { color: #959077 } /* Comment.Special */
+.codehilite .gd { color: #FF4689 } /* Generic.Deleted */
+.codehilite .ge { color: #F8F8F2; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #F8F8F2; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F8F8F2 } /* Generic.Error */
+.codehilite .gh { color: #F8F8F2 } /* Generic.Heading */
+.codehilite .gi { color: #A6E22E } /* Generic.Inserted */
+.codehilite .go { color: #66D9EF } /* Generic.Output */
+.codehilite .gp { color: #FF4689; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { color: #F8F8F2; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #959077 } /* Generic.Subheading */
+.codehilite .gt { color: #F8F8F2 } /* Generic.Traceback */
+.codehilite .kc { color: #66D9EF } /* Keyword.Constant */
+.codehilite .kd { color: #66D9EF } /* Keyword.Declaration */
+.codehilite .kn { color: #FF4689 } /* Keyword.Namespace */
+.codehilite .kp { color: #66D9EF } /* Keyword.Pseudo */
+.codehilite .kr { color: #66D9EF } /* Keyword.Reserved */
+.codehilite .kt { color: #66D9EF } /* Keyword.Type */
+.codehilite .ld { color: #E6DB74 } /* Literal.Date */
+.codehilite .m { color: #AE81FF } /* Literal.Number */
+.codehilite .s { color: #E6DB74 } /* Literal.String */
+.codehilite .na { color: #A6E22E } /* Name.Attribute */
+.codehilite .nb { color: #F8F8F2 } /* Name.Builtin */
+.codehilite .nc { color: #A6E22E } /* Name.Class */
+.codehilite .no { color: #66D9EF } /* Name.Constant */
+.codehilite .nd { color: #A6E22E } /* Name.Decorator */
+.codehilite .ni { color: #F8F8F2 } /* Name.Entity */
+.codehilite .ne { color: #A6E22E } /* Name.Exception */
+.codehilite .nf { color: #A6E22E } /* Name.Function */
+.codehilite .nl { color: #F8F8F2 } /* Name.Label */
+.codehilite .nn { color: #F8F8F2 } /* Name.Namespace */
+.codehilite .nx { color: #A6E22E } /* Name.Other */
+.codehilite .py { color: #F8F8F2 } /* Name.Property */
+.codehilite .nt { color: #FF4689 } /* Name.Tag */
+.codehilite .nv { color: #F8F8F2 } /* Name.Variable */
+.codehilite .ow { color: #FF4689 } /* Operator.Word */
+.codehilite .pm { color: #F8F8F2 } /* Punctuation.Marker */
+.codehilite .w { color: #F8F8F2 } /* Text.Whitespace */
+.codehilite .mb { color: #AE81FF } /* Literal.Number.Bin */
+.codehilite .mf { color: #AE81FF } /* Literal.Number.Float */
+.codehilite .mh { color: #AE81FF } /* Literal.Number.Hex */
+.codehilite .mi { color: #AE81FF } /* Literal.Number.Integer */
+.codehilite .mo { color: #AE81FF } /* Literal.Number.Oct */
+.codehilite .sa { color: #E6DB74 } /* Literal.String.Affix */
+.codehilite .sb { color: #E6DB74 } /* Literal.String.Backtick */
+.codehilite .sc { color: #E6DB74 } /* Literal.String.Char */
+.codehilite .dl { color: #E6DB74 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #E6DB74 } /* Literal.String.Doc */
+.codehilite .s2 { color: #E6DB74 } /* Literal.String.Double */
+.codehilite .se { color: #AE81FF } /* Literal.String.Escape */
+.codehilite .sh { color: #E6DB74 } /* Literal.String.Heredoc */
+.codehilite .si { color: #E6DB74 } /* Literal.String.Interpol */
+.codehilite .sx { color: #E6DB74 } /* Literal.String.Other */
+.codehilite .sr { color: #E6DB74 } /* Literal.String.Regex */
+.codehilite .s1 { color: #E6DB74 } /* Literal.String.Single */
+.codehilite .ss { color: #E6DB74 } /* Literal.String.Symbol */
+.codehilite .bp { color: #F8F8F2 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #A6E22E } /* Name.Function.Magic */
+.codehilite .vc { color: #F8F8F2 } /* Name.Variable.Class */
+.codehilite .vg { color: #F8F8F2 } /* Name.Variable.Global */
+.codehilite .vi { color: #F8F8F2 } /* Name.Variable.Instance */
+.codehilite .vm { color: #F8F8F2 } /* Name.Variable.Magic */
+.codehilite .il { color: #AE81FF } /* Literal.Number.Integer.Long */
+.codehilite { background: var(--term-bg) !important; }
+</style>
+
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <a class="brand" href="../../../index.html">BENE</a>
+  <a class="nav" href="../../../index.html">Landing</a>
+  <a class="nav" href="../../index.html">Docs index</a>
+  <a class="nav" href="../../../SKILL.md" target="_blank" rel="noopener noreferrer" title="Hand BENE to your agent in one URL">SKILL.md ↗</a>
+  <button class="nav copy-llms" data-llms-url="../../../llms.txt" data-copied-label="✓ copied" data-opened-label="↗ opened" title="Copy the llms.txt site map (an LLM-friendly index pointing at SKILL.md + every doc). Paste it into your agent's context.">Copy llms.txt</button>
+  <a class="nav" href="https://github.com/EdwardTang/bene-site" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="GitHub"><svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="vertical-align:text-bottom"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg></a>
+  <a class="nav" href="../../../zh/docs/zh/tutorials/t05-incident-response.html" title="切换到中文" style="border:1px solid rgba(136,136,136,.4);padding:2px 8px;border-radius:3px">文</a>
+</div></div>
+
+<script>
+(function() {
+  document.querySelectorAll('button.copy-llms').forEach(function(btn) {
+    var original = btn.textContent;
+    btn.addEventListener('click', function() {
+      var url = btn.getAttribute('data-llms-url');
+      fetch(url, { cache: 'no-cache' })
+        .then(function(r) { if (!r.ok) throw new Error('fetch ' + r.status); return r.text(); })
+        .then(function(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).then(function() {
+              btn.textContent = btn.getAttribute('data-copied-label') || '✓ copied';
+              setTimeout(function() { btn.textContent = original; }, 2200);
+            });
+          }
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        })
+        .catch(function() {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          btn.textContent = btn.getAttribute('data-opened-label') || '↗ opened';
+          setTimeout(function() { btn.textContent = original; }, 2200);
+        });
+    });
+  });
+})();
+</script>
+<div class="wrap">
+<aside class="sb"><h4>Start, operate, recover</h4>
+<a href="../../README.html">README</a>
+<a href="../../architecture.html">architecture</a>
+<a href="../../checkpoints.html">checkpoints</a>
+<a href="../../cli-reference.html">cli-reference</a>
+<a href="../../codegen.html">codegen</a>
+<a href="../../dashboard.html">dashboard</a>
+<a href="../../deployment.html">deployment</a>
+<a href="../../integrating-bene.html">integrating-bene</a>
+<a href="../../mcp-integration.html">mcp-integration</a>
+<a href="../../memory.html">memory</a>
+<a href="../../meta-harness.html">meta-harness</a>
+<a href="../../philosophy.html">philosophy</a>
+<a href="../../primitive-review-cycle.html">primitive-review-cycle</a>
+<a href="../../probe-authoring.html">probe-authoring</a>
+<a href="../../schema.html">schema</a>
+<a href="../../shared-log.html">shared-log</a>
+<a href="../../skills.html">skills</a>
+<a href="../../use-cases.html">use-cases</a>
+<h4>Recipes</h4>
+<a href="../../recipes/atomic-completion.html">atomic-completion</a>
+<h4>Design and claims</h4>
+<a href="../../design/BENE2-DESIGN.html">BENE2-DESIGN</a>
+<a href="../../design/DESIGN-RATIONALE.html">DESIGN-RATIONALE</a>
+<a href="../../design/KERNEL-SPEC.html">KERNEL-SPEC</a>
+<a href="../../design/v0.3-roadmap-spec.html">v0.3-roadmap-spec</a>
+<h4>Evidence and research</h4>
+<a href="../../research/GAP-AUDIT.html">GAP-AUDIT</a>
+<a href="../../research/SYNTHESIS.html">SYNTHESIS</a>
+<a href="../../research/tech-doc-writing-2026.html">tech-doc-writing-2026</a>
+<h4>Benchmarks and gates</h4>
+<a href="../../benchmarks/COMMUNITY-BENCH-REPORT.html">COMMUNITY-BENCH-REPORT</a>
+<a href="../../benchmarks/PREREG.html">PREREG</a>
+<h4>Tutorial playbooks</h4>
+<a href="../../tutorials/t00-bene-e2e-walkthrough.html">t00-bene-e2e-walkthrough</a>
+<a href="../../tutorials/t01-bene-meta-harness.html">t01-bene-meta-harness</a>
+<a href="../../tutorials/t02-e2e-self-healing.html">t02-e2e-self-healing</a>
+<a href="../../tutorials/t03-security-swarm.html">t03-security-swarm</a>
+<a href="../../tutorials/t04-migration-rollback.html">t04-migration-rollback</a>
+<a href="../../tutorials/t05-incident-response.html">t05-incident-response</a>
+<a href="../../tutorials/t06-ml-research-lab.html">t06-ml-research-lab</a>
+<a href="../../tutorials/t07-regression-guard.html">t07-regression-guard</a>
+<a href="../../tutorials/t08-hundred-agents-scale.html">t08-hundred-agents-scale</a>
+<a href="../../tutorials/t10-ci-overnight-bene-swarm.html">t10-ci-overnight-bene-swarm</a>
+<a href="../../tutorials/t11-local-agents-vllm.html">t11-local-agents-vllm</a>
+<h4>Case studies</h4>
+<a href="../../case-studies/cs02-ci-self-healing-refactor-swarm.html">cs02-ci-self-healing-refactor-swarm</a>
+<h4>Infrastructure</h4>
+<a href="../../infra/DNS.html">DNS</a></aside>
+<main>
+<div class="crumbs"><a href="../../index.html">docs</a> / zh/tutorials/t05-incident-response.md</div>
+<h1 id="12">12 秒内，揪出到底是谁动了奶酪</h1>
+<p>不离开 SQLite 半步，搞定凌晨两点的生产环境连环大爆炸：对着 <code>bene.db</code> 拍两发 SELECT 语句，直接顺藤摸瓜，从 23% 的 HTTP 500 报错率一路追杀到引起这一切的那一行配置；再补第三发查询，把灾后复盘 (post-mortem) 的干货数据直接给你吐出来。</p>
+<blockquote>
+<p><strong>正因为每一只 agent 留下的每一次笔迹，都被死死钉在了一条只能追加 (append-only) 的流水账上，所以 "到底改了啥？" 变成了一个用 SQL 就能解决的问题 —— 而不是一场长达 90 分钟的午夜悬案。</strong></p>
+</blockquote>
+<p><em>实盘抓轨记录：凌晨 02:17 传呼机炸响，02:17:12 敲下第一条查询，02:17:24 拿获真凶，紧接着拍上热补丁，看着报错率从 23% 归零。</em></p>
+<h2 id="_1">凌晨两点的午夜凶铃</h2>
+<p>现在是凌晨 2 点，线上 23% 的 HTTP 请求正在疯狂爆 500 报错。不管你接下来要怎么抢救，你满脑子其实只有一个疑问：到底特么谁动了什么？</p>
+<p>如果没有这套流水账，找出这个答案纯靠人肉拼图 —— 去业务日志里 grep 捞针，去散落各处的发布系统里对时间线，去翻近期的 git commit，去叫醒最后一个发版的倒霉蛋。做好熬 45 到 90 分钟的心理准备。但在 BENE 里，任何 agent 在这颗星球上写过的任何一个字节，早就变成了同一个库里带着时间戳的一行记录；下面这整场破案过程，只需要两条查询，也就是两发 <code>SELECT ... WHERE timestamp &gt; ...</code> 的事。</p>
+<h2 id="_2">从发病症状开始顺藤摸瓜</h2>
+<p>直接拷问流水账：都在爆什么错，是哪只 agent 报出来的，从什么时候开始的：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="k">timestamp</span><span class="p">,</span><span class="w"> </span><span class="n">agent_id</span><span class="p">,</span><span class="w"> </span><span class="n">tool_name</span><span class="p">,</span><span class="w"> </span><span class="n">error</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tool_calls</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;error&#39;</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">datetime</span><span class="p">(</span><span class="s1">&#39;now&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;-1 hour&#39;</span><span class="p">)</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="k">DESC</span>
+<span class="k">LIMIT</span><span class="w"> </span><span class="mi">20</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>经过时间               agent_id      tool_name      error
+T+48m05s              api-gateway   db_query       ConnectionPoolError: 连接池已被榨干 (pool exhausted)
+T+48m04s              api-gateway   db_query       ConnectionPoolError: pool exhausted
+T+48m02s              api-gateway   db_query       ConnectionPoolError: pool exhausted
+... (底下的 844 行全长这样，全是 ConnectionPoolError，全来自 api-gateway)
+
+第一起命案发生在: T+48s  (也就是传呼机炸响前的 47 分钟)
+</code></pre></div>
+
+<p>案情一目了然：847 条 <code>ConnectionPoolError</code>，全部出自 <code>api-gateway</code>，第一例命案正好发生在 47 分钟前。症状很明显 —— 连接池被榨干了。而这个时间点就是最致命的线索：在 47 分钟前，一定有人干了什么。</p>
+<h2 id="_3">追杀作案现场</h2>
+<p>还是同一个库，换张表。每一次对 VFS 的写入，都会连同时间戳、作案 agent、文件路径和一段罪证快照被死死记下 —— 那么我们就问问它，在这起命案爆发前的那 2 个小时里，到底往硬盘里写了些啥：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="k">timestamp</span><span class="p">,</span><span class="w"> </span><span class="n">agent_id</span><span class="p">,</span><span class="w"> </span><span class="n">file_path</span><span class="p">,</span><span class="w"> </span><span class="n">content_preview</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">vfs_events</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">datetime</span><span class="p">(</span><span class="s1">&#39;now&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;-2 hours&#39;</span><span class="p">)</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">event_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;write&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="k">ASC</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>经过时间               agent_id      file_path           content_preview
+T+0                   api-gateway   config/db.yaml      ...pool_size: 2...
+T+1s                  api-gateway   config/app.yaml     ...log_level: debug...
+T+48s                 api-gateway   logs/error.log      ConnectionPoolError...
+</code></pre></div>
+
+<p>逮住了：<code>config/db.yaml</code>。这笔写入卡在第一起命案爆发前不到一分钟的时间点上，而且罪证快照里赫然写着 <code>pool_size: 2</code>。</p>
+<h2 id="diff">拿 Diff 甩它脸上</h2>
+<p>BENE 里的二进制大对象 (Blob) 全是基于内容寻址的，所以要比对发版前的快照和现在的命案现场，其实就是一次哈希对比外加两次 Blob 提取 —— 也就是一次精准的 diff：</p>
+<div class="codehilite"><pre><span></span><code><span class="gd">--- config/db.yaml (发版前的快照)</span>
+<span class="gi">+++ config/db.yaml (命案现场 HEAD)</span>
+<span class="gu">@@ -8,7 +8,7 @@</span>
+<span class="w"> </span>database:
+<span class="w"> </span>  host: postgres-primary.internal
+<span class="w"> </span>  port: 5432
+<span class="gd">-  pool_size: 10</span>
+<span class="gi">+  pool_size: 2</span>
+<span class="w"> </span>  pool_timeout: 30
+<span class="w"> </span>  max_overflow: 5
+</code></pre></div>
+
+<p>就动了一行：<code>pool_size</code> 被人从 <code>10</code> 硬生生砍成了 <code>2</code>。这刀下在 01:28:53；第一起报错紧跟在 01:29:41 爆发 —— 生产环境洪流般的流量，只花了 48 秒就把一个容量只有 2 的连接池吸了个精光。</p>
+<p><strong>传呼机 02:17:00 炸响。02:17:24 拿获真凶。从被叫醒到查明死因：仅仅 12 秒。</strong></p>
+<h2 id="fix-forward">带着证据，滚滚向前 (Fix forward)</h2>
+<p>在动任何东西之前，先给这个案发现场拍个快照锁死 —— 等天亮了写复盘报告时绝对用得上 —— 然后再把修正的配置糊上去：</p>
+<div class="codehilite"><pre><span></span><code>bene checkpoint api-gateway --label broken-pool-size-2
+# (尸骨已保存，留作复盘)
+
+# 拍上热补丁
+bene write api-gateway /config/db.yaml \
+  &quot;$(cat config/db.yaml | sed &#39;s/pool_size: 2/pool_size: 10/&#39;)&quot;
+</code></pre></div>
+
+<p>然后，睁大眼睛看着它一分钟一分钟地爬出地狱：</p>
+<div class="codehilite"><pre><span></span><code>时间     报错量
+02:17    847
+02:18    412
+02:19     89
+02:20     14
+02:21      2
+02:22      0  ✓
+</code></pre></div>
+
+<p>热补丁拍下去，5 分钟内，从 23% 的血崩巅峰，一路清零。</p>
+<h2 id="_4">复盘报告自己就写好了</h2>
+<p>灾损数据，直接从你刚才起手的那个 <code>tool_calls</code> 表里捞：</p>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">  </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w">                                              </span><span class="k">AS</span><span class="w"> </span><span class="n">affected_requests</span><span class="p">,</span>
+<span class="w">  </span><span class="k">MIN</span><span class="p">(</span><span class="k">timestamp</span><span class="p">)</span><span class="w">                                        </span><span class="k">AS</span><span class="w"> </span><span class="n">outage_start</span><span class="p">,</span>
+<span class="w">  </span><span class="k">MAX</span><span class="p">(</span><span class="k">timestamp</span><span class="p">)</span><span class="w">                                        </span><span class="k">AS</span><span class="w"> </span><span class="n">outage_end</span><span class="p">,</span>
+<span class="w">  </span><span class="n">ROUND</span><span class="p">(</span>
+<span class="w">    </span><span class="p">(</span><span class="n">JULIANDAY</span><span class="p">(</span><span class="k">MAX</span><span class="p">(</span><span class="k">timestamp</span><span class="p">))</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">JULIANDAY</span><span class="p">(</span><span class="k">MIN</span><span class="p">(</span><span class="k">timestamp</span><span class="p">)))</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">24</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">  </span><span class="p">)</span><span class="w">                                                     </span><span class="k">AS</span><span class="w"> </span><span class="n">duration_min</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tool_calls</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;error&#39;</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">agent_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;api-gateway&#39;</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;%ConnectionPoolError%&#39;</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>受灾请求量(affected_requests) 命案开始(outage_start) 命案结束(outage_end) 持续时长分钟(duration_min)
+4,847                         T+48s                  T+53m10s             52.4
+</code></pre></div>
+
+<p>历时 52.4 分钟，4,847 次请求被击穿，而这一切的源头，仅仅是 01:28:53 落下的那行配置。扣动扳机的那一刻、第一起阵亡、随后的每一次哀嚎、直到最后抢救成功的时刻，全被死死封印在同一个 SQLite 文件里 —— 不需要你跨系统去生搬硬套时间轴，也不需要你凭借残存的记忆去拼凑现场。</p>
+<h2 id="90">为什么传统做法要熬 90 分钟</h2>
+<p>把两种姿势摆在一起看：</p>
+<div class="codehilite"><pre><span></span><code>传统人肉排查流                     BENE
+---------------------------------  -----------------------------------------
+grep 抠业务日志 (10 分钟)          对着流水账表跑一发 SQL 查询 (&lt;1 秒)
+翻发版系统查记录 (5 分钟)          包含在上面那发查询里了
+肉眼啃 git commits (5 分钟)        每一笔 VFS 写入本身自带时间戳
+摇人，拉会 (20 分钟)               大可不必
+跨系统拼凑时间线 (15 分钟)         一句 ORDER BY timestamp ASC 搞定
+</code></pre></div>
+
+<p>流水账具备的三个先天优势，直接把这 90 分钟给抹平了：</p>
+<ol>
+<li><strong>默认开启的日记本。</strong> <code>api-gateway</code> 摸到 <code>config/db.yaml</code> 的那一瞬间，事件表里就已经自动夯进了一行带着时间戳、作案 agent ID 和罪证快照的记录 —— 不需要你提前记得去写打点代码。</li>
+<li><strong>纯 SQLite 驱动的底层。</strong> 一个带时间过滤的 SELECT 毫秒级就能跑完，中间没有那些劳什子的聚合服务，没有臃肿的 Elasticsearch 集群，也没有什么狗屁数据清洗管道。</li>
+<li><strong>内容寻址的大对象存储。</strong> 拿 <code>pre-deploy (发版前)</code> 对比 <code>HEAD</code>，在底层仅仅是比一下哈希然后捞内容而已 —— 不到一秒就能极其精准地给你糊一脸单行 diff。</li>
+</ol>
+<p>这上面的每一个环节，都用不着你去 grep、去发版系统里挖坟、或者是把睡梦中的队友拖起来。当 agent 敲下的每一个字符从它诞生的第一天起，就被关在一个全盘可 SQL 查探的追加式日志里时，每一次排障开场时的那个终极疑问，永远都有一个确凿的答案在原地等你。</p>
+<h2 id="_5">顺藤摸瓜</h2>
+<ul>
+<li><a href="../README.html">README 首页</a> — BENE 全景大局观和全套文档入口</li>
+<li><a href="../use-cases.html">破局战法 (Use Cases)</a> — 更多来自泥坑一线的实战套路</li>
+<li><a href="../schema.html#events">数据解剖图：events 事件表</a> — 刚才这几条 SQL 查的到底是啥表</li>
+<li><a href="../use-cases.html#2am-incident-response">破局战法：凌晨两点的急诊排障</a> — 浓缩版的急救手册</li>
+<li><a href="../cli-reference.html">命令行兵器谱：bene query / bene search 指令</a></li>
+</ul>
+<hr />
+<p><em>BENE 基于 MIT 协议开源，并且是一个极端的 Local-first 原教旨主义者：你在这页上看到的每一条 SQL 拷问，全都只在你硬盘上的那个 SQLite 文件里完成，绝对没有任何一滴数据流出过你的机器。</em></p>
+<p><em>源码老家 GitHub: <a href="https://github.com/good-night-oppie/bene">github.com/good-night-oppie/bene</a></em></p>
+<div class="src">source: <a href="https://github.com/EdwardTang/bene-site/blob/main/docs/zh/tutorials/t05-incident-response.md" target="_blank" rel="noopener noreferrer">docs/zh/tutorials/t05-incident-response.md</a> · generated by site/build-docs.py — edit the .md, not this file</div>
+</main>
+</div>
+<footer class="ft"><div class="in"><span>BENE 0.2.0 · local-first · SQLite · built in the open</span>
+<a href="https://github.com/EdwardTang/bene-site/discussions" target="_blank" rel="noopener noreferrer">Building something on bene? Open a Discussion.</a></div></footer>
+</body>
+</html>
