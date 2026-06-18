@@ -38,9 +38,29 @@ _ccr: ClaudeCodeRunner | None = None
 server = Server("bene")
 # Single-source the version WITHOUT the constructor `version=` kwarg: older
 # mcp 1.x SDKs (still allowed by our `mcp>=1.0` floor) don't accept it and would
-# raise TypeError at import, breaking `bene serve`. Setting the attribute is
-# always safe and flows into create_initialization_options().server_version.
+# raise TypeError at import, breaking `bene serve`. Modern SDKs honor the
+# `server.version` attribute in create_initialization_options(); set it for them.
 server.version = __version__
+
+# Belt-and-suspenders for the OLD SDKs (mcp 1.0.0 / 1.1.x) still allowed by the
+# `mcp>=1.0` floor: their create_initialization_options() ignores server.version
+# and hard-codes pkg_version("mcp"), so the initialize handshake would report the
+# *SDK* version instead of bene's. Wrap it to always report bene.__version__,
+# regardless of SDK age.
+_orig_create_initialization_options = server.create_initialization_options
+
+
+def _create_initialization_options(*args: object, **kwargs: object):  # type: ignore[no-untyped-def]
+    opts = _orig_create_initialization_options(*args, **kwargs)  # type: ignore[arg-type]
+    if getattr(opts, "server_version", None) != __version__:
+        try:
+            opts.server_version = __version__
+        except (AttributeError, ValueError, TypeError):  # frozen pydantic model
+            opts = opts.model_copy(update={"server_version": __version__})
+    return opts
+
+
+server.create_initialization_options = _create_initialization_options  # type: ignore[method-assign]
 
 
 def init_server(afs: Bene, ccr: ClaudeCodeRunner) -> Server:
