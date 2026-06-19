@@ -665,3 +665,53 @@ def test_verdict_link_targets_a_real_engram_under_fk(tmp_path):
     ).fetchone()[0]
     con.close()
     assert dangling == 0
+
+
+def test_prompt_only_winner_persists_no_stale_accept_verdict(tmp_path):
+    """A prompt-only winner that clears win_rate_uplift is downgraded to REJECT (SPEC DONE #2).
+    The durable eval ledger must then hold NO stale ACCEPT verdict / verifies-link from the
+    probe.run() that scored the gates before the downgrade — exactly one REJECT is persisted.
+    (CID 3440239293 follow-up: persist the FINAL verdict once via probe.run(persist=False).)"""
+    import sqlite3
+
+    from bene.kernel.codex_harness import CodexEvalResult
+
+    PROMPT_WINNER = "SYSTEM PROMPT V2 — the winner"
+
+    def prompt_only_refine(harness, trajectory, signatures):
+        return [Mutation(kind="prompt", target_path="prompts/system.md", diff=PROMPT_WINNER)]
+
+    def evaluate(harness, run_seed=0, n_battles=30):
+        base = mock_codex_eval(harness, run_seed, n_battles)
+        wr = 0.80 if PROMPT_WINNER in harness.system_prompt else 0.50  # +30pp clears uplift
+        return CodexEvalResult(
+            fitness=base.fitness.replace(win_rate=wr, battles_played=30, gens_completed=0),
+            trajectory=base.trajectory,
+            failure_signatures=base.failure_signatures,
+            training_tuples=base.training_tuples,
+        )
+
+    db = str(tmp_path / "po.db")
+    out = evolve_codex_harness(
+        seed_codex_harness(),
+        prompt_only_refine,
+        evaluate,
+        n_gen=1,
+        run_seed=1,
+        db_path=db,
+        bus_path=False,
+    )
+    assert out.killgate_report["verdict"] == REJECT
+    con = sqlite3.connect(db)
+    # no ACCEPT verdict engram, and no verifies-link survives for the REJECTED prompt-only run
+    accept_verdicts = con.execute(
+        "SELECT COUNT(*) FROM engrams WHERE kind='eval' AND title LIKE 'verdict:%' "
+        "AND json_extract(metadata,'$.status')=?",
+        (ACCEPT,),
+    ).fetchone()[0]
+    verifies = con.execute(
+        "SELECT COUNT(*) FROM engram_links WHERE link_type='verifies'"
+    ).fetchone()[0]
+    con.close()
+    assert accept_verdicts == 0, "stale ACCEPT verdict left in the ledger"
+    assert verifies == 0, "stale verifies-link left for a prompt-only (REJECTED) winner"

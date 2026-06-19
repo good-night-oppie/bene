@@ -290,3 +290,35 @@ def test_heldout_eval_escaping_manifest_voids():
     r = out.killgate_report
     assert r["verdict"] == VOID
     assert r["killed_gates"] == ["heldout_eval_escaped_manifest"]
+
+
+def test_heldout_runner_reporting_no_scored_tuples_voids():
+    """A held-out runner that returns fitness but reports ZERO scored tuples cannot PROVE it
+    measured on the held-out manifest (it may have silently scored the training window), so the
+    final gate must VOID — never stamp a vacuous held-out ACCEPT. (CID 3440325594 follow-up.)"""
+    from bene.kernel.codex_harness import CodexEvalResult
+
+    held = HeldoutManifest.from_tuples([("heldout", 7, f"h{i}") for i in range(5)])
+
+    def heldout_eval_no_tuples(harness, run_seed, tuples):
+        base = mock_codex_eval(harness, run_seed, 30)
+        return CodexEvalResult(
+            fitness=base.fitness.replace(win_rate=0.95, battles_played=30, gens_completed=0),
+            trajectory=base.trajectory,
+            failure_signatures=[],
+            training_tuples=[],  # reports NO scored tuples -> cannot prove held-out scoring
+        )
+
+    out = evolve_codex_harness(
+        seed_codex_harness(),
+        mock_refiner,
+        mock_codex_eval,
+        n_gen=3,
+        run_seed=7,
+        heldout_manifest=held,
+        heldout_eval_fn=heldout_eval_no_tuples,
+        bus_path=False,
+    )
+    r = out.killgate_report
+    assert r["verdict"] == VOID
+    assert "heldout_eval_scored_no_tuples" in r["killed_gates"]

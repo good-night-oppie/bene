@@ -462,15 +462,24 @@ def evolve_codex_harness(
             scored = HeldoutManifest.from_tuples(
                 [tuple(t) for t in (*best_ho.training_tuples, *seed_ho.training_tuples)]
             )
-            if scored.tuple_hashes() and not scored.tuple_hashes().issubset(
-                heldout_manifest.tuple_hashes()
-            ):
+            scored_hashes = scored.tuple_hashes()
+            # A held-out ACCEPT may only be stamped if the runner PROVABLY scored on the
+            # held-out manifest: it must report >0 scored tuples (else we cannot prove it
+            # didn't silently score the training window) AND every scored tuple must be a
+            # subset of the manifest (else it escaped to off-manifest data). Either failure
+            # -> VOID, not a vacuous ACCEPT. (PR #65 + PR #80 review)
+            if not scored_hashes or not scored_hashes.issubset(heldout_manifest.tuple_hashes()):
                 voided = True
+                killed = (
+                    "heldout_eval_scored_no_tuples"
+                    if not scored_hashes
+                    else "heldout_eval_escaped_manifest"
+                )
                 killgate_report.update(
                     {
                         "verdict": VOID,
                         "probe": PROBE_NAME,
-                        "killed_gates": ["heldout_eval_escaped_manifest"],
+                        "killed_gates": [killed],
                         "gate_results": [],
                         "heldout_overlap_count": 0,
                     }
@@ -502,46 +511,56 @@ def evolve_codex_harness(
     # vectors (a post-selection re-eval — held-out when a runner was supplied — not the
     # cached selection-time fitness; anti-vacuous gens stamp).
     if not voided:
+        # Compute the gate verdict WITHOUT persisting, fold in SPEC DONE #2 (below), then
+        # persist exactly ONE verdict — otherwise a prompt-only winner that clears
+        # win_rate_uplift would leave a stale ACCEPT verdict + verifies-link in the ledger
+        # contradicting the REJECT report (a naive `status='ACCEPT'` traversal would surface
+        # it). (PR #80 review)
         verdict = probe.run(
             subject=gate_subject_fv,
             baseline=gate_baseline_fv,
             store=store,
             conn=conn,
             subject_ref=best_engram_id,
+            persist=False,
         )
-        killgate_report.update(
-            {
-                "verdict": verdict.status,
-                "probe": verdict.probe_name,
-                "killed_gates": verdict.killed_gates,
-                "gate_results": verdict.gate_results,
-            }
-        )
+        final_status = verdict.status
+        final_results = list(verdict.gate_results)
+        final_reason = verdict.reason
         # SPEC DONE #2 — a prompt-only winning lineage must NOT promote even when it clears
         # win_rate_uplift: the contract requires at least one ACCEPTED non-prompt (code/tool/
         # arch) change. The hash-locked gates don't see mutation kind, so fold the requirement
-        # into the FINAL reported verdict here — a caller promoting on killgate_report["verdict"]
+        # into the FINAL verdict here — a caller promoting on killgate_report["verdict"]
         # cannot accept a prompt-only run. (PR #67 review)
-        if verdict.status == ACCEPT and not killgate_report["winning_mutation_nonprompt"]:
-            killgate_report["verdict"] = REJECT
-            killgate_report["killed_gates"] = [*verdict.killed_gates, "winning_mutation_nonprompt"]
-            # Persist the downgraded verdict so the durable record matches the report (a
-            # refutes-link, not a verifies-link, on a prompt-only winner).
-            persist_verdict(
-                Verdict(
-                    status=REJECT,
-                    probe_name=PROBE_NAME,
-                    gate_results=[
-                        *verdict.gate_results,
-                        {"name": "winning_mutation_nonprompt", "killed": True},
-                    ],
-                    reason="winning lineage is prompt-only (SPEC DONE #2 requires a non-prompt mutation)",
-                ),
-                store=store,
-                conn=conn,
-                probe_id=probe.probe_id,
-                subject_ref=best_engram_id,
+        if final_status == ACCEPT and not killgate_report["winning_mutation_nonprompt"]:
+            final_status = REJECT
+            final_results = [
+                *verdict.gate_results,
+                {"name": "winning_mutation_nonprompt", "killed": True},
+            ]
+            final_reason = (
+                "winning lineage is prompt-only (SPEC DONE #2 requires a non-prompt mutation)"
             )
+        persisted = persist_verdict(
+            Verdict(
+                status=final_status,
+                probe_name=PROBE_NAME,
+                gate_results=final_results,
+                reason=final_reason,
+            ),
+            store=store,
+            conn=conn,
+            probe_id=probe.probe_id,
+            subject_ref=best_engram_id,
+        )
+        killgate_report.update(
+            {
+                "verdict": persisted.status,
+                "probe": persisted.probe_name,
+                "killed_gates": persisted.killed_gates,
+                "gate_results": persisted.gate_results,
+            }
+        )
 
     # Persist the held-out promotion stamp (the 3 provenance hashes + verdict) as a durable
     # eval engram so the audit trail survives the process — mirroring eval/heldout.py's
