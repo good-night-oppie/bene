@@ -54,10 +54,12 @@ cmd_deliverable() {
     # 1) tracked change vs baseline: committed, staged, unstaged, or deleted.
     #    A deleted-since-baseline deliverable also produces a non-empty diff stat,
     #    so a non-empty stat alone does NOT mean the file is present — require it
-    #    to still exist on disk (or be tracked) before reporting 'present'.
+    #    to still exist on disk before reporting 'present'. (NOT `git ls-files`,
+    #    which defaults to the index/--cached and so still lists an UNSTAGED
+    #    deletion — the exact case this helper claims to cover. PR #86 review.)
     local stat
     stat="$(git diff --stat "$baseline" -- "$path" 2>/dev/null || true)"
-    if [ -n "$stat" ] && { [ -e "$path" ] || [ -n "$(git ls-files -- "$path" 2>/dev/null | head -1 || true)" ]; }; then
+    if [ -n "$stat" ] && [ -e "$path" ]; then
       printf 'present — changed vs baseline (%s)\n' \
         "$(printf '%s' "$stat" | tail -1 | sed 's/^[[:space:]]*//')"
       return 0
@@ -69,8 +71,10 @@ cmd_deliverable() {
       printf 'present — untracked new file (%s)\n' "$untracked"
       return 0
     fi
-    # 3) backward-compat net: the path exists / is tracked but is unchanged this run.
-    if [ -e "$path" ] || [ -n "$(git ls-files -- "$path" 2>/dev/null | head -1 || true)" ]; then
+    # 3) backward-compat net: the path still exists on disk but is unchanged this run.
+    #    (On-disk only — a tracked-but-unstaged-deleted file is NOT present; `git
+    #    ls-files` would still list its cached entry. PR #86 review.)
+    if [ -e "$path" ]; then
       printf 'present — exists, unchanged since baseline\n'
       return 0
     fi

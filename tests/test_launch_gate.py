@@ -75,6 +75,16 @@ def test_canonical_repo_rejects_same_prefix_mirror():
     assert lg.CANONICAL_REPO_RE.search(text) is None
 
 
+def test_canonical_repo_requires_left_boundary():
+    # a different owner whose name merely ENDS with the canonical owner must NOT
+    # satisfy the canonical-repo gate (PR #86 review — left boundary).
+    for bad in (
+        "github.com/evil-good-night-oppie/bene",
+        "github.com/xgood-night-oppie/bene/issues",
+    ):
+        assert lg.CANONICAL_REPO_RE.search(bad) is None, bad
+
+
 def test_canonical_repo_accepts_exact_path():
     for ok in (
         "github.com/good-night-oppie/bene",
@@ -131,12 +141,20 @@ _GOOD_BUILDER = (
 )
 
 
-def test_doc_semver_regex_catches_backticked_bare_version():
-    # docs cite `0.2.0`, not v0.2.0 — the doc regex must catch it.
-    assert lg.SEMVER_IN_DOC.findall("还是 `0.2.0`；") == ["0.2.0"]
-    assert lg.SEMVER_IN_DOC.findall("打进 `0.2.1` 包") == ["0.2.1"]
-    # prose numbers without backticks are NOT versions (avoid false positives):
-    assert lg.SEMVER_IN_DOC.findall("see section 1.2.3 below") == []
+def _doc_versions(text):
+    # mirror launch_gate's flatten of the 2-group SEMVER_IN_DOC
+    return sorted({m.group(1) or m.group(2) for m in lg.SEMVER_IN_DOC.finditer(text)})
+
+
+def test_doc_semver_regex_catches_backticked_and_unquoted_versions():
+    # docs cite `0.2.0` (backtick-quoted bare) ...
+    assert _doc_versions("还是 `0.2.0`；") == ["0.2.0"]
+    assert _doc_versions("打进 `0.2.1` 包") == ["0.2.1"]
+    # ... and v-prefixed mentions in prose (e.g. `bene v0.2.0`) — PR #86 review:
+    assert _doc_versions("装的是 bene v0.2.0 这个版本") == ["0.2.0"]
+    assert _doc_versions("`v0.2.1`") == ["0.2.1"]
+    # ... but NOT bare unprefixed x.y.z numbers (no backtick, no v) — avoid false positives:
+    assert _doc_versions("see section 1.2.3 below") == []
 
 
 def test_check3_fails_on_stale_zh_doc_version(tmp_path, monkeypatch):
