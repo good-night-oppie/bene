@@ -829,8 +829,11 @@ class CodexProvider(LLMProvider):
             except json.JSONDecodeError:
                 args_str = json.dumps({"raw": tc_args_raw})
             tool_calls.append(
-                {"id": tc_id, "type": "function",
-                 "function": {"name": tc_name, "arguments": args_str}}
+                {
+                    "id": tc_id,
+                    "type": "function",
+                    "function": {"name": tc_name, "arguments": args_str},
+                }
             )
             last_end = m.end()
         tail = output[last_end:].strip()
@@ -870,23 +873,42 @@ class CodexProvider(LLMProvider):
         out_fd, out_path = tempfile.mkstemp(prefix="codex-out-", suffix=".txt")
         os.close(out_fd)
         cmd = [
-            self._codex_exe, "exec",
-            "--skip-git-repo-check", "--ephemeral",
-            "-s", "read-only", "--color", "never",
-            "-o", out_path,
+            self._codex_exe,
+            "exec",
+            # Isolate this programmatic router backend from the user's local Codex setup:
+            # $CODEX_HOME/config.toml can enable a required MCP server / hook / project
+            # automation that is unavailable here and makes `codex exec` fail before it
+            # produces a response. --ignore-user-config skips it; auth still uses CODEX_HOME
+            # (the ChatGPT-subscription tokens are unaffected). (PR #68 review)
+            "--ignore-user-config",
+            "--skip-git-repo-check",
+            "--ephemeral",
+            "-s",
+            "read-only",
+            "--color",
+            "never",
+            "-o",
+            out_path,
         ]
         if effective_model:
             cmd += ["-m", effective_model]
         cmd += ["-"]  # read the prompt from stdin
 
-        # Force the ChatGPT-subscription auth path: strip any OPENAI_API_KEY so codex
-        # never falls back to a pay-per-token key (the task's hard requirement).
-        env = {k: v for k, v in os.environ.items() if k != "OPENAI_API_KEY"}
+        # Force the ChatGPT-subscription auth path: strip the API-key env vars so codex
+        # never falls back to a pay-per-token key. BOTH OPENAI_API_KEY and CODEX_API_KEY
+        # must go — `codex exec` treats CODEX_API_KEY as single-run API-key auth, so a
+        # value inherited from automation would silently bill per token despite the
+        # provider's ChatGPT-subscription-only contract. (PR #68 review)
+        env = {k: v for k, v in os.environ.items() if k not in ("OPENAI_API_KEY", "CODEX_API_KEY")}
 
         def _run_sync() -> subprocess.CompletedProcess:
             return subprocess.run(
-                cmd, input=prompt_bytes, capture_output=True,
-                env=env, timeout=self.timeout, cwd=self.cwd,
+                cmd,
+                input=prompt_bytes,
+                capture_output=True,
+                env=env,
+                timeout=self.timeout,
+                cwd=self.cwd,
             )
 
         loop = asyncio.get_running_loop()

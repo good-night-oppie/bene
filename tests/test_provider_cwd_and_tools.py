@@ -207,6 +207,7 @@ async def test_codex_chat_strips_openai_api_key_and_sets_flags(monkeypatch):
     task's hard 'not a pay-per-token key' requirement), and must request the read-only,
     ephemeral sandbox with the configured model."""
     monkeypatch.setenv("OPENAI_API_KEY", "sk-must-not-leak")
+    monkeypatch.setenv("CODEX_API_KEY", "sk-codex-must-not-leak")  # PR #68: API-key auth
     p = CodexProvider(model_id="gpt-5.4-mini", timeout=5.0, cwd="/tmp/work")
     p._codex_exe = "/bin/echo"
     cap: dict = {}
@@ -214,7 +215,9 @@ async def test_codex_chat_strips_openai_api_key_and_sets_flags(monkeypatch):
         resp = await p.chat(model="", messages=[{"role": "user", "content": "x"}])
 
     assert "OPENAI_API_KEY" not in cap["env"]  # the ChatGPT-sub enforcement
+    assert "CODEX_API_KEY" not in cap["env"]  # PR #68: codex exec treats it as API-key auth
     argv = cap["argv"]
+    assert "--ignore-user-config" in argv  # PR #68: isolate from $CODEX_HOME/config.toml
     assert "exec" in argv and "read-only" in argv and "--ephemeral" in argv
     assert argv[argv.index("-m") + 1] == "gpt-5.4-mini"
     assert cap["cwd"] == "/tmp/work"
