@@ -317,3 +317,47 @@ def test_lineage_writer_ref_id_is_null_not_run_id(tmp_path):
     assert con.execute("PRAGMA foreign_key_check").fetchall() == []
     assert json.loads(row[1])["run_id"] == "01J-run-ulid"  # run id preserved in payload
     con.close()
+
+
+def test_winning_flag_ignores_nonprompt_side_branch():
+    """Open-ended DGM archives EVERY improving child, but winning_mutation_nonprompt
+    (SPEC DONE #2) must reflect only the BEST/promoted lineage. A non-prompt child that
+    beats the incumbent but is NOT promoted must not flip the flag when the winner is
+    prompt-only — else a caller enforcing SPEC DONE #2 accepts the wrong run (PR #67 review)."""
+    from bene.kernel.codex_harness import CodexEvalResult
+
+    PROMPT_WINNER = "SYSTEM PROMPT V2 — the winner"
+
+    def refine(harness, trajectory, signatures):
+        # one prompt child (scores highest -> promoted) + one module child (improves over
+        # the incumbent, so it is archived, but is NOT the gen-best).
+        return [
+            Mutation(kind="prompt", target_path="prompts/system.md", diff=PROMPT_WINNER),
+            Mutation(kind="module", target_path="modules/y.py", diff="def y():\n    return 1\n"),
+        ]
+
+    def evaluate(harness, run_seed=0, n_battles=30):
+        base = mock_codex_eval(harness, run_seed, n_battles)
+        if PROMPT_WINNER in harness.system_prompt:
+            wr = 0.80  # prompt child — highest -> gen-best -> promoted (the winning lineage)
+        elif "modules/y.py" in harness.resources:
+            wr = 0.65  # module child — beats seed (archived) but NOT promoted (side branch)
+        else:
+            wr = 0.50  # seed / incumbent
+        return CodexEvalResult(
+            fitness=base.fitness.replace(win_rate=wr, battles_played=30, gens_completed=0),
+            trajectory=base.trajectory,
+            failure_signatures=base.failure_signatures,
+            training_tuples=base.training_tuples,
+        )
+
+    out = evolve_codex_harness(
+        seed_codex_harness(), refine, evaluate, n_gen=1, run_seed=1, bus_path=False
+    )
+    r = out.killgate_report
+    # the non-prompt side branch WAS archived (open-ended DGM keeps every improver)…
+    assert "module" in r["accepted_mutation_kinds"]
+    # …but the winning lineage is prompt-only, so the SPEC-DONE-#2 flag must be False.
+    # (The pre-fix code derived this from the whole archive and wrongly reported True.)
+    assert r["winning_mutation_nonprompt"] is False
+    assert r["winning_mutation_kinds"] == ["prompt"]
