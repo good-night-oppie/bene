@@ -47,16 +47,18 @@ PYPI_PACKAGE = "bene"
 CANONICAL_REPO = "good-night-oppie/bene"
 # Match the canonical repo as a whole path segment — a plain substring test would
 # accept same-prefix repos like `good-night-oppie/bene-site` or `bene.foo`, which
-# are NOT the canonical source. `(?![\w.-])` forbids a trailing repo-name char.
-CANONICAL_REPO_RE = re.compile(re.escape(CANONICAL_REPO) + r"(?![\w.-])")
+# are NOT the canonical source. `(?![\w.-])` forbids a trailing repo-name char, and
+# `(?<![\w.-])` a leading one (else `evil-good-night-oppie/bene` would satisfy it).
+CANONICAL_REPO_RE = re.compile(r"(?<![\w.-])" + re.escape(CANONICAL_REPO) + r"(?![\w.-])")
 FORBIDDEN_REPO_TOKEN = "EdwardTang"  # bene-site marketing mirror — never canonical
 ZH_PRIORITY_DOCS = ("README.md", "cli-reference.md", "integrating-bene.md")
 ZH_HONEST_BANNER = "中文索引 / 翻译中"
 SEMVER_ON_PAGE = re.compile(r"v(\d+\.\d+\.\d+)")
-# Docs cite versions as a backtick-quoted bare semver (e.g. `0.2.0`) rather than
-# the `vX.Y.Z` landing-page form, so the freshness check on zh docs needs its own
-# pattern. Anchored on a backtick to avoid matching incidental x.y.z numbers in prose.
-SEMVER_IN_DOC = re.compile(r"`v?(\d+\.\d+\.\d+)`")
+# Docs cite versions either as a backtick-quoted bare semver (e.g. `0.2.0`) OR as a
+# `v`-prefixed mention in prose (e.g. `bene v0.2.0`). Match BOTH so a stale unquoted
+# version cannot slip past the freshness check; still avoid bare unprefixed x.y.z
+# numbers (a `v` or backtick is required) so incidental numbers in prose don't trip it.
+SEMVER_IN_DOC = re.compile(r"`v?(\d+\.\d+\.\d+)`|(?<![\w.])v(\d+\.\d+\.\d+)(?![\w.])")
 HTTP_TIMEOUT = 25
 
 # Guard against running from the wrong tree (mirrors build-docs.py's defense):
@@ -205,7 +207,12 @@ def check_cn_no_fake_promises(g: Gate, *, live_base: str | None) -> None:
             if not path.is_file():
                 continue
             found = sorted(
-                set(SEMVER_IN_DOC.findall(path.read_text(encoding="utf-8", errors="replace")))
+                {
+                    m.group(1) or m.group(2)
+                    for m in SEMVER_IN_DOC.finditer(
+                        path.read_text(encoding="utf-8", errors="replace")
+                    )
+                }
             )
             drift = [v for v in found if v != rv]
             if drift:
