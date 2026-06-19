@@ -506,3 +506,4 @@ Notable influences include:
 - LogAct for shared-log coordination patterns.
 - Externalization research on memory, skills, protocols, and harness engineering.
 - Meta-harness and evolutionary optimization work for improving agent strategies from execution traces.
+- [canivel/KAOS](https://github.com/canivel/KAOS) for the foundational local-first SQLite-backed virtual filesystem and agent orchestration architecture.
