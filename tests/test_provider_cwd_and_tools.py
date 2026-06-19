@@ -299,3 +299,25 @@ async def test_codex_config_without_model_id_uses_provider_default(tmp_path):
     with pytest.raises(RuntimeError):
         await router._call_model(_Spy(), "gpt-codex", [{"role": "user", "content": "hi"}], [], {})
     assert captured["model"] == ""  # empty -> provider default, NOT "gpt-codex"
+
+
+def test_codex_resolve_exe_unwraps_windows_cmd_shim(tmp_path):
+    """PR #68 review: a Windows npm .CMD shim does not forward piped stdin, so the codex
+    provider must resolve it to `node <cli.js>` before `codex exec -` (mirrors the Claude
+    provider). A real binary is a no-op."""
+    p = CodexProvider(timeout=5.0)
+
+    # a real binary path -> no-op
+    p._codex_exe = "/usr/bin/codex"
+    assert p._resolve_exe() == ["/usr/bin/codex"]
+
+    # a .CMD npm wrapper -> [node, cli.js]
+    cli = tmp_path / "cli.js"
+    cli.write_text("console.log('codex')")
+    shim = tmp_path / "codex.CMD"
+    shim.write_text('@echo off\n"%dp0%\\node.exe" "%dp0%\\cli.js" %*\n')
+    p._codex_exe = str(shim)
+    resolved = p._resolve_exe()
+    assert len(resolved) == 2
+    assert resolved[1] == str(cli)  # the cli.js the shim wraps
+    assert resolved[0].endswith("node") or resolved[0].endswith("node.exe")

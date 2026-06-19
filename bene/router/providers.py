@@ -772,6 +772,43 @@ class CodexProvider(LLMProvider):
                 return path
         return "codex"
 
+    def _resolve_exe(self) -> list[str]:
+        """Return the codex command prefix, unwrapping a Windows npm .CMD shim.
+
+        On Windows npm installs, ``codex`` is a .CMD batch wrapper around node; piped
+        stdin (``codex exec -``) does not forward reliably through CMD, so resolve the
+        shim to ``node <cli.js>`` directly (mirrors ClaudeCodeProvider._resolve_cmd).
+        On a real binary (the Linux fleet) this is a no-op. (PR #68 review)
+        """
+        exe = self._codex_exe
+        if not exe.upper().endswith(".CMD"):
+            return [exe]
+        try:
+            import re as _re
+            import shutil as _shutil
+
+            cmd_dir = os.path.dirname(os.path.abspath(exe))
+            with open(exe, encoding="utf-8", errors="replace") as f:
+                content = f.read()
+            for js_raw in _re.findall(r'"([^"]+\.js)"', content):
+                cli_js = (
+                    js_raw.replace("%dp0%\\", cmd_dir + os.sep)
+                    .replace("%DP0%\\", cmd_dir + os.sep)
+                    .replace("%dp0%", cmd_dir)
+                )
+                cli_js = os.path.normpath(cli_js)
+                if os.path.isfile(cli_js):
+                    node_beside = os.path.join(cmd_dir, "node.exe")
+                    node = (
+                        node_beside
+                        if os.path.isfile(node_beside)
+                        else (_shutil.which("node") or "node")
+                    )
+                    return [node, cli_js]
+        except Exception:  # noqa: BLE001 — fall back to the raw shim on any parse error
+            pass
+        return [exe]
+
     def _serialize_conversation(self, messages: list[dict], tools: list[dict] | None) -> str:
         """Flatten the conversation + tool defs into a single codex prompt string."""
         parts: list[str] = [
@@ -873,7 +910,7 @@ class CodexProvider(LLMProvider):
         out_fd, out_path = tempfile.mkstemp(prefix="codex-out-", suffix=".txt")
         os.close(out_fd)
         cmd = [
-            self._codex_exe,
+            *self._resolve_exe(),
             "exec",
             # Isolate this programmatic router backend from the user's local Codex setup:
             # $CODEX_HOME/config.toml can enable a required MCP server / hook / project
