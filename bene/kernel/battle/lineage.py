@@ -35,11 +35,16 @@ def write_lineage(
         # shared_log type CHECK only allows ('intent','vote','decision','commit','result',
         # 'abort','policy','mail') — 'evolution' is rejected on a real bene db. Use the
         # allowed 'result' type + carry the evolution marker in the payload (PR #64 review).
-        marked = {"kind": "evolution", **payload}
+        #
+        # ref_id is `INTEGER REFERENCES shared_log(log_id)` (bene/schema.py): a thread/reply
+        # link to another row's log_id, NOT a free-form id slot. The ULID run_id is not a
+        # log_id, so it must NOT go there — it makes the row malformed for ref/thread readers,
+        # an FK-enabled writer would reject it, and it pollutes idx_shared_log_ref. Keep the
+        # run id in the payload and write ref_id=NULL (no row to thread to). (PR #66 review)
+        marked = {"kind": "evolution", "run_id": run_id, **payload}
         c.execute(
-            "INSERT INTO shared_log (position, type, agent_id, ref_id, payload)"
-            " VALUES (?,?,?,?,?)",
-            (max_pos + 1, "result", "bene-core", run_id, json.dumps(marked)),
+            "INSERT INTO shared_log (position, type, agent_id, ref_id, payload) VALUES (?,?,?,?,?)",
+            (max_pos + 1, "result", "bene-core", None, json.dumps(marked)),
         )
         con.commit()
         log_id = c.lastrowid

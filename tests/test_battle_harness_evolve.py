@@ -243,15 +243,16 @@ def test_lineage_writes_to_bus(tmp_path):
     bus = str(tmp_path / "bus.db")
     # bootstrap bus schema
     con = sqlite3.connect(bus)
-    # Use the REAL shared_log type CHECK (bene/schema.py) so a disallowed type like
-    # 'evolution' would be REJECTED — this proves write_lineage uses an allowed type.
+    # Use the REAL shared_log schema (bene/schema.py): the type CHECK rejects a disallowed
+    # 'evolution' type, AND ref_id is `INTEGER REFERENCES shared_log(log_id)` — a thread/reply
+    # FK, so a ULID run_id stuffed there would be malformed and FK-dirty (PR #66 review).
     con.execute(
         "CREATE TABLE IF NOT EXISTS shared_log "
         "(log_id INTEGER PRIMARY KEY AUTOINCREMENT, "
         " position INTEGER NOT NULL, "
         " type TEXT NOT NULL CHECK (type IN "
         "  ('intent','vote','decision','commit','result','abort','policy','mail')), "
-        " agent_id TEXT, ref_id TEXT, payload TEXT, "
+        " agent_id TEXT, ref_id INTEGER REFERENCES shared_log(log_id), payload TEXT, "
         " created_at TEXT DEFAULT CURRENT_TIMESTAMP)"
     )
     con.commit()
@@ -262,12 +263,18 @@ def test_lineage_writes_to_bus(tmp_path):
     assert log_id is not None  # None if the type were rejected by the CHECK
 
     con = sqlite3.connect(bus)
-    row = con.execute("SELECT type, agent_id, payload FROM shared_log").fetchone()
+    con.execute("PRAGMA foreign_keys=ON")
+    row = con.execute("SELECT type, agent_id, ref_id, payload FROM shared_log").fetchone()
     assert row[0] == "result"  # allowed type (was 'evolution', which the CHECK rejects)
     assert row[1] == "bene-core"
-    data = json.loads(row[2])
+    # ref_id is the INTEGER thread/reply FK, NOT a slot for the ULID run_id (PR #66 review):
+    assert row[2] is None
+    # FK integrity: a NULL ref_id is FK-clean; the old ULID-in-ref_id row failed this check.
+    assert con.execute("PRAGMA foreign_key_check").fetchall() == []
+    data = json.loads(row[3])
     assert data["kind"] == "evolution"  # evolution marker preserved in the payload
     assert data["verdict"] == "ACCEPT"
+    assert data["run_id"] == "run-test-001"  # run id lives in the payload, not ref_id
     con.close()
 
 

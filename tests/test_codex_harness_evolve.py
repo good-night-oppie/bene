@@ -283,3 +283,37 @@ def test_mock_eval_deterministic_and_never_zero_battles():
     e2 = mock_codex_eval(h0, run_seed=42)
     assert e1.fitness.win_rate == e2.fitness.win_rate
     assert e1.fitness.battles_played == 30
+
+
+def test_lineage_writer_ref_id_is_null_not_run_id(tmp_path):
+    """PR #66 review: the ULID run_id must NOT be written into shared_log.ref_id
+    (an INTEGER FK to log_id) — it lives in the payload and ref_id stays NULL, so
+    the row is FK-clean for ref/thread readers and FK-enabled writers."""
+    import json
+    import sqlite3
+
+    from bene.kernel.codex_harness.lineage import write_lineage
+
+    bus = str(tmp_path / "bus.db")
+    con = sqlite3.connect(bus)
+    con.execute(
+        "CREATE TABLE IF NOT EXISTS shared_log "
+        "(log_id INTEGER PRIMARY KEY AUTOINCREMENT, position INTEGER NOT NULL, "
+        " type TEXT NOT NULL CHECK (type IN "
+        "  ('intent','vote','decision','commit','result','abort','policy','mail')), "
+        " agent_id TEXT, ref_id INTEGER REFERENCES shared_log(log_id), payload TEXT, "
+        " created_at TEXT DEFAULT CURRENT_TIMESTAMP)"
+    )
+    con.commit()
+    con.close()
+
+    log_id = write_lineage("01J-run-ulid", {"verdict": "VOID"}, bus_path=bus)
+    assert log_id is not None
+
+    con = sqlite3.connect(bus)
+    con.execute("PRAGMA foreign_keys=ON")
+    row = con.execute("SELECT ref_id, payload FROM shared_log").fetchone()
+    assert row[0] is None  # ref_id is the INTEGER thread FK, never the ULID run_id
+    assert con.execute("PRAGMA foreign_key_check").fetchall() == []
+    assert json.loads(row[1])["run_id"] == "01J-run-ulid"  # run id preserved in payload
+    con.close()
