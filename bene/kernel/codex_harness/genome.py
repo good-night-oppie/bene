@@ -33,7 +33,6 @@ import random
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-import ulid
 
 # Mutation kinds (Contract M). Only "prompt" is a prompt tweak; the SPEC's DONE #2
 # requires at least one ACCEPTED **non-prompt** mutation (a real code/tool/arch change).
@@ -43,13 +42,20 @@ NON_PROMPT_KINDS = tuple(k for k in MUTATION_KINDS if k != "prompt")
 # Strategy head — mirrors adx_showdown.harness.KNOWN_STRATEGIES (the typed contract
 # head bene shares with adx). Ordered by approximate strength for the mock eval.
 _STRATEGIES = [
-    "random", "max_damage", "heuristic", "balance",
-    "hyper_offense", "stall", "trick_room", "llm_freeform",
+    "random",
+    "max_damage",
+    "heuristic",
+    "balance",
+    "hyper_offense",
+    "stall",
+    "trick_room",
+    "llm_freeform",
 ]
 
 
 # ---------------------------------------------------------------------------
 # Contract M — a JSON-serializable, applyable patch to a harness resource.
+
 
 @dataclass
 class Mutation:
@@ -75,6 +81,7 @@ class Mutation:
 
 # ---------------------------------------------------------------------------
 # Contract H (head) — the bene-side wire for a harness-as-code genome.
+
 
 @dataclass
 class CodexHarness:
@@ -111,27 +118,47 @@ class CodexHarness:
 
         A prompt-only BattleHarness is a valid CodexHarness (SPEC back-compat). The
         ``harness_ref`` (if present) points at the resource dir for code resources.
+
+        Invariant (PR #64 review): on the real ADX path a ``harness_ref`` must come with
+        its loaded ``resources`` map — a harness that points at an on-disk resource dir
+        but carries no resources would content-address by head alone, so distinct dirs
+        could collide in the DGM archive. Reject it here rather than silently mis-hash.
         """
+        harness_ref = d.get("harness_ref")
+        resources = dict(d.get("resources") or {})
+        if harness_ref and not resources:
+            raise ValueError(
+                f"harness {d.get('harness_id')!r}: harness_ref={harness_ref!r} is set but "
+                "resources is empty — load the resource map before constructing the genome "
+                "(else distinct on-disk harness dirs collide on content_hash)"
+            )
         return cls(
             harness_id=d["harness_id"],
             system_prompt=d.get("system_prompt", ""),
             move_selection_strategy=d.get("move_selection_strategy", "max_damage"),
             params=dict(d.get("params") or {}),
-            harness_ref=d.get("harness_ref"),
-            resources=dict(d.get("resources") or {}),
+            harness_ref=harness_ref,
+            resources=resources,
             manifest=dict(d.get("manifest") or {}),
         )
 
     def content_hash(self) -> str:
         """Content address over the evolvable surface (prompt + params + resources +
-        strategy) — identity for the DGM archive + lineage. Excludes ``harness_id``
-        so a rename alone never changes the hash."""
+        strategy + harness_ref) — identity for the DGM archive + lineage. Excludes
+        ``harness_id`` so a rename alone never changes the hash.
+
+        ``harness_ref`` (the pointer to the on-disk resource dir) is folded in so two
+        genomes with identical heads but DIFFERENT on-disk resource trees — the common
+        case once a real Contract-S apply materialises code on disk and leaves the
+        in-memory ``resources`` map empty — never collide in the DGM archive. (PR #64 review)
+        """
         payload = json.dumps(
             {
                 "system_prompt": self.system_prompt,
                 "move_selection_strategy": self.move_selection_strategy,
                 "params": self.params,
                 "resources": self.resources,
+                "harness_ref": self.harness_ref,
             },
             sort_keys=True,
         )
@@ -156,8 +183,8 @@ class CodexHarness:
         # would realise from this code/tool/arch change.
         delta = float(mutation.provenance.get("strength_delta", 0.0))
         new_params["_mock_strength"] = float(new_params.get("_mock_strength", 0.0)) + delta
-        return CodexHarness(
-            harness_id=str(ulid.new()),
+        child = CodexHarness(
+            harness_id="",  # filled deterministically below
             system_prompt=new_prompt,
             move_selection_strategy=self.move_selection_strategy,
             params=new_params,
@@ -167,10 +194,18 @@ class CodexHarness:
             generation=self.generation + 1,
             manifest={**self.manifest, "parent": self.harness_id},
         )
+        # Deterministic child id, NOT a fresh time/random ULID. The mock eval seeds its RNG
+        # off harness_id (mock_codex_eval), and the kill-gate/promotion consume that win_rate,
+        # so a nondeterministic id would make the same parent+mutation+run yield a different
+        # gate outcome across replays. Address the child by its own content hash so a given
+        # (parent, mutation, run_seed) is reproducible. (PR #64 review)
+        child.harness_id = f"{self.harness_id}-g{child.generation}-{child.content_hash()[:12]}"
+        return child
 
 
 # ---------------------------------------------------------------------------
 # Contract-3 arena fitness vector (reused shape: 5 dims + anti-vacuous counters).
+
 
 @dataclass
 class CodexFitness:
@@ -228,6 +263,7 @@ class CodexEvalResult:
 # ---------------------------------------------------------------------------
 # Seed harness (H0).
 
+
 def seed_codex_harness() -> CodexHarness:
     """The seed harness H0 — a reasonable, non-degenerate prompt-only-ish policy plus
     a couple of seed modules the Refiner can improve. The evolved harness must beat
@@ -261,30 +297,44 @@ def seed_codex_harness() -> CodexHarness:
 # strength_delta; a deliberately broken one is emitted so rollback is exercised.
 _SIG_TO_MUTATION: dict[str, dict[str, Any]] = {
     "loss_vs_baseline": {
-        "kind": "module", "target_path": "modules/lookahead.py",
+        "kind": "module",
+        "target_path": "modules/lookahead.py",
         "body": "def best_move(state, depth=2):\n    return _minimax(state, depth)\n",
-        "delta": 0.06, "rationale": "deepen lookahead 1->2 to stop losing close games",
+        "delta": 0.06,
+        "rationale": "deepen lookahead 1->2 to stop losing close games",
     },
     "illegal_move": {
-        "kind": "module", "target_path": "modules/legality.py",
+        "kind": "module",
+        "target_path": "modules/legality.py",
         "body": "def legal_moves(state):\n    return [m for m in state.legal_moves if m.is_valid]\n",
-        "delta": 0.05, "rationale": "filter illegal moves at the source",
+        "delta": 0.05,
+        "rationale": "filter illegal moves at the source",
     },
     "stall": {
-        "kind": "tool", "target_path": "tools/turn_budget.py",
+        "kind": "tool",
+        "target_path": "tools/turn_budget.py",
         "body": "def turn_budget(state):\n    return max(1, 20 - state.turn)\n",
-        "delta": 0.04, "rationale": "add a turn-budget tool to break stalls",
+        "delta": 0.04,
+        "rationale": "add a turn-budget tool to break stalls",
     },
     "forfeit_exploit": {
-        "kind": "protocol", "target_path": "protocols/decide.md",
+        "kind": "protocol",
+        "target_path": "protocols/decide.md",
         "body": "# observe -> plan -> act\nNever forfeit; prefer a switch over a forfeit.\n",
-        "delta": 0.03, "rationale": "protocol: forbid forfeit, prefer switch",
+        "delta": 0.03,
+        "rationale": "protocol: forbid forfeit, prefer switch",
     },
 }
 
 _STRATEGY_BASE = {
-    "random": 0.35, "max_damage": 0.46, "heuristic": 0.52, "balance": 0.55,
-    "hyper_offense": 0.57, "stall": 0.56, "trick_room": 0.53, "llm_freeform": 0.62,
+    "random": 0.35,
+    "max_damage": 0.46,
+    "heuristic": 0.52,
+    "balance": 0.55,
+    "hyper_offense": 0.57,
+    "stall": 0.56,
+    "trick_room": 0.53,
+    "llm_freeform": 0.62,
 }
 
 
@@ -329,8 +379,11 @@ def mock_refiner(
                 target_path="prompt/system.md",
                 diff=harness.system_prompt + "\nPrefer moves with the best expected value.",
                 rationale="prompt: nudge toward expected-value play",
-                provenance={"refiner": "mock_refiner", "strength_delta": 0.005,
-                            "parent": harness.harness_id},
+                provenance={
+                    "refiner": "mock_refiner",
+                    "strength_delta": 0.005,
+                    "parent": harness.harness_id,
+                },
             )
         )
     else:
@@ -341,8 +394,12 @@ def mock_refiner(
                 target_path="modules/experimental.py",
                 diff="def best_move(state):\n    return  # SYNTAX_ERROR: missing value\n",
                 rationale="risky refactor (unbuildable on purpose — must be rolled back)",
-                provenance={"refiner": "mock_refiner", "strength_delta": 0.20,
-                            "parent": harness.harness_id, "unbuildable": True},
+                provenance={
+                    "refiner": "mock_refiner",
+                    "strength_delta": 0.20,
+                    "parent": harness.harness_id,
+                    "unbuildable": True,
+                },
             )
         )
     return mutations
@@ -382,8 +439,17 @@ def mock_codex_eval(
     elo = 1000.0 + (win_rate - 0.5) * 800.0
     risk = float(harness.params.get("risk_tolerance", 0.5))
     no_forfeit = min(1.0, max(0.0, 0.82 + risk * 0.20 + rng.gauss(0.0, 0.01)))
-    legibility = min(1.0, max(0.0, 0.60 + float(harness.params.get("_mock_strength", 0.0)) + rng.gauss(0.0, 0.01)))
-    turn_eff = min(1.0, max(0.05, 0.70 + float(harness.params.get("_mock_strength", 0.0)) * 0.5 + rng.gauss(0.0, 0.01)))
+    legibility = min(
+        1.0,
+        max(0.0, 0.60 + float(harness.params.get("_mock_strength", 0.0)) + rng.gauss(0.0, 0.01)),
+    )
+    turn_eff = min(
+        1.0,
+        max(
+            0.05,
+            0.70 + float(harness.params.get("_mock_strength", 0.0)) * 0.5 + rng.gauss(0.0, 0.01),
+        ),
+    )
 
     sigs: list[str] = []
     if win_rate < 0.55:
@@ -402,9 +468,13 @@ def mock_codex_eval(
 
     return CodexEvalResult(
         fitness=CodexFitness(
-            win_rate=win_rate, elo=elo, move_legibility=legibility,
-            no_forfeit_exploit=no_forfeit, turn_efficiency=turn_eff,
-            battles_played=n_battles, gens_completed=0,
+            win_rate=win_rate,
+            elo=elo,
+            move_legibility=legibility,
+            no_forfeit_exploit=no_forfeit,
+            turn_efficiency=turn_eff,
+            battles_played=n_battles,
+            gens_completed=0,
         ),
         trajectory={"harness_id": harness.harness_id, "run_seed": run_seed, "n_battles": n_battles},
         failure_signatures=sigs,
