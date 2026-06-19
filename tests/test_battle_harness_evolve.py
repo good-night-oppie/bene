@@ -40,6 +40,7 @@ from bene.metaharness.pareto import compute_pareto
 # ---------------------------------------------------------------------------
 # B1 — evolution loop produces output with correct shape
 
+
 def test_evolve_basic_shape():
     h0 = seed_harness()
     out = evolve_battle_harness(h0, mock_fitness, n_gen=1, run_seed=7, bus_path=False)
@@ -68,16 +69,36 @@ def test_evolve_rejects_n_gen_zero():
 # ---------------------------------------------------------------------------
 # B2 — Pareto evaluator covers all 5 Contract-3 dimensions
 
+
 def test_pareto_has_all_contract3_dims():
     results_data = [
-        ("h1", {"win_rate": 0.6, "elo": 1100.0, "move_legibility": 0.7,
-                "no_forfeit_exploit": 0.9, "turn_efficiency": 0.8,
-                "battles_played": 30.0, "gens_completed": 1.0}),
-        ("h2", {"win_rate": 0.5, "elo": 900.0, "move_legibility": 0.8,
-                "no_forfeit_exploit": 0.95, "turn_efficiency": 0.9,
-                "battles_played": 30.0, "gens_completed": 1.0}),
+        (
+            "h1",
+            {
+                "win_rate": 0.6,
+                "elo": 1100.0,
+                "move_legibility": 0.7,
+                "no_forfeit_exploit": 0.9,
+                "turn_efficiency": 0.8,
+                "battles_played": 30.0,
+                "gens_completed": 1.0,
+            },
+        ),
+        (
+            "h2",
+            {
+                "win_rate": 0.5,
+                "elo": 900.0,
+                "move_legibility": 0.8,
+                "no_forfeit_exploit": 0.95,
+                "turn_efficiency": 0.9,
+                "battles_played": 30.0,
+                "gens_completed": 1.0,
+            },
+        ),
     ]
     from bene.metaharness.harness import EvaluationResult
+
     results = [EvaluationResult(harness_id=hid, scores=s) for hid, s in results_data]
 
     pareto = compute_pareto(results, CONTRACT3_OBJECTIVES)
@@ -88,8 +109,7 @@ def test_pareto_has_all_contract3_dims():
 
 
 def test_evolve_pareto_non_empty():
-    out = evolve_battle_harness(seed_harness(), mock_fitness, n_gen=2, run_seed=5,
-                                bus_path=False)
+    out = evolve_battle_harness(seed_harness(), mock_fitness, n_gen=2, run_seed=5, bus_path=False)
     assert len(out.pareto.points) >= 1
     for p in out.pareto.points:
         for dim in CONTRACT3_OBJECTIVES:
@@ -98,6 +118,7 @@ def test_evolve_pareto_non_empty():
 
 # ---------------------------------------------------------------------------
 # B3 — kill-gate: hash-locked + admissible + correct ACCEPT/REJECT outcomes
+
 
 def test_killgate_lock_is_stable():
     """The lock hash must be deterministic — editing gates breaks the lock."""
@@ -117,10 +138,7 @@ def test_killgate_admissible_on_seed():
         "battles_played": float(seed_fv.battles_played),
         "gens_completed": float(seed_fv.gens_completed),
     }
-    killed = [
-        evaluate_gate(g, seed_metrics, seed_metrics)
-        for g in KILLGATE_GATES
-    ]
+    killed = [evaluate_gate(g, seed_metrics, seed_metrics) for g in KILLGATE_GATES]
     assert any(r["killed"] for r in killed), (
         "Probe must kill the identity candidate (win_rate_uplift=0 < 0.10)"
     )
@@ -173,7 +191,7 @@ def test_killgate_rejects_zero_battles(tmp_path):
 
     no_battles = seed_fv.replace(
         win_rate=seed_fv.win_rate + 0.20,  # big uplift, but…
-        battles_played=0,                  # …no battles played
+        battles_played=0,  # …no battles played
         gens_completed=1,
     )
     verdict = probe.run(subject=no_battles, baseline=seed_fv, store=store, conn=conn)
@@ -191,7 +209,7 @@ def test_killgate_rejects_zero_gens(tmp_path):
     no_gens = seed_fv.replace(
         win_rate=seed_fv.win_rate + 0.20,  # big uplift, but…
         battles_played=30,
-        gens_completed=0,                  # …no gens ran
+        gens_completed=0,  # …no gens ran
     )
     verdict = probe.run(subject=no_gens, baseline=seed_fv, store=store, conn=conn)
     assert verdict.status == REJECT
@@ -210,7 +228,7 @@ def test_killgate_tamper_raises(tmp_path):
     # Tamper: mutate the stored gate spec directly
     conn.execute(
         "UPDATE probe_registry SET gate_spec = ? WHERE name = ?",
-        ('[]', PROBE_NAME),
+        ("[]", PROBE_NAME),
     )
     conn.commit()
 
@@ -225,12 +243,19 @@ def test_killgate_tamper_raises(tmp_path):
 
 def test_evolve_killgate_in_report():
     """evolve_battle_harness killgate_report must contain all required fields."""
-    out = evolve_battle_harness(seed_harness(), mock_fitness, n_gen=2, run_seed=11,
-                                bus_path=False)
+    out = evolve_battle_harness(seed_harness(), mock_fitness, n_gen=2, run_seed=11, bus_path=False)
     r = out.killgate_report
-    for key in ("verdict", "killed_gates", "gate_results", "best_harness_id",
-                "seed_win_rate", "best_win_rate", "uplift",
-                "gens_completed", "battles_played"):
+    for key in (
+        "verdict",
+        "killed_gates",
+        "gate_results",
+        "best_harness_id",
+        "seed_win_rate",
+        "best_win_rate",
+        "uplift",
+        "gens_completed",
+        "battles_played",
+    ):
         assert key in r, f"killgate_report missing {key!r}"
     assert r["battles_played"] > 0
     assert r["gens_completed"] > 0
@@ -238,6 +263,7 @@ def test_evolve_killgate_in_report():
 
 # ---------------------------------------------------------------------------
 # B4 — SharedLog lineage writer
+
 
 def test_lineage_writes_to_bus(tmp_path):
     bus = str(tmp_path / "bus.db")
@@ -258,8 +284,7 @@ def test_lineage_writes_to_bus(tmp_path):
     con.commit()
     con.close()
 
-    log_id = write_lineage("run-test-001", {"verdict": "ACCEPT", "uplift": 0.15},
-                           bus_path=bus)
+    log_id = write_lineage("run-test-001", {"verdict": "ACCEPT", "uplift": 0.15}, bus_path=bus)
     assert log_id is not None  # None if the type were rejected by the CHECK
 
     con = sqlite3.connect(bus)
@@ -286,6 +311,7 @@ def test_lineage_silently_fails_on_bad_bus():
 # ---------------------------------------------------------------------------
 # Integration: genome mutation is deterministic given seed
 
+
 def test_genome_mutation_deterministic():
     h0 = seed_harness()
     rng_a = random.Random(42)
@@ -293,7 +319,7 @@ def test_genome_mutation_deterministic():
     child_a = h0.mutate(rng_a)
     child_b = h0.mutate(rng_b)
     assert child_a.harness_id != child_b.harness_id  # ULIDs differ (time-based)
-    assert child_a.params == child_b.params           # but params are identical
+    assert child_a.params == child_b.params  # but params are identical
 
 
 def test_mock_fitness_deterministic():
@@ -329,6 +355,7 @@ def test_from_adx_dict_roundtrip():
 def test_mutate_non_finite_guard():
     """mutate() must not produce NaN or inf in params."""
     import math as _math
+
     h0 = seed_harness()
     rng = random.Random(0)
     for _ in range(50):
@@ -336,3 +363,147 @@ def test_mutate_non_finite_guard():
         for v in child.params.values():
             if isinstance(v, float):
                 assert _math.isfinite(v), f"non-finite param: {v}"
+
+
+# ---------------------------------------------------------------------------
+# Review follow-ups (PR #62) — regression tests for 5 confirmed-open bugs
+# ---------------------------------------------------------------------------
+
+
+def test_persistent_db_reregister_is_idempotent(tmp_path):
+    """CID 3439622163 — a 2nd evolve run on the same persistent db_path must NOT
+    raise sqlite3.IntegrityError on the UNIQUE probe_registry.name."""
+    db = str(tmp_path / "persist.db")
+    out1 = evolve_battle_harness(
+        seed_harness(), mock_fitness, n_gen=1, run_seed=3, db_path=db, bus_path=False
+    )
+    assert out1.killgate_report["verdict"] in {"ACCEPT", "REJECT", "VOID"}
+    # 2nd run on the SAME db — blind re-INSERT would raise IntegrityError here.
+    out2 = evolve_battle_harness(
+        seed_harness(), mock_fitness, n_gen=1, run_seed=3, db_path=db, bus_path=False
+    )
+    assert out2.killgate_report["verdict"] in {"ACCEPT", "REJECT", "VOID"}
+    # Exactly one probe row was registered (reused, not duplicated).
+    con = sqlite3.connect(db)
+    n = con.execute("SELECT COUNT(*) FROM probe_registry WHERE name=?", (PROBE_NAME,)).fetchone()[0]
+    con.close()
+    assert n == 1
+
+
+def test_mock_fitness_reproducible_across_processes():
+    """CID 3439622167 — mock_fitness must NOT depend on process-salted hash() of
+    the per-run ULID. Two structurally identical genomes with different ULIDs
+    must score identically (digest is over heritable content, not harness_id)."""
+    base = seed_harness()
+    # Same heritable content, different harness_id (simulates a fresh-per-run ULID).
+    twin = BattleHarness(
+        harness_id="DIFFERENT-ULID-xyz",
+        system_prompt=base.system_prompt,
+        move_selection_strategy=base.move_selection_strategy,
+        tool_policy=dict(base.tool_policy),
+        params=dict(base.params),
+    )
+    fv_a = mock_fitness(base, run_seed=42)
+    fv_b = mock_fitness(twin, run_seed=42)
+    assert fv_a.win_rate == fv_b.win_rate
+    assert fv_a.turn_efficiency == fv_b.turn_efficiency
+    assert fv_a.no_forfeit_exploit == fv_b.no_forfeit_exploit
+    assert fv_a.move_legibility == fv_b.move_legibility
+
+
+def test_mock_fitness_stable_under_pythonhashseed():
+    """CID 3439622167 — same genome under different PYTHONHASHSEED subprocesses
+    must yield identical win_rate (proves no builtin-hash() salt leaks in)."""
+    import subprocess
+    import sys
+
+    snippet = (
+        "from bene.kernel.battle.genome import mock_fitness, seed_harness;"
+        "print(repr(mock_fitness(seed_harness(), run_seed=42).win_rate))"
+    )
+
+    def _run(seed_env: str) -> str:
+        env = {"PYTHONHASHSEED": seed_env, "PATH": __import__("os").environ["PATH"]}
+        return subprocess.check_output([sys.executable, "-c", snippet], env=env, text=True).strip()
+
+    assert _run("0") == _run("12345")
+
+
+def test_generation_lineage_parent_is_generation_start(monkeypatch):
+    """CID 3439622168 — every sibling in a generation records the
+    generation-start parent, even after an earlier sibling promotes."""
+
+    seed = seed_harness()
+    # Deterministic fitness: 1st mutant of each batch wins big (forces an
+    # in-generation promotion), later siblings are mediocre.
+    state = {"n": 0}
+
+    def fitness(h):
+        if h.harness_id == seed.harness_id:
+            return mock_fitness(seed).replace(win_rate=0.40, battles_played=30)
+        state["n"] += 1
+        wr = 0.95 if state["n"] % 3 == 1 else 0.10
+        return mock_fitness(h).replace(win_rate=wr, battles_played=30)
+
+    out = evolve_battle_harness(seed, fitness, n_gen=1, run_seed=1, bus_path=False)
+    cands = out.lineage[0].candidates
+    # 1st sibling promotes; the 2nd/3rd must still point at the seed, NOT the
+    # promoted 1st sibling.
+    parents = {c["parent_id"] for c in cands}
+    assert parents == {seed.harness_id}, (
+        f"later siblings recorded a promoted sibling as parent: {parents}"
+    )
+
+
+def test_verdict_links_to_persisted_engram_not_harness_id(tmp_path):
+    """CID 3439622170 — the kill-gate verdict's subject_ref must be a real
+    persisted engram id (store.get works), not a raw harness_id string."""
+    from bene.kernel.battle.evolve import _append_harness_engram  # noqa: F401
+
+    db = str(tmp_path / "eng.db")
+    out = evolve_battle_harness(
+        seed_harness(), mock_fitness, n_gen=2, run_seed=8, db_path=db, bus_path=False
+    )
+    best_eid = out.killgate_report["best_engram_id"]
+    seed_eid = out.killgate_report["seed_engram_id"]
+    assert best_eid is not None and seed_eid is not None
+    # The engram ids must be real rows (NOT the harness_id strings).
+    assert best_eid != out.killgate_report["best_harness_id"]
+    store, conn = open_eval_db(db)
+    got = store.get(best_eid)  # raises if dangling
+    assert got is not None
+    # The verdict's verifies/refutes edge must point at the persisted engram.
+    n = conn.execute(
+        "SELECT COUNT(*) FROM engram_links WHERE dst_id=? AND link_type IN ('verifies','refutes')",
+        (best_eid,),
+    ).fetchone()[0]
+    conn.close()
+    assert n >= 1, "verdict did not link verifies/refutes to the persisted engram"
+
+
+def test_killgate_reuses_cached_best_fv_not_noisy_reeval():
+    """CID 3439622176 — the final kill-gate must reuse the cached best_fv from
+    selection, NOT re-call the (noisy) fitness_fn. A fitness_fn that returns a
+    DIFFERENT value on the post-loop call must not change the gate evidence."""
+    seed = seed_harness()
+    seen: dict[str, int] = {}
+
+    def fitness(h):
+        # Seed: stable low baseline so a mutant can show real uplift.
+        if h.harness_id == seed.harness_id:
+            return mock_fitness(seed).replace(win_rate=0.40, battles_played=30)
+        # Per-harness call counter: the FIRST evaluation of a mutant returns a
+        # strong, stable score (drives selection); any SECOND evaluation of the
+        # SAME harness returns a POISONED score (win_rate=0.0). If the evolver
+        # re-runs fitness_fn on the winner after the loop, the gate sees 0.0.
+        n = seen.get(h.harness_id, 0)
+        seen[h.harness_id] = n + 1
+        wr = 0.80 if n == 0 else 0.0
+        return mock_fitness(h).replace(win_rate=wr, battles_played=30)
+
+    out = evolve_battle_harness(seed, fitness, n_gen=1, run_seed=2, bus_path=False)
+    # best_fv was 0.80 (uplift 0.40 ≥ 0.10) → ACCEPT. A 2nd noisy re-eval would
+    # have returned 0.0 → uplift negative → REJECT.
+    assert out.killgate_report["best_win_rate"] == 0.80
+    assert out.killgate_report["uplift"] == pytest.approx(0.40)
+    assert out.killgate_report["verdict"] == ACCEPT

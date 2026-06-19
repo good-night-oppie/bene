@@ -30,6 +30,7 @@ Algorithm:
 from __future__ import annotations
 
 import random
+import sqlite3
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -42,6 +43,9 @@ from bene.kernel.battle.genome import (
 )
 from bene.kernel.battle.killgate import build_killgate, open_eval_db
 from bene.kernel.battle.lineage import write_lineage
+from bene.kernel.engrams import EngramStore
+from bene.kernel.eval.gates import lock_hash
+from bene.kernel.eval.probe import LockTamperError, Probe
 from bene.metaharness.harness import EvaluationResult
 from bene.metaharness.pareto import ParetoFrontier, compute_pareto
 
@@ -101,15 +105,25 @@ def evolve_battle_harness(
     seed_fv = fitness_fn(seed)
 
     # ------------------------------------------------------------------
+    # Persist the seed as a candidate engram so the kill-gate verdict links
+    # verifies/refutes → a *real* engram (not a dangling harness_id string).
+    # promote()/trust queries key off the candidate ENGRAM id, so without this
+    # an ACCEPT verdict could never gate the candidate through the kernel.
+    seed_eid = _append_harness_engram(store, seed)
+
+    # ------------------------------------------------------------------
     # Register kill-gate against the seed baseline (gens_completed=0).
     # The identity self-test runs internally: seed vs seed → win_rate_uplift=0
     # → gate kills → probe is admissible.
+    #
+    # Idempotent against a persistent DB (probe_registry.name is UNIQUE): a 2nd
+    # evolve run on the same db_path REUSES the already-registered same-name
+    # probe instead of blind-INSERTing (which would raise IntegrityError and
+    # abort before evolution completes). The gate spec is fixed + hash-locked,
+    # so a mismatched stored lock is treated as tamper.
     probe = build_killgate()
-    probe.register(
-        store,
-        conn,
-        baseline=seed_fv.replace(gens_completed=0),
-        subject_ref=seed.harness_id,
+    _ensure_probe(
+        probe, store, conn, baseline=seed_fv.replace(gens_completed=0), subject_ref=seed_eid
     )
 
     # ------------------------------------------------------------------
@@ -122,6 +136,12 @@ def evolve_battle_harness(
 
     for gen in range(n_gen):
         gen_candidates: list[dict[str, Any]] = []
+        # Capture the generation-start parent BEFORE any in-generation promotion:
+        # every mutant in this batch is a child of this parent, even siblings
+        # evaluated after an earlier sibling promotes best_harness. Reading
+        # best_harness.harness_id inside the loop would mis-record a promoted
+        # sibling as the parent of its own batch-mates and corrupt the lineage.
+        gen_parent_id = best_harness.harness_id
         mutants = [best_harness.mutate(rng) for _ in range(candidates_per_gen)]
 
         for mutant in mutants:
@@ -131,7 +151,7 @@ def evolve_battle_harness(
             gen_candidates.append(
                 {
                     "harness_id": mutant.harness_id,
-                    "parent_id": best_harness.harness_id,
+                    "parent_id": gen_parent_id,
                     "scores": fv.to_scores(),
                 }
             )
@@ -156,16 +176,29 @@ def evolve_battle_harness(
     final_pareto = compute_pareto(all_results, CONTRACT3_OBJECTIVES)
 
     # ------------------------------------------------------------------
-    # Kill-gate: stamp gens_completed, run probe
-    best_fv_final = fitness_fn(best_harness).replace(gens_completed=n_gen)
+    # Kill-gate: stamp gens_completed, run probe.
+    # Reuse the cached best_fv that drove Pareto/lineage selection — do NOT
+    # re-evaluate via fitness_fn. With a noisy/side-effectful fitness_fn (real
+    # battle sampling) a fresh call would gate on scores that were never part
+    # of the recorded candidate evaluation, so frontier/lineage and the gate
+    # evidence would diverge.
+    best_fv_final = best_fv.replace(gens_completed=n_gen)
     seed_fv_baseline = seed_fv.replace(gens_completed=0)
+
+    # Persist the evolved best as a candidate engram so the verdict's verifies/
+    # refutes edge points at a real engram and promote(best_eid) can consume it.
+    best_eid = (
+        seed_eid
+        if best_harness.harness_id == seed.harness_id
+        else _append_harness_engram(store, best_harness, parents=[seed_eid])
+    )
 
     verdict = probe.run(
         subject=best_fv_final,
         baseline=seed_fv_baseline,
         store=store,
         conn=conn,
-        subject_ref=best_harness.harness_id,
+        subject_ref=best_eid,
     )
 
     killgate_report: dict[str, Any] = {
@@ -175,6 +208,8 @@ def evolve_battle_harness(
         "gate_results": verdict.gate_results,
         "best_harness_id": best_harness.harness_id,
         "seed_harness_id": seed.harness_id,
+        "best_engram_id": best_eid,
+        "seed_engram_id": seed_eid,
         "seed_win_rate": seed_fv.win_rate,
         "best_win_rate": best_fv_final.win_rate,
         "uplift": best_fv_final.win_rate - seed_fv.win_rate,
@@ -210,8 +245,66 @@ def evolve_battle_harness(
 # ---------------------------------------------------------------------------
 # Helpers
 
+
 def _to_eval_result(harness: BattleHarness, fv: FitnessVector) -> EvaluationResult:
     return EvaluationResult(
         harness_id=harness.harness_id,
         scores=fv.to_scores(),
     )
+
+
+def _append_harness_engram(
+    store: EngramStore,
+    harness: BattleHarness,
+    parents: list[str] | None = None,
+) -> str:
+    """Persist a BattleHarness as a procedural candidate engram and return its id.
+
+    The kill-gate verdict links verifies/refutes → this engram id, so the
+    candidate can later be gated through the kernel promotion front door
+    (promote() / trust queries key off the candidate engram id, not the raw
+    harness_id string). The human-readable harness_id is kept in metadata.
+    """
+    return store.append(
+        "procedural",
+        f"battle-harness:{harness.harness_id}",
+        harness.to_json(),
+        provenance={"system": "bene.kernel.battle"},
+        parents=parents,
+        metadata={"harness_id": harness.harness_id},
+    )
+
+
+def _ensure_probe(
+    probe: Probe,
+    store: EngramStore,
+    conn: sqlite3.Connection,
+    *,
+    baseline: FitnessVector,
+    subject_ref: str | None = None,
+) -> None:
+    """Register the kill-gate probe idempotently (register-or-reuse).
+
+    probe_registry.name is UNIQUE, so a blind re-register on a persistent DB (a
+    2nd evolve run on the same db_path, a process restart) would raise
+    IntegrityError and abort the run. Mirrors codex_harness/continual._ensure_probe:
+    reuse an already-registered same-name row if present; on a lost race, re-select;
+    treat a mismatched stored lock as tamper.
+    """
+    existing = conn.execute(
+        "SELECT lock_sha256 FROM probe_registry WHERE name=?", (probe.name,)
+    ).fetchone()
+    if existing is None:
+        try:
+            probe.register(store, conn, baseline=baseline, subject_ref=subject_ref)
+            return
+        except sqlite3.IntegrityError:
+            # Lost a race to a concurrent registrant — reuse its row below.
+            existing = conn.execute(
+                "SELECT lock_sha256 FROM probe_registry WHERE name=?", (probe.name,)
+            ).fetchone()
+    if existing is not None and existing[0] != lock_hash(probe.gates):
+        raise LockTamperError(
+            f"probe {probe.name}: an existing registration's lock differs from "
+            "the in-memory gate spec"
+        )
