@@ -36,6 +36,7 @@ the same callable signatures ``evolve_codex_harness`` already takes. Mock-first,
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from dataclasses import asdict, dataclass, field
 from typing import Any, Callable
@@ -91,11 +92,21 @@ CREATE TABLE IF NOT EXISTS codex_continual_swaps (
     target_path      TEXT,
     verdict          TEXT NOT NULL,
     uplift           REAL NOT NULL,
+    -- Recovery payload (PR #71 review): the full child harness JSON + the mutation diff
+    -- and provenance, so a db_path-resumed episode can HYDRATE + audit the swapped-in
+    -- harness from bene.db, not just read its id. NULL on legacy rows (pre-migration).
+    to_harness_json      TEXT,
+    mutation_diff        TEXT,
+    mutation_provenance  TEXT,
     swap_at          TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%f','now'))
 );
 CREATE INDEX IF NOT EXISTS idx_codex_continual_swaps_ep
     ON codex_continual_swaps(episode_id);
 """
+
+# Recovery columns added after the original B3 table (PR #71); older dbs are migrated
+# in __init__ via ALTER TABLE so a resume can hydrate the active harness.
+_RECOVERY_COLS = ("to_harness_json", "mutation_diff", "mutation_provenance")
 
 _SWAP_COLS = (
     "swap_id",
@@ -108,6 +119,7 @@ _SWAP_COLS = (
     "target_path",
     "verdict",
     "uplift",
+    *_RECOVERY_COLS,
     "swap_at",
 )
 
@@ -179,6 +191,13 @@ class ContinualCodexMutator:
         self.candidates_per_swap = candidates_per_swap
         self._registered = False
         self.conn.executescript(CONTINUAL_SWAPS_DDL)
+        # Migrate a pre-existing B3 table (PR #71) that lacks the recovery columns, so a
+        # db_path resume can hydrate the swapped-in harness. Idempotent. (PR #71 review)
+        _have = {r[1] for r in self.conn.execute("PRAGMA table_info(codex_continual_swaps)")}
+        for _col in _RECOVERY_COLS:
+            if _col not in _have:
+                self.conn.execute(f"ALTER TABLE codex_continual_swaps ADD COLUMN {_col} TEXT")
+        self.conn.commit()
 
     # ---------------- read surface ----------------
 
@@ -198,6 +217,24 @@ class ContinualCodexMutator:
             (episode_id,),
         ).fetchone()
         return row[0] if row else None
+
+    def recover_harness(self, episode_id: str) -> CodexHarness | None:
+        """Hydrate the latest swapped-in CodexHarness for *episode_id* from the DB.
+
+        Unlike :meth:`active_harness_id` (which returns only the id), this rebuilds the
+        full child harness from the JSON persisted at swap time — so a db_path-resumed
+        episode can run / audit the active harness after the process that bred it exited,
+        not just learn its id. None when the episode has no recorded swap (use the seed)
+        or the row predates the recovery columns. (PR #71 review)
+        """
+        row = self.conn.execute(
+            "SELECT to_harness_json FROM codex_continual_swaps"
+            " WHERE episode_id=? ORDER BY rowid DESC LIMIT 1",
+            (episode_id,),
+        ).fetchone()
+        if not row or not row[0]:
+            return None
+        return CodexHarness.from_json(row[0])
 
     # ---------------- the gated swap ----------------
 
@@ -389,8 +426,9 @@ class ContinualCodexMutator:
         swap_id = str(ulid.new())
         self.conn.execute(
             "INSERT INTO codex_continual_swaps (swap_id, episode_id, turn, trigger_reason,"
-            " from_harness_id, to_harness_id, mutation_kind, target_path, verdict, uplift)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?)",
+            " from_harness_id, to_harness_id, mutation_kind, target_path, verdict, uplift,"
+            " to_harness_json, mutation_diff, mutation_provenance)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 swap_id,
                 episode_id,
@@ -402,6 +440,11 @@ class ContinualCodexMutator:
                 mutation.target_path,
                 verdict_status,
                 float(uplift),
+                # Recovery payload: the full child harness + the mutation that produced it,
+                # so a db_path resume can rebuild + audit the active harness (PR #71 review).
+                child.to_json(),
+                mutation.diff,
+                json.dumps(mutation.provenance or {}),
             ),
         )
         self.conn.commit()
