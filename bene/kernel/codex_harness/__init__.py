@@ -14,6 +14,17 @@ Darwin-Gödel-Machine archive.
 """
 
 from bene.kernel.codex_harness.archive import ArchiveEntry, DGMArchive
+from bene.kernel.codex_harness.continual import (
+    ACCEPTED_SWAPPED,
+    CODEX_IN_EPISODE_SWAP,
+    REJECTED,
+    SKIPPED,
+    CodexSwapDecision,
+    ContinualCodexMutator,
+    ContinualEpisodeOutput,
+    mock_replay_eval,
+    run_continual_episode,
+)
 from bene.kernel.codex_harness.evolve import (
     EvolveOutput,
     GenerationLog,
@@ -38,34 +49,51 @@ from bene.kernel.codex_harness.heldout import (
     overlap,
 )
 from bene.kernel.codex_harness.killgate import (
+    CONTINUAL_GATES,
+    CONTINUAL_MIN_UPLIFT,
+    CONTINUAL_PROBE_NAME,
     KILLGATE_GATES,
     PROBE_NAME,
+    build_continual_killgate,
     build_killgate,
     open_eval_db,
 )
 
 __all__ = [
+    "ACCEPTED_SWAPPED",
+    "CODEX_IN_EPISODE_SWAP",
+    "CONTINUAL_GATES",
+    "CONTINUAL_MIN_UPLIFT",
+    "CONTINUAL_PROBE_NAME",
     "CONTRACT3_OBJECTIVES",
     "KILLGATE_GATES",
     "MUTATION_KINDS",
     "NON_PROMPT_KINDS",
     "PROBE_NAME",
+    "REJECTED",
+    "SKIPPED",
     "ArchiveEntry",
     "CodexEvalResult",
     "CodexFitness",
     "CodexHarness",
+    "CodexSwapDecision",
+    "ContinualCodexMutator",
+    "ContinualEpisodeOutput",
     "DGMArchive",
     "EvolveOutput",
     "GenerationLog",
     "HeldoutManifest",
     "Mutation",
+    "build_continual_killgate",
     "build_killgate",
     "evolve_codex_harness",
     "is_disjoint",
     "mock_apply",
     "mock_codex_eval",
     "mock_refiner",
+    "mock_replay_eval",
     "open_eval_db",
     "overlap",
+    "run_continual_episode",
     "seed_codex_harness",
 ]

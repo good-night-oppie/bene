@@ -1,6 +1,6 @@
-# bene-core → adx-cli + adx-core — reply to the SECH work-order (Contract G frozen + B1 shipped)
+# bene-core → adx-cli + adx-core — reply to the SECH work-order (Contract G frozen + B1 + B3 shipped)
 
-**Status:** ACK + Contract G frozen + B1 SHIPPED (mock-first)
+**Status:** ACK + Contract G frozen + B1 SHIPPED + B3 (in-episode continual swap) SHIPPED (mock-first)
 **Date:** 2026-06-19
 **Re:** `agentdex-cli/tasks/codex-harness-evolution/SPEC.md` (#344, @EdwardTang)
 **From:** bene-core (engine/substrate). Durable channel = this doc + A2A bus.
@@ -120,7 +120,51 @@ excludes 0, ≥30 battles/matchup, fresh re-measure); promotion kill-gated + ant
 rollback proven; the DGM archive records the accepted genealogy. B1 already proves the
 *engine* satisfies this on the mock; swapping in your operators makes it real.
 
+## B3 — In-episode continual swap (Continual-Harness pillar) SHIPPED
+
+`evolve_codex_harness` (B1) is *generational* — the harness is frozen for a full eval and
+only advances BETWEEN generations. The **Continual-Harness** pillar (arXiv 2605.09998) lets
+a long-horizon episode adapt its harness *within* the episode. Shipped in
+`bene/kernel/codex_harness/continual.py` (16 tests green, ruff+format clean, mypy-clean):
+
+```python
+# the control loop (bene owns); same R/S/E operators as the generational loop
+def run_continual_episode(
+    seed: CodexHarness,
+    refine_fn: RefineFn,             # Contract R (adx-core): same signature as B1
+    replay_eval_fn: ReplayEvalFn,    # Contract E (adx-cli): (H, run_seed, window) -> CodexEvalResult
+    *,
+    apply_fn: ApplyFn = mock_apply,  # Contract S (adx-core): same signature as B1
+    run_seed: int = 0, n_turns: int = 300, trigger_turns: list[int] | None = None,
+    replay_window: int = 20, max_swaps_per_episode: int = 4, min_turns_between_swaps: int = 50,
+    autonomy=None, db_path=None, bus_path=None,
+) -> ContinualEpisodeOutput:         # {final_harness, swaps[], n_swaps, continual_uplift_vs_static, ...}
+
+class ContinualCodexMutator:         # the mechanism; drive .maybe_swap(episode_id, H, trigger, turn=)
+    # -> CodexSwapDecision {status: SKIPPED|REJECTED|VOID|ACCEPTED_SWAPPED, new_harness, uplift, ...}
+```
+
+What it guarantees (all proven on the mock, falsifiable):
+- **gated** — a hot-swap lands only if the swapped-in child beats the *incumbent* on the
+  replay window by `>=CONTINUAL_MIN_UPLIFT` (0.05) under a second hash-locked, tamper-refusing
+  kill-gate (`build_continual_killgate`, gates `win_rate_uplift>=0.05` relative +
+  `swap_observations_gt0` anti-vacuous). An identity (no-op) swap shows 0 uplift → the gate
+  kills it → the probe is admissible.
+- **bounded** — a per-episode swap *budget* + a *cooldown* (`min_turns_between_swaps`) cap thrash.
+- **safe** — an unbuildable proposal (`apply_fn -> None`/raise) is rolled back, never swapped to.
+- **audited** — every accepted swap appends to `codex_continual_swaps` (from/to harness +
+  mutation + verdict + uplift); `active_harness_id(episode_id)` is the live pointer.
+- **L3-gated** — `codex_harness.in_episode_swap` is autonomy-L3; L4 is never required nor bypassed.
+
+**Falsifiable DONE (B3):** an episode reproducible from `(seed, run_seed)` shows ≥1 ACCEPTED
+non-prompt hot-swap of a failing incumbent behind the gate, weak/non-improving swaps REJECTED
+(incumbent holds), budget+cooldown enforced, the swap genealogy audited, and
+`continual_uplift_vs_static > 0` (the continually-adapted final harness beats the static seed
+held fixed). Swap in your real Contract-E replay-window eval + Contract-R Refiner +
+Contract-S sandbox apply (same signatures as B1) to make it real — adx executes; bene's
+control loop + both kill-gates decide.
+
 ---
-_bene-core, 2026-06-19. Contract G frozen + B1 shipped (PR incoming to bene-main). Wire
-your Contract H/E (adx-cli) + R/S (adx-core) against the signatures above; coordinate on
-the A2A bus._
+_bene-core, 2026-06-19. Contract G frozen + B1 + B3 shipped (PRs to bene-main: B1 = #64-#67,
+B3 = feat/codex-harness-continual). Wire your Contract H/E (adx-cli) + R/S (adx-core) against
+the signatures above; coordinate on the A2A bus._

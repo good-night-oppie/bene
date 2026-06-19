@@ -53,6 +53,36 @@ KILLGATE_GATES: list[Gate] = [
 
 PROBE_NAME = "codex_harness_evolution_killgate"
 
+# In-episode continual-swap gate (SECH B3, Continual-Harness pillar). A hot-swap of the
+# active harness mid-episode is admitted only if the swapped-in harness beats the
+# *incumbent* on the replay window — a smaller, single-component bar than the
+# generational promotion gate (no gens_completed: a swap is intra-episode, not a
+# generation). The +5pp default is the "is this hot-swap worth taking now" threshold;
+# the identity self-test (incumbent vs itself -> 0 uplift) still kills, so the probe is
+# admissible/falsifiable exactly like the generational one.
+CONTINUAL_MIN_UPLIFT = 0.05
+
+CONTINUAL_GATES: list[Gate] = [
+    {
+        "name": "swap_observations_gt0",
+        "description": "anti-vacuous: the replay window scored >0 observations",
+        "metric": "battles_played",
+        "op": ">",
+        "threshold": 0.0,
+        "relative_to_baseline": False,
+    },
+    {
+        "name": "win_rate_uplift",
+        "description": "swapped-in harness must beat the incumbent win_rate by >=0.05 on the replay window",
+        "metric": "win_rate",
+        "op": ">=",
+        "threshold": CONTINUAL_MIN_UPLIFT,
+        "relative_to_baseline": True,
+    },
+]
+
+CONTINUAL_PROBE_NAME = "codex_harness_continual_swap_killgate"
+
 
 def _extract_metrics(fv: CodexFitness) -> dict[str, float]:
     return {
@@ -67,6 +97,22 @@ def build_killgate() -> Probe:
     return Probe(
         name=PROBE_NAME,
         gates=KILLGATE_GATES,
+        evaluate_fn=_extract_metrics,
+    )
+
+
+def build_continual_killgate() -> Probe:
+    """Return the locked in-episode continual-swap Probe (B3).
+
+    Same hash-locked, tamper-refusing machinery as :func:`build_killgate`, but with the
+    intra-episode gate spec (``CONTINUAL_GATES``): a swap is admitted only when the
+    child beats the incumbent by ``>=CONTINUAL_MIN_UPLIFT`` on the replay window
+    (anti-vacuous: the window had >0 observations). Not yet registered — call
+    ``.register(store, conn, baseline=<incumbent fitness>)``.
+    """
+    return Probe(
+        name=CONTINUAL_PROBE_NAME,
+        gates=CONTINUAL_GATES,
         evaluate_fn=_extract_metrics,
     )
 
