@@ -33,7 +33,7 @@
 
 - **One file per run, fully auditable.** Each agent's files, tool calls, and events live in one SQLite database. When something breaks, `sqlite3` into the file and see exactly what happened — no hidden state.
 - **Runs that don't start cold.** Every run leaves searchable execution traces (engrams); the next agent inherits the path already walked, and `bene failure localize` finds where a real run went wrong.
-- **Gates and trust you can audit.** Promotion needs a sha256-locked probe `ACCEPT` (`PromotionBlocked` otherwise); autonomy L0–L4 is computed from the audit trail, and L4 always needs a human grant.
+- **Gates and trust you can audit.** Promotion needs a sha256-locked probe `ACCEPT` (`PromotionBlocked` otherwise); trust is computed from the audit trail (4 signals + a composite), while autonomy L0–L4 is grant-enforced over a config default floor, and L4 always needs an explicit human grant.
 
 **Honest scope:** the agent loop is turnkey — attach BENE and every turn lands an engram. Everything else (eval gates, memory consolidation, skills, evolution) is real primitives you wire yourself; there is no single adapter that chains all five. The [Integrating BENE](docs/integrating-bene.md) guide is the exact turnkey-vs-wire-yourself map.
 
@@ -49,12 +49,12 @@ bene setup              # writes bene.yaml + bene.db (optionally installs the Cl
 bene demo --no-ui       # seeds the five-capability story — no model keys needed
 ```
 
-**What you get:** a single `bene.db` you can open with any SQLite client. Inspect what the demo seeded:
+**What you get:** a single SQLite file you can open with any SQLite client. The demo seeds its own throwaway `story.db` and prints the `--db <path>` (plus the seeded `<agent_id>`) to use — copy that path from the demo output:
 
 ```bash
-bene experiments ls     # the probe/evolution journal — e.g. story-probe → ACCEPT
-bene --json senses      # what an incoming agent reads first
-bene trust <agent_id>   # computed trust: 4 signals + a composite
+bene experiments ls --db <story.db>          # the probe/evolution journal — e.g. story-probe → ACCEPT
+bene --json senses                            # what an incoming agent reads first
+bene trust <agent_id> --db <story.db>         # computed trust: 4 signals + a composite
 ```
 
 > **`bene: command not found`?** The install environment's `bin` directory isn't on your `PATH`. Use `pipx install bene` (it puts `bene` on your `PATH` for you), activate the virtualenv you installed into, or add the install bin directory (e.g. `~/.local/bin`) to your `PATH`.
