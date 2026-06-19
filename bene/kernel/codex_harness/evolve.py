@@ -28,6 +28,9 @@ injected ``apply_fn`` (mock default) so ASSESS is real, not assumed.
 
 from __future__ import annotations
 
+import json
+import random
+import sqlite3
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
@@ -49,12 +52,73 @@ from bene.kernel.codex_harness.killgate import (
     open_eval_db,
 )
 from bene.kernel.codex_harness.lineage import write_lineage
-from bene.kernel.eval import VOID, Verdict, persist_verdict
+from bene.kernel.eval import ACCEPT, REJECT, VOID, Verdict, persist_verdict
 from bene.kernel.eval.gates import lock_hash
+from bene.kernel.eval.probe import LockTamperError, Probe
 
 RefineFn = Callable[[CodexHarness, dict[str, Any], list[str]], list[Mutation]]
 ApplyFn = Callable[[CodexHarness, Mutation], "CodexHarness | None"]
 EvalFn = Callable[[CodexHarness, int, int], CodexEvalResult]
+# Held-out eval (Contract E restricted to the frozen manifest tuples): maps a harness +
+# run_seed + the held-out tuple list to a fitness measured ONLY on those tuples. Optional;
+# when given the final kill-gate scores held-out fitness instead of the training window.
+HeldoutEvalFn = Callable[[CodexHarness, int, list], CodexEvalResult]
+
+
+def _register_killgate(
+    probe: Probe,
+    store: Any,
+    conn: sqlite3.Connection,
+    *,
+    baseline: CodexFitness,
+    subject_ref: str | None,
+) -> None:
+    """Register the hash-locked kill-gate idempotently against a persistent db.
+
+    ``probe_registry.name`` is UNIQUE, so a blind re-INSERT on a 2nd evolve run against the
+    SAME db_path raises IntegrityError and aborts the run before any candidate is gated.
+    Mirror the proven continual.py ``_ensure_probe`` pattern: reuse an already-registered
+    same-name probe (the gate spec is fixed + hash-locked) instead of re-registering; only
+    INSERT when absent; if a stored row's lock differs from the in-memory gate spec, raise a
+    clear ``LockTamperError`` rather than an opaque IntegrityError. (PR #64 review)
+    """
+    existing = conn.execute(
+        "SELECT probe_id, lock_sha256 FROM probe_registry WHERE name=?", (probe.name,)
+    ).fetchone()
+    if existing is None:
+        try:
+            probe.register(store, conn, baseline=baseline, subject_ref=subject_ref)
+            return
+        except sqlite3.IntegrityError:
+            # Lost a race to a concurrent registrant — adopt its row below.
+            existing = conn.execute(
+                "SELECT probe_id, lock_sha256 FROM probe_registry WHERE name=?",
+                (probe.name,),
+            ).fetchone()
+    if existing is not None:
+        if existing[1] != lock_hash(probe.gates):
+            raise LockTamperError(
+                f"probe {probe.name}: an existing registration's lock differs from the "
+                "in-memory gate spec (locked gate spec changed)"
+            )
+        probe.probe_id = existing[0]  # adopt the registered id so run()/persist link correctly
+
+
+def _append_harness_engram(store: Any, harness: CodexHarness) -> str:
+    """Append a CodexHarness as a first-class engram and return its engram_id.
+
+    The verdict link (verifies/refutes) targets ``engram_links.dst_id`` which FK-references
+    ``engrams(engram_id)`` — passing a raw harness_id there creates a dangling link (and
+    raises under PRAGMA foreign_keys=ON, as the main engine sets). Persist the harness so the
+    verdict->candidate provenance is a real, traversable link. (PR #64 review)
+    """
+    return store.append(
+        "strategic",
+        f"codex-harness:{harness.harness_id}",
+        harness.to_json(),
+        provenance={"system": "bene.kernel.codex_harness.evolve"},
+        metadata={"harness_id": harness.harness_id, "content_hash": harness.content_hash()},
+    )
 
 
 @dataclass
@@ -87,6 +151,8 @@ def evolve_codex_harness(
     candidates_per_gen: int = 4,
     n_battles: int = 30,
     heldout_manifest: HeldoutManifest | None = None,
+    heldout_eval_fn: HeldoutEvalFn | None = None,
+    archive_parent_epsilon: float = 0.0,
     db_path: str | None = None,
     bus_path: str | None = None,
 ) -> EvolveOutput:
@@ -110,6 +176,20 @@ def evolve_codex_harness(
                             from it; overlap -> VOID (inadmissible eval, not REJECT). On a
                             disjoint run the three hashes (probe_lock / heldout / training)
                             are stamped so the promotion is post-hoc provable.
+        archive_parent_epsilon: open-ended DGM parent selection. Each generation the parent
+                            the Refiner mutates is sampled from the accepted archive (not blindly
+                            the incumbent): with prob (1-epsilon) the best accepted entry, else a
+                            random accepted ancestor — so an older accepted lineage with a lower
+                            immediate win_rate can still be branched from. Default 0.0 = always the
+                            best accepted entry (deterministic, archive-driven, back-compatible). The
+                            win-rate GATE / ``best`` tracking is unchanged. (PR #67 review)
+        heldout_eval_fn:    OPTIONAL held-out runner (Contract E restricted to the manifest
+                            tuples). When given AND a disjoint, non-empty held-out manifest is
+                            in play, the FINAL kill-gate re-evaluates seed + best on the held-out
+                            tuples and gates on THAT fitness — so an ACCEPT stamped with
+                            heldout_manifest_sha256 is provably measured on data the harness never
+                            trained on, not the training window. None -> the gate re-evaluates on
+                            the training window (still a fresh post-selection re-eval). (PR #65 review)
         db_path:            bene.db path for kill-gate persistence; None -> in-memory.
         bus_path:           A2A fleet bus path; None -> default; False -> skip lineage.
     """
@@ -126,12 +206,19 @@ def evolve_codex_harness(
     # Accumulate every tuple any candidate trained on, for the held-out disjointness gate.
     training_tuples: list[list] = list(seed_eval.training_tuples)
 
+    # Persist the seed as a first-class engram so the verdict's verifies/refutes link
+    # targets a real engram (FK-clean), not a dangling raw harness_id. (PR #64 review)
+    seed_engram_id = _append_harness_engram(store, seed)
+
     # Register the hash-locked kill-gate against the seed baseline. The identity
     # self-test (seed vs seed -> uplift 0 -> gate kills) makes the probe admissible.
+    # Idempotent so a 2nd run on the SAME db_path reuses the locked probe (PR #64 review).
     probe = build_killgate()
-    probe.register(store, conn, baseline=seed_fv, subject_ref=seed.harness_id)
+    _register_killgate(probe, store, conn, baseline=seed_fv, subject_ref=seed_engram_id)
 
-    # Open-ended DGM archive — seeded with H0.
+    # Open-ended DGM archive — seeded with H0. Keep a by_id map of evaluated harnesses +
+    # their eval so archive-frontier parent selection can resolve a sampled ancestor back to
+    # the real CodexHarness (refine_fn needs its trajectory/failure_signatures). (PR #67 review)
     archive = DGMArchive()
     archive.add(
         harness_id=seed.harness_id,
@@ -142,6 +229,8 @@ def evolve_codex_harness(
         mutation_kind=None,
         accepted_at_gen=0,
     )
+    by_id: dict[str, tuple[CodexHarness, CodexEvalResult]] = {seed.harness_id: (seed, seed_eval)}
+    parent_rng = random.Random(run_seed)
 
     incumbent, incumbent_eval, incumbent_fv = seed, seed_eval, seed_fv
     best, best_fv = seed, seed_fv
@@ -152,10 +241,21 @@ def evolve_codex_harness(
     total_battles = seed_eval.fitness.battles_played
 
     for gen in range(1, n_gen + 1):
-        # PROPOSE — the Refiner reads the incumbent's trajectory + failures.
-        mutations = refine_fn(
-            incumbent, incumbent_eval.trajectory, incumbent_eval.failure_signatures
-        )
+        # Open-ended DGM: pick the PARENT the Refiner mutates from the accepted archive,
+        # not blindly the current incumbent — so an older accepted ancestor can be branched
+        # from (epsilon-greedy; epsilon=0 -> the best accepted entry). Resolve the sampled
+        # entry back to the real harness + its eval (refine_fn needs the trajectory/failures);
+        # fall back to the incumbent if the entry is not in by_id. The win-rate GATE below
+        # still compares the child against the incumbent, so promotion semantics are
+        # unchanged — only the mutation parent becomes archive-sampled. (PR #67 review)
+        parent_entry = archive.select_parent(parent_rng, epsilon=archive_parent_epsilon)
+        if parent_entry is not None and parent_entry.harness_id in by_id:
+            parent, parent_eval = by_id[parent_entry.harness_id]
+        else:
+            parent, parent_eval = incumbent, incumbent_eval
+
+        # PROPOSE — the Refiner reads the parent's trajectory + failures.
+        mutations = refine_fn(parent, parent_eval.trajectory, parent_eval.failure_signatures)
 
         gen_candidates: list[dict[str, Any]] = []
         # (harness, eval, mutation) of the best child this generation — one optional
@@ -170,48 +270,53 @@ def evolve_codex_harness(
             # reject a broken mutation by RAISING (not just returning None); either way
             # it is a rollback, never an evolve-loop crash (PR #64 review).
             try:
-                child = apply_fn(incumbent, mutation)
+                child = apply_fn(parent, mutation)
                 reject_reason = "unbuildable"
             except Exception as exc:  # noqa: BLE001 — any apply failure is a rollback
                 child = None
                 reject_reason = f"apply_error:{type(exc).__name__}"
             if child is None:
                 rollbacks += 1
-                gen_candidates.append({
-                    "harness_id": None,
-                    "parent_id": incumbent.harness_id,
-                    "mutation_kind": mutation.kind,
-                    "target_path": mutation.target_path,
-                    "applied": False,
-                    "rejected_reason": reject_reason,
-                    "promoted": False,
-                })
+                gen_candidates.append(
+                    {
+                        "harness_id": None,
+                        "parent_id": parent.harness_id,
+                        "mutation_kind": mutation.kind,
+                        "target_path": mutation.target_path,
+                        "applied": False,
+                        "rejected_reason": reject_reason,
+                        "promoted": False,
+                    }
+                )
                 continue
 
             child_eval = eval_fn(child, run_seed, n_battles)
             total_battles += child_eval.fitness.battles_played  # observed, not requested
             training_tuples.extend(child_eval.training_tuples)
+            by_id[child.harness_id] = (child, child_eval)  # resolvable as a future parent
             evaluated += 1
             improved = child_eval.fitness.win_rate > incumbent_fv.win_rate
-            gen_candidates.append({
-                "harness_id": child.harness_id,
-                "parent_id": incumbent.harness_id,
-                "mutation_kind": mutation.kind,
-                "target_path": mutation.target_path,
-                "applied": True,
-                "scores": child_eval.fitness.to_scores(),
-                "win_rate": child_eval.fitness.win_rate,
-                "improved": improved,
-                "archived": improved,
-                "promoted": False,
-            })
+            gen_candidates.append(
+                {
+                    "harness_id": child.harness_id,
+                    "parent_id": parent.harness_id,
+                    "mutation_kind": mutation.kind,
+                    "target_path": mutation.target_path,
+                    "applied": True,
+                    "scores": child_eval.fitness.to_scores(),
+                    "win_rate": child_eval.fitness.win_rate,
+                    "improved": improved,
+                    "archived": improved,
+                    "promoted": False,
+                }
+            )
             # Open-ended DGM: archive EVERY improving candidate, not just the gen-best, so
             # a later generation could branch from any accepted lineage (PR #64 review).
             if improved:
                 archive.add(
                     harness_id=child.harness_id,
                     content_hash=child.content_hash(),
-                    parent_id=incumbent.harness_id,
+                    parent_id=parent.harness_id,
                     generation=child.generation,
                     fitness=child_eval.fitness.to_scores(),
                     mutation_kind=mutation.kind,
@@ -238,16 +343,41 @@ def evolve_codex_harness(
             else:
                 rollbacks += 1  # a built candidate that did not improve -> rolled back
 
-        lineage.append(GenerationLog(
-            gen=gen,
-            candidates=gen_candidates,
-            incumbent_id=incumbent.harness_id,
-            incumbent_scores=incumbent_fv.to_scores(),
-            promoted=promoted,
-        ))
+        lineage.append(
+            GenerationLog(
+                gen=gen,
+                candidates=gen_candidates,
+                incumbent_id=incumbent.harness_id,
+                incumbent_scores=incumbent_fv.to_scores(),
+                promoted=promoted,
+            )
+        )
 
+    # Report vectors (selection-time fitness) — used ONLY for the lineage/report fields
+    # below (best_win_rate / uplift), NOT for the promotion decision.
     best_fv_final = best_fv.replace(gens_completed=n_gen)
-    seed_fv_baseline = seed_fv.replace(gens_completed=0)
+
+    # Persist the winner as a first-class engram so the verdict's verifies/refutes link
+    # targets a real engram (not a dangling raw harness_id). Reuse the seed engram when no
+    # promotion happened (best is seed). (PR #64 review)
+    best_engram_id = seed_engram_id if best is seed else _append_harness_engram(store, best)
+
+    # GATE FITNESS — re-measure the chosen winner + seed FRESH at gate time rather than
+    # gating on the cached selection-time vectors (which carry per-eval RNG noise that
+    # drove selection). Default: a fresh training-window re-eval of best + seed. When a
+    # held-out runner is supplied AND a disjoint non-empty manifest is in play (resolved in
+    # the held-out block below), this is replaced by a held-out re-eval so the ACCEPT
+    # stamped with heldout_manifest_sha256 is provably measured on data the harness never
+    # trained on. (PR #65/#67 review)
+    if best is seed:
+        # No promotion: the identity gate (seed vs seed -> 0 uplift) is exactly the
+        # admissibility self-test; re-eval once and reuse for both sides.
+        _gate_seed_fv = eval_fn(seed, run_seed, n_battles).fitness
+        gate_subject_fv = _gate_seed_fv.replace(gens_completed=n_gen)
+        gate_baseline_fv = _gate_seed_fv.replace(gens_completed=0)
+    else:
+        gate_subject_fv = eval_fn(best, run_seed, n_battles).fitness.replace(gens_completed=n_gen)
+        gate_baseline_fv = eval_fn(seed, run_seed, n_battles).fitness.replace(gens_completed=0)
 
     accepted_kinds = archive.accepted_mutation_kinds()
     # winning_mutation_nonprompt (SPEC DONE #2) must reflect the BEST/promoted LINEAGE only,
@@ -295,25 +425,60 @@ def evolve_codex_harness(
         if len(heldout_manifest) == 0 or len(training_manifest) == 0:
             voided = True
             reason = (
-                "empty_heldout_manifest" if len(heldout_manifest) == 0
+                "empty_heldout_manifest"
+                if len(heldout_manifest) == 0
                 else "empty_training_manifest"
             )
-            killgate_report.update({
-                "verdict": VOID,
-                "probe": PROBE_NAME,
-                "killed_gates": [reason],
-                "gate_results": [],
-                "heldout_overlap_count": 0,
-            })
+            killgate_report.update(
+                {
+                    "verdict": VOID,
+                    "probe": PROBE_NAME,
+                    "killed_gates": [reason],
+                    "gate_results": [],
+                    "heldout_overlap_count": 0,
+                }
+            )
         elif ov:
             voided = True
-            killgate_report.update({
-                "verdict": VOID,
-                "probe": PROBE_NAME,
-                "killed_gates": ["heldout_disjointness"],
-                "gate_results": [],
-                "heldout_overlap_count": len(ov),
-            })
+            killgate_report.update(
+                {
+                    "verdict": VOID,
+                    "probe": PROBE_NAME,
+                    "killed_gates": ["heldout_disjointness"],
+                    "gate_results": [],
+                    "heldout_overlap_count": len(ov),
+                }
+            )
+        elif heldout_eval_fn is not None:
+            # ADMISSIBLE (disjoint, non-empty) + a held-out runner is supplied: re-measure
+            # best + seed on the held-out tuples and gate on THAT fitness, so the ACCEPT
+            # stamped with heldout_manifest_sha256 is provably measured on held-out data, not
+            # the training window. Defend against an adapter silently scoring the training
+            # window: the held-out eval's reported tuples must be a SUBSET of the manifest,
+            # else VOID. (PR #65 review)
+            heldout_tuples_list = [list(t) for t in heldout_manifest.tuples]
+            best_ho = heldout_eval_fn(best, run_seed, heldout_tuples_list)
+            seed_ho = heldout_eval_fn(seed, run_seed, heldout_tuples_list)
+            scored = HeldoutManifest.from_tuples(
+                [tuple(t) for t in (*best_ho.training_tuples, *seed_ho.training_tuples)]
+            )
+            if scored.tuple_hashes() and not scored.tuple_hashes().issubset(
+                heldout_manifest.tuple_hashes()
+            ):
+                voided = True
+                killgate_report.update(
+                    {
+                        "verdict": VOID,
+                        "probe": PROBE_NAME,
+                        "killed_gates": ["heldout_eval_escaped_manifest"],
+                        "gate_results": [],
+                        "heldout_overlap_count": 0,
+                    }
+                )
+            else:
+                gate_subject_fv = best_ho.fitness.replace(gens_completed=n_gen)
+                gate_baseline_fv = seed_ho.fitness.replace(gens_completed=0)
+                killgate_report["scored_on_heldout"] = True
 
     # The voided branch above bypasses probe.run(), which is what normally persists the
     # verdict to eval engrams + experiment_runs. Persist the VOID ourselves so it is a
@@ -330,24 +495,73 @@ def evolve_codex_harness(
             store=store,
             conn=conn,
             probe_id=probe.probe_id,
-            subject_ref=best.harness_id,
+            subject_ref=best_engram_id,
         )
 
-    # Final hash-locked kill-gate verdict: best-ever vs seed (anti-vacuous gens stamp).
+    # Final hash-locked kill-gate verdict: best-ever vs seed scored on the FRESH gate
+    # vectors (a post-selection re-eval — held-out when a runner was supplied — not the
+    # cached selection-time fitness; anti-vacuous gens stamp).
     if not voided:
         verdict = probe.run(
-            subject=best_fv_final,
-            baseline=seed_fv_baseline,
+            subject=gate_subject_fv,
+            baseline=gate_baseline_fv,
             store=store,
             conn=conn,
-            subject_ref=best.harness_id,
+            subject_ref=best_engram_id,
         )
-        killgate_report.update({
-            "verdict": verdict.status,
-            "probe": verdict.probe_name,
-            "killed_gates": verdict.killed_gates,
-            "gate_results": verdict.gate_results,
-        })
+        killgate_report.update(
+            {
+                "verdict": verdict.status,
+                "probe": verdict.probe_name,
+                "killed_gates": verdict.killed_gates,
+                "gate_results": verdict.gate_results,
+            }
+        )
+        # SPEC DONE #2 — a prompt-only winning lineage must NOT promote even when it clears
+        # win_rate_uplift: the contract requires at least one ACCEPTED non-prompt (code/tool/
+        # arch) change. The hash-locked gates don't see mutation kind, so fold the requirement
+        # into the FINAL reported verdict here — a caller promoting on killgate_report["verdict"]
+        # cannot accept a prompt-only run. (PR #67 review)
+        if verdict.status == ACCEPT and not killgate_report["winning_mutation_nonprompt"]:
+            killgate_report["verdict"] = REJECT
+            killgate_report["killed_gates"] = [*verdict.killed_gates, "winning_mutation_nonprompt"]
+            # Persist the downgraded verdict so the durable record matches the report (a
+            # refutes-link, not a verifies-link, on a prompt-only winner).
+            persist_verdict(
+                Verdict(
+                    status=REJECT,
+                    probe_name=PROBE_NAME,
+                    gate_results=[
+                        *verdict.gate_results,
+                        {"name": "winning_mutation_nonprompt", "killed": True},
+                    ],
+                    reason="winning lineage is prompt-only (SPEC DONE #2 requires a non-prompt mutation)",
+                ),
+                store=store,
+                conn=conn,
+                probe_id=probe.probe_id,
+                subject_ref=best_engram_id,
+            )
+
+    # Persist the held-out promotion stamp (the 3 provenance hashes + verdict) as a durable
+    # eval engram so the audit trail survives the process — mirroring eval/heldout.py's
+    # HeldoutGate.score. Emitted on BOTH the disjoint/ACCEPT path and the VOID path (whenever
+    # a manifest was in play), so the run is post-exit provable regardless of outcome. (PR #66 review)
+    if heldout_manifest is not None:
+        stamp = {
+            "best_harness_id": best.harness_id,
+            "verdict": killgate_report["verdict"],
+            "probe_lock_sha256": killgate_report["probe_lock_sha256"],
+            "heldout_manifest_sha256": killgate_report["heldout_manifest_sha256"],
+            "training_manifest_sha256": killgate_report["training_manifest_sha256"],
+        }
+        store.append(
+            "eval",
+            f"heldout-promotion-stamp:{PROBE_NAME}",
+            json.dumps(stamp),
+            provenance={"system": "bene.kernel.codex_harness.evolve"},
+            metadata=stamp,
+        )
 
     # SharedLog lineage (best-effort; non-fatal on bus failure).
     if bus_path is not False:

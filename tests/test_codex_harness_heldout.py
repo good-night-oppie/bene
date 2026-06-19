@@ -19,6 +19,7 @@ from bene.kernel.codex_harness import (
     overlap,
     seed_codex_harness,
 )
+from bene.kernel.codex_harness.killgate import PROBE_NAME
 from bene.kernel.eval.verdict import ACCEPT
 
 VOID = "VOID"
@@ -26,6 +27,7 @@ VOID = "VOID"
 
 # ---------------------------------------------------------------------------
 # HeldoutManifest
+
 
 def test_manifest_hash_is_canonical_and_stable():
     a = HeldoutManifest.from_tuples([("t", 1, "s0"), ("t", 1, "s1")])
@@ -49,13 +51,19 @@ def test_disjoint_and_overlap():
 # ---------------------------------------------------------------------------
 # evolve_codex_harness + held-out gate
 
+
 def test_disjoint_heldout_is_admissible_and_stamps_hashes():
     # mock training tuples are ("train", run_seed, "scenarioN"); a held-out manifest on
     # a different task id stays disjoint -> admissible -> the win-rate gate runs.
     held = HeldoutManifest.from_tuples([("heldout", 11, f"h{i}") for i in range(5)])
     out = evolve_codex_harness(
-        seed_codex_harness(), mock_refiner, mock_codex_eval,
-        n_gen=3, run_seed=11, heldout_manifest=held, bus_path=False,
+        seed_codex_harness(),
+        mock_refiner,
+        mock_codex_eval,
+        n_gen=3,
+        run_seed=11,
+        heldout_manifest=held,
+        bus_path=False,
     )
     r = out.killgate_report
     assert r["verdict"] == ACCEPT
@@ -70,8 +78,13 @@ def test_overlapping_heldout_voids():
     # A held-out manifest that includes a tuple the mock eval trained on -> VOID.
     held = HeldoutManifest.from_tuples([("train", 11, "scenario0"), ("heldout", 11, "h0")])
     out = evolve_codex_harness(
-        seed_codex_harness(), mock_refiner, mock_codex_eval,
-        n_gen=3, run_seed=11, heldout_manifest=held, bus_path=False,
+        seed_codex_harness(),
+        mock_refiner,
+        mock_codex_eval,
+        n_gen=3,
+        run_seed=11,
+        heldout_manifest=held,
+        bus_path=False,
     )
     r = out.killgate_report
     assert r["verdict"] == VOID
@@ -83,8 +96,12 @@ def test_overlapping_heldout_voids():
 
 def test_no_manifest_preserves_original_behavior():
     out = evolve_codex_harness(
-        seed_codex_harness(), mock_refiner, mock_codex_eval,
-        n_gen=3, run_seed=11, bus_path=False,
+        seed_codex_harness(),
+        mock_refiner,
+        mock_codex_eval,
+        n_gen=3,
+        run_seed=11,
+        bus_path=False,
     )
     r = out.killgate_report
     assert r["verdict"] == ACCEPT
@@ -95,11 +112,16 @@ def test_no_manifest_preserves_original_behavior():
 # ---------------------------------------------------------------------------
 # VOID on empty manifests — a held-out gate can't prove anything vacuously (PR #65 review)
 
+
 def test_empty_heldout_manifest_voids():
     """An empty held-out manifest proves nothing -> VOID, never a silent pass."""
     out = evolve_codex_harness(
-        seed_codex_harness(), mock_refiner, mock_codex_eval,
-        n_gen=3, run_seed=11, heldout_manifest=HeldoutManifest.from_tuples([]),
+        seed_codex_harness(),
+        mock_refiner,
+        mock_codex_eval,
+        n_gen=3,
+        run_seed=11,
+        heldout_manifest=HeldoutManifest.from_tuples([]),
         bus_path=False,
     )
     r = out.killgate_report
@@ -110,6 +132,7 @@ def test_empty_heldout_manifest_voids():
 def test_empty_training_manifest_voids():
     """A Contract-E adapter reporting NO training tuples makes disjointness vacuous
     -> VOID (can't prove 'scored on data it never trained on')."""
+
     def no_training_eval(harness, run_seed=0, n_battles=30):
         ev = mock_codex_eval(harness, run_seed, n_battles)
         ev.training_tuples = []  # adapter reports nothing it trained on
@@ -117,8 +140,13 @@ def test_empty_training_manifest_voids():
 
     held = HeldoutManifest.from_tuples([("heldout", 11, f"h{i}") for i in range(5)])
     out = evolve_codex_harness(
-        seed_codex_harness(), mock_refiner, no_training_eval,
-        n_gen=3, run_seed=11, heldout_manifest=held, bus_path=False,
+        seed_codex_harness(),
+        mock_refiner,
+        no_training_eval,
+        n_gen=3,
+        run_seed=11,
+        heldout_manifest=held,
+        bus_path=False,
     )
     r = out.killgate_report
     assert r["verdict"] == VOID
@@ -150,3 +178,115 @@ def test_void_branch_persists_a_verdict(tmp_path):
     runs = con.execute("SELECT summary FROM experiment_runs WHERE kind = 'probe'").fetchall()
     con.close()
     assert any("-> VOID" in (s[0] or "") for s in runs), runs
+
+
+# ---------------------------------------------------------------------------
+# Review follow-ups (PR #65/#66) — regression tests
+
+
+def test_heldout_stamp_hashes_are_persisted_to_eval_ledger(tmp_path):
+    """The three provenance hashes (probe_lock / heldout / training) must be persisted as a
+    durable eval engram, not only stamped into the in-memory killgate_report — else the audit
+    trail dies with the process. Query the DB after a disjoint ACCEPT run. (CID 3440325586)"""
+    import json
+    import sqlite3
+
+    db = str(tmp_path / "stamp.db")
+    held = HeldoutManifest.from_tuples([("heldout", 11, f"h{i}") for i in range(5)])
+    out = evolve_codex_harness(
+        seed_codex_harness(),
+        mock_refiner,
+        mock_codex_eval,
+        n_gen=3,
+        run_seed=11,
+        heldout_manifest=held,
+        db_path=db,
+        bus_path=False,
+    )
+    assert out.killgate_report["verdict"] == ACCEPT
+
+    con = sqlite3.connect(db)
+    rows = con.execute(
+        "SELECT inline_body, metadata FROM engrams WHERE title = ?",
+        (f"heldout-promotion-stamp:{PROBE_NAME}",),
+    ).fetchall()
+    con.close()
+    assert rows, "no held-out promotion-stamp engram persisted"
+    payload = json.loads(rows[0][0])
+    assert payload["heldout_manifest_sha256"] == held.manifest_hash()
+    assert payload["training_manifest_sha256"] == out.killgate_report["training_manifest_sha256"]
+    assert payload["probe_lock_sha256"] == out.killgate_report["probe_lock_sha256"]
+    # the same hashes are queryable through the engram metadata (audit index)
+    meta = json.loads(rows[0][1])
+    assert meta["heldout_manifest_sha256"] == held.manifest_hash()
+
+
+def test_final_gate_scores_heldout_manifest_not_training_window():
+    """When a held-out runner is supplied, the FINAL kill-gate must score the harness on the
+    HELD-OUT manifest, not the training window. A held-out eval where the winner LOSES on
+    held-out (despite winning on the training window) must yield REJECT, not an ACCEPT
+    stamped with heldout_manifest_sha256. (CID 3440325594)"""
+    from bene.kernel.codex_harness import CodexEvalResult
+
+    held = HeldoutManifest.from_tuples([("heldout", 11, f"h{i}") for i in range(5)])
+    held_tuple_set = {tuple(t) for t in held.tuples}
+
+    def heldout_eval(harness, run_seed, tuples):
+        # adapter scores ONLY the manifest tuples; here every candidate is WEAK on held-out
+        # (no uplift) — overfit to the training window. Report the manifest tuples it scored.
+        assert {tuple(t) for t in tuples} == held_tuple_set
+        base = mock_codex_eval(harness, run_seed, 30)
+        return CodexEvalResult(
+            fitness=base.fitness.replace(win_rate=0.40, battles_played=30, gens_completed=0),
+            trajectory=base.trajectory,
+            failure_signatures=[],
+            training_tuples=[list(t) for t in tuples],  # scored on the held-out tuples
+        )
+
+    out = evolve_codex_harness(
+        seed_codex_harness(),
+        mock_refiner,
+        mock_codex_eval,
+        n_gen=3,
+        run_seed=11,
+        heldout_manifest=held,
+        heldout_eval_fn=heldout_eval,
+        bus_path=False,
+    )
+    r = out.killgate_report
+    # training-window selection found a winner (best_win_rate high), but on the HELD-OUT
+    # manifest both seed and best score 0.40 -> 0 uplift -> the gate REJECTS.
+    assert r.get("scored_on_heldout") is True
+    assert r["verdict"] != ACCEPT
+    assert "win_rate_uplift" in r["killed_gates"]
+
+
+def test_heldout_eval_escaping_manifest_voids():
+    """An adapter that silently scores tuples OUTSIDE the held-out manifest must VOID (it
+    cannot prove 'scored on held-out data'), never a silent pass. (CID 3440325594)"""
+    from bene.kernel.codex_harness import CodexEvalResult
+
+    held = HeldoutManifest.from_tuples([("heldout", 11, f"h{i}") for i in range(5)])
+
+    def escaping_eval(harness, run_seed, tuples):
+        base = mock_codex_eval(harness, run_seed, 30)
+        return CodexEvalResult(
+            fitness=base.fitness.replace(win_rate=0.90, battles_played=30, gens_completed=0),
+            trajectory=base.trajectory,
+            failure_signatures=[],
+            training_tuples=[["train", 11, "scenario0"]],  # NOT in the held-out manifest
+        )
+
+    out = evolve_codex_harness(
+        seed_codex_harness(),
+        mock_refiner,
+        mock_codex_eval,
+        n_gen=3,
+        run_seed=11,
+        heldout_manifest=held,
+        heldout_eval_fn=escaping_eval,
+        bus_path=False,
+    )
+    r = out.killgate_report
+    assert r["verdict"] == VOID
+    assert r["killed_gates"] == ["heldout_eval_escaped_manifest"]
