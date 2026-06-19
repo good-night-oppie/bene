@@ -41,30 +41,39 @@ generation, rather than random search. Each candidate is a real, runnable
 harness program in the archive.
 
 ```bash
-bene mh search --benchmark agentic_coding -n 20 -k 4   # 20 generations, 4 candidates each
-bene mh status                                          # how the run is progressing
+bene mh search --benchmark text_classify -n 20 -k 4    # 20 generations, 4 candidates each
+bene mh status <search-agent-id>                        # how the run is progressing
 ```
 
 ### A Pareto frontier, not a single winner
 
-Candidates are scored on multiple objectives and kept as a frontier, so the
-trade-offs stay visible instead of being averaged away:
+Candidates are scored on the benchmark's objectives and kept as a frontier, so
+the trade-offs stay visible instead of being averaged away. The frontier is only
+multi-objective when the benchmark declares more than one objective — a
+single-objective benchmark (e.g. `agentic_coding`, which scores `+pass_rate`
+only) yields a degenerate frontier, so pick a multi-objective benchmark like
+`text_classify` or `math_rag` to inspect real trade-offs:
 
 ```bash
-bene mh frontier                 # the non-dominated set
-bene mh inspect <harness-id>     # one candidate: source, scores, trace summary
+bene mh frontier <search-agent-id>                  # the non-dominated set
+bene mh inspect <search-agent-id> <harness-id>      # one candidate: source, scores, trace summary
 ```
 
-### Promotion behind a held-out kill-gate
+### Promotion behind a kill-gate
 
-This is the load-bearing decision. A candidate is auto-promoted only when it
-passes a probe on a **held-out** slice it never trained against — the same
-falsifiable, hash-locked kill-gate every other claim in BENE faces. A gate the
-incumbent already passes is inadmissible; a candidate that only wins on the
-training tasks never ships.
+This is the load-bearing decision. Auto-promotion is opt-in
+(`config.auto_promote`, off by default). When enabled, a candidate is promoted
+only when an improvement probe ACCEPTs — the same falsifiable, hash-locked
+kill-gate every other claim in BENE faces — gating the candidate's scores
+against the incumbent baseline by a configured delta. A gate the incumbent
+already passes is inadmissible. The auto-gate scores against the search set; if
+you want a held-out test against a slice the candidate never trained on, supply
+the test split yourself (the benchmark exposes `get_test_set()`) before
+promoting.
 
 > The promotion gate is the breeding program's selection pressure. Weaken it and
-> you breed benchmark-memorizers; keep it honest and you breed generalizers.
+> you breed benchmark-memorizers; keep it honest — gate on a held-out split — and
+> you breed generalizers.
 
 ### Discoveries persist
 
