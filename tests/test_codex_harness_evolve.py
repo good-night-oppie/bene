@@ -142,6 +142,54 @@ def test_apply_rejects_syntax_error_mutation():
     assert mock_apply(seed, bad) is None
 
 
+def test_apply_exception_counts_as_rollback():
+    """A real Contract-S apply_fn rejects a broken mutation by RAISING — the loop must
+    treat that as a rollback, not crash (PR #64 review)."""
+    def raising_apply(harness, mutation):
+        if mutation.provenance.get("unbuildable"):
+            raise RuntimeError("cargo build failed")
+        return mock_apply(harness, mutation)
+
+    out = evolve_codex_harness(
+        seed_codex_harness(), mock_refiner, mock_codex_eval,
+        n_gen=2, run_seed=11, apply_fn=raising_apply, bus_path=False,
+    )
+    assert out.killgate_report["rollbacks"] >= 1
+    rejected = [c for g in out.lineage for c in g.candidates if not c.get("applied")]
+    assert any(str(c.get("rejected_reason", "")).startswith("apply_error:") for c in rejected)
+
+
+def test_archive_keeps_every_improving_candidate():
+    """Open-ended DGM: when several children beat the incumbent in one generation,
+    ALL of them land in the archive, not just the promoted gen-best (PR #64 review)."""
+    out = evolve_codex_harness(
+        seed_codex_harness(), mock_refiner, mock_codex_eval,
+        n_gen=1, run_seed=11, bus_path=False,
+    )
+    gen1 = out.lineage[0]
+    archived_in_gen1 = [c for c in gen1.candidates if c.get("archived")]
+    assert len(archived_in_gen1) >= 2  # multiple improvers archived, not just the best
+    # every archived candidate id is actually in the DGM archive
+    archive_ids = {e.harness_id for e in out.archive.entries}
+    assert all(c["harness_id"] in archive_ids for c in archived_in_gen1)
+
+
+def test_total_battles_counts_observed_not_requested():
+    """battles_played from the eval (observed) is summed, not the requested n_battles."""
+    def observed7_eval(harness, run_seed=0, n_battles=30):
+        ev = mock_codex_eval(harness, run_seed, n_battles)
+        ev.fitness.battles_played = 7  # arena ran a different count than requested
+        return ev
+
+    out = evolve_codex_harness(
+        seed_codex_harness(), mock_refiner, observed7_eval,
+        n_gen=2, run_seed=11, n_battles=30, bus_path=False,
+    )
+    # 7 is coprime with 30, so divisibility by 7 proves observed (not requested) counting
+    assert out.killgate_report["total_battles_played"] % 7 == 0
+    assert out.killgate_report["total_battles_played"] > 0
+
+
 def test_prompt_only_refiner_yields_no_nonprompt_winner():
     """A Refiner that only rewrites the prompt cannot satisfy DONE #2."""
     def prompt_only_refiner(harness, trajectory, sigs):

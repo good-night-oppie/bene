@@ -147,7 +147,9 @@ def evolve_codex_harness(
     best, best_fv = seed, seed_fv
     lineage: list[GenerationLog] = []
     rollbacks = 0
-    total_battles = n_battles  # the seed's own evaluation
+    # Count OBSERVED battles (what the arena actually ran), not requested — a real
+    # Contract-E adapter may return a different battles_played than n_battles (PR #64 review).
+    total_battles = seed_eval.fitness.battles_played
 
     for gen in range(1, n_gen + 1):
         # PROPOSE — the Refiner reads the incumbent's trajectory + failures.
@@ -164,8 +166,15 @@ def evolve_codex_harness(
         for mutation in mutations:
             if evaluated >= candidates_per_gen:
                 break
-            # ASSESS — sandbox apply + build/validate.
-            child = apply_fn(incumbent, mutation)
+            # ASSESS — sandbox apply + build/validate. A real Contract-S apply_fn may
+            # reject a broken mutation by RAISING (not just returning None); either way
+            # it is a rollback, never an evolve-loop crash (PR #64 review).
+            try:
+                child = apply_fn(incumbent, mutation)
+                reject_reason = "unbuildable"
+            except Exception as exc:  # noqa: BLE001 — any apply failure is a rollback
+                child = None
+                reject_reason = f"apply_error:{type(exc).__name__}"
             if child is None:
                 rollbacks += 1
                 gen_candidates.append({
@@ -174,15 +183,16 @@ def evolve_codex_harness(
                     "mutation_kind": mutation.kind,
                     "target_path": mutation.target_path,
                     "applied": False,
-                    "rejected_reason": "unbuildable",
+                    "rejected_reason": reject_reason,
                     "promoted": False,
                 })
                 continue
 
             child_eval = eval_fn(child, run_seed, n_battles)
-            total_battles += n_battles
+            total_battles += child_eval.fitness.battles_played  # observed, not requested
             training_tuples.extend(child_eval.training_tuples)
             evaluated += 1
+            improved = child_eval.fitness.win_rate > incumbent_fv.win_rate
             gen_candidates.append({
                 "harness_id": child.harness_id,
                 "parent_id": incumbent.harness_id,
@@ -191,9 +201,22 @@ def evolve_codex_harness(
                 "applied": True,
                 "scores": child_eval.fitness.to_scores(),
                 "win_rate": child_eval.fitness.win_rate,
-                "improved": child_eval.fitness.win_rate > incumbent_fv.win_rate,
+                "improved": improved,
+                "archived": improved,
                 "promoted": False,
             })
+            # Open-ended DGM: archive EVERY improving candidate, not just the gen-best, so
+            # a later generation could branch from any accepted lineage (PR #64 review).
+            if improved:
+                archive.add(
+                    harness_id=child.harness_id,
+                    content_hash=child.content_hash(),
+                    parent_id=incumbent.harness_id,
+                    generation=child.generation,
+                    fitness=child_eval.fitness.to_scores(),
+                    mutation_kind=mutation.kind,
+                    accepted_at_gen=gen,
+                )
             if gen_best is None or child_eval.fitness.win_rate > gen_best[1].fitness.win_rate:
                 gen_best = (child, child_eval, mutation)
 
@@ -201,17 +224,10 @@ def evolve_codex_harness(
         # incumbent; a non-improving best is a rollback (incumbent holds).
         promoted = False
         if gen_best is not None:
-            gb_harness, gb_eval, gb_mut = gen_best
+            gb_harness, gb_eval, _gb_mut = gen_best
             if gb_eval.fitness.win_rate > incumbent_fv.win_rate:
-                archive.add(
-                    harness_id=gb_harness.harness_id,
-                    content_hash=gb_harness.content_hash(),
-                    parent_id=incumbent.harness_id,
-                    generation=gb_harness.generation,
-                    fitness=gb_eval.fitness.to_scores(),
-                    mutation_kind=gb_mut.kind,
-                    accepted_at_gen=gen,
-                )
+                # gen_best is already in the DGM archive (every improver is archived in
+                # the loop above); here we only advance the incumbent to it.
                 for c in gen_candidates:
                     if c.get("harness_id") == gb_harness.harness_id:
                         c["promoted"] = True
