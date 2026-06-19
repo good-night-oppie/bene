@@ -54,11 +54,14 @@ FORBIDDEN_REPO_TOKEN = "EdwardTang"  # bene-site marketing mirror — never cano
 ZH_PRIORITY_DOCS = ("README.md", "cli-reference.md", "integrating-bene.md")
 ZH_HONEST_BANNER = "中文索引 / 翻译中"
 SEMVER_ON_PAGE = re.compile(r"v(\d+\.\d+\.\d+)")
-# Docs cite versions either as a backtick-quoted bare semver (e.g. `0.2.0`) OR as a
-# `v`-prefixed mention in prose (e.g. `bene v0.2.0`). Match BOTH so a stale unquoted
-# version cannot slip past the freshness check; still avoid bare unprefixed x.y.z
-# numbers (a `v` or backtick is required) so incidental numbers in prose don't trip it.
-SEMVER_IN_DOC = re.compile(r"`v?(\d+\.\d+\.\d+)`|(?<![\w.])v(\d+\.\d+\.\d+)(?![\w.])")
+# Docs cite the BENE version either as a backtick-quoted bare semver (e.g. `0.2.0`) OR
+# as a `bene`-anchored mention in prose (e.g. `bene v0.2.0`, `升级到bene v0.2.0`). The
+# second alternative is scoped to a literal `bene` so (a) it still fires when the version
+# is glued to Chinese text — a `\w` left-boundary would reject `升级到v0.2.0` since `\w`
+# is Unicode-aware — and (b) an unrelated dependency version like `Python v3.10.0` /
+# `SQLite v3.45.0` is NOT mistaken for the BENE release and does not fail the gate.
+# (PR #88 review.) A bare unprefixed/unanchored x.y.z is never matched.
+SEMVER_IN_DOC = re.compile(r"`v?(\d+\.\d+\.\d+)`|(?i:bene)\s*v?(\d+\.\d+\.\d+)")
 HTTP_TIMEOUT = 25
 
 # Guard against running from the wrong tree (mirrors build-docs.py's defense):
