@@ -229,15 +229,15 @@ class TierRouter:
     ) -> ModelResponse:
         """Call a model via any provider (local vLLM, OpenAI, or Anthropic)."""
         # Use model_id for API providers (e.g. "gpt-4o"), model_name for local.
-        # Subscription-CLI providers (codex/claude_code/agent_sdk) own their DEFAULT
-        # model: when a config omits an explicit model_id, pass an empty model so the
-        # provider picks its own default — never the bene.yaml KEY (e.g. "gpt-codex"),
-        # which would become `codex exec -m gpt-codex`, an invalid model. (PR #68 review)
+        # When a config omits an explicit model_id, pass an empty model ONLY for providers
+        # that normalize "" to a usable default — that is CodexProvider (-> gpt-5.4-mini),
+        # so its bene.yaml key is never sent as `codex exec -m gpt-codex` (an invalid model,
+        # PR #68 review). claude_code / agent_sdk do NOT normalize empty — they forward it
+        # as the SDK model slug — so for them keep the route name (PR #73 review).
         model_config = self.models.get(model_name)
-        _CLI_PROVIDERS = {"codex", "claude_code", "agent_sdk"}
         if model_config and model_config.model_id:
             actual_model = model_config.model_id
-        elif model_config and model_config.provider in _CLI_PROVIDERS:
+        elif model_config and model_config.provider == "codex":
             actual_model = ""
         else:
             actual_model = model_name

@@ -321,3 +321,24 @@ def test_codex_resolve_exe_unwraps_windows_cmd_shim(tmp_path):
     assert len(resolved) == 2
     assert resolved[1] == str(cli)  # the cli.js the shim wraps
     assert resolved[0].endswith("node") or resolved[0].endswith("node.exe")
+
+
+async def test_agent_sdk_empty_model_id_keeps_route_name():
+    """PR #73 review: only CodexProvider normalizes an empty model to a default. agent_sdk
+    (and claude_code) forward the model as the SDK slug, so a programmatic ModelConfig with
+    no model_id must route the ROUTE NAME — not "" (which would empty ClaudeAgentOptions.model
+    and break direct API users relying on the model key as the slug)."""
+    from bene.router.tier import ModelConfig, TierRouter
+
+    router = TierRouter(models={"sonnet": ModelConfig(name="sonnet", provider="agent_sdk")})
+
+    captured = {}
+
+    class _Spy:
+        async def chat(self, model, **kw):
+            captured["model"] = model
+            raise RuntimeError("stop after capturing the routed model")
+
+    with pytest.raises(RuntimeError):
+        await router._call_model(_Spy(), "sonnet", [{"role": "user", "content": "hi"}], [], {})
+    assert captured["model"] == "sonnet"  # route name preserved, NOT empty
