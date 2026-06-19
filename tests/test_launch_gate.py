@@ -146,14 +146,19 @@ def _doc_versions(text):
     return sorted({m.group(1) or m.group(2) for m in lg.SEMVER_IN_DOC.finditer(text)})
 
 
-def test_doc_semver_regex_catches_backticked_and_unquoted_versions():
+def test_doc_semver_regex_catches_backticked_and_bene_scoped_versions():
     # docs cite `0.2.0` (backtick-quoted bare) ...
     assert _doc_versions("还是 `0.2.0`；") == ["0.2.0"]
     assert _doc_versions("打进 `0.2.1` 包") == ["0.2.1"]
-    # ... and v-prefixed mentions in prose (e.g. `bene v0.2.0`) — PR #86 review:
-    assert _doc_versions("装的是 bene v0.2.0 这个版本") == ["0.2.0"]
     assert _doc_versions("`v0.2.1`") == ["0.2.1"]
-    # ... but NOT bare unprefixed x.y.z numbers (no backtick, no v) — avoid false positives:
+    # ... and `bene`-anchored mentions in prose (PR #86/#88 review) ...
+    assert _doc_versions("装的是 bene v0.2.0 这个版本") == ["0.2.0"]
+    assert _doc_versions("bene 0.2.1 release") == ["0.2.1"]
+    # ... including when glued to Chinese text (a \w left-boundary would miss this):
+    assert _doc_versions("升级到bene v0.2.0") == ["0.2.0"]
+    # ... but NOT an unrelated dependency version (must not block release on a dep bump):
+    assert _doc_versions("requires Python v3.10.0 and SQLite v3.45.0") == []
+    # ... nor a bare unprefixed/unanchored x.y.z number:
     assert _doc_versions("see section 1.2.3 below") == []
 
 
