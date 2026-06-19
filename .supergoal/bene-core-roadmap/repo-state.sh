@@ -52,9 +52,12 @@ cmd_deliverable() {
 
   if in_git_repo && baseline_ok "$baseline"; then
     # 1) tracked change vs baseline: committed, staged, unstaged, or deleted.
+    #    A deleted-since-baseline deliverable also produces a non-empty diff stat,
+    #    so a non-empty stat alone does NOT mean the file is present — require it
+    #    to still exist on disk (or be tracked) before reporting 'present'.
     local stat
     stat="$(git diff --stat "$baseline" -- "$path" 2>/dev/null || true)"
-    if [ -n "$stat" ]; then
+    if [ -n "$stat" ] && { [ -e "$path" ] || [ -n "$(git ls-files -- "$path" 2>/dev/null | head -1 || true)" ]; }; then
       printf 'present — changed vs baseline (%s)\n' \
         "$(printf '%s' "$stat" | tail -1 | sed 's/^[[:space:]]*//')"
       return 0
