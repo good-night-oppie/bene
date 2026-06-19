@@ -119,7 +119,15 @@ class Probe:
         store: EngramStore,
         conn: sqlite3.Connection,
         subject_ref: str | None = None,
+        persist: bool = True,
     ) -> Verdict:
+        """Score subject vs baseline against the locked gates.
+
+        ``persist=False`` returns the computed verdict WITHOUT writing an eval engram /
+        verifies-or-refutes link / experiment_runs row — for callers that fold an extra
+        out-of-band requirement into the FINAL verdict (e.g. the codex evolve loop's
+        non-prompt-mutation rule) and must persist exactly one, non-contradictory record.
+        """
         row = conn.execute(
             "SELECT probe_id, gate_spec, lock_sha256, status, subject_ref"
             " FROM probe_registry WHERE name = ?",
@@ -141,8 +149,11 @@ class Probe:
             )
 
         if status == "inadmissible":
+            inadmissible = Verdict(VOID, self.name, [], reason="probe is inadmissible")
+            if not persist:
+                return inadmissible
             return persist_verdict(
-                Verdict(VOID, self.name, [], reason="probe is inadmissible"),
+                inadmissible,
                 store=store,
                 conn=conn,
                 probe_id=probe_id,
@@ -153,8 +164,11 @@ class Probe:
         baseline_metrics = self.evaluate_fn(baseline)
         results = [evaluate_gate(g, subject_metrics, baseline_metrics) for g in self.gates]
         status_out = REJECT if any(r["killed"] for r in results) else ACCEPT
+        computed = Verdict(status_out, self.name, results)
+        if not persist:
+            return computed
         return persist_verdict(
-            Verdict(status_out, self.name, results),
+            computed,
             store=store,
             conn=conn,
             probe_id=probe_id,

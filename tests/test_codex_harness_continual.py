@@ -461,7 +461,11 @@ def test_multi_episode_isolation_one_mutator():
     assert b1.status == ACCEPTED_SWAPPED
     assert len(mut.swap_history("epA")) == 1
     assert len(mut.swap_history("epB")) == 1
-    assert mut.active_harness_id("epA") != mut.active_harness_id("epB")
+    # Isolation is keyed by episode_id (separate budget + history rows above), NOT by a
+    # random harness id: child ids are now content-addressed (deterministic, PR #64 review),
+    # so the SAME seed + SAME refiner mutation in both episodes legitimately yields the same
+    # reproducible child id. The episodes are still isolated — distinct history rows.
+    assert mut.active_harness_id("epA") == mut.active_harness_id("epB")
 
 
 # ---------------------------------------------------------------------------
@@ -623,7 +627,9 @@ def test_swap_persists_full_mutation_including_rationale(tmp_path):
 
     db = str(tmp_path / "ep.db")
     store, conn = open_eval_db(db)
-    mut = ContinualCodexMutator(store, conn, refine_fn=reasoned_refiner, replay_eval_fn=mock_replay_eval)
+    mut = ContinualCodexMutator(
+        store, conn, refine_fn=reasoned_refiner, replay_eval_fn=mock_replay_eval
+    )
     d = mut.maybe_swap("ep", seed_codex_harness(), {"reason": "t"}, turn=0)
     assert d.swapped
     rec = mut.swap_history("ep")[-1]
@@ -636,14 +642,19 @@ def test_driver_resumes_from_last_swapped_child(tmp_path):
     else the next swap re-forks from H0-seed and records the wrong active harness."""
     db = str(tmp_path / "ep.db")
     kw = dict(
-        run_seed=1, episode_id="ep", db_path=db, trigger_turns=[0],
-        max_swaps_per_episode=4, min_turns_between_swaps=0, bus_path=False,
+        run_seed=1,
+        episode_id="ep",
+        db_path=db,
+        trigger_turns=[0],
+        max_swaps_per_episode=4,
+        min_turns_between_swaps=0,
+        bus_path=False,
     )
     out1 = run_continual_episode(seed_codex_harness(), strong_refiner, mock_replay_eval, **kw)
     assert out1.n_swaps >= 1
     last_child = out1.swaps[-1]["to_harness_id"]
     out2 = run_continual_episode(seed_codex_harness(), strong_refiner, mock_replay_eval, **kw)
-    new = out2.swaps[out1.n_swaps:]
+    new = out2.swaps[out1.n_swaps :]
     assert new, "resume should still have swap budget"
     assert new[0]["from_harness_id"] == last_child  # forked from recovered child…
     assert new[0]["from_harness_id"] != "H0-seed"  # …NOT the seed

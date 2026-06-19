@@ -11,6 +11,7 @@ content hash + parent so the accepted genealogy is auditable and rollback-able.
 
 from __future__ import annotations
 
+import random
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
@@ -65,6 +66,28 @@ class DGMArchive:
         if not self.entries:
             return None
         return max(self.entries, key=lambda e: e.fitness.get(objective, float("-inf")))
+
+    def select_parent(
+        self,
+        rng: random.Random,
+        *,
+        objective: str = "win_rate",
+        epsilon: float = 0.25,
+    ) -> ArchiveEntry | None:
+        """Sample a parent from the accepted archive for open-ended search.
+
+        Greedy single-incumbent hill-climbing can never re-select an older accepted
+        ancestor with a lower immediate win_rate, so the archive becomes passive
+        bookkeeping. Epsilon-greedy over the accepted entries restores open-endedness:
+        with prob ``(1 - epsilon)`` return the current ``best()`` (exploit), else a random
+        accepted entry (explore a non-incumbent branch). Deterministic given *rng* so the
+        run stays reproducible. (PR #67 review)
+        """
+        if not self.entries:
+            return None
+        if rng.random() < epsilon:
+            return rng.choice(self.entries)
+        return self.best(objective)
 
     def lineage_of(self, harness_id: str) -> list[ArchiveEntry]:
         """Walk parent pointers from *harness_id* back to the seed (root-last)."""
