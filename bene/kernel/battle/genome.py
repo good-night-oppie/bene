@@ -7,13 +7,18 @@ fitness function lives here as a drop-in until Lane A3 lands.
 from __future__ import annotations
 
 import json
+import math
 import random
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 
 import ulid
 
-# Strategies in ascending mock-fitness order (mutation can "upgrade")
-_STRATEGIES = ["max_damage", "type_aware", "llm_freeform"]
+# Canonical strategy set — mirrors adx_showdown.harness.KNOWN_STRATEGIES.
+# Ordered by approximate mock-fitness level so upgrade mutation moves right.
+_STRATEGIES = [
+    "random", "max_damage", "heuristic", "balance",
+    "hyper_offense", "stall", "trick_room", "llm_freeform",
+]
 
 
 @dataclass
@@ -22,7 +27,7 @@ class BattleHarness:
 
     harness_id: str
     system_prompt: str
-    move_selection_strategy: str  # 'max_damage' | 'type_aware' | 'llm_freeform'
+    move_selection_strategy: str  # must be one of _STRATEGIES
     tool_policy: dict  # {"allow_switch": bool, "lookahead_depth": int}
     params: dict  # float/int/str knobs bene perturbs
 
@@ -43,6 +48,24 @@ class BattleHarness:
     def from_json(cls, s: str) -> BattleHarness:
         return cls.from_dict(json.loads(s))
 
+    @classmethod
+    def from_adx_dict(cls, d: dict) -> BattleHarness:
+        """Convert from a canonical adx_showdown BattleHarness dict / .model_dump().
+
+        Accepts both Pydantic-model dicts (tool_policy may be a nested dict or
+        ToolPolicy object) and plain dicts.  Preserves all params as-is.
+        """
+        tp = d.get("tool_policy") or {}
+        if hasattr(tp, "model_dump"):
+            tp = tp.model_dump()
+        return cls(
+            harness_id=d["harness_id"],
+            system_prompt=d.get("system_prompt", ""),
+            move_selection_strategy=d.get("move_selection_strategy", "max_damage"),
+            tool_policy=dict(tp),
+            params=dict(d.get("params") or {}),
+        )
+
     # ------------------------------------------------------------------
     # Mutation
 
@@ -51,7 +74,8 @@ class BattleHarness:
 
         Perturbation rules:
         - Each float param is nudged by Gaussian noise (σ = 0.08) with
-          probability *mutation_rate*.
+          probability *mutation_rate*.  Non-finite results fall back to the
+          original value (guards against NaN/inf propagation).
         - lookahead_depth is incremented or decremented by 1 with prob 0.15.
         - move_selection_strategy is upgraded one level with prob 0.20, or
           randomised with prob 0.05.
@@ -60,7 +84,12 @@ class BattleHarness:
         new_params = {}
         for k, v in self.params.items():
             if isinstance(v, float) and rng.random() < mutation_rate:
-                new_params[k] = max(0.0, min(1.0, v + rng.gauss(0.0, 0.08)))
+                candidate = v + rng.gauss(0.0, 0.08)
+                new_params[k] = (
+                    max(0.0, min(1.0, candidate))
+                    if math.isfinite(candidate)
+                    else v
+                )
             else:
                 new_params[k] = v
 
@@ -142,16 +171,20 @@ CONTRACT3_OBJECTIVES: dict[str, str] = {
 
 
 def seed_harness() -> BattleHarness:
-    """Canonical H0 seed — the baseline every evolved harness must beat."""
+    """Canonical H0 seed — mirrors adx_showdown.harness.seed_harness()."""
     return BattleHarness(
-        harness_id="seed-h0",
+        harness_id="H0-seed",
         system_prompt=(
-            "You are a competitive Pokémon battle agent. "
+            "You are a competitive Pokémon battler. "
             "Select moves that maximise immediate damage output."
         ),
         move_selection_strategy="max_damage",
         tool_policy={"allow_switch": True, "lookahead_depth": 1},
-        params={"aggression": 0.5, "switch_threshold": 0.3, "stall_penalty": 0.1},
+        params={
+            "aggression": 1.0,
+            "switch_threshold_hp": 0.25,
+            "risk_tolerance": 0.5,
+        },
     )
 
 
@@ -159,7 +192,7 @@ def mock_fitness(harness: BattleHarness, run_seed: int = 0) -> FitnessVector:
     """Deterministic mock fitness — stands in for Lane A3's multi_dim_fitness.
 
     Encodes three real signal sources so the mock can produce measurable uplift:
-    - move_selection_strategy: max_damage < type_aware < llm_freeform
+    - move_selection_strategy: rough tier ordering from _STRATEGIES
     - params.aggression: optimum ~0.65, penalised at extremes
     - tool_policy.lookahead_depth: each extra level costs turn_efficiency
 
@@ -169,10 +202,14 @@ def mock_fitness(harness: BattleHarness, run_seed: int = 0) -> FitnessVector:
     """
     rng = random.Random(run_seed ^ hash(harness.harness_id))
 
-    base_win = {"max_damage": 0.46, "type_aware": 0.55, "llm_freeform": 0.62}.get(
-        harness.move_selection_strategy, 0.50
-    )
-    aggression = float(harness.params.get("aggression", 0.5))
+    _STRATEGY_BASE = {
+        "random": 0.35, "max_damage": 0.46, "heuristic": 0.52,
+        "balance": 0.55, "hyper_offense": 0.57, "stall": 0.56,
+        "trick_room": 0.53, "llm_freeform": 0.62,
+    }
+    base_win = _STRATEGY_BASE.get(harness.move_selection_strategy, 0.50)
+
+    aggression = float(harness.params.get("aggression", 1.0))
     # bell-curve bonus peaking at aggression=0.65
     base_win += 0.08 * (1.0 - abs(aggression - 0.65) / 0.65)
     win_rate = min(1.0, max(0.0, base_win + rng.gauss(0.0, 0.03)))
@@ -182,8 +219,8 @@ def mock_fitness(harness: BattleHarness, run_seed: int = 0) -> FitnessVector:
     lookahead = int(harness.tool_policy.get("lookahead_depth", 1))
     turn_eff = max(0.05, 1.0 - (lookahead - 1) * 0.06 + rng.gauss(0.0, 0.02))
 
-    stall = float(harness.params.get("stall_penalty", 0.1))
-    no_forfeit = min(1.0, max(0.0, 0.80 + stall * 0.25 + rng.gauss(0.0, 0.02)))
+    risk = float(harness.params.get("risk_tolerance", 0.5))
+    no_forfeit = min(1.0, max(0.0, 0.80 + risk * 0.25 + rng.gauss(0.0, 0.02)))
 
     return FitnessVector(
         win_rate=win_rate,

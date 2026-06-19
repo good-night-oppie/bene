@@ -12,6 +12,7 @@ from bene.kernel.battle.genome import (
     BattleHarness,
     FitnessVector,
     CONTRACT3_OBJECTIVES,
+    _STRATEGIES as KNOWN_STRATEGIES,
     mock_fitness,
     seed_harness,
 )
@@ -21,6 +22,7 @@ __all__ = [
     "BattleHarness",
     "FitnessVector",
     "CONTRACT3_OBJECTIVES",
+    "KNOWN_STRATEGIES",
     "mock_fitness",
     "seed_harness",
     "EvolveOutput",
