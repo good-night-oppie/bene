@@ -282,6 +282,10 @@ const Hero = () => (
       <p className="text-xl md:text-2xl lg:text-3xl xl:text-4xl text-bene-muted max-w-3xl lg:max-w-4xl xl:max-w-5xl leading-snug mb-12 lg:mb-16">
         For builders who ran LangGraph or CrewAI in prod and learned that scoring an eval is not the same as blocking a bad ship.
       </p>
+      <p className="text-sm text-bene-muted leading-relaxed mb-10 max-w-3xl border-l-2 border-bene-dim pl-4">
+        Honest scope: the agent loop is turnkey — engrams and the event journal write on every run, no wiring. The gate, memory consolidation, skills, and evolution are real parts you wire yourself, not chained together for you.{' '}
+        <a href="docs/integrating-bene.html" className="text-bene-accent hover:underline">The honest map →</a>
+      </p>
       <div className="grid md:grid-cols-2 gap-12 items-start mb-16">
         <div>
           <p className="text-lg leading-relaxed mb-6">
@@ -296,6 +300,7 @@ const Hero = () => (
           <Pill>30 seconds to first run: init, smoke, grep your agent's memory</Pill>
           <Pill>one bene.db, no cloud, no keys</Pill>
           <Pill>works inside Claude Code, Cursor, Aider</Pill>
+          <p className="text-[11px] text-bene-dim font-mono mt-1">30s from a real bene v0.2.1 run — output unedited</p>
         </div>
       </div>
       <Terminal>
@@ -311,10 +316,7 @@ const Hero = () => (
         <br />
         sqlite3 /tmp/bene-demo-*/story.db <span className="text-[#A3E635]">"SELECT tier, kind, substr(title,1,60) FROM engrams ORDER BY created_at DESC LIMIT 5;"</span>
       </Terminal>
-      <div className="mt-8 pt-6 border-t border-bene-dim space-y-4">
-        <p className="text-sm text-bene-muted leading-relaxed max-w-3xl">
-          Honest scope, up front: the agent loop is turnkey — engrams and the event journal write on every run, no wiring. The gate, memory consolidation, skills, and evolution are real parts you wire yourself, not chained together for you. <a href="docs/integrating-bene.html" className="text-bene-accent hover:underline">The honest map →</a>
-        </p>
+      <div className="mt-8 pt-6 border-t border-bene-dim">
         <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
           <p className="text-xs text-bene-muted leading-snug">
             Or hand BENE to your agent in one URL — fetch the skill, fetch the index, your agent runs BENE itself.

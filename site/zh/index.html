@@ -271,6 +271,10 @@ const Hero = () => (
       <p className="text-xl md:text-2xl lg:text-3xl xl:text-4xl text-bene-muted max-w-3xl lg:max-w-4xl xl:max-w-5xl leading-snug mb-12 lg:mb-16">
         写给已经在线上跑过 LangGraph、CrewAI、AutoGen 的工程师：你们最清楚，eval 跑通是一回事，真拦住一次上线翻车，完全是另一回事。
       </p>
+      <p className="text-sm text-bene-muted leading-relaxed mb-10 max-w-3xl border-l-2 border-bene-dim pl-4">
+        先把话讲清楚：agent loop 开箱即用——engram 和事件日志每次 run 都在写，不用接。gate、记忆 consolidation、skills、evolve 是给你的真家伙，得你自己拼，没替你接成一条线。{' '}
+        <a href="docs/integrating-bene.html" className="text-bene-accent hover:underline">完整的诚实地图 →</a>
+      </p>
       <div className="grid md:grid-cols-2 gap-12 items-start mb-16">
         <div>
           <p className="text-lg leading-relaxed mb-6">
@@ -285,6 +289,7 @@ const Hero = () => (
           <Pill>30 秒上手：init、跑通、grep 出 agent 的记忆</Pill>
           <Pill>一份 bene.db，不上云、不要 API key</Pill>
           <Pill>能塞进 Claude Code / Cursor / Aider</Pill>
+          <p className="text-[11px] text-bene-dim font-mono mt-1">30 秒来自真实 bene v0.2.1 run — 输出未编辑</p>
         </div>
       </div>
       <Terminal>
@@ -300,10 +305,7 @@ const Hero = () => (
         <br />
         sqlite3 /tmp/bene-demo-*/story.db <span className="text-[#A3E635]">"SELECT tier, kind, substr(title,1,60) FROM engrams ORDER BY created_at DESC LIMIT 5;"</span>
       </Terminal>
-      <div className="mt-8 pt-6 border-t border-bene-dim space-y-4">
-        <p className="text-sm text-bene-muted leading-relaxed max-w-3xl">
-          先把话讲清楚：agent loop 开箱即用——engram 和事件日志每次 run 都在写，不用接。gate、记忆 consolidation、skills、evolve 是给你的真家伙，得你自己拼，没替你接成一条线。<a href="docs/integrating-bene.html" className="text-bene-accent hover:underline">完整的诚实地图 →</a>
-        </p>
+      <div className="mt-8 pt-6 border-t border-bene-dim">
         <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
           <p className="text-xs text-bene-muted leading-snug">
             或者把 BENE 交给你的 agent — 一个 URL，agent 自己抓 skill 和 index，自己跑 BENE。
