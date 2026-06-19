@@ -374,15 +374,36 @@ def evolve_codex_harness(
     # the held-out block below), this is replaced by a held-out re-eval so the ACCEPT
     # stamped with heldout_manifest_sha256 is provably measured on data the harness never
     # trained on. (PR #65/#67 review)
-    if best is seed:
-        # No promotion: the identity gate (seed vs seed -> 0 uplift) is exactly the
-        # admissibility self-test; re-eval once and reuse for both sides.
-        _gate_seed_fv = eval_fn(seed, run_seed, n_battles).fitness
-        gate_subject_fv = _gate_seed_fv.replace(gens_completed=n_gen)
-        gate_baseline_fv = _gate_seed_fv.replace(gens_completed=0)
-    else:
-        gate_subject_fv = eval_fn(best, run_seed, n_battles).fitness.replace(gens_completed=n_gen)
-        gate_baseline_fv = eval_fn(seed, run_seed, n_battles).fitness.replace(gens_completed=0)
+    #
+    # Deferred until AFTER the held-out admissibility (empty/overlap) checks below so an
+    # invalid manifest yields a clean VOID rather than risking a crash/side-effect during a
+    # superfluous gate re-eval. Returns the (subject_fv, baseline_fv) pair AND the training
+    # tuples the fresh eval(s) tuned on, so those tuples can be folded into the held-out
+    # disjointness check + the stamped training_manifest_sha256 (the gate re-eval may use a
+    # different CRN window than search). (PR #83 review)
+    def _fresh_training_gate() -> tuple[CodexFitness, CodexFitness, list[list]]:
+        if best is seed:
+            # No promotion: the identity gate (seed vs seed -> 0 uplift) is exactly the
+            # admissibility self-test; re-eval once and reuse for both sides.
+            ev = eval_fn(seed, run_seed, n_battles)
+            return (
+                ev.fitness.replace(gens_completed=n_gen),
+                ev.fitness.replace(gens_completed=0),
+                list(ev.training_tuples),
+            )
+        best_ev = eval_fn(best, run_seed, n_battles)
+        seed_ev = eval_fn(seed, run_seed, n_battles)
+        return (
+            best_ev.fitness.replace(gens_completed=n_gen),
+            seed_ev.fitness.replace(gens_completed=0),
+            [*best_ev.training_tuples, *seed_ev.training_tuples],
+        )
+
+    gate_subject_fv: CodexFitness
+    gate_baseline_fv: CodexFitness
+    if heldout_manifest is None:
+        # No held-out manifest: gate on a fresh training-window re-eval (no manifest stamps).
+        gate_subject_fv, gate_baseline_fv, _ = _fresh_training_gate()
 
     accepted_kinds = archive.accepted_mutation_kinds()
     # winning_mutation_nonprompt (SPEC DONE #2) must reflect the BEST/promoted LINEAGE only,
@@ -417,82 +438,99 @@ def evolve_codex_harness(
     # provable as "scored on data it never trained on".
     voided = False
     if heldout_manifest is not None:
+
+        def _void(killed: str, overlap_count: int) -> None:
+            nonlocal voided
+            voided = True
+            killgate_report.update(
+                {
+                    "verdict": VOID,
+                    "probe": PROBE_NAME,
+                    "killed_gates": [killed],
+                    "gate_results": [],
+                    "heldout_overlap_count": overlap_count,
+                }
+            )
+
+        def _stamp_training(tuples: list[list]) -> HeldoutManifest:
+            tm = HeldoutManifest.from_tuples([tuple(t) for t in tuples])
+            killgate_report["training_manifest_sha256"] = tm.manifest_hash()
+            return tm
+
         training_manifest = HeldoutManifest.from_tuples([tuple(t) for t in training_tuples])
         killgate_report["probe_lock_sha256"] = lock_hash(KILLGATE_GATES)
         killgate_report["heldout_manifest_sha256"] = heldout_manifest.manifest_hash()
         killgate_report["training_manifest_sha256"] = training_manifest.manifest_hash()
         ov = overlap(heldout_manifest, training_manifest)
-        # A held-out gate can only prove "scored on data it never trained on" when BOTH
-        # sets are non-empty: an empty held-out manifest proves nothing, and an empty
-        # training manifest (e.g. a Contract-E adapter that reports no training tuples)
-        # makes disjointness vacuously true. Either case is inadmissible -> VOID, never a
-        # silent pass (PR #65 review).
+        # ADMISSIBILITY (PR #65 + PR #83 review) — run BEFORE any fresh gate-time eval_fn
+        # call so an invalid manifest yields a clean VOID rather than risking a crash/side
+        # effect during a superfluous gate re-eval. A held-out gate can only prove "scored
+        # on data it never trained on" when BOTH sets are non-empty: an empty held-out
+        # manifest proves nothing, and an empty training manifest (e.g. a Contract-E adapter
+        # that reports no training tuples) makes disjointness vacuously true. Either case is
+        # inadmissible -> VOID, never a silent pass.
         if len(heldout_manifest) == 0 or len(training_manifest) == 0:
-            voided = True
-            reason = (
+            _void(
                 "empty_heldout_manifest"
                 if len(heldout_manifest) == 0
-                else "empty_training_manifest"
-            )
-            killgate_report.update(
-                {
-                    "verdict": VOID,
-                    "probe": PROBE_NAME,
-                    "killed_gates": [reason],
-                    "gate_results": [],
-                    "heldout_overlap_count": 0,
-                }
+                else "empty_training_manifest",
+                0,
             )
         elif ov:
-            voided = True
-            killgate_report.update(
-                {
-                    "verdict": VOID,
-                    "probe": PROBE_NAME,
-                    "killed_gates": ["heldout_disjointness"],
-                    "gate_results": [],
-                    "heldout_overlap_count": len(ov),
-                }
-            )
+            _void("heldout_disjointness", len(ov))
         elif heldout_eval_fn is not None:
             # ADMISSIBLE (disjoint, non-empty) + a held-out runner is supplied: re-measure
             # best + seed on the held-out tuples and gate on THAT fitness, so the ACCEPT
             # stamped with heldout_manifest_sha256 is provably measured on held-out data, not
             # the training window. Defend against an adapter silently scoring the training
-            # window: the held-out eval's reported tuples must be a SUBSET of the manifest,
-            # else VOID. (PR #65 review)
+            # window: each side's reported tuples must EQUAL the manifest, else VOID. (PR #65
+            # + PR #83 review)
             heldout_tuples_list = [list(t) for t in heldout_manifest.tuples]
             best_ho = heldout_eval_fn(best, run_seed, heldout_tuples_list)
             seed_ho = heldout_eval_fn(seed, run_seed, heldout_tuples_list)
-            scored = HeldoutManifest.from_tuples(
-                [tuple(t) for t in (*best_ho.training_tuples, *seed_ho.training_tuples)]
-            )
-            scored_hashes = scored.tuple_hashes()
-            # A held-out ACCEPT may only be stamped if the runner PROVABLY scored on the
-            # held-out manifest: it must report >0 scored tuples (else we cannot prove it
-            # didn't silently score the training window) AND every scored tuple must be a
-            # subset of the manifest (else it escaped to off-manifest data). Either failure
-            # -> VOID, not a vacuous ACCEPT. (PR #65 + PR #80 review)
-            if not scored_hashes or not scored_hashes.issubset(heldout_manifest.tuple_hashes()):
-                voided = True
-                killed = (
-                    "heldout_eval_scored_no_tuples"
-                    if not scored_hashes
-                    else "heldout_eval_escaped_manifest"
-                )
-                killgate_report.update(
-                    {
-                        "verdict": VOID,
-                        "probe": PROBE_NAME,
-                        "killed_gates": [killed],
-                        "gate_results": [],
-                        "heldout_overlap_count": 0,
-                    }
-                )
+            manifest_hashes = heldout_manifest.tuple_hashes()
+            best_scored = HeldoutManifest.from_tuples(
+                [tuple(t) for t in best_ho.training_tuples]
+            ).tuple_hashes()
+            seed_scored = HeldoutManifest.from_tuples(
+                [tuple(t) for t in seed_ho.training_tuples]
+            ).tuple_hashes()
+            # A held-out ACCEPT may only be stamped if the runner PROVABLY scored on the WHOLE
+            # held-out manifest: EACH side (best AND seed) must report >0 scored tuples (else
+            # we cannot prove it didn't silently score the training window) AND each side's
+            # scored set must EQUAL the manifest — a proper subset would let a winner scored on
+            # one easy held-out tuple still ACCEPT with the full heldout_manifest_sha256 stamp,
+            # and an escaped tuple would mean it left the manifest. Any failure -> VOID, not a
+            # vacuous ACCEPT. (PR #65 + PR #80 + PR #83 review)
+            if not best_scored or not seed_scored:
+                _void("heldout_eval_scored_no_tuples", 0)
+            elif best_scored != manifest_hashes or seed_scored != manifest_hashes:
+                # Escaped off-manifest OR covered only a proper subset of the manifest.
+                _void("heldout_eval_escaped_manifest", 0)
+            # Anti-vacuous baseline: a held-out comparison with zero OBSERVED battles on
+            # EITHER side (an arena timeout / empty baseline window) cannot ground the final
+            # verdict — the subject-only battles_played_gt0 gate would not catch a baseline
+            # with 0 observations. VOID before using these vectors. (PR #83 review)
+            elif best_ho.fitness.battles_played == 0 or seed_ho.fitness.battles_played == 0:
+                _void("heldout_eval_no_battles", 0)
             else:
                 gate_subject_fv = best_ho.fitness.replace(gens_completed=n_gen)
                 gate_baseline_fv = seed_ho.fitness.replace(gens_completed=0)
                 killgate_report["scored_on_heldout"] = True
+        else:
+            # ADMISSIBLE (disjoint, non-empty) but NO held-out runner: gate on a fresh
+            # training-window re-eval. The gate re-eval may tune on a different CRN window
+            # than search (incl. a held-out tuple), so union ITS training tuples into the
+            # disjointness check + the stamped training_manifest_sha256 — else an audit hash
+            # omits data the gate-time winner was evaluated on, and a held-out tuple could
+            # leak through unchecked. (PR #83 review)
+            gate_subject_fv, gate_baseline_fv, gate_tuples = _fresh_training_gate()
+            training_manifest = _stamp_training([*training_tuples, *gate_tuples])
+            ov2 = overlap(heldout_manifest, training_manifest)
+            if len(training_manifest) == 0:
+                _void("empty_training_manifest", 0)
+            elif ov2:
+                _void("heldout_disjointness", len(ov2))
 
     # The voided branch above bypasses probe.run(), which is what normally persists the
     # verdict to eval engrams + experiment_runs. Persist the VOID ourselves so it is a

@@ -505,17 +505,25 @@ def test_content_hash_distinguishes_harness_ref():
     assert a.content_hash() != b.content_hash()
 
 
-def test_from_adx_dict_rejects_ref_without_resources():
-    """A harness_ref with no loaded resources would content-address by head alone (collision
-    risk) — from_adx_dict must reject it. (CID 3440239268)"""
-    with pytest.raises(ValueError, match="resources is empty"):
-        CodexHarness.from_adx_dict(
-            {
-                "harness_id": "h",
-                "system_prompt": "p",
-                "harness_ref": "/harnesses/X",  # set but resources omitted
-            }
-        )
+def test_from_adx_dict_keeps_ref_only_loadable():
+    """The documented real ADX wire form uses harness_ref AS the resource dir without
+    inlining resources. Since content_hash now folds harness_ref (no collision), from_adx_dict
+    must keep harness_ref-only dicts loadable rather than rejecting them. (CID 3442632810)"""
+    h = CodexHarness.from_adx_dict(
+        {
+            "harness_id": "h",
+            "system_prompt": "p",
+            "harness_ref": "/harnesses/X",  # the resource dir; resources not inlined
+        }
+    )
+    assert h.harness_ref == "/harnesses/X"
+    assert h.resources == {}
+    # two ref-only harnesses pointing at DISTINCT dirs still get distinct content hashes
+    # (content_hash folds harness_ref) — the collision the old guard feared cannot occur.
+    other = CodexHarness.from_adx_dict(
+        {"harness_id": "h", "system_prompt": "p", "harness_ref": "/harnesses/Y"}
+    )
+    assert h.content_hash() != other.content_hash()
 
 
 def test_archive_select_parent_can_branch_off_non_incumbent():
