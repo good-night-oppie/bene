@@ -142,9 +142,12 @@ class TierRouter:
                 max_context=mcfg.get("max_context", 32768),
                 use_for=mcfg.get("use_for", []),
                 provider=provider,
-                # codex owns its default model; an omitted model_id must stay EMPTY so
-                # the provider picks gpt-5.4-mini, not the bene.yaml key as `-m <key>`.
-                model_id=mcfg.get("model_id", "" if provider == "codex" else name),
+                # codex / claude_code own their default model; an omitted model_id must stay
+                # EMPTY so the provider picks its default (codex -> gpt-5.4-mini; claude_code
+                # drops --model so the Claude CLI default applies), not the bene.yaml key as
+                # `-m <key>` / `--model <key>` (an invalid slug). agent_sdk keeps the key — it
+                # forwards model into ClaudeAgentOptions with no omit-guard (PR #73 / #80 review).
+                model_id=mcfg.get("model_id", "" if provider in ("codex", "claude_code") else name),
                 api_key_env=mcfg.get("api_key_env", ""),
                 timeout=float(mcfg.get("timeout", 300.0)),
                 cwd=mcfg.get("cwd"),
