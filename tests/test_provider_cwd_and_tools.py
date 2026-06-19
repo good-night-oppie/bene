@@ -259,3 +259,40 @@ def test_codex_wired_into_tier_router():
     client = router.clients["gpt-codex"]
     assert isinstance(client, CodexProvider)
     assert client.model_id == "gpt-5.4-mini"
+
+
+async def test_codex_config_without_model_id_uses_provider_default(tmp_path):
+    """PR #68 review: a `provider: codex` config that OMITS model_id must NOT default to
+    the bene.yaml key. from_config keeps model_id EMPTY, and routing passes "" to chat()
+    so CodexProvider uses its own default (gpt-5.4-mini) — never `codex exec -m gpt-codex`,
+    which is an invalid model."""
+    import yaml
+
+    from bene.router.tier import TierRouter
+
+    cfgfile = tmp_path / "bene.yaml"
+    cfgfile.write_text(
+        yaml.safe_dump(
+            {
+                "models": {"gpt-codex": {"provider": "codex", "use_for": ["code_generation"]}},
+                "router": {"fallback_model": "gpt-codex", "max_retries": 1},
+            }
+        )
+    )
+    router = TierRouter.from_config(str(cfgfile))
+    # from_config keeps the omitted model_id EMPTY (not the key "gpt-codex")…
+    assert router.models["gpt-codex"].model_id == ""
+    # …and the constructed CodexProvider falls back to the cheapest coding model.
+    assert router.clients["gpt-codex"].model_id == "gpt-5.4-mini"
+
+    # routing resolves the model to "" so the provider picks its default, not the key.
+    captured = {}
+
+    class _Spy:
+        async def chat(self, model, **kw):
+            captured["model"] = model
+            raise RuntimeError("stop after capturing the routed model")
+
+    with pytest.raises(RuntimeError):
+        await router._call_model(_Spy(), "gpt-codex", [{"role": "user", "content": "hi"}], [], {})
+    assert captured["model"] == ""  # empty -> provider default, NOT "gpt-codex"
