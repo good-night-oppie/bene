@@ -412,3 +412,43 @@ async def test_fallback_recomputes_actual_model_for_codex_fallback():
     assert seen[0] == ("primary", "sonnet")
     # attempt 2: fell back to codex -> recomputed to "" (codex default), NOT the stale "sonnet"
     assert seen[1] == ("codex-fallback", "")
+
+
+async def test_claude_code_yaml_without_model_id_uses_cli_default(tmp_path):
+    """PR #80 review: a `provider: claude_code` YAML route that OMITS model_id must NOT
+    materialize the bene.yaml key as model_id. from_config keeps it EMPTY (like codex), and
+    routing passes "" to chat() so ClaudeCodeProvider drops --model and the Claude CLI picks
+    its default — never `claude --model <route-key>` (an invalid slug). agent_sdk still keeps
+    the route key (it has no empty-model omit-guard)."""
+    import yaml
+
+    from bene.router.tier import TierRouter
+
+    cfgfile = tmp_path / "bene.yaml"
+    cfgfile.write_text(
+        yaml.safe_dump(
+            {
+                "models": {
+                    "cc": {"provider": "claude_code", "use_for": ["code_generation"]},
+                    "sonnet": {"provider": "agent_sdk"},
+                },
+                "router": {"fallback_model": "cc", "max_retries": 1},
+            }
+        )
+    )
+    router = TierRouter.from_config(str(cfgfile))
+    # from_config keeps the omitted claude_code model_id EMPTY (not the key "cc")…
+    assert router.models["cc"].model_id == ""
+    # …while agent_sdk still materializes the key as its SDK slug.
+    assert router.models["sonnet"].model_id == "sonnet"
+
+    captured = {}
+
+    class _Spy:
+        async def chat(self, model, **kw):
+            captured["model"] = model
+            raise RuntimeError("stop after capturing the routed model")
+
+    with pytest.raises(RuntimeError):
+        await router._call_model(_Spy(), "cc", [{"role": "user", "content": "hi"}], [], {})
+    assert captured["model"] == ""  # empty -> CLI default, NOT the route key "cc"
