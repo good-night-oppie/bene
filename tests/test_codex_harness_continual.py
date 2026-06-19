@@ -582,3 +582,68 @@ def test_recovery_columns_migrated_onto_legacy_table(tmp_path):
     d = mut.maybe_swap("ep", seed_codex_harness(), {"reason": "t"}, turn=0)
     assert d.swapped
     assert mut.recover_harness("ep").harness_id == d.new_harness.harness_id
+
+
+def test_recovery_migration_is_idempotent_and_partial_safe(tmp_path):
+    """PR #77 review: the legacy ALTER-TABLE migration must tolerate a recovery column
+    already present (the concurrent/partial-upgrade case) and be re-runnable without
+    raising duplicate-column."""
+    db = str(tmp_path / "legacy.db")
+    store, conn = open_eval_db(db)
+    conn.execute(
+        "CREATE TABLE codex_continual_swaps (swap_id TEXT PRIMARY KEY, episode_id TEXT NOT NULL,"
+        " turn INTEGER NOT NULL DEFAULT 0, trigger_reason TEXT NOT NULL, from_harness_id TEXT"
+        " NOT NULL, to_harness_id TEXT NOT NULL, mutation_kind TEXT NOT NULL, target_path TEXT,"
+        " verdict TEXT NOT NULL, uplift REAL NOT NULL, swap_at TEXT)"
+    )
+    conn.execute("ALTER TABLE codex_continual_swaps ADD COLUMN to_harness_json TEXT")  # partial
+    conn.commit()
+    # construct twice on the same db — neither raises; all recovery columns end up present
+    ContinualCodexMutator(store, conn, refine_fn=strong_refiner, replay_eval_fn=mock_replay_eval)
+    ContinualCodexMutator(store, conn, refine_fn=strong_refiner, replay_eval_fn=mock_replay_eval)
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(codex_continual_swaps)")}
+    assert {"to_harness_json", "mutation_diff", "mutation_rationale", "mutation_provenance"} <= cols
+
+
+def test_swap_persists_full_mutation_including_rationale(tmp_path):
+    """PR #77 review: the recovery payload must persist the FULL Contract-M mutation —
+    including rationale — so a resumed episode can reconstruct the reasoning, not just diff."""
+    from bene.kernel.codex_harness import Mutation
+
+    def reasoned_refiner(harness, trajectory, sigs):
+        return [
+            Mutation(
+                kind="module",
+                target_path="modules/r.py",
+                diff="def r():\n    return 1\n",
+                rationale="lead with priority to deny the switch",
+                provenance={"strength_delta": 0.06},
+            )
+        ]
+
+    db = str(tmp_path / "ep.db")
+    store, conn = open_eval_db(db)
+    mut = ContinualCodexMutator(store, conn, refine_fn=reasoned_refiner, replay_eval_fn=mock_replay_eval)
+    d = mut.maybe_swap("ep", seed_codex_harness(), {"reason": "t"}, turn=0)
+    assert d.swapped
+    rec = mut.swap_history("ep")[-1]
+    assert rec["mutation_rationale"] == "lead with priority to deny the switch"
+
+
+def test_driver_resumes_from_last_swapped_child(tmp_path):
+    """PR #77 review: run_continual_episode resumed with the same episode_id + db_path must
+    continue from the last swapped-in child (recover_harness), not restart from the seed —
+    else the next swap re-forks from H0-seed and records the wrong active harness."""
+    db = str(tmp_path / "ep.db")
+    kw = dict(
+        run_seed=1, episode_id="ep", db_path=db, trigger_turns=[0],
+        max_swaps_per_episode=4, min_turns_between_swaps=0, bus_path=False,
+    )
+    out1 = run_continual_episode(seed_codex_harness(), strong_refiner, mock_replay_eval, **kw)
+    assert out1.n_swaps >= 1
+    last_child = out1.swaps[-1]["to_harness_id"]
+    out2 = run_continual_episode(seed_codex_harness(), strong_refiner, mock_replay_eval, **kw)
+    new = out2.swaps[out1.n_swaps:]
+    assert new, "resume should still have swap budget"
+    assert new[0]["from_harness_id"] == last_child  # forked from recovered child…
+    assert new[0]["from_harness_id"] != "H0-seed"  # …NOT the seed
