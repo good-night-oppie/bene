@@ -6,6 +6,7 @@ fitness function lives here as a drop-in until Lane A3 lands.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import random
@@ -16,8 +17,14 @@ import ulid
 # Canonical strategy set — mirrors adx_showdown.harness.KNOWN_STRATEGIES.
 # Ordered by approximate mock-fitness level so upgrade mutation moves right.
 _STRATEGIES = [
-    "random", "max_damage", "heuristic", "balance",
-    "hyper_offense", "stall", "trick_room", "llm_freeform",
+    "random",
+    "max_damage",
+    "heuristic",
+    "balance",
+    "hyper_offense",
+    "stall",
+    "trick_room",
+    "llm_freeform",
 ]
 
 
@@ -85,11 +92,7 @@ class BattleHarness:
         for k, v in self.params.items():
             if isinstance(v, float) and rng.random() < mutation_rate:
                 candidate = v + rng.gauss(0.0, 0.08)
-                new_params[k] = (
-                    max(0.0, min(1.0, candidate))
-                    if math.isfinite(candidate)
-                    else v
-                )
+                new_params[k] = max(0.0, min(1.0, candidate)) if math.isfinite(candidate) else v
             else:
                 new_params[k] = v
 
@@ -199,13 +202,38 @@ def mock_fitness(harness: BattleHarness, run_seed: int = 0) -> FitnessVector:
     battles_played is always 30 (never zero) so anti-vacuous gates observe it.
     gens_completed is left at 0; the evolver stamps the final value before
     running the kill-gate.
+
+    Reproducibility: the per-harness noise seed is a *stable* digest of the
+    deterministic, *heritable* genome content (strategy / params / policy /
+    prompt) — NOT hash(harness_id).  The builtin hash() of a str is salted per
+    process (PYTHONHASHSEED), and mutate() mints a fresh time-based ULID for
+    every child, so seeding from either made two runs with the same run_seed
+    diverge.  harness_id is excluded from the digest precisely because it is a
+    fresh-per-run ULID for mutants; two structurally identical genomes must
+    score identically regardless of their ULID, so the whole evolve run is
+    reproducible for a given run_seed.
     """
-    rng = random.Random(run_seed ^ hash(harness.harness_id))
+    heritable = {
+        "system_prompt": harness.system_prompt,
+        "move_selection_strategy": harness.move_selection_strategy,
+        "tool_policy": harness.tool_policy,
+        "params": harness.params,
+    }
+    genome_digest = int.from_bytes(
+        hashlib.sha256(json.dumps(heritable, sort_keys=True).encode()).digest()[:8],
+        "big",
+    )
+    rng = random.Random(run_seed ^ genome_digest)
 
     _STRATEGY_BASE = {
-        "random": 0.35, "max_damage": 0.46, "heuristic": 0.52,
-        "balance": 0.55, "hyper_offense": 0.57, "stall": 0.56,
-        "trick_room": 0.53, "llm_freeform": 0.62,
+        "random": 0.35,
+        "max_damage": 0.46,
+        "heuristic": 0.52,
+        "balance": 0.55,
+        "hyper_offense": 0.57,
+        "stall": 0.56,
+        "trick_room": 0.53,
+        "llm_freeform": 0.62,
     }
     base_win = _STRATEGY_BASE.get(harness.move_selection_strategy, 0.50)
 
