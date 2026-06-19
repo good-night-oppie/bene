@@ -21,7 +21,6 @@ import pytest
 from bene.kernel.battle.evolve import evolve_battle_harness
 from bene.kernel.battle.genome import (
     BattleHarness,
-    FitnessVector,
     CONTRACT3_OBJECTIVES,
     mock_fitness,
     seed_harness,
