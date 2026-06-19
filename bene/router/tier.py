@@ -219,6 +219,29 @@ class TierRouter:
         client = self.clients[model_name]
         return await self._call_model(client, model_name, messages, tools, config)
 
+    def _resolve_actual_model(self, model_name: str) -> str:
+        """Resolve the model id to hand a provider for ``model_name``.
+
+        - An explicit ``model_id`` always wins.
+        - ``codex`` / ``claude_code`` routes that omit ``model_id`` resolve to ``""`` so
+          the provider applies its OWN default: CodexProvider -> ``gpt-5.4-mini``;
+          ClaudeCodeProvider drops ``--model`` (its ``effective_model = model or
+          self.model_id`` + ``if effective_model:`` guard makes ``""`` safe) so the Claude
+          CLI picks its default. Without this, a programmatic ``ModelConfig`` keyed
+          ``gpt-codex`` / ``cc`` would be sent as ``-m gpt-codex`` / ``--model cc`` —
+          invalid slugs (PR #68 + PR #78 review).
+        - Everything else (API providers, ``agent_sdk``, local) keeps the route name.
+          ``agent_sdk`` is excluded because it forwards the model straight into
+          ``ClaudeAgentOptions(model=...)`` with no omit-guard, so ``""`` would empty the
+          SDK model; the route key is its intended slug (PR #73 review).
+        """
+        model_config = self.models.get(model_name)
+        if model_config and model_config.model_id:
+            return model_config.model_id
+        if model_config and model_config.provider in ("codex", "claude_code"):
+            return ""
+        return model_name
+
     async def _call_model(
         self,
         client: VLLMClient | LLMProvider,
@@ -228,19 +251,10 @@ class TierRouter:
         config: dict,
     ) -> ModelResponse:
         """Call a model via any provider (local vLLM, OpenAI, or Anthropic)."""
-        # Use model_id for API providers (e.g. "gpt-4o"), model_name for local.
-        # When a config omits an explicit model_id, pass an empty model ONLY for providers
-        # that normalize "" to a usable default — that is CodexProvider (-> gpt-5.4-mini),
-        # so its bene.yaml key is never sent as `codex exec -m gpt-codex` (an invalid model,
-        # PR #68 review). claude_code / agent_sdk do NOT normalize empty — they forward it
-        # as the SDK model slug — so for them keep the route name (PR #73 review).
-        model_config = self.models.get(model_name)
-        if model_config and model_config.model_id:
-            actual_model = model_config.model_id
-        elif model_config and model_config.provider == "codex":
-            actual_model = ""
-        else:
-            actual_model = model_name
+        # Resolve the model id for the primary route. Recomputed inside the retry loop if
+        # a fallback switches the route, because the empty-model default differs per
+        # provider (see _resolve_actual_model).
+        actual_model = self._resolve_actual_model(model_name)
 
         last_error = None
         for attempt in range(self.max_retries):
@@ -275,6 +289,11 @@ class TierRouter:
                         logger.info("Falling back to %s", self.fallback_model)
                         client = self.clients[self.fallback_model]
                         model_name = self.fallback_model
+                        # Recompute for the fallback route — its model-id rules may differ
+                        # from the primary's (e.g. a codex fallback normalizes "" to its
+                        # default; reusing the primary slug would send `-m <primary>`, an
+                        # invalid model). (PR #78 review)
+                        actual_model = self._resolve_actual_model(model_name)
 
         # Build an actionable error message
         err_str = str(last_error)

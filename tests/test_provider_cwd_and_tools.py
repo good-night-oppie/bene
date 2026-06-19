@@ -166,10 +166,16 @@ async def test_claude_code_cwd_defaults_to_none(tmp_path) -> None:
 # ── CodexProvider (GPT-5.x via the ChatGPT subscription, no API key) ─────────
 
 
-def _codex_fake_run(response: str = "OK", *, write_to_file: bool = True,
-                    returncode: int = 0, capture: dict | None = None):
+def _codex_fake_run(
+    response: str = "OK",
+    *,
+    write_to_file: bool = True,
+    returncode: int = 0,
+    capture: dict | None = None,
+):
     """A subprocess.run stand-in that writes *response* to codex's -o output file
     (and/or stdout), and records the call kwargs/argv into *capture*."""
+
     def fake_run(*args, **kwargs):
         argv = args[0] if args else kwargs.get("args", [])
         if capture is not None:
@@ -180,9 +186,10 @@ def _codex_fake_run(response: str = "OK", *, write_to_file: bool = True,
                 f.write(response)
         r = MagicMock()
         r.returncode = returncode
-        r.stdout = (b"" if write_to_file else response.encode())
+        r.stdout = b"" if write_to_file else response.encode()
         r.stderr = b""
         return r
+
     return fake_run
 
 
@@ -255,9 +262,9 @@ def test_codex_wired_into_tier_router():
     from bene.router.tier import ModelConfig, TierRouter
 
     router = TierRouter(
-        models={"gpt-codex": ModelConfig(
-            name="gpt-codex", provider="codex", model_id="gpt-5.4-mini"
-        )}
+        models={
+            "gpt-codex": ModelConfig(name="gpt-codex", provider="codex", model_id="gpt-5.4-mini")
+        }
     )
     client = router.clients["gpt-codex"]
     assert isinstance(client, CodexProvider)
@@ -324,10 +331,11 @@ def test_codex_resolve_exe_unwraps_windows_cmd_shim(tmp_path):
 
 
 async def test_agent_sdk_empty_model_id_keeps_route_name():
-    """PR #73 review: only CodexProvider normalizes an empty model to a default. agent_sdk
-    (and claude_code) forward the model as the SDK slug, so a programmatic ModelConfig with
-    no model_id must route the ROUTE NAME — not "" (which would empty ClaudeAgentOptions.model
-    and break direct API users relying on the model key as the slug)."""
+    """PR #73 review: agent_sdk forwards the model straight into ClaudeAgentOptions(model=...)
+    with no omit-guard, so a programmatic ModelConfig with no model_id must route the ROUTE
+    NAME — not "" (which would empty the SDK model and break direct API users relying on the
+    model key as the slug). (claude_code, by contrast, DOES drop --model on "" so it IS in the
+    empty-default — see test_claude_code_empty_model_id_uses_cli_default; PR #78 review.)"""
     from bene.router.tier import ModelConfig, TierRouter
 
     router = TierRouter(models={"sonnet": ModelConfig(name="sonnet", provider="agent_sdk")})
@@ -342,3 +350,65 @@ async def test_agent_sdk_empty_model_id_keeps_route_name():
     with pytest.raises(RuntimeError):
         await router._call_model(_Spy(), "sonnet", [{"role": "user", "content": "hi"}], [], {})
     assert captured["model"] == "sonnet"  # route name preserved, NOT empty
+
+
+async def test_claude_code_empty_model_id_uses_cli_default():
+    """PR #78 review: a programmatic ModelConfig(provider="claude_code") with no model_id must
+    route "" (not the route key), because ClaudeCodeProvider drops --model on "" so the Claude
+    CLI picks its default. PR #78 over-narrowed the empty-default to codex only, which sent the
+    route key as `claude --model <key>` (an invalid slug) — breaking users who relied on the
+    default. claude_code is back in the empty-default; agent_sdk stays excluded."""
+    from bene.router.tier import ModelConfig, TierRouter
+
+    router = TierRouter(models={"cc": ModelConfig(name="cc", provider="claude_code")})
+
+    captured = {}
+
+    class _Spy:
+        async def chat(self, model, **kw):
+            captured["model"] = model
+            raise RuntimeError("stop after capturing the routed model")
+
+    with pytest.raises(RuntimeError):
+        await router._call_model(_Spy(), "cc", [{"role": "user", "content": "hi"}], [], {})
+    assert captured["model"] == ""  # empty -> CLI default, NOT the route key "cc"
+
+
+async def test_fallback_recomputes_actual_model_for_codex_fallback():
+    """PR #78 review: actual_model is resolved once before the retry loop. When the primary
+    route fails and the loop falls back to a codex fallback_model, the retry must RECOMPUTE
+    actual_model to "" (codex's empty default) — not reuse the primary route's slug, which
+    would send `codex exec -m sonnet` (an invalid model)."""
+    from bene.router.tier import ModelConfig, TierRouter
+
+    router = TierRouter(
+        models={
+            "sonnet": ModelConfig(name="sonnet", provider="agent_sdk"),
+            "gpt-codex": ModelConfig(name="gpt-codex", provider="codex"),
+        },
+        fallback_model="gpt-codex",
+        max_retries=2,
+    )
+
+    seen = []
+
+    class _Spy:
+        def __init__(self, name):
+            self.name = name
+
+        async def chat(self, model, **kw):
+            seen.append((self.name, model))
+            raise RuntimeError(f"{self.name} fails")
+
+    # Replace the fallback client so we capture the model the fallback route is called with.
+    router.clients["gpt-codex"] = _Spy("codex-fallback")
+
+    with pytest.raises(RuntimeError):
+        await router._call_model(
+            _Spy("primary"), "sonnet", [{"role": "user", "content": "hi"}], [], {}
+        )
+
+    # attempt 1: primary agent_sdk route -> route name "sonnet"
+    assert seen[0] == ("primary", "sonnet")
+    # attempt 2: fell back to codex -> recomputed to "" (codex default), NOT the stale "sonnet"
+    assert seen[1] == ("codex-fallback", "")
