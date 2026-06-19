@@ -212,11 +212,17 @@ CONTRACT3_OBJECTIVES: dict[str, str] = {
 
 @dataclass
 class CodexEvalResult:
-    """Contract E result: fitness + trajectory + failure signatures (ACT/OBSERVE)."""
+    """Contract E result: fitness + trajectory + failure signatures (ACT/OBSERVE).
+
+    ``training_tuples`` are the ``(task_id, seed, scenario_id)`` tuples this evaluation
+    tuned on — bene unions them into the run's training_manifest for the held-out
+    disjointness gate (``heldout ∩ training = ∅``; see ``codex_harness/heldout.py``).
+    """
 
     fitness: CodexFitness
     trajectory: dict[str, Any] = field(default_factory=dict)
     failure_signatures: list[str] = field(default_factory=list)
+    training_tuples: list[list] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -389,6 +395,11 @@ def mock_codex_eval(
     if no_forfeit < 0.88:
         sigs.append("forfeit_exploit")
 
+    # The TRAINING tuples this eval tuned on (CRN windows). Keyed off run_seed so a
+    # held-out manifest built from disjoint scenario ids stays disjoint; a test that
+    # passes a held-out manifest overlapping these exercises the VOID path.
+    training_tuples = [["train", int(run_seed), f"scenario{i}"] for i in range(3)]
+
     return CodexEvalResult(
         fitness=CodexFitness(
             win_rate=win_rate, elo=elo, move_legibility=legibility,
@@ -397,4 +408,5 @@ def mock_codex_eval(
         ),
         trajectory={"harness_id": harness.harness_id, "run_seed": run_seed, "n_battles": n_battles},
         failure_signatures=sigs,
+        training_tuples=training_tuples,
     )
