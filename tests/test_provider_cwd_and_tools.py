@@ -18,7 +18,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 from bene.router.agent_sdk import AgentSDKProvider
-from bene.router.providers import ClaudeCodeProvider, create_provider
+from bene.router.providers import ClaudeCodeProvider, CodexProvider, create_provider
 
 
 # ── AgentSDKProvider ────────────────────────────────────────────────
@@ -161,3 +161,101 @@ async def test_claude_code_cwd_defaults_to_none(tmp_path) -> None:
         await provider.chat(model="", messages=[{"role": "user", "content": "hi"}])
 
     assert captured.get("cwd") is None
+
+
+# ── CodexProvider (GPT-5.x via the ChatGPT subscription, no API key) ─────────
+
+
+def _codex_fake_run(response: str = "OK", *, write_to_file: bool = True,
+                    returncode: int = 0, capture: dict | None = None):
+    """A subprocess.run stand-in that writes *response* to codex's -o output file
+    (and/or stdout), and records the call kwargs/argv into *capture*."""
+    def fake_run(*args, **kwargs):
+        argv = args[0] if args else kwargs.get("args", [])
+        if capture is not None:
+            capture.update(kwargs)
+            capture["argv"] = argv
+        if write_to_file and "-o" in argv:
+            with open(argv[argv.index("-o") + 1], "w", encoding="utf-8") as f:
+                f.write(response)
+        r = MagicMock()
+        r.returncode = returncode
+        r.stdout = (b"" if write_to_file else response.encode())
+        r.stderr = b""
+        return r
+    return fake_run
+
+
+def test_codex_factory_default_is_cheapest_coding_model():
+    """create_provider('codex') defaults to the cheapest ChatGPT-sub coding model —
+    NOT gpt-4o (unavailable) and NOT the frontier gpt-5.5."""
+    p = create_provider("codex")
+    assert isinstance(p, CodexProvider)
+    assert p.model_id == "gpt-5.4-mini"
+
+
+def test_codex_factory_threads_model_and_cwd():
+    p = create_provider("codex", model_id="gpt-5.4", cwd="/tmp/z", timeout=42.0)
+    assert isinstance(p, CodexProvider)
+    assert p.model_id == "gpt-5.4"
+    assert p.cwd == "/tmp/z"
+    assert p.timeout == 42.0
+
+
+async def test_codex_chat_strips_openai_api_key_and_sets_flags(monkeypatch):
+    """The subprocess must NOT inherit OPENAI_API_KEY (force the ChatGPT-sub auth, the
+    task's hard 'not a pay-per-token key' requirement), and must request the read-only,
+    ephemeral sandbox with the configured model."""
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-must-not-leak")
+    p = CodexProvider(model_id="gpt-5.4-mini", timeout=5.0, cwd="/tmp/work")
+    p._codex_exe = "/bin/echo"
+    cap: dict = {}
+    with patch("subprocess.run", side_effect=_codex_fake_run("hi", capture=cap)):
+        resp = await p.chat(model="", messages=[{"role": "user", "content": "x"}])
+
+    assert "OPENAI_API_KEY" not in cap["env"]  # the ChatGPT-sub enforcement
+    argv = cap["argv"]
+    assert "exec" in argv and "read-only" in argv and "--ephemeral" in argv
+    assert argv[argv.index("-m") + 1] == "gpt-5.4-mini"
+    assert cap["cwd"] == "/tmp/work"
+    assert resp.choices[0].message.content == "hi"
+
+
+async def test_codex_chat_reads_output_last_message_file():
+    p = CodexProvider(timeout=5.0)
+    p._codex_exe = "/bin/echo"
+    with patch("subprocess.run", side_effect=_codex_fake_run("def f():\n    return 1")):
+        resp = await p.chat(model="", messages=[{"role": "user", "content": "write f"}])
+    assert "def f()" in (resp.choices[0].message.content or "")
+
+
+async def test_codex_chat_parses_tool_calls():
+    out = '<tool_call id="tc_1" name="apply_patch">\n{"path": "x.py"}\n</tool_call>'
+    p = CodexProvider(timeout=5.0)
+    p._codex_exe = "/bin/echo"
+    with patch("subprocess.run", side_effect=_codex_fake_run(out)):
+        resp = await p.chat(model="", messages=[{"role": "user", "content": "patch"}])
+    tcs = resp.choices[0].message.tool_calls
+    assert tcs and tcs[0]["function"]["name"] == "apply_patch"
+
+
+async def test_codex_chat_empty_response_raises_with_model_hint():
+    p = CodexProvider(timeout=5.0)
+    p._codex_exe = "/bin/echo"
+    with patch("subprocess.run", side_effect=_codex_fake_run("", write_to_file=False)):
+        with pytest.raises(RuntimeError, match="gpt-4o is NOT supported|empty response"):
+            await p.chat(model="", messages=[{"role": "user", "content": "x"}])
+
+
+def test_codex_wired_into_tier_router():
+    """TierRouter builds a CodexProvider client for a provider: codex model."""
+    from bene.router.tier import ModelConfig, TierRouter
+
+    router = TierRouter(
+        models={"gpt-codex": ModelConfig(
+            name="gpt-codex", provider="codex", model_id="gpt-5.4-mini"
+        )}
+    )
+    client = router.clients["gpt-codex"]
+    assert isinstance(client, CodexProvider)
+    assert client.model_id == "gpt-5.4-mini"

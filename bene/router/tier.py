@@ -88,7 +88,7 @@ class TierRouter:
                     endpoint=cfg.vllm_endpoint,
                     timeout=cfg.timeout,
                 )
-            elif cfg.provider in ("claude_code", "agent_sdk"):
+            elif cfg.provider in ("claude_code", "agent_sdk", "codex"):
                 self.clients[name] = create_provider(
                     cfg.provider,
                     model_id=cfg.model_id,
