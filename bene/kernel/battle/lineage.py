@@ -32,10 +32,14 @@ def write_lineage(
         c.execute("SELECT MAX(position) FROM shared_log")
         row = c.fetchone()
         max_pos = row[0] if row and row[0] is not None else 0
+        # shared_log type CHECK only allows ('intent','vote','decision','commit','result',
+        # 'abort','policy','mail') — 'evolution' is rejected on a real bene db. Use the
+        # allowed 'result' type + carry the evolution marker in the payload (PR #64 review).
+        marked = {"kind": "evolution", **payload}
         c.execute(
             "INSERT INTO shared_log (position, type, agent_id, ref_id, payload)"
             " VALUES (?,?,?,?,?)",
-            (max_pos + 1, "evolution", "bene-core", run_id, json.dumps(payload)),
+            (max_pos + 1, "result", "bene-core", run_id, json.dumps(marked)),
         )
         con.commit()
         log_id = c.lastrowid

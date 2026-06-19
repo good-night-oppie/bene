@@ -243,24 +243,30 @@ def test_lineage_writes_to_bus(tmp_path):
     bus = str(tmp_path / "bus.db")
     # bootstrap bus schema
     con = sqlite3.connect(bus)
+    # Use the REAL shared_log type CHECK (bene/schema.py) so a disallowed type like
+    # 'evolution' would be REJECTED — this proves write_lineage uses an allowed type.
     con.execute(
         "CREATE TABLE IF NOT EXISTS shared_log "
         "(log_id INTEGER PRIMARY KEY AUTOINCREMENT, "
-        " position INTEGER NOT NULL, type TEXT, agent_id TEXT, "
-        " ref_id TEXT, payload TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)"
+        " position INTEGER NOT NULL, "
+        " type TEXT NOT NULL CHECK (type IN "
+        "  ('intent','vote','decision','commit','result','abort','policy','mail')), "
+        " agent_id TEXT, ref_id TEXT, payload TEXT, "
+        " created_at TEXT DEFAULT CURRENT_TIMESTAMP)"
     )
     con.commit()
     con.close()
 
     log_id = write_lineage("run-test-001", {"verdict": "ACCEPT", "uplift": 0.15},
                            bus_path=bus)
-    assert log_id is not None
+    assert log_id is not None  # None if the type were rejected by the CHECK
 
     con = sqlite3.connect(bus)
     row = con.execute("SELECT type, agent_id, payload FROM shared_log").fetchone()
-    assert row[0] == "evolution"
+    assert row[0] == "result"  # allowed type (was 'evolution', which the CHECK rejects)
     assert row[1] == "bene-core"
     data = json.loads(row[2])
+    assert data["kind"] == "evolution"  # evolution marker preserved in the payload
     assert data["verdict"] == "ACCEPT"
     con.close()
 

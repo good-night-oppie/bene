@@ -90,3 +90,36 @@ def test_no_manifest_preserves_original_behavior():
     assert r["verdict"] == ACCEPT
     assert "probe_lock_sha256" not in r
     assert "heldout_manifest_sha256" not in r
+
+
+# ---------------------------------------------------------------------------
+# VOID on empty manifests — a held-out gate can't prove anything vacuously (PR #65 review)
+
+def test_empty_heldout_manifest_voids():
+    """An empty held-out manifest proves nothing -> VOID, never a silent pass."""
+    out = evolve_codex_harness(
+        seed_codex_harness(), mock_refiner, mock_codex_eval,
+        n_gen=3, run_seed=11, heldout_manifest=HeldoutManifest.from_tuples([]),
+        bus_path=False,
+    )
+    r = out.killgate_report
+    assert r["verdict"] == VOID
+    assert r["killed_gates"] == ["empty_heldout_manifest"]
+
+
+def test_empty_training_manifest_voids():
+    """A Contract-E adapter reporting NO training tuples makes disjointness vacuous
+    -> VOID (can't prove 'scored on data it never trained on')."""
+    def no_training_eval(harness, run_seed=0, n_battles=30):
+        ev = mock_codex_eval(harness, run_seed, n_battles)
+        ev.training_tuples = []  # adapter reports nothing it trained on
+        return ev
+
+    held = HeldoutManifest.from_tuples([("heldout", 11, f"h{i}") for i in range(5)])
+    out = evolve_codex_harness(
+        seed_codex_harness(), mock_refiner, no_training_eval,
+        n_gen=3, run_seed=11, heldout_manifest=held, bus_path=False,
+    )
+    r = out.killgate_report
+    assert r["verdict"] == VOID
+    assert r["killed_gates"] == ["empty_training_manifest"]
