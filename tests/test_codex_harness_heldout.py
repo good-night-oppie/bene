@@ -322,3 +322,150 @@ def test_heldout_runner_reporting_no_scored_tuples_voids():
     r = out.killgate_report
     assert r["verdict"] == VOID
     assert "heldout_eval_scored_no_tuples" in r["killed_gates"]
+
+
+# ---------------------------------------------------------------------------
+# Review follow-ups (PR #83) — regression tests
+
+
+def test_heldout_partial_manifest_coverage_voids():
+    """Each held-out eval's scored tuple set must EQUAL the whole manifest. A run where the
+    BEST side scores the full manifest but the SEED side scores only one easy tuple (a proper
+    subset) must VOID — else a winner scored on partial held-out data could ACCEPT with the
+    full heldout_manifest_sha256 stamp. (CID 3442632790)"""
+    from bene.kernel.codex_harness import CodexEvalResult
+
+    held = HeldoutManifest.from_tuples([("heldout", 11, f"h{i}") for i in range(5)])
+    full = [list(t) for t in held.tuples]
+    subset = [list(held.tuples[0])]  # one easy tuple — a proper subset of the manifest
+
+    def partial_eval(harness, run_seed, tuples):
+        base = mock_codex_eval(harness, run_seed, 30)
+        # best beats seed on the one shared tuple, but seed only ever scored ONE tuple.
+        is_seed = harness.harness_id == seed_codex_harness().harness_id
+        return CodexEvalResult(
+            fitness=base.fitness.replace(
+                win_rate=0.40 if is_seed else 0.90, battles_played=30, gens_completed=0
+            ),
+            trajectory=base.trajectory,
+            failure_signatures=[],
+            training_tuples=subset if is_seed else full,
+        )
+
+    out = evolve_codex_harness(
+        seed_codex_harness(),
+        mock_refiner,
+        mock_codex_eval,
+        n_gen=3,
+        run_seed=11,
+        heldout_manifest=held,
+        heldout_eval_fn=partial_eval,
+        bus_path=False,
+    )
+    r = out.killgate_report
+    assert r["verdict"] == VOID
+    assert r["killed_gates"] == ["heldout_eval_escaped_manifest"]
+    assert "scored_on_heldout" not in r
+
+
+def test_heldout_baseline_with_zero_battles_voids():
+    """A held-out comparison where the BASELINE (seed) side reports zero observed battles
+    (an arena timeout / empty baseline window) cannot ground the final verdict — the
+    subject-only battles_played_gt0 gate would not catch it. VOID before using the vectors.
+    (CID 3442632799)"""
+    from bene.kernel.codex_harness import CodexEvalResult
+
+    held = HeldoutManifest.from_tuples([("heldout", 11, f"h{i}") for i in range(5)])
+    full = [list(t) for t in held.tuples]
+
+    def eval_zero_baseline(harness, run_seed, tuples):
+        base = mock_codex_eval(harness, run_seed, 30)
+        is_seed = harness.harness_id == seed_codex_harness().harness_id
+        # both sides score the WHOLE manifest, but the seed baseline observed 0 battles.
+        return CodexEvalResult(
+            fitness=base.fitness.replace(
+                win_rate=0.90,
+                battles_played=0 if is_seed else 30,
+                gens_completed=0,
+            ),
+            trajectory=base.trajectory,
+            failure_signatures=[],
+            training_tuples=full,
+        )
+
+    out = evolve_codex_harness(
+        seed_codex_harness(),
+        mock_refiner,
+        mock_codex_eval,
+        n_gen=3,
+        run_seed=11,
+        heldout_manifest=held,
+        heldout_eval_fn=eval_zero_baseline,
+        bus_path=False,
+    )
+    r = out.killgate_report
+    assert r["verdict"] == VOID
+    assert r["killed_gates"] == ["heldout_eval_no_battles"]
+
+
+def test_gate_reeval_tuples_unioned_into_disjointness_check():
+    """With a held-out manifest but NO held-out runner, the fresh gate-time eval_fn calls may
+    tune on a different CRN window (incl. a held-out tuple) than search. Those gate-eval
+    training_tuples must be unioned into the disjointness check — else a held-out tuple the
+    gate-time winner was evaluated on leaks through and the run ACCEPTs. (CID 3442632806)"""
+    from collections import Counter
+
+    held = HeldoutManifest.from_tuples([("heldout", 11, f"h{i}") for i in range(5)])
+    seen: Counter = Counter()
+
+    def eval_poisons_gate(harness, run_seed=0, n_battles=30):
+        # Search-time evals (1st per harness) stay disjoint from the manifest; the gate
+        # re-eval (2nd per harness, after the search loop) tunes on a held-out tuple.
+        seen[harness.harness_id] += 1
+        ev = mock_codex_eval(harness, run_seed, n_battles)
+        if seen[harness.harness_id] >= 2:
+            ev.training_tuples = [*ev.training_tuples, ["heldout", 11, "h0"]]
+        return ev
+
+    out = evolve_codex_harness(
+        seed_codex_harness(),
+        mock_refiner,
+        eval_poisons_gate,
+        n_gen=3,
+        run_seed=11,
+        heldout_manifest=held,
+        bus_path=False,
+    )
+    r = out.killgate_report
+    assert r["verdict"] == VOID
+    assert r["killed_gates"] == ["heldout_disjointness"]
+    assert r["heldout_overlap_count"] >= 1
+
+
+def test_gate_eval_runs_after_heldout_void_checks():
+    """The empty/overlap held-out VOID checks must run BEFORE any final gate-time eval_fn
+    call, so an invalid manifest yields a clean VOID instead of crashing during a superfluous
+    gate re-eval. An eval_fn that raises on the gate re-eval (the 2nd eval of a harness) must
+    NOT be reached when the manifest is empty. (CID 3442632814)"""
+    from collections import Counter
+
+    seen: Counter = Counter()
+
+    def eval_raises_on_gate(harness, run_seed=0, n_battles=30):
+        seen[harness.harness_id] += 1
+        if seen[harness.harness_id] >= 2:  # the gate re-eval (post-search) call
+            raise RuntimeError("arena failure during gate re-eval — must not be reached")
+        return mock_codex_eval(harness, run_seed, n_battles)
+
+    out = evolve_codex_harness(
+        seed_codex_harness(),
+        mock_refiner,
+        eval_raises_on_gate,
+        n_gen=3,
+        run_seed=11,
+        heldout_manifest=HeldoutManifest.from_tuples([]),  # empty -> VOID before gate eval
+        bus_path=False,
+    )
+    r = out.killgate_report
+    assert r["verdict"] == VOID
+    assert r["killed_gates"] == ["empty_heldout_manifest"]
