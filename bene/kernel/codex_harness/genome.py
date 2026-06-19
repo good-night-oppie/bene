@@ -33,6 +33,8 @@ import random
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
+from bene.kernel.genome_canonical import genome_hash
+
 
 # Mutation kinds (Contract M). Only "prompt" is a prompt tweak; the SPEC's DONE #2
 # requires at least one ACCEPTED **non-prompt** mutation (a real code/tool/arch change).
@@ -147,18 +149,22 @@ class CodexHarness:
         genomes with identical heads but DIFFERENT on-disk resource trees — the common
         case once a real Contract-S apply materialises code on disk and leaves the
         in-memory ``resources`` map empty — never collide in the DGM archive. (PR #64 review)
+
+        Hashed via the canonical genome serializer so logically-identical genomes are ONE
+        identity: ``params`` int ``1`` == float ``1.0``, NFC == NFD ``system_prompt``,
+        CRLF == LF — none of which a plain ``json.dumps`` collapses, so the evolution
+        loop (which mutates params/prompts freely) would otherwise split one genome's
+        identity across multiple archive/lineage rows. (GA-CORE-5 review)
         """
-        payload = json.dumps(
+        return genome_hash(
             {
                 "system_prompt": self.system_prompt,
                 "move_selection_strategy": self.move_selection_strategy,
                 "params": self.params,
                 "resources": self.resources,
                 "harness_ref": self.harness_ref,
-            },
-            sort_keys=True,
+            }
         )
-        return hashlib.sha256(payload.encode()).hexdigest()
 
     # -- mutation application (mock ASSESS; real one is adx-core Contract S) --
     def with_mutation(self, mutation: Mutation) -> CodexHarness:

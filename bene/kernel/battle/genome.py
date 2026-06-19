@@ -14,6 +14,8 @@ from dataclasses import asdict, dataclass
 
 import ulid
 
+from bene.kernel.genome_canonical import genome_hash
+
 # Canonical strategy set — mirrors adx_showdown.harness.KNOWN_STRATEGIES.
 # Ordered by approximate mock-fitness level so upgrade mutation moves right.
 _STRATEGIES = [
@@ -54,6 +56,26 @@ class BattleHarness:
     @classmethod
     def from_json(cls, s: str) -> BattleHarness:
         return cls.from_dict(json.loads(s))
+
+    def content_hash(self) -> str:
+        """Stable content address over the evolvable surface (prompt + strategy +
+        tool_policy + params). Excludes ``harness_id`` so a rename alone never changes
+        the identity.
+
+        Hashed via the canonical genome serializer (mirrors ``CodexHarness.content_hash``)
+        so logically-identical genomes are ONE identity: ``params``/``tool_policy`` int
+        ``1`` == float ``1.0``, NFC == NFD ``system_prompt``, CRLF == LF — none of which a
+        plain ``json.dumps`` collapses, so two mutated-then-converged genomes would
+        otherwise mint different sha256s. (GA-CORE-5 review)
+        """
+        return genome_hash(
+            {
+                "system_prompt": self.system_prompt,
+                "move_selection_strategy": self.move_selection_strategy,
+                "tool_policy": self.tool_policy,
+                "params": self.params,
+            }
+        )
 
     @classmethod
     def from_adx_dict(cls, d: dict) -> BattleHarness:
