@@ -261,7 +261,25 @@ def evolve_codex_harness(
         killgate_report["heldout_manifest_sha256"] = heldout_manifest.manifest_hash()
         killgate_report["training_manifest_sha256"] = training_manifest.manifest_hash()
         ov = overlap(heldout_manifest, training_manifest)
-        if ov:
+        # A held-out gate can only prove "scored on data it never trained on" when BOTH
+        # sets are non-empty: an empty held-out manifest proves nothing, and an empty
+        # training manifest (e.g. a Contract-E adapter that reports no training tuples)
+        # makes disjointness vacuously true. Either case is inadmissible -> VOID, never a
+        # silent pass (PR #65 review).
+        if len(heldout_manifest) == 0 or len(training_manifest) == 0:
+            voided = True
+            reason = (
+                "empty_heldout_manifest" if len(heldout_manifest) == 0
+                else "empty_training_manifest"
+            )
+            killgate_report.update({
+                "verdict": VOID,
+                "probe": PROBE_NAME,
+                "killed_gates": [reason],
+                "gate_results": [],
+                "heldout_overlap_count": 0,
+            })
+        elif ov:
             voided = True
             killgate_report.update({
                 "verdict": VOID,
