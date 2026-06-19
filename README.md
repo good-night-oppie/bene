@@ -53,7 +53,7 @@ bene demo --no-ui       # seeds the five-capability story — no model keys need
 
 ```bash
 bene experiments ls --db <story.db>          # the probe/evolution journal — e.g. story-probe → ACCEPT
-bene --json senses                            # what an incoming agent reads first
+bene --json senses --db <story.db>            # what an incoming agent reads first
 bene trust <agent_id> --db <story.db>         # computed trust: 4 signals + a composite
 ```
 
