@@ -715,3 +715,29 @@ def test_prompt_only_winner_persists_no_stale_accept_verdict(tmp_path):
     con.close()
     assert accept_verdicts == 0, "stale ACCEPT verdict left in the ledger"
     assert verifies == 0, "stale verifies-link left for a prompt-only (REJECTED) winner"
+
+
+def test_codex_genome_persisted_at_strategic_tier(tmp_path):
+    """CID 3442505534 (PR #82 review) — a CodexHarness genome must be persisted at the
+    canonical strategic tier 4 (kind='strategic', tier=4), like ReflectiveEvolver / GEPA /
+    metaharness, so strategic-genome surfaces find the candidates the verdict links to."""
+    import sqlite3
+
+    db = str(tmp_path / "tier.db")
+    evolve_codex_harness(
+        seed_codex_harness(),
+        mock_refiner,
+        mock_codex_eval,
+        n_gen=2,
+        run_seed=4,
+        db_path=db,
+        bus_path=False,
+    )
+    con = sqlite3.connect(db)
+    rows = con.execute(
+        "SELECT kind, tier FROM engrams WHERE title LIKE 'codex-harness:%'"
+    ).fetchall()
+    con.close()
+    assert rows, "no codex-harness genome engrams persisted"
+    for kind, tier in rows:
+        assert kind == "strategic" and tier == 4, f"codex genome at {kind!r}/tier {tier}"

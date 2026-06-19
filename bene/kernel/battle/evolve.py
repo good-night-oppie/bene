@@ -258,7 +258,12 @@ def _append_harness_engram(
     harness: BattleHarness,
     parents: list[str] | None = None,
 ) -> str:
-    """Persist a BattleHarness as a procedural candidate engram and return its id.
+    """Persist a BattleHarness as a strategic candidate engram and return its id.
+
+    Genomes/genes live at the ``strategic`` tier (tier 4) across the ladder —
+    ReflectiveEvolver, the metaharness bridge, and the sibling codex_harness lane
+    all persist candidates that way — so a battle candidate must too, else
+    strategic-genome surfaces miss it even though the verdict links to it. (PR #82 review)
 
     The kill-gate verdict links verifies/refutes → this engram id, so the
     candidate can later be gated through the kernel promotion front door
@@ -266,11 +271,12 @@ def _append_harness_engram(
     harness_id string). The human-readable harness_id is kept in metadata.
     """
     return store.append(
-        "procedural",
+        "strategic",
         f"battle-harness:{harness.harness_id}",
         harness.to_json(),
         provenance={"system": "bene.kernel.battle"},
         parents=parents,
+        tier=4,
         metadata={"harness_id": harness.harness_id},
     )
 

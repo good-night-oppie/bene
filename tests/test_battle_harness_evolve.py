@@ -507,3 +507,25 @@ def test_killgate_reuses_cached_best_fv_not_noisy_reeval():
     assert out.killgate_report["best_win_rate"] == 0.80
     assert out.killgate_report["uplift"] == pytest.approx(0.40)
     assert out.killgate_report["verdict"] == ACCEPT
+
+
+def test_battle_genome_persisted_at_strategic_tier(tmp_path):
+    """CID 3442505534 (PR #82 review) — a BattleHarness genome must be persisted at the
+    `strategic` tier (tier 4), like genomes/genes elsewhere on the ladder (ReflectiveEvolver,
+    metaharness bridge, the sibling codex_harness lane). A tier-0 `procedural` engram would be
+    missed by strategic-genome surfaces even though the verdict links verifies/refutes to it."""
+    db = str(tmp_path / "tier.db")
+    out = evolve_battle_harness(
+        seed_harness(), mock_fitness, n_gen=2, run_seed=8, db_path=db, bus_path=False
+    )
+    best_eid = out.killgate_report["best_engram_id"]
+    seed_eid = out.killgate_report["seed_engram_id"]
+    store, conn = open_eval_db(db)
+    rows = conn.execute(
+        "SELECT kind, tier FROM engrams WHERE engram_id IN (?, ?)", (best_eid, seed_eid)
+    ).fetchall()
+    conn.close()
+    assert rows, "candidate engrams not persisted"
+    for kind, tier in rows:
+        assert kind == "strategic", f"battle genome at {kind!r} tier, expected strategic"
+        assert tier == 4, f"strategic engram at tier {tier}, expected 4"
