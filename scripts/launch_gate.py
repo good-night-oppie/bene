@@ -45,10 +45,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent  # bene-main repo root
 PYPI_PACKAGE = "bene"
 CANONICAL_REPO = "good-night-oppie/bene"
+# Match the canonical repo as a whole path segment — a plain substring test would
+# accept same-prefix repos like `good-night-oppie/bene-site` or `bene.foo`, which
+# are NOT the canonical source. `(?![\w.-])` forbids a trailing repo-name char.
+CANONICAL_REPO_RE = re.compile(re.escape(CANONICAL_REPO) + r"(?![\w.-])")
 FORBIDDEN_REPO_TOKEN = "EdwardTang"  # bene-site marketing mirror — never canonical
 ZH_PRIORITY_DOCS = ("README.md", "cli-reference.md", "integrating-bene.md")
 ZH_HONEST_BANNER = "中文索引 / 翻译中"
 SEMVER_ON_PAGE = re.compile(r"v(\d+\.\d+\.\d+)")
+# Docs cite versions as a backtick-quoted bare semver (e.g. `0.2.0`) rather than
+# the `vX.Y.Z` landing-page form, so the freshness check on zh docs needs its own
+# pattern. Anchored on a backtick to avoid matching incidental x.y.z numbers in prose.
+SEMVER_IN_DOC = re.compile(r"`v?(\d+\.\d+\.\d+)`")
 HTTP_TIMEOUT = 25
 
 # Guard against running from the wrong tree (mirrors build-docs.py's defense):
@@ -89,19 +97,33 @@ def repo_version() -> str:
 
 
 # ── CHECK 1 ────────────────────────────────────────────────────────────────
-def check_version_triple_match(g: Gate, *, check_pypi: bool) -> None:
+def check_version_triple_match(g: Gate, *, check_pypi: bool, live_base: str | None = None) -> None:
     g.lines.append("CHECK 1 — version triple-match")
     rv = repo_version()
     g.note(f"pyproject.toml version = {rv}")
 
-    for page in ("site/index.html", "site/zh/index.html"):
-        found = sorted(set(SEMVER_ON_PAGE.findall(_read(page))))
+    def assert_page_version(label: str, html: str) -> None:
+        found = sorted(set(SEMVER_ON_PAGE.findall(html)))
         if not found:
-            g.fail(f"{page}: no vX.Y.Z version string found at all")
+            g.fail(f"{label}: no vX.Y.Z version string found at all")
         elif found == [rv]:
-            g.ok(f"{page}: every version string == {rv}")
+            g.ok(f"{label}: every version string == {rv}")
         else:
-            g.fail(f"{page}: version drift — page has {found}, repo is {rv}")
+            g.fail(f"{label}: version drift — page has {found}, repo is {rv}")
+
+    for page in ("site/index.html", "site/zh/index.html"):
+        assert_page_version(page, _read(page))
+
+    if live_base:
+        base = live_base.rstrip("/")
+        for suffix in ("/", "/zh/"):
+            url = base + suffix
+            try:
+                html = _http_get(url)
+            except Exception as e:  # noqa: BLE001
+                g.fail(f"LIVE {url}: landing-page fetch failed ({e})")
+            else:
+                assert_page_version(f"LIVE {url}", html)
 
     if check_pypi:
         try:
@@ -124,7 +146,7 @@ def check_llms_canonical(g: Gate, *, live_base: str | None) -> None:
 
     def assert_canonical(label: str, text: str) -> None:
         bad = text.count(FORBIDDEN_REPO_TOKEN)
-        if CANONICAL_REPO not in text:
+        if not CANONICAL_REPO_RE.search(text):
             g.fail(f"{label}: canonical repo '{CANONICAL_REPO}' is missing")
         elif bad:
             g.fail(f"{label}: {bad} '{FORBIDDEN_REPO_TOKEN}' ref(s) — must be 0")
@@ -145,18 +167,51 @@ def check_cn_no_fake_promises(g: Gate, *, live_base: str | None) -> None:
     g.lines.append("CHECK 3 — Chinese docs promise no translations that don't exist")
 
     builder = _read("site/build-docs.py")
-    if ZH_HONEST_BANNER in builder:
-        g.ok(f"build-docs.py emits the honest banner '{ZH_HONEST_BANNER}'")
-    else:
+    # A bare `ZH_HONEST_BANNER in builder` is too weak: that token ('中文索引 /
+    # 翻译中') is also the zh title-suffix / index label, so it stays present
+    # even if the *visible* per-page fallback banner were deleted. Assert the
+    # actual banner-emitting code path instead: the `zh-banner` element, its
+    # honest body text, and the template hole (`{banner}`) that renders it onto
+    # every untranslated zh page.
+    banner_signals = {
+        "title suffix label": ZH_HONEST_BANNER in builder,
+        "zh-banner element": 'class="zh-banner"' in builder,
+        "honest body text": "本页中文版正在按照" in builder,
+        "page template hole": "{banner}" in builder,
+    }
+    missing_signals = [name for name, present in banner_signals.items() if not present]
+    if missing_signals:
         g.fail(
-            f"build-docs.py is missing the honest banner '{ZH_HONEST_BANNER}' — untranslated zh pages would look translated"
+            "build-docs.py honest-banner mechanism is incomplete "
+            f"(missing: {missing_signals}) — untranslated zh pages would look translated"
+        )
+    else:
+        g.ok(
+            "build-docs.py emits the visible per-page zh fallback banner (zh-banner div + body + {banner} hole)"
         )
 
+    rv = repo_version()
     missing = [d for d in ZH_PRIORITY_DOCS if not (ROOT / "docs" / "zh" / d).is_file()]
     if missing:
         g.fail(f"priority zh translations missing: {missing}")
     else:
         g.ok(f"priority zh translations present: {list(ZH_PRIORITY_DOCS)}")
+        # Existence is not enough: a stale translation can still ship an old
+        # version number (e.g. integrating-bene.md citing 0.2.0 after the repo
+        # moved to 0.2.1). Mirror CHECK 1's version-drift discipline on each
+        # present doc — any vX.Y.Z it mentions must equal the repo version.
+        for d in ZH_PRIORITY_DOCS:
+            path = ROOT / "docs" / "zh" / d
+            if not path.is_file():
+                continue
+            found = sorted(
+                set(SEMVER_IN_DOC.findall(path.read_text(encoding="utf-8", errors="replace")))
+            )
+            drift = [v for v in found if v != rv]
+            if drift:
+                g.fail(f"docs/zh/{d}: stale version(s) {drift} — repo is {rv}")
+            else:
+                g.ok(f"docs/zh/{d}: no version drift (versions seen: {found or 'none'})")
 
     if live_base:
         url = live_base.rstrip("/") + "/zh/docs/"
@@ -186,7 +241,7 @@ def main(argv: list[str] | None = None) -> int:
     live_base = args.all or args.live
 
     g = Gate()
-    check_version_triple_match(g, check_pypi=check_pypi)
+    check_version_triple_match(g, check_pypi=check_pypi, live_base=live_base)
     check_llms_canonical(g, live_base=live_base)
     check_cn_no_fake_promises(g, live_base=live_base)
 
