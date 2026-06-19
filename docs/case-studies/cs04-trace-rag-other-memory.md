@@ -41,12 +41,14 @@ to remember"; the harness records the path as it walks it. The unit is a
 ### A compression ladder, not a flat store
 
 Engrams live on a tiered ladder (0–4): raw traces at the bottom, progressively
-compressed summaries above. Cheap, high-level tiers are searched first; a hit
-drills down into the detailed tier only when it earns the cost. You query a slice
-of the ladder explicitly when you want to:
+compressed summaries above. The MemGAS router probes every configured tier,
+entropy-routes and weights them, then merges the surviving hits. You query a
+slice of the ladder explicitly when you want to (`--tiers` only takes effect
+under the MemGAS router, so pass `--memgas` unless you've set
+`kernel.memgas.enabled: true` in `bene.yaml`):
 
 ```bash
-bene retrieve "why did the regression gate reject candidate 7" --tiers 0,2,3 --k 5
+bene retrieve "why did the regression gate reject candidate 7" --memgas --tiers 0,2,3 --k 5
 ```
 
 ### Retrieval that routes, not just matches
@@ -61,14 +63,16 @@ bene retrieve "common failure modes on auth refactors" --memgas
 bene retrieve "common failure modes on auth refactors" --adaptive   # force fallback
 ```
 
-### Scoped by agent, attributable
+### Attributable by agent
 
-A query can be attributed to the asking agent, so retrieval respects the same
-isolation the VFS does — memory compounds across the system without one agent's
-private workspace leaking into another's answers:
+A query can be attributed to the asking agent. `--agent` tags the query engram
+itself for provenance — it records *who asked* — so the query trail is
+auditable. It is not an isolation filter: retrieval still searches every agent's
+engrams, and memory compounds across the whole system. Pass an existing
+`agent_id` (the generated ULID, not the `--name` you gave `bene run`):
 
 ```bash
-bene retrieve "what broke last time we touched the parser" --agent refactor-bot
+bene retrieve "what broke last time we touched the parser" --agent <agent_id>
 ```
 
 ## Insights
@@ -77,8 +81,8 @@ bene retrieve "what broke last time we touched the parser" --agent refactor-bot
   not a discipline agents must remember — is what makes the corpus complete
   enough to be worth retrieving.
 - **Compress, don't accumulate.** A flat log of every turn is unsearchable at
-  scale; a ladder of summaries with drill-down keeps retrieval cheap as the
-  corpus grows.
+  scale; a ladder of summaries the router entropy-weights and merges keeps
+  retrieval focused as the corpus grows.
 - **Inheritance beats re-derivation.** The measurable win is not "the agent has
   more context" — it is "the agent skips the dead ends the last one already
   mapped." The path walked is the asset.

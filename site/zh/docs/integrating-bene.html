@@ -312,7 +312,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <li>~~<strong>把翻车现场的元数据重新塞回去</strong>~~ —— <strong>这坑已经被填平了，不用你管了。</strong> 在 0.30 版本的引擎升级之前，用户还得自己把工具报错的结果包装成印记元数据重新塞回去，那个实盘的 <code>localize</code> 抓虫命令才能用。现在的引擎已经学会了每次调用完工具就自己吐一个 tier-0 的印记，所以现在的实盘跑完直接就能拉出来剖尸抓虫。</li>
 </ol>
 <h2 id="030">0.30 版内核手术到底改了什么</h2>
-<p>这批是在内核层面对运行时 (runtime) 做出的修复（虽然你在包管理器里看到的版本号还是 <code>0.2.0</code>；这一节只是为了在文档门户里给这些改动一个交待）：</p>
+<p>这批是在内核层面对运行时 (runtime) 做出的修复，已经随 <code>0.2.1</code> 这个发布版一起打进包里了：</p>
 <ul>
 <li><strong><code>bene failure localize</code> 现在真的能在一地鸡毛的实盘里抓虫了</strong> —— 引擎现在学乖了，每一次从工具里爬出来，都会甩下一个 tier-0 的印记 (<code>tool_name</code> / <code>status</code> / <code>error_message</code>)。这就意味着 "跑一遍留一地印记 → 拿着 localize 去翻印记找死因" 这条链条在全链路上被彻底走通了，再也不用像以前那样靠人工去伪造那些测试用的印记了。</li>
 <li><strong><code>bene query</code> 被从底层阉割成了纯只读</strong> —— 靠着底层的 <code>PRAGMA query_only</code> 死死按住的。哪怕你拿个带着 <code>WITH … DELETE</code> 的 CTE 嵌套，或者是用注释把写命令伪装起来，都绝对骗不过底层的封锁线；任何试图搞破坏的写操作都会当场挨一记 <code>PermissionError</code> 耳光。</li>

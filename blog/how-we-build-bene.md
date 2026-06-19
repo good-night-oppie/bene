@@ -53,12 +53,13 @@ kill-gated probe everything else does — *disposes*.
 bene --json mh search --benchmark agentic_coding   # mutate + evaluate; .search_agent_id holds the full id
 bene mh frontier <search-agent-id>                 # the Pareto frontier that survived
 # (the plain-TTY run abbreviates the id in its summary; --json prints the exact one mh frontier needs.
-#  add --background to detach a worker instead of running in the foreground.)
+#  add --background to detach a worker — but it returns only {pid, log_path}, NOT the search-agent
+#  id (the detached worker never prints it), so use the foreground form above when you need the id.)
 ```
 
 Selection is patient and gated: no candidate promotes by looking good in a demo,
-only by passing a held-out gate that could have killed it. Progress that can't be
-falsified isn't progress.
+only by passing the hash-locked improvement probe that could have ACCEPT-or-killed
+it. Progress that can't be falsified isn't progress.
 
 ## What ties the loops together: memory
 
