@@ -503,3 +503,31 @@ def test_continual_robust_under_noisy_eval():
     accepted = [d for d in out.decisions if d.status == ACCEPTED_SWAPPED]
     assert out.n_swaps == len(accepted) == len(out.swaps)
     assert all(d.swap_id for d in accepted)
+
+
+def test_unobserved_baseline_voids_before_gate():
+    """PR #71 review: when the incumbent replay window reports 0 observed battles (an
+    arena timeout / empty replay), the swap must VOID before registering/running the gate
+    — else a child with games + uplift ACCEPTs vacuously against an unobserved baseline.
+    The refiner must not even be reached."""
+    from bene.kernel.codex_harness import CodexEvalResult
+
+    def _must_not_refine(harness, trajectory, sigs):
+        raise AssertionError("must VOID before the refiner when the baseline is unobserved")
+
+    store, conn = open_eval_db()
+    mut = ContinualCodexMutator(
+        store, conn, refine_fn=_must_not_refine, replay_eval_fn=mock_replay_eval
+    )
+    h = seed_codex_harness()
+    base = mock_replay_eval(h, 0, 20)
+    unobserved = CodexEvalResult(
+        fitness=base.fitness.replace(battles_played=0),
+        trajectory=base.trajectory,
+        failure_signatures=base.failure_signatures,
+        training_tuples=base.training_tuples,
+    )
+    d = mut.maybe_swap("ep", h, {"reason": "t"}, turn=0, baseline_eval=unobserved)
+    assert d.status == VOIDED
+    assert not d.swapped
+    assert mut.swap_history("ep") == []
