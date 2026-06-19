@@ -123,3 +123,30 @@ def test_empty_training_manifest_voids():
     r = out.killgate_report
     assert r["verdict"] == VOID
     assert r["killed_gates"] == ["empty_training_manifest"]
+
+
+def test_void_branch_persists_a_verdict(tmp_path):
+    """The voided branch bypasses probe.run(), so it must persist the VOID itself —
+    otherwise the run is VOID in killgate_report but absent from experiment_runs /
+    eval engrams, and `bene experiments ls` misses it (PR #66 review)."""
+    import sqlite3
+
+    db = str(tmp_path / "eval.db")
+    out = evolve_codex_harness(
+        seed_codex_harness(),
+        mock_refiner,
+        mock_codex_eval,
+        n_gen=3,
+        run_seed=11,
+        heldout_manifest=HeldoutManifest.from_tuples([]),  # empty -> VOID branch
+        db_path=db,
+        bus_path=False,
+    )
+    assert out.killgate_report["verdict"] == VOID
+
+    # The verdict must be a first-class persisted record, not only a dict field:
+    # experiment_runs is exactly what `bene experiments ls` reads.
+    con = sqlite3.connect(db)
+    runs = con.execute("SELECT summary FROM experiment_runs WHERE kind = 'probe'").fetchall()
+    con.close()
+    assert any("-> VOID" in (s[0] or "") for s in runs), runs

@@ -49,7 +49,7 @@ from bene.kernel.codex_harness.killgate import (
     open_eval_db,
 )
 from bene.kernel.codex_harness.lineage import write_lineage
-from bene.kernel.eval import VOID
+from bene.kernel.eval import VOID, Verdict, persist_verdict
 from bene.kernel.eval.gates import lock_hash
 
 RefineFn = Callable[[CodexHarness, dict[str, Any], list[str]], list[Mutation]]
@@ -304,6 +304,24 @@ def evolve_codex_harness(
                 "gate_results": [],
                 "heldout_overlap_count": len(ov),
             })
+
+    # The voided branch above bypasses probe.run(), which is what normally persists the
+    # verdict to eval engrams + experiment_runs. Persist the VOID ourselves so it is a
+    # first-class record — otherwise `bene experiments ls` misses a run that killgate_report
+    # reports as VOID, and no refutes-link/engram exists for it. (PR #66 review)
+    if voided:
+        persist_verdict(
+            Verdict(
+                status=VOID,
+                probe_name=PROBE_NAME,
+                gate_results=[{"name": g, "killed": True} for g in killgate_report["killed_gates"]],
+                reason=killgate_report["killed_gates"][0],
+            ),
+            store=store,
+            conn=conn,
+            probe_id=probe.probe_id,
+            subject_ref=best.harness_id,
+        )
 
     # Final hash-locked kill-gate verdict: best-ever vs seed (anti-vacuous gens stamp).
     if not voided:
