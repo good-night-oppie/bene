@@ -531,3 +531,54 @@ def test_unobserved_baseline_voids_before_gate():
     assert d.status == VOIDED
     assert not d.swapped
     assert mut.swap_history("ep") == []
+
+
+def test_swapped_child_recoverable_from_db(tmp_path):
+    """PR #71 review: an accepted swap persists the child harness + the mutation, so a
+    NEW mutator on the SAME db_path can HYDRATE + audit the active harness — not just read
+    its id (the local-first replay/genealogy use case for resumed episodes)."""
+    db = str(tmp_path / "ep.db")
+    store, conn = open_eval_db(db)
+    mut = ContinualCodexMutator(
+        store, conn, refine_fn=strong_refiner, replay_eval_fn=mock_replay_eval
+    )
+    d = mut.maybe_swap("ep", seed_codex_harness(), {"reason": "t"}, turn=0)
+    assert d.swapped  # strong_refiner clears the gate
+    conn.commit()
+    conn.close()
+
+    # a fresh process/mutator on the SAME db hydrates the child, not just its id
+    store2, conn2 = open_eval_db(db)
+    mut2 = ContinualCodexMutator(
+        store2, conn2, refine_fn=strong_refiner, replay_eval_fn=mock_replay_eval
+    )
+    assert mut2.active_harness_id("ep") == d.new_harness.harness_id
+    recovered = mut2.recover_harness("ep")
+    assert recovered is not None
+    assert recovered.harness_id == d.new_harness.harness_id
+    assert recovered.content_hash() == d.new_harness.content_hash()  # full content, not just id
+    rec = mut2.swap_history("ep")[-1]
+    assert rec["mutation_diff"] is not None  # mutation auditable from the DB
+    assert rec["mutation_provenance"] is not None
+
+
+def test_recovery_columns_migrated_onto_legacy_table(tmp_path):
+    """PR #71 review: a pre-recovery B3 table (no recovery columns) is migrated via
+    ALTER TABLE on mutator init, so swaps persist + recover."""
+    db = str(tmp_path / "legacy.db")
+    store, conn = open_eval_db(db)
+    conn.execute(
+        "CREATE TABLE codex_continual_swaps (swap_id TEXT PRIMARY KEY, episode_id TEXT NOT NULL,"
+        " turn INTEGER NOT NULL DEFAULT 0, trigger_reason TEXT NOT NULL, from_harness_id TEXT"
+        " NOT NULL, to_harness_id TEXT NOT NULL, mutation_kind TEXT NOT NULL, target_path TEXT,"
+        " verdict TEXT NOT NULL, uplift REAL NOT NULL, swap_at TEXT)"
+    )
+    conn.commit()
+    mut = ContinualCodexMutator(
+        store, conn, refine_fn=strong_refiner, replay_eval_fn=mock_replay_eval
+    )
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(codex_continual_swaps)")}
+    assert {"to_harness_json", "mutation_diff", "mutation_provenance"} <= cols
+    d = mut.maybe_swap("ep", seed_codex_harness(), {"reason": "t"}, turn=0)
+    assert d.swapped
+    assert mut.recover_harness("ep").harness_id == d.new_harness.harness_id
