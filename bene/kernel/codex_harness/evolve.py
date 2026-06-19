@@ -250,6 +250,15 @@ def evolve_codex_harness(
     seed_fv_baseline = seed_fv.replace(gens_completed=0)
 
     accepted_kinds = archive.accepted_mutation_kinds()
+    # winning_mutation_nonprompt (SPEC DONE #2) must reflect the BEST/promoted LINEAGE only,
+    # NOT every archived improver. Open-ended DGM archives every child that beats the
+    # incumbent, so a non-prompt side branch that was archived but never promoted would
+    # otherwise flip this flag True even when the winning lineage is prompt-only — letting a
+    # caller enforcing SPEC DONE #2 accept the wrong (prompt-only) run. Walk best's genealogy
+    # back to the seed and derive the flag from those mutation kinds. (PR #67 review)
+    winning_kinds = [
+        e.mutation_kind for e in archive.lineage_of(best.harness_id) if e.mutation_kind is not None
+    ]
     killgate_report: dict[str, Any] = {
         "best_harness_id": best.harness_id,
         "seed_harness_id": seed.harness_id,
@@ -260,7 +269,8 @@ def evolve_codex_harness(
         "battles_played": best_fv_final.battles_played,
         "total_battles_played": total_battles,
         "accepted_mutation_kinds": accepted_kinds,
-        "winning_mutation_nonprompt": any(k != "prompt" for k in accepted_kinds),
+        "winning_mutation_kinds": winning_kinds,
+        "winning_mutation_nonprompt": any(k != "prompt" for k in winning_kinds),
         "rollbacks": rollbacks,
         "archive_size": len(archive),
     }
