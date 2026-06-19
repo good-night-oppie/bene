@@ -111,12 +111,17 @@ def _append_harness_engram(store: Any, harness: CodexHarness) -> str:
     ``engrams(engram_id)`` — passing a raw harness_id there creates a dangling link (and
     raises under PRAGMA foreign_keys=ON, as the main engine sets). Persist the harness so the
     verdict->candidate provenance is a real, traversable link. (PR #64 review)
+
+    A genome lives at the ``strategic`` tier 4 — the canonical genome/gene tier used by
+    ReflectiveEvolver, GEPA, and the metaharness bridge — so strategic-genome surfaces find
+    it. (PR #82 review)
     """
     return store.append(
         "strategic",
         f"codex-harness:{harness.harness_id}",
         harness.to_json(),
         provenance={"system": "bene.kernel.codex_harness.evolve"},
+        tier=4,
         metadata={"harness_id": harness.harness_id, "content_hash": harness.content_hash()},
     )
 
