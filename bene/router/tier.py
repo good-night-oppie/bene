@@ -142,7 +142,9 @@ class TierRouter:
                 max_context=mcfg.get("max_context", 32768),
                 use_for=mcfg.get("use_for", []),
                 provider=provider,
-                model_id=mcfg.get("model_id", name),
+                # codex owns its default model; an omitted model_id must stay EMPTY so
+                # the provider picks gpt-5.4-mini, not the bene.yaml key as `-m <key>`.
+                model_id=mcfg.get("model_id", "" if provider == "codex" else name),
                 api_key_env=mcfg.get("api_key_env", ""),
                 timeout=float(mcfg.get("timeout", 300.0)),
                 cwd=mcfg.get("cwd"),
@@ -226,11 +228,19 @@ class TierRouter:
         config: dict,
     ) -> ModelResponse:
         """Call a model via any provider (local vLLM, OpenAI, or Anthropic)."""
-        # Use model_id for API providers (e.g. "gpt-4o"), model_name for local
+        # Use model_id for API providers (e.g. "gpt-4o"), model_name for local.
+        # Subscription-CLI providers (codex/claude_code/agent_sdk) own their DEFAULT
+        # model: when a config omits an explicit model_id, pass an empty model so the
+        # provider picks its own default — never the bene.yaml KEY (e.g. "gpt-codex"),
+        # which would become `codex exec -m gpt-codex`, an invalid model. (PR #68 review)
         model_config = self.models.get(model_name)
-        actual_model = (
-            model_config.model_id if model_config and model_config.model_id else model_name
-        )
+        _CLI_PROVIDERS = {"codex", "claude_code", "agent_sdk"}
+        if model_config and model_config.model_id:
+            actual_model = model_config.model_id
+        elif model_config and model_config.provider in _CLI_PROVIDERS:
+            actual_model = ""
+        else:
+            actual_model = model_name
 
         last_error = None
         for attempt in range(self.max_retries):
