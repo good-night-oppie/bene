@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS codex_continual_swaps (
     -- harness from bene.db, not just read its id. NULL on legacy rows (pre-migration).
     to_harness_json      TEXT,
     mutation_diff        TEXT,
+    mutation_rationale   TEXT,
     mutation_provenance  TEXT,
     swap_at          TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%f','now'))
 );
@@ -106,7 +107,7 @@ CREATE INDEX IF NOT EXISTS idx_codex_continual_swaps_ep
 
 # Recovery columns added after the original B3 table (PR #71); older dbs are migrated
 # in __init__ via ALTER TABLE so a resume can hydrate the active harness.
-_RECOVERY_COLS = ("to_harness_json", "mutation_diff", "mutation_provenance")
+_RECOVERY_COLS = ("to_harness_json", "mutation_diff", "mutation_rationale", "mutation_provenance")
 
 _SWAP_COLS = (
     "swap_id",
@@ -195,8 +196,16 @@ class ContinualCodexMutator:
         # db_path resume can hydrate the swapped-in harness. Idempotent. (PR #71 review)
         _have = {r[1] for r in self.conn.execute("PRAGMA table_info(codex_continual_swaps)")}
         for _col in _RECOVERY_COLS:
-            if _col not in _have:
+            if _col in _have:
+                continue
+            try:
                 self.conn.execute(f"ALTER TABLE codex_continual_swaps ADD COLUMN {_col} TEXT")
+            except sqlite3.OperationalError as exc:
+                # A concurrent mutator on the same db may add the column between our
+                # PRAGMA read and this ALTER; tolerate that race, re-raise anything else
+                # (the column ends up present either way). (PR #77 review)
+                if "duplicate column name" not in str(exc).lower():
+                    raise
         self.conn.commit()
 
     # ---------------- read surface ----------------
@@ -427,8 +436,8 @@ class ContinualCodexMutator:
         self.conn.execute(
             "INSERT INTO codex_continual_swaps (swap_id, episode_id, turn, trigger_reason,"
             " from_harness_id, to_harness_id, mutation_kind, target_path, verdict, uplift,"
-            " to_harness_json, mutation_diff, mutation_provenance)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            " to_harness_json, mutation_diff, mutation_rationale, mutation_provenance)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 swap_id,
                 episode_id,
@@ -440,10 +449,12 @@ class ContinualCodexMutator:
                 mutation.target_path,
                 verdict_status,
                 float(uplift),
-                # Recovery payload: the full child harness + the mutation that produced it,
-                # so a db_path resume can rebuild + audit the active harness (PR #71 review).
+                # Recovery payload: the full child harness + the WHOLE Contract-M mutation
+                # (diff + rationale + provenance), so a db_path resume can rebuild + audit
+                # the active harness and the reasoning that produced it (PR #71/#77 review).
                 child.to_json(),
                 mutation.diff,
+                mutation.rationale,
                 json.dumps(mutation.provenance or {}),
             ),
         )
@@ -534,7 +545,11 @@ def run_continual_episode(
         step = max(1, min_turns_between_swaps)
         trigger_turns = list(range(0, max(1, n_turns), step))
 
-    active = seed
+    # Resume: if this episode already has swaps in the DB (same episode_id + db_path),
+    # continue from the last swapped-in child, not the seed — otherwise the next swap would
+    # fork from H0-seed again and record the wrong active harness, while swap_history /
+    # budget / cooldown are already read from the prior swaps. (PR #77 review)
+    active = mut.recover_harness(episode_id) or seed
     decisions: list[CodexSwapDecision] = []
     n_rejected = 0
     n_rollbacks = 0
