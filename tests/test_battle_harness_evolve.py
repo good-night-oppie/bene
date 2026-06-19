@@ -290,3 +290,37 @@ def test_mock_fitness_deterministic():
     fv2 = mock_fitness(h0, run_seed=42)
     assert fv1.win_rate == fv2.win_rate
     assert fv1.battles_played == 30  # never zero
+
+
+def test_seed_harness_canonical_fields():
+    """seed_harness() must exactly match adx_showdown canonical H0 schema."""
+    h0 = seed_harness()
+    assert h0.harness_id == "H0-seed"
+    assert h0.params["aggression"] == 1.0
+    assert h0.params["switch_threshold_hp"] == 0.25
+    assert h0.params["risk_tolerance"] == 0.5
+    assert h0.move_selection_strategy == "max_damage"
+    assert h0.tool_policy["allow_switch"] is True
+    assert h0.tool_policy["lookahead_depth"] == 1
+
+
+def test_from_adx_dict_roundtrip():
+    """BattleHarness.from_adx_dict() must produce a structurally identical genome."""
+    h0 = seed_harness()
+    rebuilt = BattleHarness.from_adx_dict(h0.to_dict())
+    assert rebuilt.harness_id == h0.harness_id
+    assert rebuilt.params == h0.params
+    assert rebuilt.tool_policy == h0.tool_policy
+    assert rebuilt.move_selection_strategy == h0.move_selection_strategy
+
+
+def test_mutate_non_finite_guard():
+    """mutate() must not produce NaN or inf in params."""
+    import math as _math
+    h0 = seed_harness()
+    rng = random.Random(0)
+    for _ in range(50):
+        child = h0.mutate(rng)
+        for v in child.params.values():
+            if isinstance(v, float):
+                assert _math.isfinite(v), f"non-finite param: {v}"
