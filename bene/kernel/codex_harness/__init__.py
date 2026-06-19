@@ -32,6 +32,11 @@ from bene.kernel.codex_harness.genome import (
     mock_refiner,
     seed_codex_harness,
 )
+from bene.kernel.codex_harness.heldout import (
+    HeldoutManifest,
+    is_disjoint,
+    overlap,
+)
 from bene.kernel.codex_harness.killgate import (
     KILLGATE_GATES,
     PROBE_NAME,
@@ -52,12 +57,15 @@ __all__ = [
     "DGMArchive",
     "EvolveOutput",
     "GenerationLog",
+    "HeldoutManifest",
     "Mutation",
     "build_killgate",
     "evolve_codex_harness",
+    "is_disjoint",
     "mock_apply",
     "mock_codex_eval",
     "mock_refiner",
     "open_eval_db",
+    "overlap",
     "seed_codex_harness",
 ]

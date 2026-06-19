@@ -41,8 +41,16 @@ from bene.kernel.codex_harness.genome import (
     Mutation,
     mock_apply,
 )
-from bene.kernel.codex_harness.killgate import build_killgate, open_eval_db
+from bene.kernel.codex_harness.heldout import HeldoutManifest, overlap
+from bene.kernel.codex_harness.killgate import (
+    KILLGATE_GATES,
+    PROBE_NAME,
+    build_killgate,
+    open_eval_db,
+)
 from bene.kernel.codex_harness.lineage import write_lineage
+from bene.kernel.eval import VOID
+from bene.kernel.eval.gates import lock_hash
 
 RefineFn = Callable[[CodexHarness, dict[str, Any], list[str]], list[Mutation]]
 ApplyFn = Callable[[CodexHarness, Mutation], "CodexHarness | None"]
@@ -78,6 +86,7 @@ def evolve_codex_harness(
     apply_fn: ApplyFn = mock_apply,
     candidates_per_gen: int = 4,
     n_battles: int = 30,
+    heldout_manifest: HeldoutManifest | None = None,
     db_path: str | None = None,
     bus_path: str | None = None,
 ) -> EvolveOutput:
@@ -96,6 +105,11 @@ def evolve_codex_harness(
                             (reject -> rollback). Defaults to ``mock_apply``.
         candidates_per_gen: max children evaluated per generation.
         n_battles:          battles per held-out evaluation (anti-vacuous: >0).
+        heldout_manifest:   the frozen, hash-locked held-out tuple set (防偷懒). When
+                            given, the run's accumulated training tuples must be DISJOINT
+                            from it; overlap -> VOID (inadmissible eval, not REJECT). On a
+                            disjoint run the three hashes (probe_lock / heldout / training)
+                            are stamped so the promotion is post-hoc provable.
         db_path:            bene.db path for kill-gate persistence; None -> in-memory.
         bus_path:           A2A fleet bus path; None -> default; False -> skip lineage.
     """
@@ -108,6 +122,9 @@ def evolve_codex_harness(
     # ACT/OBSERVE the seed (baseline).
     seed_eval = eval_fn(seed, run_seed, n_battles)
     seed_fv: CodexFitness = seed_eval.fitness.replace(gens_completed=0)
+
+    # Accumulate every tuple any candidate trained on, for the held-out disjointness gate.
+    training_tuples: list[list] = list(seed_eval.training_tuples)
 
     # Register the hash-locked kill-gate against the seed baseline. The identity
     # self-test (seed vs seed -> uplift 0 -> gate kills) makes the probe admissible.
@@ -164,6 +181,7 @@ def evolve_codex_harness(
 
             child_eval = eval_fn(child, run_seed, n_battles)
             total_battles += n_battles
+            training_tuples.extend(child_eval.training_tuples)
             evaluated += 1
             gen_candidates.append({
                 "harness_id": child.harness_id,
@@ -212,23 +230,11 @@ def evolve_codex_harness(
             promoted=promoted,
         ))
 
-    # Final hash-locked kill-gate verdict: best-ever vs seed (anti-vacuous gens stamp).
     best_fv_final = best_fv.replace(gens_completed=n_gen)
     seed_fv_baseline = seed_fv.replace(gens_completed=0)
-    verdict = probe.run(
-        subject=best_fv_final,
-        baseline=seed_fv_baseline,
-        store=store,
-        conn=conn,
-        subject_ref=best.harness_id,
-    )
 
     accepted_kinds = archive.accepted_mutation_kinds()
     killgate_report: dict[str, Any] = {
-        "verdict": verdict.status,
-        "probe": verdict.probe_name,
-        "killed_gates": verdict.killed_gates,
-        "gate_results": verdict.gate_results,
         "best_harness_id": best.harness_id,
         "seed_harness_id": seed.harness_id,
         "seed_win_rate": seed_fv.win_rate,
@@ -243,6 +249,44 @@ def evolve_codex_harness(
         "archive_size": len(archive),
     }
 
+    # Held-out anti-overfit gate (防偷懒) — runs BEFORE the win-rate gate. If the run's
+    # accumulated training tuples overlap the frozen held-out manifest, the eval is
+    # inadmissible -> VOID (distinct from a REJECT of a genuine-but-losing candidate).
+    # On a disjoint run the three hashes are stamped so the promotion is post-hoc
+    # provable as "scored on data it never trained on".
+    voided = False
+    if heldout_manifest is not None:
+        training_manifest = HeldoutManifest.from_tuples([tuple(t) for t in training_tuples])
+        killgate_report["probe_lock_sha256"] = lock_hash(KILLGATE_GATES)
+        killgate_report["heldout_manifest_sha256"] = heldout_manifest.manifest_hash()
+        killgate_report["training_manifest_sha256"] = training_manifest.manifest_hash()
+        ov = overlap(heldout_manifest, training_manifest)
+        if ov:
+            voided = True
+            killgate_report.update({
+                "verdict": VOID,
+                "probe": PROBE_NAME,
+                "killed_gates": ["heldout_disjointness"],
+                "gate_results": [],
+                "heldout_overlap_count": len(ov),
+            })
+
+    # Final hash-locked kill-gate verdict: best-ever vs seed (anti-vacuous gens stamp).
+    if not voided:
+        verdict = probe.run(
+            subject=best_fv_final,
+            baseline=seed_fv_baseline,
+            store=store,
+            conn=conn,
+            subject_ref=best.harness_id,
+        )
+        killgate_report.update({
+            "verdict": verdict.status,
+            "probe": verdict.probe_name,
+            "killed_gates": verdict.killed_gates,
+            "gate_results": verdict.gate_results,
+        })
+
     # SharedLog lineage (best-effort; non-fatal on bus failure).
     if bus_path is not False:
         write_lineage(
@@ -252,7 +296,7 @@ def evolve_codex_harness(
                 "task": "codex-harness-evolution",
                 "run_seed": run_seed,
                 "n_gen": n_gen,
-                "verdict": verdict.status,
+                "verdict": killgate_report["verdict"],
                 "uplift": killgate_report["uplift"],
                 "best_harness_id": best.harness_id,
                 "archive_size": len(archive),
