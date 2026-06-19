@@ -237,6 +237,15 @@ class ContinualCodexMutator:
         if baseline_eval is None:
             baseline_eval = self.replay_eval_fn(active_harness, run_seed, window)
         baseline_fv = baseline_eval.fitness
+        # Anti-vacuous: the incumbent's replay window must have OBSERVED battles. An arena
+        # timeout / empty replay yields battles_played==0, and the CONTINUAL_GATES
+        # anti-vacuous gate only checks the CHILD — so a child with games + uplift would
+        # ACCEPT against an unobserved baseline, making the hot-swap vacuous. VOID before
+        # registering/running the gate (an inadmissible comparison, not a REJECT). (PR #71 review)
+        if baseline_fv.battles_played <= 0:
+            return CodexSwapDecision(
+                VOIDED, "incumbent replay window reported 0 observed battles (vacuous baseline)"
+            )
         self._ensure_probe(active_harness, baseline_fv)
 
         failure_sigs = trigger.get("failure_signatures")
