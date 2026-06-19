@@ -119,19 +119,15 @@ class CodexHarness:
         A prompt-only BattleHarness is a valid CodexHarness (SPEC back-compat). The
         ``harness_ref`` (if present) points at the resource dir for code resources.
 
-        Invariant (PR #64 review): on the real ADX path a ``harness_ref`` must come with
-        its loaded ``resources`` map — a harness that points at an on-disk resource dir
-        but carries no resources would content-address by head alone, so distinct dirs
-        could collide in the DGM archive. Reject it here rather than silently mis-hash.
+        A ``harness_ref``-only dict (the documented real ADX wire form, where ``harness_ref``
+        IS the resource dir and the resources are not inlined) is accepted as-is: since
+        ``content_hash`` now folds ``harness_ref`` (CID 3440239268), two distinct on-disk
+        dirs no longer collide even with an empty in-memory ``resources`` map, so the earlier
+        reject-on-empty-resources guard (PR #64 review) is no longer needed and would reject
+        a legitimate resource-dir harness. (PR #83 review)
         """
         harness_ref = d.get("harness_ref")
         resources = dict(d.get("resources") or {})
-        if harness_ref and not resources:
-            raise ValueError(
-                f"harness {d.get('harness_id')!r}: harness_ref={harness_ref!r} is set but "
-                "resources is empty — load the resource map before constructing the genome "
-                "(else distinct on-disk harness dirs collide on content_hash)"
-            )
         return cls(
             harness_id=d["harness_id"],
             system_prompt=d.get("system_prompt", ""),
