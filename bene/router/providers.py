@@ -700,6 +700,235 @@ class ClaudeCodeProvider(LLMProvider):
         pass  # No persistent connections
 
 
+# ── Codex / ChatGPT-subscription subprocess provider ─────────────
+
+
+class CodexProvider(LLMProvider):
+    """GPT-5.x via the `codex` CLI on a ChatGPT Pro/Plus subscription — NO API key.
+
+    Shells out to `codex exec` (non-interactive), which authenticates through
+    ``~/.codex/auth.json`` (the ChatGPT OAuth tokens, ``auth_mode=chatgpt``) — NOT a
+    pay-per-token OpenAI API key. Mirrors :class:`ClaudeCodeProvider` (which shells
+    ``claude --print`` on the Claude subscription). This is the **meta-harness
+    executor**: the model that writes/applies harness mutations for OHE + SECH.
+
+    The model is set with ``-m``; the call runs in a **read-only, ephemeral** sandbox
+    so a ``.chat()`` has no filesystem side effects — the model RETURNS the code/text
+    and the caller (the Refiner / Contract-S apply) is what writes it.
+
+    IMPORTANT — model availability (from ``~/.codex/models_cache.json`` for this
+    account): the ChatGPT account exposes exactly these via codex —
+      - ``gpt-5.5``              frontier (complex coding/research)
+      - ``gpt-5.4``             strong everyday coding
+      - ``gpt-5.4-mini``        small, cost-efficient (DEFAULT — cheapest coding model)
+      - ``gpt-5.3-codex-spark`` ultra-fast coding
+    **'gpt-4o' is NOT available** (codex rejects it: "The 'gpt-4o' model is not
+    supported when using Codex with a ChatGPT account"; so are gpt-5-codex / o4-mini /
+    the gpt-5-mini line). Per the "don't use the latest frontier, use the cheapest
+    coding model" directive, the default is ``gpt-5.4-mini``. Override via ``model_id``.
+
+    Usage in bene.yaml:
+        models:
+          gpt-codex:
+            provider: codex
+            model_id: gpt-5.4-mini   # cheapest ChatGPT-sub coding model; NOT gpt-4o
+            max_context: 200000
+            use_for: [code_generation]
+    """
+
+    # Same tool-call tag contract the ClaudeCodeProvider prompt uses, so this is a
+    # drop-in for the TierRouter interface. (Serialization mirrors ClaudeCodeProvider;
+    # a shared helper is a sensible follow-up refactor.)
+    _TOOL_CALL_RE = re.compile(
+        r'<tool_call\s+id="([^"]+)"\s+name="([^"]+)">\s*(.*?)\s*</tool_call>',
+        re.DOTALL,
+    )
+    # Cheapest coding model on the ChatGPT sub (gpt-4o is rejected; gpt-5.5 is frontier).
+    _DEFAULT_MODEL = "gpt-5.4-mini"
+    _FALLBACK_PATHS = [
+        os.environ.get("CODEX_EXECUTABLE", ""),
+        os.path.expanduser("~/.local/bin/codex"),
+        "/usr/local/bin/codex",
+        "/opt/homebrew/bin/codex",
+    ]
+
+    def __init__(self, model_id: str = "", timeout: float = 300.0, cwd: str | None = None):
+        self.model_id = model_id or self._DEFAULT_MODEL
+        self.timeout = timeout
+        self.cwd = cwd
+        self._codex_exe = self._find_codex()
+
+    def _find_codex(self) -> str:
+        ce = os.environ.get("CODEX_EXECUTABLE", "")
+        if ce and os.path.isfile(ce):
+            return ce
+        import shutil
+
+        found = shutil.which("codex")
+        if found:
+            return found
+        for path in self._FALLBACK_PATHS:
+            if path and os.path.isfile(path):
+                return path
+        return "codex"
+
+    def _serialize_conversation(self, messages: list[dict], tools: list[dict] | None) -> str:
+        """Flatten the conversation + tool defs into a single codex prompt string."""
+        parts: list[str] = [
+            "You are an autonomous coding executor. Continue the following structured "
+            "conversation precisely. Output only your response.\n"
+        ]
+        for msg in messages:
+            role = msg.get("role", "")
+            content = msg.get("content") or ""
+            if role == "system":
+                parts.append(f"[SYSTEM INSTRUCTIONS]\n{content}\n[/SYSTEM INSTRUCTIONS]\n")
+            elif role == "user":
+                parts.append(f"[USER]\n{content}\n[/USER]\n")
+            elif role == "assistant":
+                for tc in msg.get("tool_calls") or []:
+                    fn = tc.get("function", {})
+                    parts.append(
+                        f'[ASSISTANT TOOL CALL]\n<tool_call id="{tc["id"]}" '
+                        f'name="{fn["name"]}">\n{fn.get("arguments", "{}")}\n</tool_call>\n'
+                    )
+                if content:
+                    parts.append(f"[ASSISTANT]\n{content}\n[/ASSISTANT]\n")
+            elif role == "tool":
+                parts.append(
+                    f"[TOOL RESULT id={msg.get('tool_call_id', '')}]\n{content}\n[/TOOL RESULT]\n"
+                )
+        if tools:
+            tool_lines = [
+                f"  - {t.get('function', {}).get('name', '')}: "
+                f"{t.get('function', {}).get('description', '')}\n"
+                f"    parameters: {json.dumps(t.get('function', {}).get('parameters', {}))}"
+                for t in tools
+            ]
+            parts.append(
+                "\n[AVAILABLE TOOLS]\n" + "\n".join(tool_lines) + "\n[/AVAILABLE TOOLS]\n"
+                '\nTo call a tool, output EXACTLY:\n<tool_call id="tc_1" name="tool_name">\n'
+                '{"param": "value"}\n</tool_call>\n'
+                "When done with a final answer, output plain text with no XML tags.\n"
+            )
+        parts.append("\n[CONTINUE — your response:]")
+        return "\n".join(parts)
+
+    def _parse(self, output: str) -> LLMResponse:
+        """Parse codex output-last-message: tool_call blocks + plain text."""
+        tool_calls: list[dict] = []
+        text_segments: list[str] = []
+        last_end = 0
+        for m in self._TOOL_CALL_RE.finditer(output):
+            pre = output[last_end : m.start()].strip()
+            if pre:
+                text_segments.append(pre)
+            tc_id, tc_name, tc_args_raw = m.group(1), m.group(2), m.group(3).strip()
+            try:
+                args_str = json.dumps(json.loads(tc_args_raw))
+            except json.JSONDecodeError:
+                args_str = json.dumps({"raw": tc_args_raw})
+            tool_calls.append(
+                {"id": tc_id, "type": "function",
+                 "function": {"name": tc_name, "arguments": args_str}}
+            )
+            last_end = m.end()
+        tail = output[last_end:].strip()
+        if tail:
+            text_segments.append(tail)
+        final_text = "\n".join(text_segments) or None
+        return LLMResponse(
+            choices=[
+                LLMChoice(
+                    message=LLMMessage(
+                        role="assistant",
+                        content=final_text,
+                        tool_calls=tool_calls or None,
+                    ),
+                    finish_reason="tool_calls" if tool_calls else "end_turn",
+                )
+            ],
+        )
+
+    async def chat(
+        self,
+        model: str,
+        messages: list[dict],
+        temperature: float = 0.1,
+        max_tokens: int = 4096,
+        tools: list[dict] | None = None,
+        tool_choice: str | None = None,
+    ) -> LLMResponse:
+        import subprocess
+        import tempfile
+
+        prompt_bytes = self._serialize_conversation(messages, tools).encode("utf-8")
+        effective_model = model or self.model_id
+
+        # Capture the final assistant message via -o (a file) so we get a clean
+        # completion, not the noisy stderr (MCP/skill load warnings) or --json JSONL.
+        out_fd, out_path = tempfile.mkstemp(prefix="codex-out-", suffix=".txt")
+        os.close(out_fd)
+        cmd = [
+            self._codex_exe, "exec",
+            "--skip-git-repo-check", "--ephemeral",
+            "-s", "read-only", "--color", "never",
+            "-o", out_path,
+        ]
+        if effective_model:
+            cmd += ["-m", effective_model]
+        cmd += ["-"]  # read the prompt from stdin
+
+        # Force the ChatGPT-subscription auth path: strip any OPENAI_API_KEY so codex
+        # never falls back to a pay-per-token key (the task's hard requirement).
+        env = {k: v for k, v in os.environ.items() if k != "OPENAI_API_KEY"}
+
+        def _run_sync() -> subprocess.CompletedProcess:
+            return subprocess.run(
+                cmd, input=prompt_bytes, capture_output=True,
+                env=env, timeout=self.timeout, cwd=self.cwd,
+            )
+
+        loop = asyncio.get_running_loop()
+        try:
+            proc = await loop.run_in_executor(None, _run_sync)
+        except subprocess.TimeoutExpired as exc:
+            try:
+                os.unlink(out_path)
+            except OSError:
+                pass
+            raise TimeoutError(f"codex exec timed out after {self.timeout}s") from exc
+
+        try:
+            if proc.returncode != 0:
+                err = proc.stderr.decode("utf-8", errors="replace").strip()[-800:]
+                raise RuntimeError(f"codex exec failed (rc={proc.returncode}): {err}")
+            try:
+                with open(out_path, encoding="utf-8", errors="replace") as f:
+                    final_message = f.read().strip()
+            except OSError:
+                final_message = ""
+            if not final_message:
+                # Fall back to stdout if the output file is empty.
+                final_message = proc.stdout.decode("utf-8", errors="replace").strip()
+            if not final_message:
+                tail = proc.stderr.decode("utf-8", errors="replace").strip()[-400:]
+                raise RuntimeError(
+                    f"codex exec returned an empty response (model={effective_model!r}). "
+                    "Note: gpt-4o is NOT supported on a ChatGPT account — supported slugs: "
+                    f"gpt-5.5 / gpt-5.4 / gpt-5.4-mini / gpt-5.3-codex-spark. {tail}"
+                )
+            return self._parse(final_message)
+        finally:
+            try:
+                os.unlink(out_path)
+            except OSError:
+                pass
+
+    async def close(self) -> None:
+        pass  # no persistent connections
+
+
 # ── Factory ──────────────────────────────────────────────────────
 
 
@@ -753,8 +982,16 @@ def create_provider(provider_type: str, **kwargs) -> LLMProvider:
         cwd = kwargs.get("cwd")
         return AgentSDKProvider(model_id=model_id, timeout=timeout, cwd=cwd)
 
+    elif provider_type == "codex":
+        # GPT-5.x via the codex CLI on a ChatGPT subscription (no API key).
+        return CodexProvider(
+            model_id=kwargs.get("model_id", ""),
+            timeout=kwargs.get("timeout", 300.0),
+            cwd=kwargs.get("cwd"),
+        )
+
     else:
         raise ValueError(
             f"Unknown provider: {provider_type}. "
-            "Use 'openai', 'anthropic', 'local', 'claude_code', or 'agent_sdk'."
+            "Use 'openai', 'anthropic', 'local', 'claude_code', 'agent_sdk', or 'codex'."
         )
