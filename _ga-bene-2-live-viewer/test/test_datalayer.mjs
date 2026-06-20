@@ -68,11 +68,22 @@ ok(specLeaks.length === 0, `NO private exact-HP twin on spectator (LVC-12); leak
 ok(spec.frames.every((f, i) => f.seq === i), "seq monotonic from 0 (LVC-07)");
 // scene fog: opponent (and own) hp shown as fraction, present
 const lastSpec = spec.frames[spec.frames.length - 1].scene;
-ok(typeof lastSpec.p1.hpFrac === "number" && typeof lastSpec.p2.hpFrac === "number", "scene hp_frac is numeric");
+ok(typeof lastSpec.p1.hp_frac === "number" && typeof lastSpec.p2.hp_frac === "number", "scene hp_frac is numeric");
+ok(!("hpFrac" in lastSpec.p1) && !("hpFrac" in lastSpec.p2), "scene snapshot uses contract hp_frac, not hpFrac");
 // player rating redaction: no rating value survives (LVC-11)
 const specPlayers = specLines.filter((l) => l.startsWith("|player|"));
 ok(specPlayers.length >= 2, "player lines present");
 ok(specPlayers.every((l) => /^\|player\|p[12]\|[^|]*\|\|?$/.test(l) || l.endsWith("||")), "player lines carry NO rating value (LVC-11)");
+const metaProjection = Projector.projectLines([
+  "|request|{\"active\":[{\"moves\":[\"Thunderbolt\"]}]}",
+  "|inactive|Time left: 90 sec",
+  "|error|p1|hidden decision payload",
+  "|player|p1|Alpha||1500",
+  "|turn|1",
+  "|",
+], "spectator");
+ok(!metaProjection.some((l) => /^\|(request|inactive|error)\|/.test(l)), "hidden control/meta lines stripped before emission");
+ok(metaProjection.some((l) => l === "|player|p1|Alpha||"), "public player meta survives with rating blanked");
 
 section("projector: OWNER p1 stream — own exact HP allowed, opponent stays public (LVC-09)");
 const p1 = Projector.project(raw, "p1", { battleId: "b_test" });
@@ -85,6 +96,8 @@ ok(p2aLeaks.length === 0, `opponent p2a HP stays public on owner stream (LVC-09)
 // and the owner DID get at least one of its own exact-HP lines (proves projection picked private)
 const p1aPrivate = p1Lines.filter((l) => /\|p1a:/.test(l) && hasPrivateHP(l));
 ok(p1aPrivate.length > 0, `owner sees its OWN exact HP (got ${p1aPrivate.length} private p1a lines)`);
+ok(p1.frames.some((f) => /\b\d+\/(298|279|302|249|247|248)\b/.test(f.scene.p1.hp_label || "")), "owner scene preserves own exact HP label");
+ok(!p1.frames.some((f) => /\b\d+\/(298|279|302|249|247|248)\b/.test(f.scene.p2.hp_label || "")), "owner scene does not expose opponent exact HP label");
 
 section("projector: SPECTATOR vs OWNER differ exactly on own-side privacy");
 // the spectator's p1a damage lines must be the /100 twin where owner's are /max
@@ -97,9 +110,21 @@ const projTs = Projector.projectLines(withTs, "spectator");
 ok(!projTs.some((l) => l.startsWith("|t:|")), "|t:| lines stripped from projection");
 
 section("scene reducer: HP monotonic down as Lumineon is chipped");
-const lumHp = spec.frames.map((f) => f.scene.p2.hpFrac).filter((x) => typeof x === "number");
+const lumHp = spec.frames.map((f) => f.scene.p2.hp_frac).filter((x) => typeof x === "number");
 ok(lumHp.some((x) => x < 1), "p2 hp dropped below full at some point");
 ok(spec.frames.some((f) => f.scene.p1.fainted || f.scene.p2.fainted), "a faint reflected in scene");
+const detailsScene = SR.newScene();
+SR.applyLine(detailsScene, "|switch|p1a: Ditto|Ditto, L78|100/100");
+SR.applyLine(detailsScene, "|detailschange|p1a: Ditto|Garchomp, L78, M|76/100");
+ok(detailsScene.p1.species === "Garchomp" && detailsScene.p1.hp_frac === 0.76, "detailschange updates active species + HP");
+const sideScene = SR.newScene();
+SR.applyLine(sideScene, "|-sidestart|p1: Alpha|Reflect");
+SR.applyLine(sideScene, "|-sidestart|p2: Beta|Reflect");
+SR.applyLine(sideScene, "|-sideend|p1: Alpha|Reflect");
+ok(
+  sideScene.field.length === 1 && sideScene.field[0].side === "p2" && sideScene.field[0].effect === "Reflect",
+  "side-condition end removes only the matching side"
+);
 
 section("live source: owner stream uses Bearer fetch, public stream uses EventSource");
 ok(
@@ -156,13 +181,20 @@ ok(seen.errors.length === 0, "owner fetch stream had no errors");
 
 let publicEventSource = null;
 function FakeEventSource(url, opts) {
-  publicEventSource = { url, opts };
-  this.addEventListener = () => {};
-  this.close = () => {};
+  this.listeners = {};
+  this.closed = false;
+  this.addEventListener = (type, fn) => { this.listeners[type] = fn; };
+  this.close = () => { this.closed = true; };
+  publicEventSource = { url, opts, instance: this };
 }
-new LiveSource.SseLiveSource("b_pub", "spectate", { EventSource: FakeEventSource }).start();
+const pub = new LiveSource.SseLiveSource("b_pub", "spectate", { EventSource: FakeEventSource }).start();
 ok(publicEventSource.url === "/battle/b_pub/live", "public stream uses spectator endpoint");
 ok(publicEventSource.opts.withCredentials === false, "public EventSource sends no credentials");
+const publicEnds = [];
+pub.addEventListener("end", (ev) => publicEnds.push(ev.data));
+publicEventSource.instance.listeners.end({ data: "{\"replay_url\":\"/replay/b_pub\"}" });
+ok(publicEnds[0]?.replay_url === "/replay/b_pub", "public EventSource forwards terminal end event");
+ok(publicEventSource.instance.closed === true, "public EventSource closes on terminal end");
 
 console.log(`\n${fail === 0 ? "✅ ALL PASS" : "❌ FAILURES"}: ${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

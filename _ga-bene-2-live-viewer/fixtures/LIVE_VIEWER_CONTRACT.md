@@ -41,7 +41,7 @@ hidden state):
   "side": "p1" | "p2" | "spectator",
   "lines": ["|move|p1a: Garchomp|Earthquake|p2a: Rotom", "|-damage|p2a: Rotom|41/100"],
   "scene": {                     // pre-parsed convenience (renderer may use lines instead)
-    "p1": {"species":"garchomp","hp_frac":1.0,"status":null,"name":"adx…"},
+    "p1": {"species":"garchomp","hp_frac":1.0,"hp_label":"357/357","status":null,"name":"adx…"},
     "p2": {"species":"rotom-wash","hp_frac":0.41,"status":null,"name":"…"},
     "weather": null, "field": []
   },
@@ -75,8 +75,11 @@ hidden state):
   misparses). Forwarding raw `lines` would satisfy the schema while leaking a rating, so
   redaction is a hard requirement, not advisory.
 - `|t:|` timestamp lines are **stripped before any hash** (replay/live must hash-match).
-- The scene's `hp_frac` is the **public** HP fraction (the opponent's exact HP is never shown
-  on either stream; the owner sees only their OWN exact HP via their `|split|`), and
+- The scene's `hp_frac` is the HP fraction. Public/opponent projections expose only the
+  public fraction. An authenticated owner projection MAY additionally include `hp_label`
+  for the owner's own active mon when the kept `|split|` private twin carried an exact
+  denominator; public frames and opponent mons MUST omit it. The opponent's exact HP is
+  never shown on either stream, and
   `scene.*.name` / `rating` never carry a ladder rating on the public stream.
 
 ## Renderer requirements (GA-BENE-2)

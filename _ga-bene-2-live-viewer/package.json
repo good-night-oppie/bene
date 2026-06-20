@@ -1,0 +1,11 @@
+{
+  "name": "ga-bene-2-live-viewer",
+  "private": true,
+  "scripts": {
+    "test": "node test/test_datalayer.mjs",
+    "render-verify": "node test/render-verify.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.60.0"
+  }
+}

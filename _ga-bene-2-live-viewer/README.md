@@ -13,14 +13,17 @@ GA-CORE-3 is written.
 ## Run it
 
 ```bash
+# install the render gate dependency declared in package.json
+npm install
+
 # open the fixture-driven demo (no backend needed)
 xdg-open index.html            # or: python3 -m http.server then visit /index.html
 
 # render-verify (headless chromium): scene renders, fog-of-war holds, end→replay swaps
-node test/render-verify.mjs    # 11 assertions; screenshots render-owner.png / render-spectator.png
+node test/render-verify.mjs    # 15 assertions; screenshots render-owner.png / render-spectator.png
 
 # data-layer + fog-of-war projection correctness against the real golden battle
-node test/test_datalayer.mjs   # 33 assertions
+node test/test_datalayer.mjs   # 42 assertions
 ```
 
 ## Layout
@@ -33,6 +36,7 @@ src/live-source.js   pluggable frame source: MockLiveSource (demo) | SseLiveSour
 src/battle-scene.js  the <battle-scene> custom element (one renderer for live AND replay)
 src/fixture.js       the real golden battle (adx_showdown protocol_log_sample.txt), embedded
 index.html           the dashboard shell — Agent Pane | scene-card grid, design-token-matched
+package.json         local render-gate dependency declaration (Playwright)
 test/                render-verify (chromium) + data-layer fog-of-war proof
 fixtures/            the contract, the line-protocol reference, lineproto.py, the golden log
 ```

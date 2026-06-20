@@ -108,6 +108,52 @@ try {
   // a single-column grid reports one track; side-by-side reports two
   ok(cols.split(" ").length === 1, `row.top collapses to one column at 800px: "${cols}"`);
 
+  console.log("\n== frame ordering + reset cleanup ==");
+  const ordering = await page.evaluate(() => {
+    const scene = document.querySelector("#scene");
+    const base = {
+      p1: { species: "Azu", hp_frac: 1, status: null, name: "Azu" },
+      p2: { species: "Lum", hp_frac: 1, status: null, name: "Lum" },
+      players: { p1: "p1", p2: "p2" },
+      weather: null,
+      field: [],
+      winner: null,
+    };
+    scene.reset();
+    scene.pushFrame({ battle_id: "b_order", seq: 1, side: "spectator", lines: [], scene: { ...base, turn: 2 }, ts_ms: 2 });
+    const before = { maxSeq: scene.maxSeq, turn: scene.scene.turn };
+    scene.pushFrame({ battle_id: "b_order", seq: 0, side: "spectator", lines: [], scene: { ...base, turn: 1 }, ts_ms: 1 });
+    return { before, after: { maxSeq: scene.maxSeq, turn: scene.scene.turn } };
+  });
+  ok(ordering.before.maxSeq === -1 && ordering.before.turn === 0, `higher seq buffered until gap arrives: ${JSON.stringify(ordering.before)}`);
+  ok(ordering.after.maxSeq === 1 && ordering.after.turn === 2, `buffer drained in seq order: ${JSON.stringify(ordering.after)}`);
+
+  const replayCleanup = await page.evaluate(async () => {
+    const scene = document.querySelector("#scene");
+    const base = {
+      p1: { species: "Azu", hp_frac: 1, status: null, name: "Azu" },
+      p2: { species: "Lum", hp_frac: 1, status: null, name: "Lum" },
+      players: { p1: "p1", p2: "p2" },
+      weather: null,
+      field: [],
+      winner: null,
+    };
+    scene.reset();
+    scene.pushFrame({ battle_id: "b_replay", seq: 0, side: "spectator", lines: [], scene: { ...base, turn: 1 }, ts_ms: 1 });
+    scene.pushFrame({ battle_id: "b_replay", seq: 1, side: "spectator", lines: [], scene: { ...base, turn: 2 }, ts_ms: 2 });
+    scene.bindEnd({ replay_url: "/replay/b_replay" });
+    scene.elControls.querySelector(".bscene-btn").click();
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    const hadTimer = !!scene._replayTimer;
+    scene.reset();
+    return { hadTimer, timerAfterReset: scene._replayTimer, mode: scene.mode, frameCount: scene.frames.length };
+  });
+  ok(replayCleanup.hadTimer === true, "replay timer starts during replay playback");
+  ok(
+    replayCleanup.timerAfterReset === null && replayCleanup.mode === "live" && replayCleanup.frameCount === 0,
+    `reset cancels replay playback and clears state: ${JSON.stringify(replayCleanup)}`
+  );
+
   console.log("\n== no console/page errors ==");
   ok(errors.length === 0, `zero JS errors${errors.length ? " — " + JSON.stringify(errors.slice(0, 3)) : ""}`);
 } finally {
