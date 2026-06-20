@@ -40,5 +40,16 @@ grep -Eq "g1|g7|gen-" <<<"$DOM"              && ok "lineage sparkline / winning-
 # real pokeenv result => NO mock badge
 grep -Fq "not a real result" <<<"$DOM"       && no "real pokeenv run wrongly badged mock" || ok "real result not mock-badged (honesty gate)"
 
+echo "[GA-BENE-3 · Ladder panel (US-5.1, ladder_panel.js)]"
+grep -Fq "litany-vii" <<<"$DOM"               && ok "ladder lists owner agent (litany-vii)"               || no "ladder owner agent"
+grep -Fq "community-ace" <<<"$DOM"            && ok "ladder lists competitor agent"                       || no "ladder competitor"
+grep -Fq "RandomBaseline" <<<"$DOM"           && ok "ladder lists random baseline (ADR-0011 anchor)"      || no "ladder baseline"
+grep -Fq "baseline" <<<"$DOM"                 && ok "baseline tag rendered (anti-pay-to-rank honesty)"    || no "baseline tag"
+grep -Fq "top-10-ps-player" <<<"$DOM"         && ok "goal-line entry rendered (north-star tier)"          || no "goal line"
+grep -Fq "goal" <<<"$DOM"                     && ok "goal tag rendered"                                    || no "goal tag"
+grep -Fq "mine" <<<"$DOM"                     && ok "'mine' owner tag rendered"                            || no "mine tag"
+grep -Eq "138[0-9]|1487|1500|1601|1820" <<<"$DOM" && ok "Glicko ratings rendered"                        || no "ratings"
+grep -Fq "gen9randombattle" <<<"$DOM"         && ok "format label rendered (gen9randombattle)"             || no "format label"
+
 echo "----"
 [ "$fails" -eq 0 ] && { echo "RENDER-VERIFY PASS (all assertions)"; exit 0; } || { echo "RENDER-VERIFY FAIL ($fails)"; exit 1; }

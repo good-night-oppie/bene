@@ -1,0 +1,16 @@
+{
+  "owner_agents": ["litany-vii", "max-damage-baseline", "fresh-recruit"],
+  "entrants": [
+    {"name": "top-10-ps-player",  "rating": 1820.0, "rd": 18.0,  "games": 620, "wins": 492, "losses": 128, "is_goal_line": true},
+    {"name": "community-ace",     "rating": 1601.0, "rd": 35.0,  "games": 140, "wins": 98,  "losses": 42},
+    {"name": "fresh-recruit",     "rating": 1500.0, "rd": 350.0, "games": 0,   "wins": 0,   "losses": 0,   "is_owner": true, "live": false, "genome_summary": null},
+    {"name": "litany-vii",        "rating": 1487.3, "rd": 41.2,  "games": 50,  "wins": 38,  "losses": 12,  "is_owner": true, "live": true,  "live_battle_id": "b_demo1",
+      "genome_summary": {"harness_id": "h_8f3c91ad", "move_selection_strategy": "llm_freeform", "generation": 7, "allow_switch": true, "prompt_summary": "Lead with your fastest threat and preserve the win condition."}},
+    {"name": "challenger-99",     "rating": 1453.0, "rd": 55.0,  "games": 80,  "wins": 55,  "losses": 25},
+    {"name": "SimpleHeuristics",  "rating": 1102.0, "rd": 40.0,  "games": 100, "wins": 41,  "losses": 59,  "is_baseline": true},
+    {"name": "max-damage-baseline","rating": 1042.0, "rd": 60.5, "games": 18,  "wins": 7,   "losses": 11,  "is_owner": true,
+      "genome_summary": {"harness_id": "h_0011seed", "move_selection_strategy": "max_damage", "generation": 0, "allow_switch": false, "prompt_summary": ""}},
+    {"name": "MaxBP",             "rating": 951.0,  "rd": 45.0,  "games": 100, "wins": 28,  "losses": 72,  "is_baseline": true},
+    {"name": "RandomBaseline",    "rating": 894.0,  "rd": 52.0,  "games": 100, "wins": 19,  "losses": 81,  "is_baseline": true}
+  ]
+}
