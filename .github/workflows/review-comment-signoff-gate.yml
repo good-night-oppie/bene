@@ -1,0 +1,36 @@
+# yamllint disable rule:truthy
+name: review-comment-signoff-gate
+
+# A review thread turns this gate green ONLY when its comment author signs off
+# (an APPROVED review or a 👍 reaction) — clicking "Resolve" alone does not.
+# Re-runs on review submit/dismiss so an approval flips it green; for a 👍-only
+# sign-off, re-trigger with a push or close+reopen (reactions aren't a CI event).
+
+on:
+  pull_request:
+    branches: [main]
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+# No cancel-in-progress: a gate run must always complete — a cancelled run reads
+# as a failed required check and would block merge on every re-trigger.
+
+jobs:
+  signoff:
+    runs-on: eng-github-runners
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: comment-author sign-off (approval or 👍; Resolve alone is not enough)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/_smoke_review_comment_signoff_gate.sh          # fixtures, no network
+          python3 scripts/review_comment_signoff_gate.py --repo "$REPO" --pr "$PR_NUMBER"
