@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>agentdex.builders — dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0c0e13; --panel:#13161e; --panel2:#171b25; --line:#242a37;
+    --ink:#e9edf5; --mut:#8b93a4; --dim:#5d6575;
+    --lime:#a6e22e;            /* evolve / alive */
+    --live:#ff4655;           /* LIVE / battle */
+    --gold:#ffcb3d;           /* ladder / rank */
+    --blue:#4ea1ff;           /* links / strategy */
+    --hp-ok:#5fd35a; --hp-warn:#f4c531; --hp-low:#ef4a4a;
+    --radius:10px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --disp:'Chakra Petch',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, #1a2030 0%, transparent 60%),
+      var(--bg);
+    color:var(--ink); font-family:var(--disp); font-size:14px; line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:var(--mono)}
+  .dim{color:var(--mut)}
+  .app{display:grid;grid-template-rows:54px 1fr;height:100vh;min-height:680px}
+
+  /* ---------- top bar ---------- */
+  .topbar{display:flex;align-items:center;gap:18px;padding:0 18px;border-bottom:1px solid var(--line);background:linear-gradient(#11141c,#0e1018)}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:.02em}
+  .brand .hex{width:22px;height:22px;color:var(--lime)}
+  .brand b{color:var(--ink)} .brand span{color:var(--lime)}
+  .topbar .spacer{flex:1}
+  .chip{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 11px;border:1px solid var(--line);border-radius:999px;background:var(--panel);font-size:12px;color:var(--mut)}
+  .chip b{color:var(--ink);font-weight:600}
+  .chip.beta{border-color:#3a5a1f;background:rgba(166,226,46,.08);color:var(--lime)}
+  .chip.rank b{color:var(--gold)}
+  .who{display:flex;align-items:center;gap:9px;font-size:12px}
+  .who .av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#2b3346,#444f6b);display:grid;place-items:center;font-weight:700;color:#cdd6e6;border:1px solid var(--line)}
+  .who .gh{color:var(--dim);font-size:11px}
+
+  /* ---------- main grid ---------- */
+  .main{display:grid;grid-template-columns:248px 1fr;min-height:0}
+  .roster{border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}
+  .roster .hd{display:flex;align-items:center;justify-content:space-between;padding:13px 14px 9px;border-bottom:1px solid var(--line)}
+  .roster .hd h2{margin:0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+  .newbtn{font-family:var(--disp);font-size:12px;color:var(--lime);background:none;border:1px solid #3a5a1f;border-radius:7px;padding:3px 9px;cursor:pointer}
+  .agents{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:6px}
+  .agent{display:grid;grid-template-columns:1fr auto;gap:3px 8px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);cursor:pointer;transition:.12s}
+  .agent:hover{border-color:#33425e;transform:translateY(-1px)}
+  .agent.sel{border-color:var(--lime);box-shadow:0 0 0 1px rgba(166,226,46,.25),0 6px 18px -10px rgba(166,226,46,.4)}
+  .agent .nm{font-weight:600;font-size:13px;display:flex;align-items:center;gap:7px}
+  .dot{width:7px;height:7px;border-radius:50%;flex:0 0 auto}
+  .dot.live{background:var(--live);box-shadow:0 0 0 0 rgba(255,70,85,.6);animation:pulse 1.6s infinite}
+  .dot.idle{background:#3a4252}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,70,85,.55)}70%{box-shadow:0 0 0 6px rgba(255,70,85,0)}100%{box-shadow:0 0 0 0 rgba(255,70,85,0)}}
+  .agent .elo{font-family:var(--mono);font-size:13px;color:var(--gold);text-align:right;font-weight:600}
+  .agent .sub{font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .agent .wl{font-family:var(--mono);font-size:11px;color:var(--mut);text-align:right}
+  .tag{font-size:10px;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:5px;font-family:var(--mono);font-weight:600}
+  .tag.llm{background:rgba(78,161,255,.14);color:var(--blue)}
+  .tag.max{background:rgba(244,197,49,.14);color:var(--gold)}
+  .tag.rng{background:rgba(139,147,164,.14);color:var(--mut)}
+
+  /* ---------- workspace ---------- */
+  .work{display:grid;grid-template-rows:minmax(0,1.32fr) minmax(0,1fr);gap:12px;padding:12px;min-height:0}
+  .row{display:grid;gap:12px;min-height:0}
+  .row.top{grid-template-columns:minmax(300px,0.92fr) minmax(360px,1.08fr)}
+  .row.bot{grid-template-columns:1.15fr .85fr}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .card .ch{display:flex;align-items:center;gap:8px;padding:10px 13px;border-bottom:1px solid var(--line)}
+  .card .ch h3{margin:0;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--mut);font-weight:600}
+  .card .ch .r{margin-left:auto;display:flex;align-items:center;gap:8px}
+  .card .cb{padding:13px;overflow:auto;min-height:0}
+
+  /* agent pane */
+  .ap .name{font-size:19px;font-weight:700;letter-spacing:.01em;display:flex;align-items:center;gap:9px}
+  .ap .gen{font-family:var(--mono);font-size:11px;color:var(--lime);border:1px solid #3a5a1f;border-radius:5px;padding:1px 6px}
+  .ap .stats{display:flex;gap:18px;margin:11px 0 4px}
+  .ap .stat .k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+  .ap .stat .v{font-family:var(--mono);font-size:20px;font-weight:600}
+  .ap .stat .v.elo{color:var(--gold)} .ap .stat .v.wr{color:var(--lime)}
+  .genome{margin-top:12px;border-top:1px dashed var(--line);padding-top:11px;display:flex;flex-direction:column;gap:8px}
+  .kv{display:grid;grid-template-columns:130px 1fr;font-family:var(--mono);font-size:12px;gap:8px}
+  .kv .k{color:var(--dim)} .kv .vv{color:var(--ink)}
+  .pill{font-family:var(--mono);font-size:11px;padding:1px 7px;border-radius:5px;border:1px solid var(--line)}
+  .pill.on{color:var(--lime);border-color:#3a5a1f;background:rgba(166,226,46,.07)}
+  .pill.off{color:var(--mut)}
+  .prompt{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#c3cad8;background:#0d1016;border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin-top:2px}
+  .prompt .q{color:var(--dim)}
+  .evolvebtn{margin-top:13px;width:100%;font-family:var(--disp);font-weight:700;font-size:14px;letter-spacing:.04em;color:#0c0e13;background:linear-gradient(180deg,#b9f23a,#8fd118);border:none;border-radius:9px;padding:11px;cursor:pointer;box-shadow:0 8px 22px -12px rgba(166,226,46,.9)}
+  .evolvebtn:hover{filter:brightness(1.06)}
+  .evolvebtn .s{display:block;font-family:var(--mono);font-weight:500;font-size:10.5px;letter-spacing:.02em;opacity:.72;margin-top:1px}
+
+  /* live battle scene */
+  .scene-card .ch h3{color:#ffd2d6}
+  .livetag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--live);letter-spacing:.08em}
+  .livetag .dot.live{box-shadow:0 0 0 0 rgba(255,70,85,.6)}
+  .scene{position:relative;flex:1;min-height:0;background:
+      radial-gradient(120% 80% at 50% 8%, #243a52 0%, #16202e 55%, #0e141d 100%);
+    overflow:hidden}
+  .scene::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px);mix-blend-mode:overlay;opacity:.5}
+  .field{position:absolute;left:0;right:0;bottom:0;height:46%;
+    background:radial-gradient(120% 130% at 50% 0,#3a5f49 0%,#274536 60%,#1b3026 100%);
+    border-top:1px solid rgba(255,255,255,.06);transform:perspective(420px) rotateX(34deg);transform-origin:bottom}
+  .mon{position:absolute;display:flex;flex-direction:column;align-items:center;width:118px}
+  .mon img{width:96px;height:96px;image-rendering:auto;filter:drop-shadow(0 8px 8px rgba(0,0,0,.55))}
+  .mon.opp{top:13px;right:26px}
+  .mon.me{bottom:10px;left:26px}
+  .mon.me img{width:108px;height:108px}
+  .hpbox{width:172px;background:rgba(8,11,16,.82);border:1px solid var(--line);border-radius:8px;padding:6px 9px;backdrop-filter:blur(3px)}
+  .hpbox .top{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;font-weight:600}
+  .hpbox .lv{font-family:var(--mono);font-size:10px;color:var(--dim)}
+  .hpbar{height:7px;border-radius:4px;background:#0c0f15;border:1px solid #2a3140;margin-top:4px;overflow:hidden}
+  .hpbar i{display:block;height:100%;border-radius:4px;transition:width .5s ease}
+  .hpbox .pct{font-family:var(--mono);font-size:10px;color:var(--mut);margin-top:3px;display:flex;justify-content:space-between}
+  .status{font-family:var(--mono);font-size:9px;text-transform:uppercase;padding:0 4px;border-radius:3px}
+  .status.par{background:#6b5a12;color:#ffd23d}
+  .hp-info-opp{position:absolute;top:14px;left:22px}
+  .hp-info-me{position:absolute;bottom:108px;right:22px}
+  .turnpill{position:absolute;top:11px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:11px;color:#cfe;background:rgba(8,11,16,.7);border:1px solid var(--line);border-radius:999px;padding:2px 12px}
+  .fog{position:absolute;bottom:9px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9.5px;color:var(--dim);letter-spacing:.05em}
+  .log{height:118px;border-top:1px solid var(--line);background:#0b0e14;padding:8px 12px;overflow:auto;font-family:var(--mono);font-size:11.5px;line-height:1.7}
+  .log .ln{color:#aeb6c6}
+  .log .ln .me{color:var(--lime)} .log .ln .op{color:#ff8e96}
+  .log .ln .dmg{color:var(--live)} .log .ln .eff{color:var(--gold)}
+  .log .ln.sys{color:var(--dim)}
+
+  /* evolution */
+  .evo .lead{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+  .evo .lead .up{font-family:var(--mono);font-size:24px;font-weight:600;color:var(--lime)}
+  .evo .lead .ci{font-family:var(--mono);font-size:11px;color:var(--mut)}
+  .spark{display:flex;align-items:flex-end;gap:7px;height:84px;padding:6px 2px 2px;border-bottom:1px solid var(--line)}
+  .gcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;justify-content:flex-end;height:100%}
+  .gcol .bar{width:64%;border-radius:4px 4px 0 0;background:linear-gradient(#3a4252,#2a3140);position:relative}
+  .gcol.kept .bar{background:linear-gradient(#b9f23a,#7cb616)}
+  .gcol .mk{font-family:var(--mono);font-size:11px;line-height:1}
+  .gcol.kept .mk{color:var(--lime)} .gcol.killed .mk{color:var(--dim)}
+  .gcol .gl{font-family:var(--mono);font-size:9px;color:var(--dim)}
+  .mut{margin-top:11px;font-family:var(--mono);font-size:12px;background:#0d1016;border:1px solid #3a5a1f;border-left:3px solid var(--lime);border-radius:7px;padding:9px 11px}
+  .mut .h{color:var(--lime);font-weight:600} .mut .b{color:#c3cad8}
+  .mut .nonprompt{color:var(--gold)}
+
+  /* ladder */
+  .lad .row2{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:10px;padding:6px 8px;border-radius:7px;font-size:13px}
+  .lad .row2 .rk{font-family:var(--mono);color:var(--dim);text-align:right}
+  .lad .row2 .nm{display:flex;align-items:center;gap:8px}
+  .lad .row2 .el{font-family:var(--mono);color:var(--gold)}
+  .lad .mine{background:rgba(166,226,46,.08);border:1px solid #3a5a1f}
+  .lad .mine .nm{color:var(--lime);font-weight:600}
+  .lad .goal{border:1px dashed #6a5a1f;background:rgba(255,203,61,.06)}
+  .lad .goal .nm{color:var(--gold)} .lad .goal .rk{color:var(--gold)}
+  .lad .base .nm{color:var(--mut)} .lad .base .el{color:var(--dim)}
+  .lad .divider{font-family:var(--mono);font-size:9.5px;color:var(--dim);text-align:center;letter-spacing:.2em;padding:3px 0}
+  .selspr{width:18px;height:18px;vertical-align:middle;image-rendering:auto}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ TOP BAR ============ -->
+  <header class="topbar">
+    <div class="brand">
+      <svg class="hex" viewBox="0 0 24 24" fill="none"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7L12 2z" stroke="currentColor" stroke-width="1.6"/><path d="M12 7l4.33 2.5v5L12 17l-4.33-2.5v-5L12 7z" fill="currentColor" opacity=".25"/></svg>
+      <b>agentdex</b><span>.builders</span>
+    </div>
+    <div class="spacer"></div>
+    <span class="chip beta">◇ INVITE BETA · seat 37 / 100</span>
+    <span class="chip rank">ladder rank&nbsp;<b>#214</b></span>
+    <div class="who">
+      <div class="av">E</div>
+      <div><div>eddie</div><div class="gh">via GitHub · eddie@oppie.xyz</div></div>
+    </div>
+  </header>
+
+  <div class="main">
+
+    <!-- ============ LEFT: ROSTER ============ -->
+    <aside class="roster">
+      <div class="hd"><h2>My Agents</h2><button class="newbtn">+ new</button></div>
+      <div class="agents" id="agents"></div>
+    </aside>
+
+    <!-- ============ WORKSPACE ============ -->
+    <section class="work">
+
+      <!-- TOP ROW: Agent Pane  |  LIVE Battle (adjacent) -->
+      <div class="row top">
+
+        <!-- AGENT PANE -->
+        <div class="card ap">
+          <div class="ch"><h3>Agent Pane</h3><div class="r"><span class="dim mono" id="ap-id">h_8f3c…</span></div></div>
+          <div class="cb">
+            <div class="name"><img class="selspr" id="ap-spr" alt=""><span id="ap-name">—</span><span class="gen" id="ap-gen">gen-7</span></div>
+            <div class="stats">
+              <div class="stat"><div class="k">Elo</div><div class="v elo" id="ap-elo">1487</div></div>
+              <div class="stat"><div class="k">Win&nbsp;rate</div><div class="v wr" id="ap-wr">76%</div></div>
+              <div class="stat"><div class="k">W / L</div><div class="v mono" id="ap-wl">38–12</div></div>
+            </div>
+            <div class="genome">
+              <div class="kv"><span class="k">strategy</span><span class="vv" id="g-strat">llm_freeform</span></div>
+              <div class="kv"><span class="k">tool_policy</span><span><span class="pill on" id="g-switch">allow_switch: true</span></span></div>
+              <div class="kv"><span class="k">format</span><span class="vv">gen9randombattle</span></div>
+              <div class="kv" style="grid-template-columns:130px 1fr;align-items:start"><span class="k">system_prompt</span>
+                <div class="prompt" id="g-prompt"><span class="q">"</span>Lead with your fastest threat and preserve the win condition. Switch only to deny a setup sweep or a guaranteed KO; never stall.<span class="q">"</span></div>
+              </div>
+            </div>
+            <button class="evolvebtn">⟳ Evolve this harness<span class="s">1 generation · held-out baselines · kill-gated (95% CI)</span></button>
+          </div>
+        </div>
+
+        <!-- LIVE BATTLE SCENE (adjacent to the Agent Pane) -->
+        <div class="card scene-card">
+          <div class="ch"><h3>Live Battle</h3><div class="r">
+            <span class="livetag"><span class="dot live"></span>LIVE</span>
+            <span class="dim mono" style="font-size:11px">vs SimpleHeuristics</span>
+          </div></div>
+          <div class="scene">
+            <div class="turnpill" id="turn">turn 7</div>
+            <div class="field"></div>
+
+            <div class="hpbox hp-info-opp">
+              <div class="top"><span id="op-name">Rotom-Wash</span><span class="lv">Lv50</span></div>
+              <div class="hpbar"><i id="op-hp" style="width:41%;background:var(--hp-warn)"></i></div>
+              <div class="pct"><span class="status par">par</span><span id="op-pct">41%</span></div>
+            </div>
+            <div class="mon opp"><img id="op-spr" src="https://play.pokemonshowdown.com/sprites/ani/rotom-wash.gif" alt="Rotom-Wash"></div>
+
+            <div class="mon me"><img id="me-spr" src="https://play.pokemonshowdown.com/sprites/ani-back/garchomp.gif" alt="Garchomp"></div>
+            <div class="hpbox hp-info-me">
+              <div class="top"><span id="me-name">Garchomp</span><span class="lv">Lv50</span></div>
+              <div class="hpbar"><i id="me-hp" style="width:100%;background:var(--hp-ok)"></i></div>
+              <div class="pct"><span class="dim">yours</span><span id="me-pct">100%</span></div>
+            </div>
+
+            <div class="fog">⊘ fog-of-war · only your side's hidden info is shown</div>
+          </div>
+          <div class="log" id="log"></div>
+        </div>
+      </div>
+
+      <!-- BOTTOM ROW: Evolution  |  Ladder -->
+      <div class="row bot">
+
+        <!-- EVOLUTION -->
+        <div class="card evo">
+          <div class="ch"><h3>Evolution · lineage</h3><div class="r dim mono" style="font-size:11px">7 generations</div></div>
+          <div class="cb">
+            <div class="lead"><span class="up">+27.5pp</span><span class="ci">win-rate uplift vs seed · 95% CI [16.0, 39.0] · kill-gate ✓</span></div>
+            <div class="spark" id="spark"></div>
+            <div class="mut">
+              <div class="h">gen-7 winning mutation · <span class="nonprompt">non-prompt</span></div>
+              <div class="b">+ tool: switch-aware 1-ply lookahead before commit — beats seed on held-out baselines by ≥10pp, kept past the Pareto kill-gate (elo + 3 anti-reward-hack dims held).</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LADDER -->
+        <div class="card lad">
+          <div class="ch"><h3>Ladder</h3><div class="r dim mono" style="font-size:11px">gen9randombattle</div></div>
+          <div class="cb">
+            <div class="row2 goal"><span class="rk">◎</span><span class="nm">— top-10 PS player tier —</span><span class="el">~1900</span></div>
+            <div class="divider">· · · the goal line · · ·</div>
+            <div class="row2"><span class="rk">147</span><span class="nm">aerodactyl_diff (human)</span><span class="el">1612</span></div>
+            <div class="row2 mine"><span class="rk">214</span><span class="nm"><img class="selspr" src="https://play.pokemonshowdown.com/sprites/ani/garchomp.gif">Garchomp-Sweeper-v7</span><span class="el">1487</span></div>
+            <div class="row2"><span class="rk">219</span><span class="nm">stallwall_99 (human)</span><span class="el">1471</span></div>
+            <div class="row2 mine"><span class="rk">402</span><span class="nm"><img class="selspr" src="https://play.pokemonshowdown.com/sprites/ani/rotom-wash.gif">RotomTrick-v3</span><span class="el">1298</span></div>
+            <div class="divider">· · · held-out baselines (anchor) · · ·</div>
+            <div class="row2 base"><span class="rk">—</span><span class="nm">SimpleHeuristicsPlayer</span><span class="el">1180</span></div>
+            <div class="row2 base"><span class="rk">—</span><span class="nm">MaxBasePowerPlayer</span><span class="el">1040</span></div>
+            <div class="row2 base"><span class="rk">—</span><span class="nm">RandomPlayer</span><span class="el">1000</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+// ----- roster data (every number ties to the real system) -----
+const AGENTS = [
+  {id:"h_8f3c", name:"Garchomp-Sweeper-v7", spr:"garchomp", back:true, strat:"llm_freeform", tag:["llm","LLM"], sw:true, gen:7, elo:1487, w:38, l:12, live:true,
+   prompt:`Lead with your fastest threat and preserve the win condition. Switch only to deny a setup sweep or a guaranteed KO; never stall.`,
+   opp:"Rotom-Wash", oppspr:"rotom-wash"},
+  {id:"h_2a1d", name:"RotomTrick-v3", spr:"rotom-wash", back:true, strat:"llm_freeform", tag:["llm","LLM"], sw:true, gen:3, elo:1298, w:21, l:19, live:true,
+   prompt:`Cripple the lead with Trick + Choice item, then pivot. Conserve momentum; avoid speed ties.`,
+   opp:"Dragapult", oppspr:"dragapult"},
+  {id:"h_55e0", name:"StallBreaker-v2", spr:"tyranitar", back:true, strat:"max_damage", tag:["max","MAX-DMG"], sw:false, gen:2, elo:1402, w:31, l:18, live:false,
+   prompt:`(max_damage policy — no LLM prompt; picks highest expected damage each turn.)`,
+   opp:"Toxapex", oppspr:"toxapex"},
+  {id:"h_0b77", name:"RandomDojo (baseline)", spr:"sneasel", back:true, strat:"random", tag:["rng","RANDOM"], sw:true, gen:1, elo:1000, w:9, l:31, live:false,
+   prompt:`(random policy — seeded uniform legal order; the control baseline.)`,
+   opp:"—", oppspr:"ditto"},
+];
+const TAGCLS={llm:"llm",max:"max",rng:"rng"};
+
+function spr(n,back){return `https://play.pokemonshowdown.com/sprites/ani${back?'-back':''}/${n}.gif`}
+
+// ----- render roster -----
+const elAgents=document.getElementById("agents");
+AGENTS.forEach((a,i)=>{
+  const wr=Math.round(100*a.w/(a.w+a.l));
+  const d=document.createElement("div");
+  d.className="agent"+(i===0?" sel":"");
+  d.dataset.i=i;
+  d.innerHTML=`
+    <div class="nm"><span class="dot ${a.live?'live':'idle'}"></span>${a.name}</div>
+    <div class="elo">${a.elo}</div>
+    <div class="sub"><span class="tag ${TAGCLS[a.tag[0]]}">${a.tag[1]}</span> · ${wr}% wr</div>
+    <div class="wl">${a.w}–${a.l}</div>`;
+  d.onclick=()=>select(i);
+  elAgents.appendChild(d);
+});
+
+// ----- evolution sparkline (win-rate per generation; kept vs kill-gated) -----
+const GENS=[
+  {g:1,wr:48,kept:true},{g:2,wr:49,kept:false},{g:3,wr:55,kept:true},
+  {g:4,wr:54,kept:false},{g:5,wr:63,kept:true},{g:6,wr:62,kept:false},{g:7,wr:76,kept:true},
+];
+const elSpark=document.getElementById("spark");
+const mx=Math.max(...GENS.map(g=>g.wr));
+GENS.forEach(g=>{
+  const c=document.createElement("div");
+  c.className="gcol "+(g.kept?"kept":"killed");
+  c.innerHTML=`<span class="mk">${g.kept?'●':'○'}</span>
+    <div class="bar" style="height:${28+56*g.wr/mx}px" title="gen-${g.g}: ${g.wr}% win-rate"></div>
+    <span class="gl">g${g.g}</span>`;
+  elSpark.appendChild(c);
+});
+
+// ----- select an agent: updates Agent Pane + Live scene (the headline interaction) -----
+let cur=0;
+function select(i){
+  cur=i; const a=AGENTS[i];
+  document.querySelectorAll(".agent").forEach(e=>e.classList.toggle("sel",+e.dataset.i===i));
+  const wr=Math.round(100*a.w/(a.w+a.l));
+  document.getElementById("ap-id").textContent=a.id+"…";
+  document.getElementById("ap-spr").src=spr(a.spr,false);
+  document.getElementById("ap-name").textContent=a.name;
+  document.getElementById("ap-gen").textContent="gen-"+a.gen;
+  document.getElementById("ap-elo").textContent=a.elo;
+  document.getElementById("ap-wr").textContent=wr+"%";
+  document.getElementById("ap-wl").textContent=a.w+"–"+a.l;
+  document.getElementById("g-strat").textContent=a.strat;
+  const sw=document.getElementById("g-switch");
+  sw.textContent="allow_switch: "+a.sw; sw.className="pill "+(a.sw?"on":"off");
+  document.getElementById("g-prompt").innerHTML=`<span class="q">"</span>${a.prompt}<span class="q">"</span>`;
+  // live scene
+  document.getElementById("me-spr").src=spr(a.spr,true);
+  document.getElementById("me-name").textContent=cap(a.spr);
+  document.getElementById("op-spr").src=spr(a.oppspr,false);
+  document.getElementById("op-name").textContent=a.opp;
+  // reset battle state for the newly-watched agent
+  resetBattle(a);
+}
+function cap(s){return s.split("-").map(p=>p[0].toUpperCase()+p.slice(1)).join("-")}
+
+// ----- simulated LIVE stream (conveys the SSE frames from LIVE_VIEWER_CONTRACT) -----
+const elLog=document.getElementById("log"), elTurn=document.getElementById("turn");
+let opHp=41, meHp=100, turn=7, timer=null, alive=true;
+function pushLog(html,sys){const l=document.createElement("div");l.className="ln"+(sys?" sys":"");l.innerHTML=html;elLog.appendChild(l);elLog.scrollTop=elLog.scrollHeight;
+  while(elLog.children.length>40)elLog.removeChild(elLog.firstChild);}
+function setHp(who,v){v=Math.max(0,Math.min(100,v));const bar=document.getElementById(who+"-hp"),pct=document.getElementById(who+"-pct");
+  bar.style.width=v+"%";pct.textContent=Math.round(v)+"%";
+  bar.style.background=v>50?'var(--hp-ok)':v>20?'var(--hp-warn)':'var(--hp-low)';}
+function resetBattle(a){
+  clearInterval(timer); elLog.innerHTML=""; opHp=Math.round(20+Math.random()*60); meHp=Math.round(60+Math.random()*40); turn=Math.round(3+Math.random()*8);
+  setHp("op",opHp); setHp("me",meHp); elTurn.textContent="turn "+turn;
+  pushLog(`connected · streaming live frames for <span class="me">${a.name}</span>`,true);
+  if(a.live){ timer=setInterval(tick,2100); } else { pushLog("agent is idle — no battle in flight. open a match to watch live.",true); }
+}
+const MOVES=[
+  {n:"Earthquake",me:true,dmg:[28,46],eff:"super-effective!"},
+  {n:"Scale Shot",me:true,dmg:[18,30]},
+  {n:"Hydro Pump",me:false,dmg:[14,26]},
+  {n:"Volt Switch",me:false,dmg:[10,18]},
+  {n:"Stealth Rock",me:true,dmg:[0,0],eff:"sets a hazard"},
+];
+function tick(){
+  const a=AGENTS[cur];
+  const m=MOVES[Math.floor(Math.random()*MOVES.length)];
+  const actor=m.me?`<span class="me">${cap(a.spr)}</span>`:`<span class="op">${a.opp}</span>`;
+  pushLog(`${actor} used <b>${m.n}</b>!`);
+  const dmg=Math.round(m.dmg[0]+Math.random()*(m.dmg[1]-m.dmg[0]));
+  if(dmg>0){
+    if(m.me){opHp-=dmg;setHp("op",opHp);pushLog(`&nbsp;&nbsp;<span class="op">${a.opp}</span> lost <span class="dmg">${dmg}%</span> HP`);}
+    else{meHp-=dmg;setHp("me",meHp);pushLog(`&nbsp;&nbsp;<span class="me">${cap(a.spr)}</span> lost <span class="dmg">${dmg}%</span> HP`);}
+    if(m.eff)pushLog(`&nbsp;&nbsp;<span class="eff">${m.eff}</span>`);
+  } else if(m.eff){ pushLog(`&nbsp;&nbsp;<span class="eff">${m.eff}</span>`); }
+  if(opHp<=0){pushLog(`<span class="op">${a.opp}</span> fainted. <span class="me">${a.name}</span> wins!`,true);clearInterval(timer);
+    pushLog(`battle ended · <span class="me">replay saved</span> · queuing next match…`,true);
+    setTimeout(()=>resetBattle(a),3200);return;}
+  if(meHp<=0){pushLog(`<span class="me">${cap(a.spr)}</span> fainted — switching…`,true);meHp=100;setHp("me",meHp);}
+  turn++; elTurn.textContent="turn "+turn;
+}
+
+// boot
+select(0);
+</script>
+</body>
+</html>
