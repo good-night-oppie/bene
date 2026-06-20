@@ -18,6 +18,7 @@ import sqlite3
 
 import pytest
 
+from bene.kernel.battle.adapters import make_contract3_fitness_fn
 from bene.kernel.battle.evolve import evolve_battle_harness
 from bene.kernel.battle.genome import (
     BattleHarness,
@@ -363,6 +364,112 @@ def test_mutate_non_finite_guard():
         for v in child.params.values():
             if isinstance(v, float):
                 assert _math.isfinite(v), f"non-finite param: {v}"
+
+
+# ---------------------------------------------------------------------------
+# BENE-BATTLE-INTEGRATE — Contract-2 results + A3 fitness adapter
+
+
+def _battle_result(n_battles=10, wins_a=6, illegal_moves=0):
+    return {
+        "winner": "a",
+        "battles": [],
+        "trace_path": "",
+        "raw_dims": {
+            "opponent_baseline": "RandomPlayer",
+            "n_battles": n_battles,
+            "wins_a": wins_a,
+            "draws": 0,
+            "turns": n_battles * 10,
+            "forfeits": 0,
+            "illegal_moves": illegal_moves,
+            "total_moves": n_battles * 10,
+        },
+    }
+
+
+def test_contract3_adapter_maps_results_to_bene_fitness_vector():
+    calls = []
+
+    def run_vs_baselines(harness_dict, run_seed, n_battles):
+        calls.append((harness_dict, run_seed, n_battles))
+        return [
+            _battle_result(n_battles=n_battles, wins_a=7),
+            _battle_result(n_battles=5, wins_a=2),
+        ]
+
+    def multi_dim_fitness(results):
+        assert len(results) == 2
+        return {
+            "win_rate": 0.6,
+            "elo": 1120.0,
+            "move_legibility": 0.98,
+            "no_forfeit_exploit": 1.0,
+            "turn_efficiency": 0.9,
+        }
+
+    fitness = make_contract3_fitness_fn(
+        run_vs_baselines, multi_dim_fitness, run_seed=123, n_battles=9
+    )
+    fv = fitness(seed_harness())
+
+    assert calls[0][0]["harness_id"] == "H0-seed"
+    assert calls[0][1:] == (123, 9)
+    assert fv.win_rate == 0.6
+    assert fv.elo == 1120.0
+    assert fv.battles_played == 14
+    assert fv.gens_completed == 0
+
+
+def test_contract3_adapter_accepts_async_runner():
+    async def run_vs_baselines(harness_dict, run_seed, n_battles):
+        assert harness_dict["harness_id"] == "H0-seed"
+        assert run_seed == 5
+        assert n_battles == 3
+        return [_battle_result(n_battles=3, wins_a=2)]
+
+    def multi_dim_fitness(results):
+        assert results[0]["raw_dims"]["n_battles"] == 3
+        return {
+            "win_rate": 2 / 3,
+            "elo": 1050.0,
+            "move_legibility": 1.0,
+            "no_forfeit_exploit": 1.0,
+            "turn_efficiency": 1.0,
+        }
+
+    fitness = make_contract3_fitness_fn(
+        run_vs_baselines, multi_dim_fitness, run_seed=5, n_battles=3
+    )
+    fv = fitness(seed_harness())
+    assert fv.win_rate == pytest.approx(2 / 3)
+    assert fv.battles_played == 3
+
+
+def test_evolve_accepts_contract3_adapter():
+    def run_vs_baselines(harness_dict, _run_seed, n_battles):
+        aggression = float(harness_dict["params"]["aggression"])
+        wins = 8 if aggression < 0.9 else 5
+        return [_battle_result(n_battles=n_battles, wins_a=wins)]
+
+    def multi_dim_fitness(results):
+        raw = results[0]["raw_dims"]
+        win_rate = raw["wins_a"] / raw["n_battles"]
+        return {
+            "win_rate": win_rate,
+            "elo": 1000.0 + win_rate * 100.0,
+            "move_legibility": 1.0,
+            "no_forfeit_exploit": 1.0,
+            "turn_efficiency": 1.0,
+        }
+
+    fitness = make_contract3_fitness_fn(run_vs_baselines, multi_dim_fitness, n_battles=10)
+    out = evolve_battle_harness(
+        seed_harness(), fitness, n_gen=1, run_seed=0, candidates_per_gen=6, bus_path=False
+    )
+    assert out.killgate_report["battles_played"] == 10
+    assert out.killgate_report["gens_completed"] == 1
+    assert out.lineage[0].candidates[0]["scores"]["win_rate"] in {0.5, 0.8}
 
 
 # ---------------------------------------------------------------------------

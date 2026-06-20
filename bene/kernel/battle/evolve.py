@@ -9,10 +9,14 @@ Build against mock_fitness until Lane A3 lands:
     out = evolve_battle_harness(seed_harness(), mock_fitness, n_gen=2, run_seed=42)
     print(out.killgate_report)   # {"verdict": "ACCEPT", ...}
 
-When Lane A3 is ready, swap mock_fitness for the real multi_dim_fitness fn:
+When Lane A1/A3 are ready, adapt Contract-2 battle results into this callback:
 
-    from adx_showdown.fitness import multi_dim_fitness
-    out = evolve_battle_harness(seed_harness(), multi_dim_fitness, n_gen=5, run_seed=0)
+    from adx_showdown.selfplay.fitness import multi_dim_fitness
+    from adx_showdown.selfplay.runner import run_vs_baselines
+    from bene.kernel.battle import make_contract3_fitness_fn
+
+    fitness = make_contract3_fitness_fn(run_vs_baselines, multi_dim_fitness, run_seed=0)
+    out = evolve_battle_harness(seed_harness(), fitness, n_gen=5, run_seed=0)
 
 Algorithm:
   1. Evaluate seed → baseline FitnessVector
@@ -85,7 +89,9 @@ def evolve_battle_harness(
     Args:
         seed:               H0 genome (Contract-1).
         fitness_fn:         maps BattleHarness → FitnessVector (Contract-3).
-                            Use mock_fitness until Lane A3 lands.
+                            Use mock_fitness for local tests, or
+                            make_contract3_fitness_fn(run_vs_baselines,
+                            multi_dim_fitness) for real A1/A3 integration.
         n_gen:              number of evolution generations (≥1).
         run_seed:           RNG seed for reproducibility.
         candidates_per_gen: children to produce each generation.
