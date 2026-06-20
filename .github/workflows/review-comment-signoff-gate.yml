@@ -21,7 +21,10 @@ permissions:
 
 jobs:
   signoff:
-    runs-on: eng-github-runners
+    # good-night-oppie org self-hosted pool (AWS gh-runner-aws-uswest2{,-b} + this
+    # box's fallback runner) — Default group, visibility=all. Same pool eddie-agi-kb
+    # and agentdex-cli use; avoids the saturated eng-github-runners queue.
+    runs-on: [self-hosted, linux, x64]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: comment-author sign-off (approval or 👍; Resolve alone is not enough)
