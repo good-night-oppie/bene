@@ -153,9 +153,7 @@ def all_docs() -> list[Path]:
     # here stops docs/zh/*.md being mis-rendered into site/docs/zh/ and the
     # double-nested site/zh/docs/zh/.
     skip = {"infra", "zh"}
-    return sorted(
-        p for p in DOCS.rglob("*.md") if not (skip & set(p.relative_to(DOCS).parts))
-    )
+    return sorted(p for p in DOCS.rglob("*.md") if not (skip & set(p.relative_to(DOCS).parts)))
 
 
 def title_of(md_text: str, rel: Path) -> str:
@@ -440,7 +438,7 @@ def build() -> None:
         zh_out = OUT.parent / "zh" / "docs"
         zh_dst = zh_out / rel.with_suffix(".html")
         zh_dst.parent.mkdir(parents=True, exist_ok=True)
-        
+
         zh_src = DOCS / "zh" / rel
         if zh_src.exists():
             zh_text = zh_src.read_text(encoding="utf-8")
@@ -464,7 +462,7 @@ def build() -> None:
             # Reroot AFTER the demo embed so the demo's ../assets/demos/ src is
             # rerooted too (it's injected at the EN depth).
             zh_body = zh_reroot(zh_body)
-            
+
             # Write without banner, just pure zh html
             zh_dst.write_text(
                 page(rel, zh_body, zh_title, needs_mermaid, lang="zh"), encoding="utf-8"
