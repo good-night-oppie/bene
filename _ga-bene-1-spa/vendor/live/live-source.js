@@ -151,7 +151,10 @@
     // Public spectator stream: no credentials, no hidden state.
     this._es = new this._EventSource(this.endpoint.url, { withCredentials: false });
     this._es.onmessage = (ev) => this._emit("message", JSON.parse(ev.data));
-    this._es.addEventListener("end", (ev) => this._emit("end", JSON.parse(ev.data)));
+    this._es.addEventListener("end", (ev) => {
+      this._emit("end", JSON.parse(ev.data));
+      this.close();
+    });
     this._es.onerror = (ev) => this._emit("error", ev);
     return this;
   };
@@ -200,6 +203,7 @@
   };
   SseLiveSource.prototype.close = function () {
     if (this._es) this._es.close();
+    this._es = null;
     if (this._abort) this._abort.abort();
   };
 
