@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>agentdex.builders — live battle viewer (GA-BENE-2 reference)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  /* ---- design tokens (verbatim from tasks/agentdex-builders-ga/DESIGN/dashboard.html) ---- */
+  :root{
+    --bg:#0c0e13; --panel:#13161e; --panel2:#171b25; --line:#242a37;
+    --ink:#e9edf5; --mut:#8b93a4; --dim:#5d6575;
+    --lime:#a6e22e; --live:#ff4655; --gold:#ffcb3d; --blue:#4ea1ff;
+    --hp-ok:#5fd35a; --hp-warn:#f4c531; --hp-low:#ef4a4a;
+    --radius:10px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --disp:'Chakra Petch',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:var(--disp); font-size:14px; line-height:1.45; color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    background:radial-gradient(1200px 600px at 80% -10%, #1a2030 0%, transparent 60%), var(--bg);
+  }
+  .mono{font-family:var(--mono)}
+  .app{display:grid; grid-template-rows:54px 1fr; min-height:100vh}
+  .topbar{display:flex; align-items:center; gap:12px; padding:0 16px; border-bottom:1px solid var(--line)}
+  .brand{font-weight:700; letter-spacing:.02em}
+  .brand .dot{color:var(--lime)}
+  .badge{font-family:var(--mono); font-size:11px; color:var(--mut); border:1px solid var(--line); border-radius:999px; padding:2px 9px}
+  .ref-note{margin-left:auto; font-size:11px; color:var(--dim); font-family:var(--mono)}
+
+  .main{display:grid; grid-template-columns:248px 1fr; min-height:0}
+  .roster{border-right:1px solid var(--line); padding:12px; display:flex; flex-direction:column; gap:8px}
+  .roster h3, .sec{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--mut); font-weight:600; margin:0 0 4px}
+  .agent{display:grid; grid-template-columns:1fr auto; gap:2px 8px; padding:9px; border:1px solid var(--line); border-radius:9px; background:var(--panel); cursor:pointer}
+  .agent.sel{border-color:var(--lime); box-shadow:0 0 0 1px rgba(166,226,46,.25),0 6px 18px -10px rgba(166,226,46,.4)}
+  .agent .nm{display:flex; align-items:center; gap:6px; font-weight:600}
+  .agent .elo{font-family:var(--mono); color:var(--gold); text-align:right}
+  .agent .tag{font-family:var(--mono); font-size:11px; color:var(--blue)}
+  .agent .wl{font-family:var(--mono); font-size:11px; color:var(--mut); text-align:right}
+  .stat-dot{width:7px; height:7px; border-radius:50%; display:inline-block}
+  .stat-dot.live{background:var(--live); animation:pulse 1.6s infinite}
+  .stat-dot.idle{background:#3a4252}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  .work{display:grid; grid-template-rows:minmax(0,1.32fr) minmax(0,1fr); gap:12px; padding:12px; min-height:0}
+  .row{display:grid; gap:12px; min-height:0}
+  /* THE load-bearing adjacency (US-3.1): Agent Pane | Live Battle, side-by-side ≥1024px */
+  .row.top{grid-template-columns:minmax(300px,0.92fr) minmax(360px,1.08fr)}
+  .row.bot{grid-template-columns:1.15fr .85fr}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); display:flex; flex-direction:column; overflow:hidden; min-height:0}
+  .card .ch{display:flex; align-items:center; justify-content:space-between; padding:10px 13px; border-bottom:1px solid var(--line)}
+  .card .ch h3{margin:0; font-size:13px}
+  .card .cb{padding:13px; overflow:auto; min-height:0}
+
+  /* Agent Pane */
+  .ap .name{font-size:19px; font-weight:700; display:flex; align-items:center; gap:8px}
+  .ap .gen{font-family:var(--mono); font-size:11px; color:var(--lime); border:1px solid #3a5a1f; border-radius:5px; padding:1px 6px}
+  .ap .stats{display:flex; gap:18px; margin:12px 0}
+  .ap .stat .k{font-size:10px; text-transform:uppercase; color:var(--dim)}
+  .ap .stat .v{font-size:20px; font-family:var(--mono)}
+  .ap .v.elo{color:var(--gold)} .ap .v.wr{color:var(--lime)}
+  .ap .genome{border-top:1px dashed var(--line); padding-top:10px; margin-top:4px}
+  .ap .kv{display:grid; grid-template-columns:130px 1fr; font-family:var(--mono); font-size:12px; padding:2px 0}
+  .ap .kv .key{color:var(--dim)}
+  .ap .evolvebtn{margin-top:12px; width:100%; border:0; border-radius:8px; padding:10px; font-weight:700; color:#0c0e13; cursor:pointer; background:linear-gradient(180deg,#b9f23a,#8fd118)}
+  .ap .evolvebtn .s{display:block; font-family:var(--mono); font-weight:500; font-size:10px; opacity:.8}
+
+  /* Live Battle scene-card controls */
+  .scene-card .ch .ctl{display:flex; gap:6px; align-items:center}
+  .seg{display:inline-flex; border:1px solid var(--line); border-radius:7px; overflow:hidden}
+  .seg button{background:var(--panel2); color:var(--mut); border:0; font-family:var(--mono); font-size:11px; padding:4px 9px; cursor:pointer}
+  .seg button.on{background:var(--lime); color:#0c0e13; font-weight:600}
+  .iconbtn{background:var(--panel2); color:var(--ink); border:1px solid var(--line); border-radius:7px; font-family:var(--mono); font-size:11px; padding:4px 9px; cursor:pointer}
+
+  /* ---- battle-scene component ---- */
+  .bscene{display:flex; flex-direction:column; gap:10px; padding:13px; position:relative; min-height:0; height:100%}
+  .bscene-banner{display:flex; align-items:center; justify-content:space-between; font-size:12px}
+  .bscene-turn{color:var(--gold)}
+  .bscene-banner-right{display:flex; gap:10px; align-items:center; color:var(--mut)}
+  .bscene-live{color:var(--live); font-weight:600}
+  .bscene-live.ended{color:var(--mut)}
+  .bscene-lag{color:var(--dim)}
+  .bscene-arena{display:grid; grid-template-columns:1fr auto 1fr; gap:10px; align-items:stretch}
+  .bscene-vs{align-self:center; color:var(--dim); font-size:11px}
+  .bscene-mon{background:var(--panel2); border:1px solid var(--line); border-radius:9px; padding:10px; display:flex; flex-direction:column; gap:7px}
+  .bscene-p2{text-align:right}
+  .bscene-mon.fainted{opacity:.5; filter:grayscale(.6)}
+  .bscene-dots{font-size:10px; letter-spacing:2px; color:var(--lime); min-height:12px}
+  .bscene-trainer{font-size:11px; color:var(--mut)}
+  .bscene-mon-body{display:flex; align-items:center; gap:8px}
+  .bscene-p2 .bscene-mon-body{flex-direction:row-reverse}
+  .bscene-token{width:34px; height:34px; border-radius:8px; background:linear-gradient(160deg,#2a3344,#1a1f2b); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-weight:700; font-family:var(--mono); color:var(--ink)}
+  .bscene-species{font-weight:600; font-size:15px; flex:1}
+  .bscene-status{font-family:var(--mono); font-size:10px; padding:1px 6px; border-radius:999px; background:#2a2230; color:var(--gold)}
+  .st-par{color:#f4c531} .st-brn{color:#ff7a4a} .st-psn,.st-tox{color:#c77dff} .st-slp{color:#9aa7bd} .st-frz{color:#7fd4ff}
+  .bscene-hp-row{display:flex; align-items:center; gap:8px}
+  .bscene-p2 .bscene-hp-row{flex-direction:row-reverse}
+  .bscene-hp-track{flex:1; height:9px; background:#0d1016; border-radius:999px; overflow:hidden; border:1px solid var(--line)}
+  .bscene-hp-fill{height:100%; transition:width .45s ease, background-color .3s; border-radius:999px}
+  .bscene-hp-fill.hp-ok{background:var(--hp-ok)} .bscene-hp-fill.hp-warn{background:var(--hp-warn)} .bscene-hp-fill.hp-low{background:var(--hp-low)}
+  .bscene-hp-pct{font-family:var(--mono); font-size:12px; color:var(--mut); min-width:38px}
+  .bscene-fog{font-family:var(--mono); font-size:10.5px; color:var(--dim); border-top:1px dashed var(--line); padding-top:6px}
+  .bscene-ticker{flex:1; overflow:auto; background:#0d1016; border:1px solid var(--line); border-radius:8px; padding:8px; font-family:var(--mono); font-size:11.5px; color:#c3cad8; min-height:80px}
+  .bscene-tick{padding:1px 0; color:var(--mut)}
+  .bscene-tick.hot{color:var(--ink)}
+  .bscene-move-banner{position:absolute; top:46%; left:50%; transform:translate(-50%,-6px); background:rgba(20,24,34,.92); border:1px solid var(--lime); color:var(--ink); font-weight:700; padding:7px 16px; border-radius:8px; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s}
+  .bscene-move-banner.show{opacity:1; transform:translate(-50%,0)}
+  .bscene-controls{display:flex; align-items:center; gap:8px; border-top:1px solid var(--line); padding-top:9px}
+  .bscene-btn{background:var(--panel2); color:var(--ink); border:1px solid var(--line); border-radius:7px; font-family:var(--mono); font-size:11px; padding:5px 10px; cursor:pointer}
+  .bscene-scrub{flex:1; accent-color:var(--lime)}
+  .bscene-replay-link{font-size:10px; color:var(--blue); text-decoration:none}
+
+  .placeholder{color:var(--dim); font-family:var(--mono); font-size:12px; display:flex; align-items:center; justify-content:center; height:100%}
+
+  /* responsive: <1024px stack the panes (Agent Pane above the viewer); collapse roster */
+  @media (max-width:1023px){
+    .main{grid-template-columns:1fr}
+    .roster{flex-direction:row; flex-wrap:wrap; border-right:0; border-bottom:1px solid var(--line)}
+    .row.top, .row.bot{grid-template-columns:1fr}
+    .work{grid-template-rows:none}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <span class="brand">agentdex<span class="dot">.</span>builders</span>
+    <span class="badge">live battle viewer</span>
+    <span class="ref-note">GA-BENE-2 reference renderer · fixture-driven · wires to GA-CORE-3</span>
+  </div>
+  <div class="main">
+    <!-- US-2.1 roster (placeholder) -->
+    <aside class="roster">
+      <h3>My Agents</h3>
+      <div class="agent sel">
+        <span class="nm"><span class="stat-dot live"></span>adx-aggro-v7</span>
+        <span class="elo">1487</span>
+        <span class="tag">llm_freeform · 76% wr</span>
+        <span class="wl">38–12</span>
+      </div>
+      <div class="agent">
+        <span class="nm"><span class="stat-dot idle"></span>adx-stall-v3</span>
+        <span class="elo">1402</span>
+        <span class="tag">max_damage · 61% wr</span>
+        <span class="wl">22–14</span>
+      </div>
+    </aside>
+
+    <div class="work">
+      <div class="row top">
+        <!-- Agent Pane (US-2.1) -->
+        <section class="card ap">
+          <div class="ch"><h3>Agent Pane</h3><span class="mono" style="color:var(--dim);font-size:11px">h_8f3c…</span></div>
+          <div class="cb">
+            <div class="name">adx-aggro-v7 <span class="gen">gen-7</span></div>
+            <div class="stats">
+              <div class="stat"><div class="k">Elo</div><div class="v elo">1487</div></div>
+              <div class="stat"><div class="k">Win rate</div><div class="v wr">76%</div></div>
+              <div class="stat"><div class="k">W / L</div><div class="v mono">38–12</div></div>
+            </div>
+            <div class="genome">
+              <div class="kv"><span class="key">strategy</span><span>llm_freeform</span></div>
+              <div class="kv"><span class="key">tool_policy</span><span>allow_switch: true</span></div>
+              <div class="kv"><span class="key">format</span><span>gen9randombattle</span></div>
+            </div>
+            <button class="evolvebtn">⟳ Evolve this harness<span class="s">1 generation · held-out baselines · kill-gated (95% CI)</span></button>
+          </div>
+        </section>
+
+        <!-- Live Battle viewer mounts adjacent to the Agent Pane (US-3.1 AC1) -->
+        <section class="card scene-card">
+          <div class="ch">
+            <h3>Live Battle</h3>
+            <div class="ctl">
+              <span class="seg" id="proj-seg">
+                <button data-intent="own" class="on">owner (mine)</button>
+                <button data-intent="spectate">spectator</button>
+              </span>
+              <button class="iconbtn" id="pause-btn">❚❚ pause</button>
+            </div>
+          </div>
+          <div class="cb" style="padding:0">
+            <battle-scene id="scene"></battle-scene>
+          </div>
+        </section>
+      </div>
+
+      <div class="row bot">
+        <section class="card"><div class="ch"><h3>Evolution</h3></div><div class="cb"><div class="placeholder">fitness-over-gens · kill-gate verdicts (GA-BENE-4)</div></div></section>
+        <section class="card"><div class="ch"><h3>Ladder</h3></div><div class="cb"><div class="placeholder">owner-scoped ladder slice (US-5.1)</div></div></section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="src/lineproto.js"></script>
+<script src="src/scene.js"></script>
+<script src="src/projector.js"></script>
+<script src="src/live-source.js"></script>
+<script src="src/battle-scene.js"></script>
+<script src="src/fixture.js"></script>
+<script>
+  // Bootstrap: project the real golden battle for both fog-of-war views, then
+  // drive the <battle-scene> from a mock SSE source. The owner|spectator toggle
+  // re-projects + re-streams, demonstrating the LVC-08/09/12/16 fog-of-war split.
+  (function () {
+    const scene = document.getElementById("scene");
+    const raw = globalThis.FIXTURE_BATTLE_LOG;
+    const params = new URLSearchParams(location.search);
+    const interval = parseInt(params.get("interval") || "900", 10); // render-verify uses a fast value
+    let intent = "own"; // 'own' -> owner stream (side p1) | 'spectate' -> spectator
+    let source = null;
+
+    function projectionFor(intent) {
+      // own-agent view uses the OWNER projection (side=p1, own exact HP); a
+      // shared link uses the public SPECTATOR projection. This is the LVC-01/02
+      // endpoint-by-intent rule, here resolved into a projector side.
+      const side = intent === "own" ? "p1" : "spectator";
+      return Projector.project(raw, side, { battleId: "b_demo", stepMs: interval });
+    }
+
+    function stream() {
+      if (source) source.close();
+      scene.reset();
+      const proj = projectionFor(intent);
+      source = new LiveSource.MockLiveSource(proj.frames, {
+        intervalMs: interval,
+        replayUrl: proj.replayUrl,
+      });
+      source.onmessage = (e) => scene.pushFrame(e.data);
+      source.addEventListener("end", (e) => scene.bindEnd(e.data));
+      source.start();
+      document.getElementById("pause-btn").textContent = "❚❚ pause";
+    }
+
+    // projection toggle
+    document.getElementById("proj-seg").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-intent]");
+      if (!btn) return;
+      for (const b of e.currentTarget.querySelectorAll("button")) b.classList.remove("on");
+      btn.classList.add("on");
+      intent = btn.dataset.intent;
+      stream();
+    });
+    // pause/resume
+    document.getElementById("pause-btn").addEventListener("click", (e) => {
+      if (!source) return;
+      if (source._paused) { source.resume(); e.target.textContent = "❚❚ pause"; }
+      else { source.pause(); e.target.textContent = "▸ resume"; }
+    });
+    // next battle (US-3.1 AC4) — just restart the fixture here
+    scene.addEventListener("next-battle", stream);
+
+    stream();
+    globalThis.__viewerReady = true; // render-verify hook
+  })();
+</script>
+</body>
+</html>
