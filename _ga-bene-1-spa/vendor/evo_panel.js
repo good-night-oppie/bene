@@ -35,6 +35,14 @@ function el(tag, cls, html) {
   return e;
 }
 
+// strategy/labels come from evolved backend data (not constants) and are interpolated into
+// innerHTML — escape them so a corrupted/hostile to_done_json cannot inject script. (matches agent_hud.js)
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])
+  );
+}
+
 /* Render the Evolution panel for `done` into `mount` (replacing its contents).
  * Returns a small summary object (handy for the render-verify assertions). */
 export function renderEvoPanel(done, mount) {
@@ -99,7 +107,7 @@ export function renderEvoPanel(done, mount) {
     col.innerHTML =
       `<span class="mk">${g.kept ? "●" : "○"}</span>` +
       `<div class="bar" style="height:${(28 + (56 * wr) / (mx || 1)).toFixed(0)}px" ` +
-      `title="gen-${g.gen} · ${g.strategy ?? ""} · ${wr.toFixed(0)}% win-rate · ${
+      `title="gen-${g.gen} · ${esc(g.strategy ?? "")} · ${wr.toFixed(0)}% win-rate · ${
         g.kept ? "kept" : "kill-gated"
       }"></div>` +
       `<span class="gl">g${g.gen}</span>`;
@@ -118,7 +126,7 @@ export function renderEvoPanel(done, mount) {
       denom.push(`held-out: ${done.held_out_baselines.join(", ")}`);
     const mut = el("div", "mut");
     mut.appendChild(
-      el("div", "h", `gen-${win.gen} winning genome · <span class="nonprompt">${win.strategy ?? "—"}</span>`)
+      el("div", "h", `gen-${win.gen} winning genome · <span class="nonprompt">${esc(win.strategy ?? "—")}</span>`)
     );
     mut.appendChild(
       el(

@@ -65,11 +65,18 @@ const loadEvolution = (agent) =>
 
 let battleSource = null;
 let current = null;
+let selectSeq = 0; // monotonic guard: ignore async results from a superseded selection
 
 function startBattle(agent) {
   if (battleSource) battleSource.close();
   scene.reset();
-  if (LIVE && agent.live_battle_id) {
+  if (LIVE) {
+    if (!agent.live_battle_id) {
+      // owner dashboard, idle agent: leave the scene in its reset/empty state — NEVER demo data.
+      battleSource = null;
+      battleLabel.textContent = `idle · ${agent.agent_name} — no live battle`;
+      return;
+    }
     // GA-CORE-3 wiring — owner stream, endpoint chosen by intent ("own" => /me/battle/<id>/live).
     // Owner stream is Bearer-only for launch; public spectator streams remain native EventSource.
     battleSource = new LiveSource.SseLiveSource(agent.live_battle_id, "own", {
@@ -90,23 +97,48 @@ function startBattle(agent) {
   }
   battleSource.onmessage = (e) => scene.pushFrame(e.data);
   battleSource.addEventListener("end", (e) => scene.bindEnd(e.data));
+  // surface an async stream failure (e.g. an expired token -> 401) instead of a frozen "live" scene
+  battleSource.addEventListener("error", (e) => {
+    const reason = (e && e.detail && e.detail.message) || (e && e.message) || "stream error";
+    battleLabel.textContent = `live · ${agent.agent_name} — disconnected (${reason})`;
+  });
   battleSource.start();
 }
 
 async function select(agents, i) {
+  const seq = ++selectSeq;
   current = agents[i];
   rosterEl.querySelectorAll(".agent").forEach((e) => e.classList.toggle("sel", +e.dataset.i === i));
   renderAgentPane(current, paneEl);
   try {
-    renderEvoPanel(await loadEvolution(current), evoEl);
+    const evo = await loadEvolution(current);
+    if (seq !== selectSeq) return; // a newer selection superseded this one — drop the stale evo
+    renderEvoPanel(evo, evoEl);
   } catch (e) {
+    if (seq !== selectSeq) return;
     evoEl.innerHTML = `<div class="card"><div class="cb"><div class="err">evolution: ${e.message}</div></div></div>`;
   }
+  if (seq !== selectSeq) return; // do not (re)start a battle for a stale selection
   startBattle(current);
 }
 
-// US-3.1 AC4: at battle end the scene offers "next battle" — restart the current agent's stream.
-scene.addEventListener("next-battle", () => current && startBattle(current));
+// US-3.1 AC4: at battle end the scene offers "next battle". In live mode the prior battle id is
+// spent, so refetch the agent to pick up a NEW live_battle_id before reconnecting (not the ended stream).
+scene.addEventListener("next-battle", async () => {
+  if (!current) return;
+  if (LIVE) {
+    try {
+      const data = await loadAgents();
+      const key = current.agent_id || current.agent_name;
+      const fresh = ((data && data.agents) || []).find((a) => (a.agent_id || a.agent_name) === key);
+      if (fresh) current = fresh;
+    } catch (e) {
+      battleLabel.textContent = `live · ${current.agent_name} — could not refresh (${e.message})`;
+      return;
+    }
+  }
+  startBattle(current);
+});
 
 (async () => {
   try {
