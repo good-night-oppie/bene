@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>agentdex.builders — dashboard (GA-BENE-1 SPA assembly)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  /* ── unified design tokens (canonical: DESIGN/dashboard.html; panels share via var()) ── */
+  :root{
+    --bg:#0c0e13; --panel:#13161e; --panel2:#171b25; --line:#242a37;
+    --ink:#e9edf5; --mut:#8b93a4; --dim:#5d6575; --red:#ff8e96;
+    --lime:#a6e22e; --live:#ff4655; --gold:#ffcb3d; --blue:#4ea1ff;
+    --hp-ok:#5fd35a; --hp-warn:#f4c531; --hp-low:#ef4a4a;
+    --radius:10px;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --disp:'Chakra Petch',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(1200px 600px at 80% -10%, #1a2030 0%, transparent 60%), var(--bg);
+    color:var(--ink); font-family:var(--disp); font-size:14px; line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:var(--mono)} .dim{color:var(--dim)}
+
+  /* ── SPA shell layout (namespaced `spa-` so it never collides with panel classes) ── */
+  .spa-app{display:grid;grid-template-rows:54px 1fr;height:100vh;min-height:680px}
+  .spa-topbar{display:flex;align-items:center;gap:16px;padding:0 18px;border-bottom:1px solid var(--line);background:linear-gradient(#11141c,#0e1018)}
+  .spa-brand{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:.02em}
+  .spa-brand .hex{width:22px;height:22px;color:var(--lime)}
+  .spa-brand b{color:var(--ink)} .spa-brand span{color:var(--lime)}
+  .spa-spacer{flex:1}
+  .spa-chip{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 11px;border:1px solid var(--line);border-radius:999px;background:var(--panel);font-size:12px;color:var(--mut)}
+  .spa-chip.beta{border-color:#3a5a1f;background:rgba(166,226,46,.08);color:var(--lime)}
+  .spa-chip b{color:var(--ink);font-weight:600}
+  .spa-who{display:flex;align-items:center;gap:9px;font-size:12px}
+  .spa-who .av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#2b3346,#444f6b);display:grid;place-items:center;font-weight:700;color:#cdd6e6;border:1px solid var(--line)}
+  .spa-who .gh{color:var(--dim);font-size:11px}
+
+  .spa-main{display:grid;grid-template-columns:248px 1fr;min-height:0}
+  .spa-rosterbox{border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .spa-rosterbox .hd{display:flex;align-items:center;justify-content:space-between;padding:13px 14px 9px;border-bottom:1px solid var(--line)}
+  .spa-rosterbox .hd h2{margin:0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+  .spa-newbtn{font-family:var(--disp);font-size:12px;color:var(--lime);background:none;border:1px solid #3a5a1f;border-radius:7px;padding:3px 9px;cursor:pointer}
+  #roster{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:6px;min-height:0}
+
+  .spa-work{display:grid;grid-template-rows:minmax(0,1.32fr) minmax(0,1fr);gap:12px;padding:12px;min-height:0}
+  .spa-row{display:grid;gap:12px;min-height:0}
+  .spa-row.top{grid-template-columns:minmax(300px,.92fr) minmax(360px,1.08fr)}
+  .spa-row.bot{grid-template-columns:1.15fr .85fr}
+  .spa-cell{display:flex;min-height:0;min-width:0}
+  .spa-cell > *{flex:1;min-width:0}
+
+  @media (max-width:1023px){
+    .spa-main{grid-template-columns:1fr}
+    .spa-rosterbox{border-right:0;border-bottom:1px solid var(--line)}
+    .spa-row.top,.spa-row.bot{grid-template-columns:1fr}
+    .spa-work{grid-template-rows:none}
+  }
+
+  /* ── shared card chrome (every panel + static cards use these) ── */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .ch{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--line)}
+  .ch h3{margin:0;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:600}
+  .ch .r{display:flex;align-items:center;gap:8px}
+  .ch .r.dim.mono{font-family:var(--mono);color:var(--dim);font-size:11px}
+  .cb{padding:14px;overflow:auto;min-height:0}
+  .err{font-family:var(--mono);font-size:12px;color:var(--red)}
+
+  /* ── GA-BENE-1 · agent roster + Agent Pane genome HUD (agent_hud.js) ── */
+  .agent{display:flex;flex-direction:column;gap:3px;border:1px solid var(--line);background:var(--panel2);border-radius:9px;padding:9px 11px;cursor:pointer;transition:.12s}
+  .agent:hover{border-color:#33425e;transform:translateY(-1px)}
+  .agent.sel{border-color:var(--lime);box-shadow:0 0 0 1px rgba(166,226,46,.25),0 6px 18px -10px rgba(166,226,46,.4)}
+  .a-name{font-weight:600;font-size:13px}
+  .a-meta{font-family:var(--mono);font-size:11px;color:var(--mut)}
+  .a-gen{color:var(--lime)} .a-gen.pending{color:var(--gold)}
+  .ap-name-row{display:flex;align-items:center;gap:10px;margin-bottom:13px}
+  .ap-name{font-size:18px;font-weight:700}
+  .ap-name-row .gen{font-family:var(--mono);font-size:11px;color:var(--lime);border:1px solid #3a5a1f;border-radius:5px;padding:1px 6px}
+  .ap-name-row .gen.pending{color:var(--gold);border-color:#5a4a1f}
+  .ap-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:14px}
+  .stat{background:#0d1016;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+  .stat .k{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+  .stat .v{font-family:var(--mono);font-size:18px;font-weight:600;margin-top:2px}
+  .stat .v.elo{color:var(--gold)} .stat .v.wr{color:var(--lime)}
+  .stat .v .rd{font-size:10px;color:var(--dim);font-weight:400}
+  .ap-genome{border-top:1px solid var(--line);padding-top:12px}
+  .kv{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:12px;margin-bottom:7px}
+  .kv .k{color:var(--mut)} .kv .vv{color:var(--ink)}
+  .pill{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-radius:5px;padding:1px 7px}
+  .pill.on{color:var(--lime);border-color:#3a5a1f;background:rgba(166,226,46,.07)}
+  .pill.off{color:var(--dim)}
+  .prompt{font-family:var(--mono);font-size:11.5px;line-height:1.5;color:#c3cad8;background:#0d1016;border:1px solid var(--line);border-left:3px solid var(--lime);border-radius:7px;padding:9px 11px;margin-top:6px}
+  .prompt.empty{color:var(--dim);border-left-color:var(--dim)}
+  .genome-pending{font-family:var(--mono);font-size:11.5px;color:var(--gold);background:rgba(255,203,61,.06);border:1px dashed #5a4a1f;border-radius:7px;padding:11px}
+
+  /* ── GA-BENE-4 · Evolution panel (evo_panel.js) ── */
+  #evo-panel .cb{display:flex;flex-direction:column}
+  .evo .lead{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;flex-wrap:wrap;flex:0 0 auto}
+  .evo .lead .up{font-family:var(--mono);font-size:24px;font-weight:600;color:var(--lime);line-height:1.1}
+  .evo .lead .up.muted{color:var(--mut)}
+  .evo .lead .ci{font-family:var(--mono);font-size:11px;color:var(--mut)}
+  .ci-sig{color:var(--lime)} .ci-ns{color:var(--gold)}
+  .kg.ok{color:var(--lime)} .kg.no{color:var(--red)}
+  .evo-badge.mock{font-family:var(--mono);font-size:11px;color:#0c0e13;background:var(--gold);border-radius:6px;padding:4px 8px;margin-bottom:10px;display:inline-block}
+  .spark{display:flex;align-items:flex-end;gap:7px;height:84px;min-height:84px;padding:6px 2px 2px;border-bottom:1px solid var(--line);flex:0 0 auto}
+  .gcol .bar{max-height:72px}
+  .gcol{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;justify-content:flex-end}
+  .gcol .mk{font-size:9px}
+  .gcol.kept .mk{color:var(--lime)} .gcol.killed .mk{color:var(--dim)}
+  .gcol .bar{width:100%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,#3a5a1f,#22301a)}
+  .gcol.kept .bar{background:linear-gradient(180deg,#b9f23a,#6f9a18)}
+  .gcol .gl{font-family:var(--mono);font-size:9.5px;color:var(--dim)}
+  .mut{margin-top:11px;font-family:var(--mono);font-size:12px;background:#0d1016;border:1px solid #3a5a1f;border-left:3px solid var(--lime);border-radius:7px;padding:9px 11px}
+  .mut .h{color:var(--lime);font-weight:600;margin-bottom:4px}
+  .mut .b{color:#c3cad8;line-height:1.45}
+  .nonprompt{color:#0c0e13;background:var(--lime);border-radius:4px;padding:0 5px;font-size:10.5px}
+
+  /* ── GA-BENE-2 · live battle scene (battle-scene.js custom element) ── */
+  .scene-card .cb{padding:0;flex:1;display:flex;min-height:0}
+  battle-scene{flex:1;display:block;min-height:0}
+  .bscene{display:flex;flex-direction:column;gap:10px;padding:13px;position:relative;min-height:0;height:100%}
+  .bscene-banner{display:flex;align-items:center;justify-content:space-between;font-size:12px}
+  .bscene-turn{color:var(--gold)}
+  .bscene-banner-right{display:flex;gap:10px;align-items:center;color:var(--mut)}
+  .bscene-live{color:var(--live);font-weight:600}
+  .bscene-live.ended{color:var(--mut)}
+  .bscene-lag{color:var(--dim)}
+  .bscene-arena{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch}
+  .bscene-vs{align-self:center;color:var(--dim);font-size:11px}
+  .bscene-mon{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:7px}
+  .bscene-p2{text-align:right}
+  .bscene-mon.fainted{opacity:.5;filter:grayscale(.6)}
+  .bscene-dots{font-size:10px;letter-spacing:2px;color:var(--lime);min-height:12px}
+  .bscene-trainer{font-size:11px;color:var(--mut)}
+  .bscene-mon-body{display:flex;align-items:center;gap:8px}
+  .bscene-p2 .bscene-mon-body{flex-direction:row-reverse}
+  .bscene-token{width:34px;height:34px;border-radius:8px;background:linear-gradient(160deg,#2a3344,#1a1f2b);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;font-family:var(--mono);color:var(--ink)}
+  .bscene-species{font-weight:600;font-size:15px;flex:1}
+  .bscene-status{font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:999px;background:#2a2230;color:var(--gold)}
+  .st-par{color:#f4c531} .st-brn{color:#ff7a4a} .st-psn,.st-tox{color:#c77dff} .st-slp{color:#9aa7bd} .st-frz{color:#7fd4ff}
+  .bscene-hp-row{display:flex;align-items:center;gap:8px}
+  .bscene-p2 .bscene-hp-row{flex-direction:row-reverse}
+  .bscene-hp-track{flex:1;height:9px;background:#0d1016;border-radius:999px;overflow:hidden;border:1px solid var(--line)}
+  .bscene-hp-fill{height:100%;transition:width .45s ease, background-color .3s;border-radius:999px}
+  .bscene-hp-fill.hp-ok{background:var(--hp-ok)} .bscene-hp-fill.hp-warn{background:var(--hp-warn)} .bscene-hp-fill.hp-low{background:var(--hp-low)}
+  .bscene-hp-pct{font-family:var(--mono);font-size:12px;color:var(--mut);min-width:38px}
+  .bscene-fog{font-family:var(--mono);font-size:10.5px;color:var(--dim);border-top:1px dashed var(--line);padding-top:6px}
+  .bscene-ticker{flex:1;overflow:auto;background:#0d1016;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:var(--mono);font-size:11.5px;color:#c3cad8;min-height:80px}
+  .bscene-tick{padding:1px 0;color:var(--mut)} .bscene-tick.hot{color:var(--ink)}
+  .bscene-move-banner{position:absolute;top:46%;left:50%;transform:translate(-50%,-6px);background:rgba(20,24,34,.92);border:1px solid var(--lime);color:var(--ink);font-weight:700;padding:7px 16px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+  .bscene-move-banner.show{opacity:1;transform:translate(-50%,0)}
+  .bscene-controls{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding-top:9px}
+  .bscene-btn{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:7px;font-family:var(--mono);font-size:11px;padding:5px 10px;cursor:pointer}
+  .bscene-scrub{flex:1;accent-color:var(--lime)}
+  .bscene-replay-link{font-size:10px;color:var(--blue);text-decoration:none}
+
+  /* ── static placeholder card (US-5.1 ladder — next panel) ── */
+  .ph{color:var(--dim);font-family:var(--mono);font-size:12px;display:flex;align-items:center;justify-content:center;height:100%;text-align:center;padding:14px}
+</style>
+</head>
+<body>
+<div class="spa-app">
+
+  <header class="spa-topbar">
+    <div class="spa-brand">
+      <svg class="hex" viewBox="0 0 24 24" fill="none"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7L12 2z" stroke="currentColor" stroke-width="1.6"/><path d="M12 7l4.33 2.5v5L12 17l-4.33-2.5v-5L12 7z" fill="currentColor" opacity=".25"/></svg>
+      <b>agentdex</b><span>.builders</span>
+    </div>
+    <span class="spa-chip" id="data-mode">build-ahead · fixtures</span>
+    <div class="spa-spacer"></div>
+    <span class="spa-chip beta">◇ INVITE BETA</span>
+    <div class="spa-who">
+      <div class="av">E</div>
+      <div><div id="who-name">owner</div><div class="gh" id="who-sub">GA-BENE-1 SPA assembly</div></div>
+    </div>
+  </header>
+
+  <div class="spa-main">
+    <!-- LEFT: roster (GA-BENE-1 / agent_hud renders rows into #roster) -->
+    <aside class="spa-rosterbox">
+      <div class="hd"><h2>My Agents</h2><button class="spa-newbtn">+ new</button></div>
+      <div id="roster"><div class="err" style="padding:12px">loading…</div></div>
+    </aside>
+
+    <!-- WORKSPACE -->
+    <section class="spa-work">
+      <!-- TOP: Agent Pane (genome HUD) | Live Battle (the US-3.1 adjacency) -->
+      <div class="spa-row top">
+        <div class="spa-cell"><div id="agent-pane"><div class="card"><div class="cb"><div class="err">select an agent…</div></div></div></div></div>
+        <div class="spa-cell">
+          <div class="card scene-card">
+            <div class="ch"><h3>Live Battle</h3><div class="r dim mono" id="battle-label">—</div></div>
+            <div class="cb"><battle-scene id="scene"></battle-scene></div>
+          </div>
+        </div>
+      </div>
+      <!-- BOTTOM: Evolution (lineage) | Ladder (next panel) -->
+      <div class="spa-row bot">
+        <div class="spa-cell"><div id="evo-panel"><div class="card"><div class="cb"><div class="err">select an agent…</div></div></div></div></div>
+        <div class="spa-cell">
+          <div class="card">
+            <div class="ch"><h3>Ladder</h3><div class="r dim mono">gen9randombattle</div></div>
+            <div class="cb"><div class="ph">owner-scoped ladder slice (US-5.1)<br>— next GA-BENE panel · wires <code>/me/ladder</code></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- GA-BENE-2 live-viewer: global (non-module) scripts define LiveSource / Projector / <battle-scene> / FIXTURE_BATTLE_LOG -->
+<script src="vendor/live/lineproto.js"></script>
+<script src="vendor/live/scene.js"></script>
+<script src="vendor/live/projector.js"></script>
+<script src="vendor/live/live-source.js"></script>
+<script src="vendor/live/battle-scene.js"></script>
+<script src="vendor/live/fixture.js"></script>
+<!-- the assembly bootstrap (imports the two ES-module panels + wires data sources) -->
+<script type="module" src="app.js"></script>
+</body>
+</html>

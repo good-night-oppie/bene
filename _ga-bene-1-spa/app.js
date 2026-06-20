@@ -1,0 +1,129 @@
+/* GA-BENE-1 — dashboard SPA assembly (bene lineage).
+ *
+ * Assembles the three render-verified build-ahead panels into one dashboard and
+ * wires the live `/me/*` + SSE feeds, per the ga-bene memories ("bene assembles
+ * the GA-BENE-1 SPA from the 3 + wires live /me/* + SSE + smoke"):
+ *
+ *   • GA-BENE-1  agent_hud.js   → roster (#roster) + Agent Pane genome HUD (#agent-pane)
+ *   • GA-BENE-2  battle-scene   → live battle viewer (<battle-scene id=scene>)
+ *   • GA-BENE-4  evo_panel.js   → Evolution · lineage (#evo-panel)
+ *
+ * ONE data seam, flipped by `?live=1` (everything else is the same call shape):
+ *   roster   fixture ./fixtures/me_agents.json      ⇄  GET /me/agents            (session token)
+ *   evo      fixture ./fixtures/done.json           ⇄  GET /me/agents/<id>/evolution
+ *   battle   MockLiveSource(golden-fixture frames)  ⇄  SseLiveSource(battleId,"own",{sessionToken})  (GA-CORE-3)
+ *
+ * Selecting an agent re-renders the Agent Pane + Evolution panel and (re)starts
+ * its live battle — the headline interaction (US-2.1 AC2 + US-3.1 adjacency).
+ */
+import { renderRoster, renderAgentPane } from "./vendor/agent_hud.js";
+import { renderEvoPanel } from "./vendor/evo_panel.js";
+
+const qs = new URLSearchParams(location.search);
+const LIVE = qs.get("live") === "1";
+const SESSION_TOKEN =
+  window.AGENTDEX_SESSION_TOKEN ||
+  qs.get("session_token") ||
+  window.localStorage?.getItem("agentdex_session_token") ||
+  "";
+// render-verify drives the battle fast so frames have applied by dump-DOM time
+const STEP_MS = parseInt(qs.get("interval") || (qs.get("fast") ? "40" : "700"), 10);
+
+const rosterEl = document.getElementById("roster");
+const paneEl = document.getElementById("agent-pane");
+const evoEl = document.getElementById("evo-panel");
+const scene = document.getElementById("scene");
+const battleLabel = document.getElementById("battle-label");
+
+function mark(state) {
+  document.documentElement.setAttribute("data-spa", state);
+}
+
+async function getJSON(url, opts) {
+  const res = await fetch(url, opts);
+  if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
+  return res.json();
+}
+
+function authOpts() {
+  return SESSION_TOKEN
+    ? { headers: { Authorization: `Bearer ${SESSION_TOKEN}` } }
+    : { credentials: "include" };
+}
+
+const loadAgents = () =>
+  LIVE
+    ? getJSON("/me/agents", authOpts())
+    : getJSON("./fixtures/me_agents.json");
+
+const loadEvolution = (agent) =>
+  LIVE
+    ? getJSON(`/me/agents/${encodeURIComponent(agent.agent_id || agent.agent_name)}/evolution`, {
+        ...authOpts(),
+      })
+    : getJSON("./fixtures/done.json");
+
+let battleSource = null;
+let current = null;
+
+function startBattle(agent) {
+  if (battleSource) battleSource.close();
+  scene.reset();
+  if (LIVE && agent.live_battle_id) {
+    // GA-CORE-3 wiring — owner stream, endpoint chosen by intent ("own" => /me/battle/<id>/live).
+    // Owner stream is Bearer-only for launch; public spectator streams remain native EventSource.
+    battleSource = new LiveSource.SseLiveSource(agent.live_battle_id, "own", {
+      sessionToken: SESSION_TOKEN,
+    });
+    battleLabel.textContent = `live · ${agent.agent_name}`;
+  } else {
+    // build-ahead: the same frame seam, fed by the golden battle through the GA-CORE-3 reference projector
+    const proj = Projector.project(globalThis.FIXTURE_BATTLE_LOG, "p1", {
+      battleId: "b_demo",
+      stepMs: STEP_MS,
+    });
+    battleSource = new LiveSource.MockLiveSource(proj.frames, {
+      intervalMs: STEP_MS,
+      replayUrl: proj.replayUrl,
+    });
+    battleLabel.textContent = agent.live ? `demo stream · ${agent.agent_name}` : "idle — demo stream";
+  }
+  battleSource.onmessage = (e) => scene.pushFrame(e.data);
+  battleSource.addEventListener("end", (e) => scene.bindEnd(e.data));
+  battleSource.start();
+}
+
+async function select(agents, i) {
+  current = agents[i];
+  rosterEl.querySelectorAll(".agent").forEach((e) => e.classList.toggle("sel", +e.dataset.i === i));
+  renderAgentPane(current, paneEl);
+  try {
+    renderEvoPanel(await loadEvolution(current), evoEl);
+  } catch (e) {
+    evoEl.innerHTML = `<div class="card"><div class="cb"><div class="err">evolution: ${e.message}</div></div></div>`;
+  }
+  startBattle(current);
+}
+
+// US-3.1 AC4: at battle end the scene offers "next battle" — restart the current agent's stream.
+scene.addEventListener("next-battle", () => current && startBattle(current));
+
+(async () => {
+  try {
+    const data = await loadAgents();
+    const agents = (data && data.agents) || [];
+    document.getElementById("data-mode").textContent = LIVE ? "live · /me/*" : "build-ahead · fixtures";
+    if (!agents.length) {
+      rosterEl.innerHTML = '<div class="err" style="padding:12px">no agents — enroll your first harness</div>';
+      mark("ready");
+      return;
+    }
+    renderRoster(agents, rosterEl, (i) => select(agents, i));
+    await select(agents, 0);
+    mark("ready");
+  } catch (e) {
+    rosterEl.innerHTML = `<div class="err" style="padding:12px">roster: ${e.message}</div>`;
+    mark("error:" + e.message);
+    console.error(e);
+  }
+})();
