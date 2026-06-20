@@ -123,10 +123,7 @@ STRINGS = {
             "构建 BENE 的手记——agent 背后的那套 harness。"
             "开篇这一组讲清楚 <b>为什么</b>、<b>是什么</b>、<b>怎么做</b>。"
         ),
-        "empty": (
-            "首批文章还在写。过几天再来——或者先看看"
-            '<a href="../docs/index.html">文档</a>。'
-        ),
+        "empty": ('首批文章还在写。过几天再来——或者先看看<a href="../docs/index.html">文档</a>。'),
         "back_to_index": "← 全部文章",
         "edit_note": "翻译进行中。改 blog/zh/ 的 markdown，重跑 site/build-blog.py；不要手改 HTML。",
     },
@@ -155,22 +152,22 @@ def shell(lang: str, title: str, body: str, *, cur: str) -> str:
     nav = (
         '<div class="top"><div class="top-in">'
         f'<a class="brand" href="{landing}">{html.escape(s["brand"])}</a>'
-        f'{navlink(landing, s["nav_landing"], "landing")}'
-        f'{navlink(docs, s["nav_docs"], "docs")}'
-        f'{navlink(blog, s["nav_blog"], "blog")}'
+        f"{navlink(landing, s['nav_landing'], 'landing')}"
+        f"{navlink(docs, s['nav_docs'], 'docs')}"
+        f"{navlink(blog, s['nav_blog'], 'blog')}"
         '<span class="spacer"></span>'
         f'<a class="nav" href="{lang_switch}" title="{html.escape(s["lang_switch_title"])}">'
-        f'{html.escape(s["lang_switch_label"])}</a>'
+        f"{html.escape(s['lang_switch_label'])}</a>"
         "</div></div>"
     )
     footer = (
         '<footer class="ft"><div class="in">'
-        f'<span>{html.escape(s["edit_note"])}</span>'
+        f"<span>{html.escape(s['edit_note'])}</span>"
         '<a href="https://github.com/good-night-oppie/bene" target="_blank" rel="noopener noreferrer">GitHub</a>'
         "</div></footer>"
     )
     return (
-        "<!doctype html><html lang=\"" + ("zh-Hans" if lang == "zh" else "en") + "\"><head>"
+        '<!doctype html><html lang="' + ("zh-Hans" if lang == "zh" else "en") + '"><head>'
         '<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
         f"<title>{html.escape(title)}</title>"
         '<link rel="icon" href="../assets/bene-logo.svg">'
@@ -207,7 +204,7 @@ def parse_post(md_path: Path) -> dict:
     kind, date = "", ""
     body_src = text
     if m_title:
-        rest = text[m_title.end():]
+        rest = text[m_title.end() :]
         m_by = BYLINE_RE.search(rest.lstrip("\n")[:300])
         if m_by:
             parts = [p.strip() for p in m_by.group(1).split("·")]
@@ -218,7 +215,7 @@ def parse_post(md_path: Path) -> dict:
                 elif p and p.lower() not in ("bene blog", "bene 博客"):
                     kind = p
             # Drop the title + byline lines from the rendered body.
-            body_src = rest[m_by.end():]
+            body_src = rest[m_by.end() :]
 
     md = markdown.Markdown(extensions=MD_EXTS, extension_configs=MD_CFG)
     body_html = rewrite_links(md.convert(body_src.strip()))
@@ -246,17 +243,15 @@ def render_post(post: dict, lang: str) -> str:
         by_bits.append(f'<span class="kind">{html.escape(post["kind"])}</span>')
     if post["date"]:
         by_bits.append(html.escape(post["date"]))
-    byline = (
-        f'<p class="byline">{" · ".join(by_bits)}</p>' if by_bits else ""
-    )
+    byline = f'<p class="byline">{" · ".join(by_bits)}</p>' if by_bits else ""
     body = (
         f'<div class="crumbs"><a href="index.html">{html.escape(s["back_to_index"])}</a></div>'
-        f'<h1>{html.escape(post["title"])}</h1>'
+        f"<h1>{html.escape(post['title'])}</h1>"
         f"{byline}"
-        f'{post["body_html"]}'
+        f"{post['body_html']}"
         f'<p class="src"><a href="index.html">{html.escape(s["back_to_index"])}</a></p>'
     )
-    return shell(lang, f'{post["title"]} — {s["index_title"]}', body, cur="blog")
+    return shell(lang, f"{post['title']} — {s['index_title']}", body, cur="blog")
 
 
 def render_index(posts: list[dict], lang: str) -> str:
@@ -269,14 +264,8 @@ def render_index(posts: list[dict], lang: str) -> str:
                 meta_bits.append(f'<span class="kind">{html.escape(p["kind"])}</span>')
             if p["date"]:
                 meta_bits.append(html.escape(p["date"]))
-            meta = (
-                f'<div class="meta">{" · ".join(meta_bits)}</div>' if meta_bits else ""
-            )
-            excerpt = (
-                f'<p class="excerpt">{html.escape(p["excerpt"])}</p>'
-                if p["excerpt"]
-                else ""
-            )
+            meta = f'<div class="meta">{" · ".join(meta_bits)}</div>' if meta_bits else ""
+            excerpt = f'<p class="excerpt">{html.escape(p["excerpt"])}</p>' if p["excerpt"] else ""
             items.append(
                 "<li>"
                 f'<a class="title" href="{p["slug"]}.html">{html.escape(p["title"])}</a>'
@@ -286,11 +275,7 @@ def render_index(posts: list[dict], lang: str) -> str:
     else:
         listing = f'<div class="empty">{s["empty"]}</div>'
 
-    body = (
-        f'<h1>{html.escape(s["index_h1"])}</h1>'
-        f'<p>{s["index_intro"]}</p>'
-        f"{listing}"
-    )
+    body = f"<h1>{html.escape(s['index_h1'])}</h1><p>{s['index_intro']}</p>{listing}"
     return shell(lang, s["index_title"], body, cur="blog")
 
 
@@ -317,11 +302,11 @@ def build() -> None:
     zh_posts = collect(BLOG / "zh")
 
     for post in en_posts:
-        (OUT / f'{post["slug"]}.html').write_text(render_post(post, "en"), encoding="utf-8")
+        (OUT / f"{post['slug']}.html").write_text(render_post(post, "en"), encoding="utf-8")
     (OUT / "index.html").write_text(render_index(en_posts, "en"), encoding="utf-8")
 
     for post in zh_posts:
-        (ZH_OUT / f'{post["slug"]}.html').write_text(render_post(post, "zh"), encoding="utf-8")
+        (ZH_OUT / f"{post['slug']}.html").write_text(render_post(post, "zh"), encoding="utf-8")
     (ZH_OUT / "index.html").write_text(render_index(zh_posts, "zh"), encoding="utf-8")
 
     print(
