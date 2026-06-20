@@ -155,6 +155,10 @@ class CodexHarness:
         CRLF == LF — none of which a plain ``json.dumps`` collapses, so the evolution
         loop (which mutates params/prompts freely) would otherwise split one genome's
         identity across multiple archive/lineage rows. (GA-CORE-5 review)
+
+        ``harness_ref`` + ``resources`` are PATH/REFERENCE fields, hashed byte-for-byte
+        (no NFC/CRLF folding) — a filesystem treats ``café``-NFC and ``café``-NFD as
+        distinct on-disk dirs, so two byte-distinct harnesses must NOT collide. (PR #91 review)
         """
         return genome_hash(
             {
@@ -163,7 +167,8 @@ class CodexHarness:
                 "params": self.params,
                 "resources": self.resources,
                 "harness_ref": self.harness_ref,
-            }
+            },
+            byte_stable_keys=("harness_ref", "resources"),
         )
 
     # -- mutation application (mock ASSESS; real one is adx-core Contract S) --
