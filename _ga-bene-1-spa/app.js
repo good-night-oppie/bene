@@ -18,6 +18,7 @@
  */
 import { renderRoster, renderAgentPane } from "./vendor/agent_hud.js";
 import { renderEvoPanel } from "./vendor/evo_panel.js";
+import { renderLadderPanel } from "./vendor/ladder_panel.js";
 
 const qs = new URLSearchParams(location.search);
 const LIVE = qs.get("live") === "1";
@@ -32,6 +33,7 @@ const STEP_MS = parseInt(qs.get("interval") || (qs.get("fast") ? "40" : "700"), 
 const rosterEl = document.getElementById("roster");
 const paneEl = document.getElementById("agent-pane");
 const evoEl = document.getElementById("evo-panel");
+const ladderEl = document.getElementById("ladder-panel");
 const scene = document.getElementById("scene");
 const battleLabel = document.getElementById("battle-label");
 
@@ -62,6 +64,11 @@ const loadEvolution = (agent) =>
         ...authOpts(),
       })
     : getJSON("./fixtures/done.json");
+
+const loadLadder = () =>
+  LIVE
+    ? getJSON("/me/ladder", authOpts())
+    : getJSON("./fixtures/me_ladder.json");
 
 let battleSource = null;
 let current = null;
@@ -142,9 +149,20 @@ scene.addEventListener("next-battle", async () => {
 
 (async () => {
   try {
-    const data = await loadAgents();
+    const [data, ladderData] = await Promise.all([loadAgents(), loadLadder()]);
     const agents = (data && data.agents) || [];
     document.getElementById("data-mode").textContent = LIVE ? "live · /me/*" : "build-ahead · fixtures";
+
+    // GA-BENE-3: render ladder immediately; it's not agent-selection-dependent
+    renderLadderPanel(ladderData, ladderEl);
+
+    // ladder-agent-select: clicking an owner row in the ladder selects that agent in the roster
+    document.addEventListener("ladder-agent-select", (ev) => {
+      const name = ev.detail;
+      const idx = agents.findIndex((a) => (a.agent_name || a.agent_id) === name);
+      if (idx >= 0) select(agents, idx);
+    });
+
     if (!agents.length) {
       rosterEl.innerHTML = '<div class="err" style="padding:12px">no agents — enroll your first harness</div>';
       mark("ready");
