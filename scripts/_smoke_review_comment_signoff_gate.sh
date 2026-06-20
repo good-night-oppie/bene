@@ -24,19 +24,36 @@ run resolved_no_signoff && fail "resolved-but-unsigned human thread should FAIL 
 SIGNOFF_THUMBS='{"repository":{"pullRequest":{"author":{"login":"pa"},
  "reviews":{"nodes":[]},
  "reviewThreads":{"nodes":[
-   {"isResolved":false,"comments":{"nodes":[
-     {"author":{"login":"alice","__typename":"User"},
-      "reactions":{"nodes":[{"user":{"login":"alice"}}]}}]}}]}}}}'
+   {"isResolved":false,"createdAt":"2026-06-20T00:30:00Z","comments":{"nodes":[
+     {"createdAt":"2026-06-20T00:30:00Z","author":{"login":"alice","__typename":"User"},
+      "reactions":{"nodes":[{"createdAt":"2026-06-20T01:00:00Z","user":{"login":"alice"}}]}}]}}]}}}}'
 mk signoff_thumbs "$SIGNOFF_THUMBS"
 run signoff_thumbs || fail "author 👍 on the thread should PASS"
 
 SIGNOFF_APPROVAL='{"repository":{"pullRequest":{"author":{"login":"pa"},
- "reviews":{"nodes":[{"author":{"login":"alice"},"state":"APPROVED"}]},
+ "reviews":{"nodes":[{"author":{"login":"alice"},"state":"APPROVED","submittedAt":"2026-06-20T01:00:00Z"}]},
  "reviewThreads":{"nodes":[
-   {"isResolved":false,"comments":{"nodes":[
-     {"author":{"login":"alice","__typename":"User"},"reactions":{"nodes":[]}}]}}]}}}}'
+   {"isResolved":false,"createdAt":"2026-06-20T00:30:00Z","comments":{"nodes":[
+     {"createdAt":"2026-06-20T00:30:00Z","author":{"login":"alice","__typename":"User"},"reactions":{"nodes":[]}}]}}]}}}}'
 mk signoff_approval "$SIGNOFF_APPROVAL"
 run signoff_approval || fail "author APPROVED review should PASS"
+
+STALE_APPROVAL='{"repository":{"pullRequest":{"author":{"login":"pa"},
+ "reviews":{"nodes":[{"author":{"login":"alice"},"state":"APPROVED","submittedAt":"2026-06-20T00:01:00Z"}]},
+ "reviewThreads":{"nodes":[
+   {"isResolved":false,"createdAt":"2026-06-20T00:30:00Z","comments":{"nodes":[
+     {"createdAt":"2026-06-20T00:30:00Z","author":{"login":"alice","__typename":"User"},"reactions":{"nodes":[]}}]}}]}}}}'
+mk stale_approval "$STALE_APPROVAL"
+run stale_approval && fail "approval before thread opened should FAIL"
+
+STALE_THUMBS='{"repository":{"pullRequest":{"author":{"login":"pa"},
+ "reviews":{"nodes":[]},
+ "reviewThreads":{"nodes":[
+   {"isResolved":false,"createdAt":"2026-06-20T00:30:00Z","comments":{"nodes":[
+     {"createdAt":"2026-06-20T00:30:00Z","author":{"login":"alice","__typename":"User"},
+      "reactions":{"nodes":[{"createdAt":"2026-06-20T00:01:00Z","user":{"login":"alice"}}]}}]}}]}}}}'
+mk stale_thumbs "$STALE_THUMBS"
+run stale_thumbs && fail "thumbs-up before thread opened should FAIL"
 
 BOT_THREAD='{"repository":{"pullRequest":{"author":{"login":"pa"},
  "reviews":{"nodes":[]},

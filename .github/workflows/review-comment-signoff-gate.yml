@@ -3,14 +3,17 @@ name: review-comment-signoff-gate
 
 # A review thread turns this gate green ONLY when its comment author signs off
 # (an APPROVED review or a 👍 reaction) — clicking "Resolve" alone does not.
-# Re-runs on review submit/dismiss so an approval flips it green; for a 👍-only
-# sign-off, re-trigger with a push or close+reopen (reactions aren't a CI event).
+# Re-runs on review submit/dismiss and inline review-comment create/edit so new
+# single comments do not slip past an already-green run. For a 👍-only sign-off,
+# re-trigger with a push or close+reopen (reactions aren't a CI event).
 
 on:
   pull_request:
     branches: [main]
   pull_request_review:
     types: [submitted, dismissed]
+  pull_request_review_comment:
+    types: [created, edited]
 
 permissions:
   contents: read
@@ -21,6 +24,7 @@ permissions:
 
 jobs:
   signoff:
+    if: github.event.pull_request.base.ref == 'main'
     runs-on: eng-github-runners
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
