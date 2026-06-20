@@ -155,3 +155,65 @@ def test_battle_content_hash_distinguishes_genuine_changes():
         mk(move_selection_strategy="max_damage").content_hash()
         != mk(move_selection_strategy="random").content_hash()
     )
+
+
+# ── path/reference fields are byte-stable (PR #91 review) ────────────────────
+
+
+def test_byte_stable_keys_keep_path_fields_byte_distinct():
+    nfc = unicodedata.normalize("NFC", "/harnesses/café")
+    nfd = unicodedata.normalize("NFD", "/harnesses/café")
+    assert nfc != nfd
+    # a TEXT field folds NFC==NFD ...
+    assert genome_hash({"system_prompt": nfc}) == genome_hash({"system_prompt": nfd})
+    # ... but a path/reference field stays byte-distinct (distinct on-disk dirs)
+    assert genome_hash({"harness_ref": nfc}, byte_stable_keys=("harness_ref",)) != genome_hash(
+        {"harness_ref": nfd}, byte_stable_keys=("harness_ref",)
+    )
+
+
+def test_byte_stable_subtree_keys_and_values_are_byte_distinct():
+    nfc = unicodedata.normalize("NFC", "modules/café.py")
+    nfd = unicodedata.normalize("NFD", "modules/café.py")
+    # resources is a path->content dict; both the KEY (a path) and string VALUES are raw
+    a = genome_hash({"resources": {nfc: "x"}}, byte_stable_keys=("resources",))
+    b = genome_hash({"resources": {nfd: "x"}}, byte_stable_keys=("resources",))
+    assert a != b
+    # CRLF/CR is NOT folded inside a byte-stable subtree either
+    assert genome_hash(
+        {"resources": {"f": "a\r\nb"}}, byte_stable_keys=("resources",)
+    ) != genome_hash({"resources": {"f": "a\nb"}}, byte_stable_keys=("resources",))
+
+
+def test_byte_stable_subtree_still_canonicalizes_numbers_and_sorts_keys():
+    # byte-stable only turns OFF string folding; numbers still collapse int<->float and
+    # keys are still order-independent.
+    assert genome_hash({"r": {"a": 1, "b": 2.0}}, byte_stable_keys=("r",)) == genome_hash(
+        {"r": {"b": 2, "a": 1.0}}, byte_stable_keys=("r",)
+    )
+
+
+def test_byte_stable_keys_default_is_back_compatible():
+    # no byte_stable_keys == the original full-NFC behavior (BattleHarness path: text-only)
+    nfc = unicodedata.normalize("NFC", "café")
+    nfd = unicodedata.normalize("NFD", "café")
+    assert genome_hash({"x": nfc}) == genome_hash({"x": nfd})
+
+
+def test_codex_content_hash_treats_harness_ref_byte_stable():
+    base = seed_codex_harness().to_dict()
+
+    def mk(**over):
+        d = dict(base)
+        d.update(over)
+        return CodexHarness.from_dict(d)
+
+    nfc = unicodedata.normalize("NFC", "/store/café")
+    nfd = unicodedata.normalize("NFD", "/store/café")
+    # two byte-distinct on-disk dirs must NOT collide under one content hash
+    assert (
+        mk(harness_ref=nfc, resources={}).content_hash()
+        != mk(harness_ref=nfd, resources={}).content_hash()
+    )
+    # but the text surface (system_prompt) still folds NFC==NFD
+    assert mk(system_prompt=nfc).content_hash() == mk(system_prompt=nfd).content_hash()
