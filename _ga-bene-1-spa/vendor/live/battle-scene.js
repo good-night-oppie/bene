@@ -49,6 +49,7 @@
       this.frames = []; // by seq
       this.applied = new Set(); // seq dedup
       this.maxSeq = -1;
+      this.nextSeq = 0;
       this.replayUrl = null;
       this.mode = "live"; // 'live' | 'replay'
       this.sideLabel = "spectator";
@@ -120,11 +121,8 @@
       this.frames[frame.seq] = frame;
       if (this.mode === "replay") return; // replay drives via scrubTo
       if (this.applied.has(frame.seq)) return; // dedup (LVC-07)
-      if (frame.seq <= this.maxSeq) return; // ignore out-of-order stale
-      this.applied.add(frame.seq);
-      this.maxSeq = frame.seq;
-      this.sideLabel = frame.side || this.sideLabel;
-      this._apply(frame, /*animate=*/true);
+      if (frame.seq < this.nextSeq) return; // stale
+      this._drainFrames();
     }
 
     bindEnd(detail) {
@@ -132,6 +130,21 @@
       this.elLive.textContent = "■ ENDED";
       this.elLive.classList.add("ended");
       this._showReplayControls();
+    }
+
+    _drainFrames() {
+      while (Object.prototype.hasOwnProperty.call(this.frames, this.nextSeq)) {
+        const frame = this.frames[this.nextSeq];
+        if (!frame || this.applied.has(this.nextSeq)) {
+          this.nextSeq += 1;
+          continue;
+        }
+        this.applied.add(this.nextSeq);
+        this.maxSeq = this.nextSeq;
+        this.nextSeq += 1;
+        this.sideLabel = frame.side || this.sideLabel;
+        this._apply(frame, /*animate=*/true);
+      }
     }
 
     // ---- apply + render --------------------------------------------------
@@ -195,10 +208,10 @@
       card.species.textContent = mon.species || "—";
       card.token.textContent = (mon.species || "?").slice(0, 1).toUpperCase();
       card.name.textContent = (this.scene.players && this.scene.players[side]) || side;
-      const frac = mon.hpFrac == null ? mon.hp_frac : mon.hpFrac;
+      const frac = mon.hp_frac == null ? mon.hpFrac : mon.hp_frac;
       card.hpFill.style.width = Math.round((frac == null ? 1 : frac) * 100) + "%";
       card.hpFill.className = "bscene-hp-fill " + hpClass(frac);
-      card.hpPct.textContent = mon.fainted ? "KO" : pct(frac);
+      card.hpPct.textContent = mon.fainted ? "KO" : (mon.hp_label || mon.hpLabel || pct(frac));
       card.root.classList.toggle("fainted", !!mon.fainted);
       if (mon.status) {
         card.statusPill.style.display = "";
@@ -244,23 +257,37 @@
       scrub.min = "0";
       scrub.max = String(Math.max(0, this.frames.length - 1));
       scrub.value = scrub.max;
-      scrub.addEventListener("input", () => this.scrubTo(parseInt(scrub.value, 10)));
+      scrub.addEventListener("input", () => {
+        this._stopReplayTimer();
+        this.scrubTo(parseInt(scrub.value, 10));
+      });
       replayBtn.addEventListener("click", () => {
+        this._stopReplayTimer();
         this.mode = "replay";
         let i = 0;
         const step = () => {
-          if (i >= this.frames.length) return;
+          if (i >= this.frames.length) {
+            this._replayTimer = null;
+            return;
+          }
           scrub.value = String(i);
           this.scrubTo(i++);
           this._replayTimer = setTimeout(step, 420);
         };
-        clearTimeout(this._replayTimer);
         step();
       });
-      nextBtn.addEventListener("click", () => this.dispatchEvent(new CustomEvent("next-battle")));
+      nextBtn.addEventListener("click", () => {
+        this._stopReplayTimer();
+        this.dispatchEvent(new CustomEvent("next-battle"));
+      });
       const link = el("a", "bscene-replay-link mono", this.replayUrl || "");
       if (this.replayUrl) link.href = this.replayUrl;
       this.elControls.append(replayBtn, scrub, nextBtn, link);
+    }
+
+    _stopReplayTimer() {
+      if (this._replayTimer) clearTimeout(this._replayTimer);
+      this._replayTimer = null;
     }
 
     scrubTo(seq) {
@@ -281,9 +308,11 @@
     }
 
     reset() {
+      this._stopReplayTimer();
       this.frames = [];
       this.applied = new Set();
       this.maxSeq = -1;
+      this.nextSeq = 0;
       this.mode = "live";
       this.scene = SR ? SR.newScene() : this.scene;
       this.elTicker.innerHTML = "";

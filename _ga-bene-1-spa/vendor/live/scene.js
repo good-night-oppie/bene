@@ -9,8 +9,8 @@
  *   - the renderer may fall back to it if a frame omits `scene`.
  *
  * hp_frac is always the fraction cur/max; on the public twin max==100 so it is
- * the public percentage, on an owner's own private twin it is the exact
- * fraction — same number, exact provenance (LVC-12).
+ * the public percentage. Owner-only exact HP is carried separately as hp_label
+ * when the projected line used a private max-HP denominator.
  */
 ;(function (root, factory) {
   if (typeof module !== "undefined" && module.exports) module.exports = factory(require("./lineproto.js"));
@@ -19,7 +19,15 @@
   "use strict";
 
   function mon() {
-    return { species: null, hpFrac: null, status: null, name: null, gender: null, fainted: false };
+    return {
+      species: null,
+      hp_frac: null,
+      hp_label: null,
+      status: null,
+      name: null,
+      gender: null,
+      fainted: false,
+    };
   }
   function newScene() {
     return {
@@ -48,6 +56,47 @@
     return ev.idents.length ? ev.idents[0].side : "";
   }
 
+  function sideArg(ev, raw) {
+    const side = sideOf(ev);
+    if (side === "p1" || side === "p2") return side;
+    const parsed = LP.parseIdent(raw || "");
+    return parsed.side;
+  }
+
+  function exactHpLabel(hp) {
+    if (!hp || hp.cur == null || hp.max == null || hp.max === 100 || hp.fainted) return null;
+    return `${hp.cur}/${hp.max}`;
+  }
+
+  function applyHp(monState, hp, defaultFull) {
+    if (hp.hpFrac != null) {
+      monState.hp_frac = hp.hpFrac;
+      monState.hp_label = exactHpLabel(hp);
+    } else if (defaultFull && monState.hp_frac == null) {
+      monState.hp_frac = 1;
+      monState.hp_label = null;
+    }
+    if (hp.fainted) {
+      monState.fainted = true;
+      monState.hp_frac = 0;
+      monState.hp_label = null;
+    }
+    if (hp.status) monState.status = hp.status;
+  }
+
+  function applyActive(scene, ev, detailsArg, hpArg, defaultFull) {
+    const side = sideOf(ev);
+    if (side !== "p1" && side !== "p2") return;
+    const d = parseDetails(detailsArg);
+    const hp = LP.parseHPStatus(hpArg);
+    scene[side].species = d.species || scene[side].species;
+    scene[side].gender = d.gender;
+    scene[side].name = (ev.idents[0] && ev.idents[0].name) || scene[side].name || d.species;
+    scene[side].fainted = false;
+    applyHp(scene[side], hp, defaultFull);
+    if (d.species) scene.teams[side][d.species] = scene.teams[side][d.species] || { fainted: false };
+  }
+
   // Apply ONE parsed event to the scene (mutates + returns scene).
   function applyEvent(scene, ev) {
     const t = ev.type;
@@ -62,17 +111,11 @@
       case "switch":
       case "drag":
       case "replace": {
-        const side = sideOf(ev);
-        if (side !== "p1" && side !== "p2") break;
-        const d = parseDetails(a[1]);
-        const hp = LP.parseHPStatus(a[2]);
-        scene[side] = {
-          species: d.species, gender: d.gender,
-          name: ev.idents[0].name || d.species,
-          hpFrac: hp.hpFrac == null ? 1 : hp.hpFrac,
-          status: hp.status, fainted: hp.fainted,
-        };
-        if (d.species) scene.teams[side][d.species] = scene.teams[side][d.species] || { fainted: false };
+        applyActive(scene, ev, a[1], a[2], true);
+        break;
+      }
+      case "detailschange": {
+        applyActive(scene, ev, a[1], a[2], false);
         break;
       }
       case "-damage":
@@ -81,9 +124,7 @@
         const side = sideOf(ev);
         if (side !== "p1" && side !== "p2") break;
         const hp = LP.parseHPStatus(a[1]);
-        if (hp.hpFrac != null) scene[side].hpFrac = hp.hpFrac;
-        if (hp.fainted) { scene[side].fainted = true; scene[side].hpFrac = 0; }
-        if (hp.status) scene[side].status = hp.status;
+        applyHp(scene[side], hp, false);
         break;
       }
       case "-status": {
@@ -100,7 +141,8 @@
         const side = sideOf(ev);
         if (side === "p1" || side === "p2") {
           scene[side].fainted = true;
-          scene[side].hpFrac = 0;
+          scene[side].hp_frac = 0;
+          scene[side].hp_label = null;
           if (scene[side].species) (scene.teams[side][scene[side].species] = scene.teams[side][scene[side].species] || {}).fainted = true;
         }
         break;
@@ -119,11 +161,13 @@
         break;
       }
       case "-sidestart": {
-        if (a[1]) scene.field.push({ effect: a[1], side: a[0] });
+        const side = sideArg(ev, a[0]);
+        if (a[1]) scene.field.push({ effect: a[1], side: side || null });
         break;
       }
       case "-sideend": {
-        scene.field = scene.field.filter((f) => f.effect !== a[1]);
+        const side = sideArg(ev, a[0]);
+        scene.field = scene.field.filter((f) => !(f.effect === a[1] && (!side || f.side === side)));
         break;
       }
       case "turn": {
@@ -144,11 +188,23 @@
     return applyEvent(scene, LP.parseLine(line));
   }
 
+  function monSnapshot(m) {
+    return {
+      species: m.species,
+      hp_frac: m.hp_frac,
+      hp_label: m.hp_label,
+      status: m.status,
+      name: m.name,
+      gender: m.gender,
+      fainted: m.fainted,
+    };
+  }
+
   // A deep snapshot of the renderable subset (safe to attach to a frame).
   function snapshot(scene) {
     return {
-      p1: Object.assign({}, scene.p1),
-      p2: Object.assign({}, scene.p2),
+      p1: monSnapshot(scene.p1),
+      p2: monSnapshot(scene.p2),
       players: Object.assign({}, scene.players),
       weather: scene.weather,
       field: scene.field.map((f) => Object.assign({}, f)),

@@ -24,6 +24,10 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function (LP, SR) {
   "use strict";
 
+  const PUBLIC_META_TYPES = new Set([
+    LP.DIVIDER_TYPE, "gametype", "gen", "tier", "rule", "teamsize", "player",
+  ]);
+
   // |player|SIDE|NAME|AVATAR|RATING -> blank the RATING value, keep delimiters.
   function redactPlayer(line) {
     const toks = line.split("|"); // ['', 'player', side, name, avatar, rating?]
@@ -61,6 +65,7 @@
       }
       if (LP.NONDETERMINISTIC_TYPES.has(lt)) continue; // strip |t:|
       if (lt === "player") { out.push(redactPlayer(line)); continue; }
+      if (LP.tierOf(lt) === LP.Tier.META && !PUBLIC_META_TYPES.has(lt)) continue;
       out.push(line);
     }
     return out;
