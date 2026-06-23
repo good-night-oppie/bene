@@ -57,7 +57,6 @@ async def test_agent_write_ascii_byte_count(afs):
 async def test_prisma_tool(afs, monkeypatch):
     """Prisma tool: leverages the TierRouter and returns deep reasoning."""
     from unittest.mock import AsyncMock
-    from bene.router.tier import TierRouter
 
     mock_res = MagicMock()
     mock_res.model = "gemini-3.1-pro-max"
@@ -65,11 +64,10 @@ async def test_prisma_tool(afs, monkeypatch):
     mock_res.usage = {"prompt_tokens": 10, "completion_tokens": 20}
 
     mock_route = AsyncMock(return_value=mock_res)
-    monkeypatch.setattr(TierRouter, "route", mock_route)
-
-    mock_router = MagicMock(spec=TierRouter)
+    mock_router = MagicMock()
     mock_router.route = mock_route
-    monkeypatch.setattr(TierRouter, "from_config", lambda cfg: mock_router)
+    assert mcp_server._ccr is not None
+    monkeypatch.setattr(mcp_server._ccr, "router", mock_router)
 
     result = await mcp_server._dispatch(
         "prisma",
@@ -82,3 +80,6 @@ async def test_prisma_tool(afs, monkeypatch):
     assert parsed["backend_model"] == "gemini-3.1-pro-max"
     assert parsed["goal"] == "architecture"
     assert "use SQLite/WAL" in parsed["reasoning"]
+
+    routed_messages = mock_route.await_args.kwargs["messages"]
+    assert "# Prisma goal\narchitecture: complex architecture" in routed_messages[1]["content"]

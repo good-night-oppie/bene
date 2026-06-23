@@ -2066,20 +2066,6 @@ async def _dispatch(name: str, args: dict[str, Any]) -> str:
         # Prisma deep-reasoning tool — LEVERAGES the BENE TierRouter to pick the backend
         # (hard -> gemini-ultra-deepthink :8319 = Eddie's Gemini Ultra sub; easy -> cheap).
         # The router is the routing mechanism Prisma uses; it does NOT route "to prisma".
-        from pathlib import Path
-
-        from bene.router.tier import TierRouter
-
-        # Guarantee the Gemini-Ultra downstream key regardless of the MCP launch env.
-        if not os.environ.get("CLI_PROXY_GEMINI_KEY"):
-            keyfile = Path.home() / ".cli-proxy-gemini" / "downstream.key"
-            if keyfile.exists():
-                os.environ["CLI_PROXY_GEMINI_KEY"] = keyfile.read_text().strip()
-
-        cfg = os.environ.get("BENE_CONFIG") or "bene.yaml"
-        if not Path(cfg).exists():
-            cfg = str(Path(__file__).resolve().parents[2] / "bene.yaml")
-
         goal = args.get("goal", "implementation_plan")
         persona = {
             "architecture": "You are a principal software architect. Decide the architecture; give components, data flow, and explicit trade-offs.",
@@ -2089,15 +2075,20 @@ async def _dispatch(name: str, args: dict[str, Any]) -> str:
         }.get(
             goal, "You are an expert problem solver. Reason carefully and give a rigorous answer."
         )
+        goal_context = {
+            "architecture": "complex architecture and system design reasoning",
+            "debugging": "complex debugging and root-cause analysis",
+            "implementation_plan": "implementation planning with verification gates",
+            "design_review": "complex design review and failure-mode analysis",
+        }.get(goal, goal)
 
-        user = args["query"]
+        user = f"# Prisma goal\n{goal}: {goal_context}\n\n# Query\n{args['query']}"
         if args.get("repo_context"):
             user += f"\n\n# Repo context\n{args['repo_context']}"
         if args.get("failure_logs"):
             user += f"\n\n# Failure logs\n{args['failure_logs']}"
 
-        router = TierRouter.from_config(cfg)
-        res = await router.route(
+        res = await _ccr.router.route(
             agent_id="prisma",
             messages=[
                 {"role": "system", "content": persona},

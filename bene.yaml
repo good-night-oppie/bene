@@ -31,7 +31,7 @@ router:
   type: tier
   fallback_model: claude-sonnet
   context_compression: true
-  max_retries: 1
+  max_retries: 2
 
 ccr:
   max_iterations: 100
