@@ -111,6 +111,20 @@ class TierRouter:
                     self.fallback_model,
                 )
 
+        if not self.clients:
+            raise RuntimeError(
+                "No configured model backends are available. Check model endpoints and API keys."
+            )
+
+        if self.fallback_model not in self.clients:
+            unavailable_fallback = self.fallback_model
+            self.fallback_model = next(iter(self.clients))
+            logger.warning(
+                "fallback model %r unavailable — using initialized model %r",
+                unavailable_fallback,
+                self.fallback_model,
+            )
+
         # Any routing-table entry whose model failed to initialize falls back.
         for tier, mname in list(self.routing_table.items()):
             if mname not in self.clients:
@@ -196,8 +210,13 @@ class TierRouter:
         """
         force_model = config.get("force_model")
 
-        if force_model and force_model in self.models:
+        if force_model and force_model in self.clients:
             model_name = force_model
+        elif force_model and force_model in self.models:
+            raise RuntimeError(
+                f"Forced model {force_model!r} is configured but unavailable. "
+                "Check its endpoint or API key."
+            )
         else:
             task_desc = ""
             for msg in reversed(messages):
