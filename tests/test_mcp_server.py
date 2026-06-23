@@ -52,3 +52,33 @@ async def test_agent_write_ascii_byte_count(afs):
     )
     assert f"Written {len(content.encode('utf-8'))} bytes" in result
     assert afs.read(agent_id, "/f.py") == content.encode("utf-8")
+
+
+async def test_prisma_tool(afs, monkeypatch):
+    """Prisma tool: leverages the TierRouter and returns deep reasoning."""
+    from unittest.mock import AsyncMock
+    from bene.router.tier import TierRouter
+
+    mock_res = MagicMock()
+    mock_res.model = "gemini-3.1-pro-max"
+    mock_res.content = "Decided the architecture: use SQLite/WAL."
+    mock_res.usage = {"prompt_tokens": 10, "completion_tokens": 20}
+
+    mock_route = AsyncMock(return_value=mock_res)
+    monkeypatch.setattr(TierRouter, "route", mock_route)
+
+    mock_router = MagicMock(spec=TierRouter)
+    mock_router.route = mock_route
+    monkeypatch.setattr(TierRouter, "from_config", lambda cfg: mock_router)
+
+    result = await mcp_server._dispatch(
+        "prisma",
+        {"query": "Decide the architecture.", "goal": "architecture"},
+    )
+
+    import json
+
+    parsed = json.loads(result)
+    assert parsed["backend_model"] == "gemini-3.1-pro-max"
+    assert parsed["goal"] == "architecture"
+    assert "use SQLite/WAL" in parsed["reasoning"]
