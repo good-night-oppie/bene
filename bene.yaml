@@ -1,6 +1,8 @@
 database:
   # Canonical shared DB — same pool as harness-engineering and adx-cli. GOO-19.
-  path: ~/.kaos/kaos.db
+  # 2026-06-23: renamed kaos.db -> bene.db (kaos MCP retired, consolidated on BENE).
+  # ~/.kaos/kaos.db remains as a back-compat symlink -> bene.db for legacy refs.
+  path: ~/.kaos/bene.db
   wal_mode: true
   compression: zstd
 
@@ -10,13 +12,26 @@ models:
     model_id: claude-opus-4-7
     max_context: 200000
     timeout: 1800
-    use_for: [trivial, moderate, complex, critical, code_completion, code_generation, planning]
+    use_for: [trivial, moderate, code_completion, code_generation]
+
+  # HARD-PROBLEM TIER — Eddie 2026-06-23: route hard problems to the Gemini Ultra
+  # sub via the dedicated cli-proxy-gemini (:8319), the same deep-think engine Prisma
+  # runs on. gemini-3.1-pro-max alias -> real gemini-3.1-pro-low (1100+ reasoning
+  # tokens). Zero paid API. Key from $CLI_PROXY_GEMINI_KEY (downstream.key).
+  gemini-ultra-deepthink:
+    provider: openai
+    endpoint: "http://127.0.0.1:8319/v1"
+    model_id: "gemini-3.1-pro-max"
+    api_key_env: "CLI_PROXY_GEMINI_KEY"
+    max_context: 1000000
+    timeout: 600
+    use_for: [complex, critical, planning]
 
 router:
   type: tier
   fallback_model: claude-sonnet
   context_compression: true
-  max_retries: 1
+  max_retries: 2
 
 ccr:
   max_iterations: 100

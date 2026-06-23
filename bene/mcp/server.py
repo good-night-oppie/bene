@@ -790,6 +790,47 @@ async def list_tools() -> list[Tool]:
                 "required": ["skill_id", "success"],
             },
         ),
+        Tool(
+            name="prisma",
+            description=(
+                "Prisma — deep reasoning for HARD problems (architecture, debugging, "
+                "implementation planning, design review). Leverages the BENE tier router: "
+                "it classifies the problem's difficulty and routes to the optimal backend "
+                "(hard -> the Gemini Ultra deep-think model; easy -> a cheap model). "
+                "The fleet's go-to for any complex/non-obvious problem — call it instead of guessing."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The hard problem / question to reason about",
+                    },
+                    "goal": {
+                        "type": "string",
+                        "enum": [
+                            "architecture",
+                            "debugging",
+                            "implementation_plan",
+                            "design_review",
+                        ],
+                        "default": "implementation_plan",
+                        "description": "What kind of reasoning to produce",
+                    },
+                    "repo_context": {
+                        "type": "string",
+                        "description": "Relevant code/context",
+                        "default": "",
+                    },
+                    "failure_logs": {
+                        "type": "string",
+                        "description": "Error logs/traces (for debugging)",
+                        "default": "",
+                    },
+                },
+                "required": ["query"],
+            },
+        ),
     ]
 
 
@@ -2019,6 +2060,52 @@ async def _dispatch(name: str, args: dict[str, Any]) -> str:
                 else None,
             },
             indent=2,
+        )
+
+    elif name == "prisma":
+        # Prisma deep-reasoning tool — LEVERAGES the BENE TierRouter to pick the backend
+        # (hard -> gemini-ultra-deepthink :8319 = Eddie's Gemini Ultra sub; easy -> cheap).
+        # The router is the routing mechanism Prisma uses; it does NOT route "to prisma".
+        goal = args.get("goal", "implementation_plan")
+        persona = {
+            "architecture": "You are a principal software architect. Decide the architecture; give components, data flow, and explicit trade-offs.",
+            "debugging": "You are a senior debugging expert. Root-cause the failure rigorously from the evidence; give the fix and how to verify it.",
+            "implementation_plan": "You are an expert implementation planner. Produce a precise, ordered, command-level plan with verification gates.",
+            "design_review": "You are an adversarial design reviewer. Evaluate the proposal rigorously; surface risks, gaps, and failure modes.",
+        }.get(
+            goal, "You are an expert problem solver. Reason carefully and give a rigorous answer."
+        )
+        goal_context = {
+            "architecture": "complex architecture and system design reasoning",
+            "debugging": "complex debugging and root-cause analysis",
+            "implementation_plan": "implementation planning with verification gates",
+            "design_review": "complex design review and failure-mode analysis",
+        }.get(goal, goal)
+
+        user = f"# Prisma goal\n{goal}: {goal_context}\n\n# Query\n{args['query']}"
+        if args.get("repo_context"):
+            user += f"\n\n# Repo context\n{args['repo_context']}"
+        if args.get("failure_logs"):
+            user += f"\n\n# Failure logs\n{args['failure_logs']}"
+
+        res = await _ccr.router.route(
+            agent_id="prisma",
+            messages=[
+                {"role": "system", "content": persona},
+                {"role": "user", "content": user},
+            ],
+            tools=[],
+            config={},
+        )
+        return json.dumps(
+            {
+                "backend_model": res.model,
+                "goal": goal,
+                "reasoning": res.content,
+                "usage": res.usage,
+            },
+            indent=2,
+            ensure_ascii=False,
         )
 
     else:

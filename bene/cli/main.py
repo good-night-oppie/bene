@@ -541,12 +541,18 @@ def serve(db: str, port: int, host: str, transport: str, config_file: str):
 
     afs = _get_afs(db)
 
+    if not os.environ.get("CLI_PROXY_GEMINI_KEY"):
+        keyfile = Path.home() / ".cli-proxy-gemini" / "downstream.key"
+        if keyfile.exists():
+            os.environ["CLI_PROXY_GEMINI_KEY"] = keyfile.read_text().strip()
+
     # Try config file first, then fall back to claude_code provider (no API key needed)
     _cfg_paths = [config_file, os.environ.get("BENE_CONFIG", ""), "./bene.yaml"]
     _loaded = False
     for _cfg in _cfg_paths:
         if _cfg and Path(_cfg).exists():
             config = load_config(_cfg)
+            os.environ["BENE_CONFIG"] = _cfg
             router = TierRouter.from_config(_cfg)
             _loaded = True
             break

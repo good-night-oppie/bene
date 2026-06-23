@@ -93,6 +93,43 @@ class TestTierRouterInit:
         router = TierRouter(models=models)
         assert router.fallback_model == "alpha"
 
+    def test_unavailable_fallback_replaced_with_initialized_model(self, monkeypatch):
+        """Skipped providers must not leave fallback_model pointing at no client."""
+        monkeypatch.delenv("MISSING_OPENAI_KEY", raising=False)
+        models = {
+            "missing": ModelConfig(
+                name="missing",
+                provider="openai",
+                api_key_env="MISSING_OPENAI_KEY",
+                use_for=["complex"],
+            ),
+            "local": ModelConfig(
+                name="local",
+                vllm_endpoint="http://localhost:8001/v1",
+                use_for=["trivial"],
+            ),
+        }
+
+        router = TierRouter(models=models, fallback_model="missing")
+
+        assert router.fallback_model == "local"
+        assert router.routing_table["complex"] == "local"
+        assert "missing" not in router.clients
+
+    def test_all_models_unavailable_fails_clearly(self, monkeypatch):
+        monkeypatch.delenv("MISSING_OPENAI_KEY", raising=False)
+        models = {
+            "missing": ModelConfig(
+                name="missing",
+                provider="openai",
+                api_key_env="MISSING_OPENAI_KEY",
+                use_for=["complex"],
+            )
+        }
+
+        with pytest.raises(RuntimeError, match="No configured model backends"):
+            TierRouter(models=models, fallback_model="missing")
+
     def test_heuristic_classifier_when_no_classifier_model(self):
         from bene.router.classifier import HeuristicClassifier
 
@@ -166,6 +203,32 @@ class TestTierRouterRouteHeuristic:
             config={"force_model": "nonexistent"},
         )
         assert resp.content == "result"
+
+    @pytest.mark.asyncio
+    async def test_force_model_unavailable_fails_clearly(self, monkeypatch):
+        monkeypatch.delenv("MISSING_OPENAI_KEY", raising=False)
+        models = {
+            "missing": ModelConfig(
+                name="missing",
+                provider="openai",
+                api_key_env="MISSING_OPENAI_KEY",
+                use_for=["complex"],
+            ),
+            "local": ModelConfig(
+                name="local",
+                vllm_endpoint="http://localhost:8001/v1",
+                use_for=["trivial"],
+            ),
+        }
+        router = TierRouter(models=models, fallback_model="local")
+
+        with pytest.raises(RuntimeError, match="Forced model 'missing'.*unavailable"):
+            await router.route(
+                agent_id="a1",
+                messages=[{"role": "user", "content": "rename foo to bar"}],
+                tools=[],
+                config={"force_model": "missing"},
+            )
 
     @pytest.mark.asyncio
     async def test_complex_task_routes_to_large(self, router):

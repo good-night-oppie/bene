@@ -78,29 +78,60 @@ class TierRouter:
         # Routing table: complexity -> model name
         self.routing_table = routing_table or self._build_routing_table()
 
-        # Initialize provider clients — one per model
+        # Initialize provider clients — one per model. A backend whose key/endpoint is
+        # unavailable is SKIPPED (logged), not fatal — its tiers fall back to fallback_model.
+        # A routing layer must not crash because ONE optional backend lacks a key (e.g.
+        # gemini-ultra-deepthink needs CLI_PROXY_GEMINI_KEY; key-less bene callers — the KB
+        # pipeline, CI swarms — must still build a working router on the keyless models).
         self.clients: dict[str, VLLMClient | LLMProvider] = {}
         for name, cfg in models.items():
-            if cfg.provider in ("openai", "anthropic"):
-                self.clients[name] = create_provider(
-                    cfg.provider,
-                    api_key_env=cfg.api_key_env,
-                    endpoint=cfg.vllm_endpoint,
-                    timeout=cfg.timeout,
+            try:
+                if cfg.provider in ("openai", "anthropic"):
+                    self.clients[name] = create_provider(
+                        cfg.provider,
+                        api_key_env=cfg.api_key_env,
+                        endpoint=cfg.vllm_endpoint,
+                        timeout=cfg.timeout,
+                    )
+                elif cfg.provider in ("claude_code", "agent_sdk", "codex"):
+                    self.clients[name] = create_provider(
+                        cfg.provider,
+                        model_id=cfg.model_id,
+                        timeout=cfg.timeout,
+                        cwd=cfg.cwd,
+                    )
+                else:
+                    # Default: local vLLM/ollama endpoint
+                    self.clients[name] = VLLMClient(base_url=cfg.vllm_endpoint)
+            except Exception as exc:  # missing key / bad endpoint — skip, don't crash
+                logger.warning(
+                    "model %r unavailable (%s) — skipping; its tiers fall back to %r",
+                    name,
+                    exc,
+                    self.fallback_model,
                 )
-            elif cfg.provider in ("claude_code", "agent_sdk", "codex"):
-                self.clients[name] = create_provider(
-                    cfg.provider,
-                    model_id=cfg.model_id,
-                    timeout=cfg.timeout,
-                    cwd=cfg.cwd,
-                )
-            else:
-                # Default: local vLLM/ollama endpoint
-                self.clients[name] = VLLMClient(base_url=cfg.vllm_endpoint)
+
+        if not self.clients:
+            raise RuntimeError(
+                "No configured model backends are available. Check model endpoints and API keys."
+            )
+
+        if self.fallback_model not in self.clients:
+            unavailable_fallback = self.fallback_model
+            self.fallback_model = next(iter(self.clients))
+            logger.warning(
+                "fallback model %r unavailable — using initialized model %r",
+                unavailable_fallback,
+                self.fallback_model,
+            )
+
+        # Any routing-table entry whose model failed to initialize falls back.
+        for tier, mname in list(self.routing_table.items()):
+            if mname not in self.clients:
+                self.routing_table[tier] = self.fallback_model
 
         # Initialize classifier: LLM if a classifier model is available, else heuristic
-        if classifier_model and classifier_model in models:
+        if classifier_model and classifier_model in self.clients:
             self.classifier: LLMClassifier | HeuristicClassifier = LLMClassifier(
                 client=self.clients[classifier_model],  # type: ignore[arg-type]
                 model=classifier_model,
@@ -179,8 +210,13 @@ class TierRouter:
         """
         force_model = config.get("force_model")
 
-        if force_model and force_model in self.models:
+        if force_model and force_model in self.clients:
             model_name = force_model
+        elif force_model and force_model in self.models:
+            raise RuntimeError(
+                f"Forced model {force_model!r} is configured but unavailable. "
+                "Check its endpoint or API key."
+            )
         else:
             task_desc = ""
             for msg in reversed(messages):
