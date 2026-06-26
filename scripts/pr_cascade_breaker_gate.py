@@ -11,9 +11,9 @@ action that turns "detect-and-log" into "detect-and-mute".
 Exempt: human comments, the warning the gate itself posts, and any comment with
 the literal opt-out marker `[pr-cascade-breaker: skip <reason>]` on its own line.
 
-CI surface: .github/workflows/pr-cascade-breaker-gate.yml fires on
-pull_request_review_comment.created and pull_request_review.submitted, and runs:
-  python3 scripts/pr_cascade_breaker_gate.py --repo "$REPO" --pr "$PR" --comment-id "$CID"
+CI surface: .github/workflows/pr-cascade-breaker-gate.yml fires on inline
+pull_request_review_comment events and PR-level issue_comment digest events, then runs:
+  python3 scripts/pr_cascade_breaker_gate.py --repo "$REPO" --pr "$PR" --comment-id "$CID" --kind review_comment
 
 Exit 0 even when minimizing — the gate is informational+protective, not a blocker.
 """
@@ -77,26 +77,14 @@ def gh_api_check(path: str, *flags: str) -> bool:
         return False
 
 
-def validate_body(body: str, repo_root: str) -> tuple[bool, str]:
-    """Return (ok, reason). ok=True means the comment passes; reason is human-readable.
-
-    repo_root may be a single path or a colon-separated list (PATH-style). Evidence
-    quotes are accepted if found in ANY listed root — so a finding citing a line on
-    the LEFT side (deletion) still validates when both `base:head` roots are passed.
-    """
-    if SKIP_MARKER_RE.search(body):
-        return True, "skip-marker"
-    if "<!-- pr-cascade-breaker:gate-warning -->" in body:
-        return True, "gate-own-warning"
-    m = BLOCK_RE.search(body)
-    if not m:
-        return False, "no_reviewer_finding_block"
+def _validate_block_yaml(yaml_text: str, repo_root: str) -> tuple[bool, str]:
+    """Schema + evidence-quote check for one reviewer_finding YAML block."""
     try:
         import yaml
     except ImportError:
         return False, "yaml-missing-fail-closed"
     try:
-        d = yaml.safe_load(m.group(1)) or {}
+        d = yaml.safe_load(yaml_text) or {}
     except Exception as e:
         return False, f"yaml_parse:{e}"
     if not isinstance(d, dict):
@@ -125,6 +113,35 @@ def validate_body(body: str, repo_root: str) -> tuple[bool, str]:
     return True, "ok"
 
 
+def validate_body(body: str, repo_root: str, all_blocks: bool = False) -> tuple[bool, str]:
+    """Return (ok, reason). ok=True means the comment passes; reason is human-readable.
+
+    repo_root may be a single path or a colon-separated list (PATH-style). Evidence
+    quotes are accepted if found in ANY listed root — so a finding citing a line on
+    the LEFT side (deletion) still validates when both `base:head` roots are passed.
+
+    all_blocks=True iterates EVERY fenced reviewer_finding block (digest mode); the
+    comment passes only if all blocks pass. Default (False) validates only the first
+    block (review-comment mode).
+    """
+    if SKIP_MARKER_RE.search(body):
+        return True, "skip-marker"
+    if "<!-- pr-cascade-breaker:gate-warning -->" in body:
+        return True, "gate-own-warning"
+    matches = (
+        list(BLOCK_RE.finditer(body))
+        if all_blocks
+        else ([BLOCK_RE.search(body)] if BLOCK_RE.search(body) else [])
+    )
+    if not matches:
+        return False, "no_reviewer_finding_block"
+    for i, m in enumerate(matches):
+        ok, reason = _validate_block_yaml(m.group(1), repo_root)
+        if not ok:
+            return False, f"block_{i}:{reason}" if all_blocks else reason
+    return True, "ok"
+
+
 def minimise_comment(node_id: str, reason: str) -> bool:
     """GraphQL minimizeComment with classifier OFF_TOPIC + post a sibling warning."""
     mut = (
@@ -145,12 +162,25 @@ def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--repo", required=True, help="owner/repo")
     p.add_argument("--pr", required=True, type=int)
-    p.add_argument("--comment-id", required=True, help="REST comment id (review_comment)")
+    p.add_argument(
+        "--comment-id", required=True, help="REST comment id (review_comment or issue_comment)"
+    )
+    p.add_argument(
+        "--kind",
+        choices=("review_comment", "issue_comment"),
+        default="review_comment",
+        help="review_comment = pulls/comments endpoint; issue_comment = issues/comments (PR-level digests)",
+    )
     p.add_argument("--repo-root", default=".", help="path to a clean checkout for grep-verify")
     p.add_argument("--dry-run", action="store_true")
     a = p.parse_args()
 
-    comment = gh_api(f"repos/{a.repo}/pulls/comments/{a.comment_id}")
+    endpoint = (
+        f"repos/{a.repo}/pulls/comments/{a.comment_id}"
+        if a.kind == "review_comment"
+        else f"repos/{a.repo}/issues/comments/{a.comment_id}"
+    )
+    comment = gh_api(endpoint)
     user = comment.get("user", {}).get("login", "")
     if user not in BOT_LOGINS:
         print(f"::notice::skipping non-bot comment by {user}")
@@ -161,7 +191,9 @@ def main() -> int:
         print("::warning::comment lacks node_id — cannot minimise")
         return 0
 
-    ok, reason = validate_body(body, a.repo_root)
+    # Digest comments (issue_comment) bundle >1 finding into one comment per Rule 3;
+    # validate EVERY block so a malformed N>1 doesn't ride through a valid block-1.
+    ok, reason = validate_body(body, a.repo_root, all_blocks=(a.kind == "issue_comment"))
     print(f"::notice::pr-cascade-breaker: comment={a.comment_id} ok={ok} reason={reason}")
     if ok:
         return 0

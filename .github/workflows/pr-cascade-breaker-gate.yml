@@ -13,6 +13,11 @@ name: pr-cascade-breaker-gate
 on:
   pull_request_review_comment:
     types: [created, edited]
+  # PR-level digest comments (rule 3 bundles >5 findings into one issue_comment).
+  # Include `edited` so a bot can't compliance-launder by editing a valid digest
+  # body into an off-spec one after creation.
+  issue_comment:
+    types: [created, edited]
 
 permissions:
   contents: read
@@ -20,16 +25,20 @@ permissions:
 
 jobs:
   cascade-gate:
+    # issue_comment fires for non-PR issues too; gate only on PR-attached comments.
     if: >
-      contains('chatgpt-codex-connector[bot] chatgpt-codex-connector codex[bot] cursor-agent[bot] cursor-agent agy[bot]',
-               github.event.comment.user.login)
+      (github.event_name != 'issue_comment' || github.event.issue.pull_request != null)
+      && contains('chatgpt-codex-connector[bot] chatgpt-codex-connector codex[bot] cursor-agent[bot] cursor-agent agy[bot]',
+                  github.event.comment.user.login)
     runs-on: [self-hosted, linux, x64]
     steps:
       - uses: actions/checkout@v4
         with:
           # Run the gate from the trusted base-branch code so a PR that edits the gate
           # script cannot weaken it for itself (same pattern as review-comment-signoff-gate).
-          ref: ${{ github.event.pull_request.base.sha }}
+          # issue_comment events don't carry pull_request.base.sha; fall back to the
+          # repository default branch (gate script source of truth lives on main).
+          ref: ${{ github.event_name == 'issue_comment' && github.event.repository.default_branch || github.event.pull_request.base.sha }}
 
       - uses: actions/checkout@v4
         with:
@@ -40,10 +49,13 @@ jobs:
           # inspection comes from head. A PR cannot weaken its own gate this way:
           # the only thing it can affect is what evidence_quote successfully
           # matches, and the gate's job is to PASS valid findings.
-          ref: ${{ github.event.pull_request.head.sha }}
+          # For issue_comment we resolve the PR head via gh during the step
+          # because github.event.pull_request is null on issue_comment events.
+          ref: ${{ github.event_name == 'issue_comment' && format('refs/pull/{0}/head', github.event.issue.number) || github.event.pull_request.head.sha }}
           path: head
 
       - name: validate review comment against reviewer_finding schema
+        if: github.event_name == 'pull_request_review_comment'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
@@ -56,5 +68,23 @@ jobs:
           # quotes for removed-code findings). validate_body accepts evidence found
           # in EITHER root.
           python3 scripts/pr_cascade_breaker_gate.py \
-            --repo "$REPO" --pr "$PR_NUM" --comment-id "$COMMENT_ID" --repo-root 'head:.'
+            --repo "$REPO" --pr "$PR_NUM" --comment-id "$COMMENT_ID" \
+            --kind review_comment --repo-root 'head:.'
+          exit 0
+
+      - name: validate PR-level issue comment (digest) against reviewer_finding schema
+        if: github.event_name == 'issue_comment'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUM: ${{ github.event.issue.number }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          set +e
+          python3 -m pip install --quiet --disable-pip-version-check pyyaml >/dev/null
+          # Same head:. evidence-tree pair as the review-comment path so a digest
+          # finding citing a PR-added or PR-deleted line both validate.
+          python3 scripts/pr_cascade_breaker_gate.py \
+            --repo "$REPO" --pr "$PR_NUM" --comment-id "$COMMENT_ID" \
+            --kind issue_comment --repo-root 'head:.'
           exit 0
