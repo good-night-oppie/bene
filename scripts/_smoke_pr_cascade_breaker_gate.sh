@@ -14,6 +14,7 @@
 #  (8) the gate's own warning is exempt (gate-own-warning)
 #  (9) a PATH-style repo-root accepts evidence in either PR-head or base trees
 #  (10) non-mapping YAML is rejected without crashing
+#  (11) missing PyYAML fails closed
 set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GATE="$REPO/scripts/pr_cascade_breaker_gate.py"
@@ -39,6 +40,7 @@ PY
 # Driver: import validate_body and assert (ok, reason) for each case.
 python3 - "$GATE" "$TMP" "$HEAD_ROOT" <<'PY'
 import importlib.util, sys, os
+import builtins
 spec = importlib.util.spec_from_file_location("g", sys.argv[1])
 mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
 repo_root = sys.argv[2]
@@ -95,6 +97,21 @@ for label, body in multi_root_cases:
         print(f"FAIL {label}: ok={ok} reason={reason!r}")
         sys.exit(1)
     print(f"ok: {label} → {reason}")
+
+orig_import = builtins.__import__
+def block_yaml(name, *args, **kwargs):
+    if name == "yaml":
+        raise ImportError("blocked for smoke")
+    return orig_import(name, *args, **kwargs)
+builtins.__import__ = block_yaml
+try:
+    ok, reason = mod.validate_body(cases[0][1], repo_root)
+finally:
+    builtins.__import__ = orig_import
+if ok or reason != "yaml-missing-fail-closed":
+    print(f"FAIL yaml_missing: ok={ok} reason={reason!r}")
+    sys.exit(1)
+print(f"ok: yaml_missing → {reason}")
 PY
 
 echo "SMOKE_PR_CASCADE_BREAKER_GATE_PASS"

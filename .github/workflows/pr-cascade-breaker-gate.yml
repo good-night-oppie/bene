@@ -56,7 +56,7 @@ jobs:
           COMMENT_ID: ${{ github.event.comment.id }}
         run: |
           set +e
-          pip install --quiet --disable-pip-version-check pyyaml >/dev/null
+          python3 -m pip install --quiet --disable-pip-version-check pyyaml >/dev/null
           # head:. — head first (PR-added lines), base second (deleted-side / LEFT
           # quotes for removed-code findings). validate_body accepts evidence found
           # in EITHER root.

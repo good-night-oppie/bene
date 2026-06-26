@@ -94,7 +94,7 @@ def validate_body(body: str, repo_root: str) -> tuple[bool, str]:
     try:
         import yaml
     except ImportError:
-        return True, "yaml-missing-fail-open"
+        return False, "yaml-missing-fail-closed"
     try:
         d = yaml.safe_load(m.group(1)) or {}
     except Exception as e:
