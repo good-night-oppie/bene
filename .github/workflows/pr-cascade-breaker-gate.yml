@@ -57,6 +57,9 @@ jobs:
         run: |
           set +e
           pip install --quiet --disable-pip-version-check pyyaml >/dev/null
+          # head:. — head first (PR-added lines), base second (deleted-side / LEFT
+          # quotes for removed-code findings). validate_body accepts evidence found
+          # in EITHER root.
           python3 scripts/pr_cascade_breaker_gate.py \
-            --repo "$REPO" --pr "$PR_NUM" --comment-id "$COMMENT_ID" --repo-root head
+            --repo "$REPO" --pr "$PR_NUM" --comment-id "$COMMENT_ID" --repo-root 'head:.'
           exit 0
