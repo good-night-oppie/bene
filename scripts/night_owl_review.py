@@ -29,6 +29,10 @@ Exit codes:
   1   At least one finding.
   2   Tool error (bad args, can't read file, etc.).
 
+If pattern_guard.py is not present in the checkout, night_owl skips with exit
+0. The workflow is advisory and CI runners do not always carry the local
+.factory hook tree.
+
 Designed to be cheap to invoke from CI:
 
     python3 scripts/night_owl_review.py --diff origin/main..HEAD --no-overrides
@@ -161,8 +165,11 @@ def main() -> int:
     args = parser.parse_args()
 
     if not PATTERN_GUARD.is_file():
-        print(f"pattern_guard.py not found at {PATTERN_GUARD}", file=sys.stderr)
-        return 2
+        print(
+            f"night_owl: pattern_guard.py not found at {PATTERN_GUARD}; skipping.",
+            file=sys.stderr,
+        )
+        return 0
 
     pg = _load_pattern_guard()
 

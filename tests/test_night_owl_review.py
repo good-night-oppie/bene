@@ -36,9 +36,8 @@ def night_owl():
 def with_stub_pattern_guard(night_owl, monkeypatch, tmp_path):
     """Point PATTERN_GUARD at a real file and stub _load_pattern_guard.
 
-    CI runners don't have .factory/hooks/pattern_guard.py, so main() returns
-    2 immediately before any other monkeypatches take effect. This fixture
-    satisfies the is_file() guard and returns a no-op pg stub.
+    Most CI runners don't have .factory/hooks/pattern_guard.py. Tests that need
+    to exercise scan behavior provide a real placeholder and no-op pg stub.
     """
     stub_pg = tmp_path / "pattern_guard.py"
     stub_pg.write_text("# stub")
@@ -52,6 +51,15 @@ def test_exit_code_zero_when_clean(night_owl, monkeypatch, with_stub_pattern_gua
     monkeypatch.setattr(sys, "argv", ["night_owl_review.py", "--diff", "HEAD..HEAD"])
     rc = night_owl.main()
     assert rc == 0, f"expected 0 for clean run, got {rc}"
+
+
+def test_exit_code_zero_when_pattern_guard_missing(night_owl, monkeypatch, tmp_path):
+    """Missing optional pattern_guard skips the advisory review."""
+    missing_pg = tmp_path / "missing" / "pattern_guard.py"
+    monkeypatch.setattr(night_owl, "PATTERN_GUARD", missing_pg)
+    monkeypatch.setattr(sys, "argv", ["night_owl_review.py", "--diff", "HEAD..HEAD"])
+    rc = night_owl.main()
+    assert rc == 0, f"expected 0 when pattern_guard is absent, got {rc}"
 
 
 def test_exit_code_one_when_findings(night_owl, monkeypatch, tmp_path, with_stub_pattern_guard):
