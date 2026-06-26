@@ -74,6 +74,39 @@ if [[ "$OPEN_THREADS" -gt 0 && -z "$HEAD_TRAILERS" && "$K" -gt 1 ]]; then
   exit 2
 fi
 
+# 1e. Drains-Cascade scope lock (Rule 2).
+# A PR with `Drains-Cascade: #N` in the body OR a title matching
+# `complete the .* review queue` (per AGENTS.md Rule 2) MUST be reviewed only
+# against the drained PR's file set.
+# Body trailer form: "Drains-Cascade: #123" (one or more allowed).
+DRAIN_PRS="$(echo "$PR_BODY" | grep -oE 'Drains-Cascade:[[:space:]]*#?[0-9]+' \
+              | grep -oE '[0-9]+' || true)"
+# Title form: also accept any "#N" PR refs found in the queue-drain title.
+if [[ "$PR_TITLE" =~ complete[[:space:]]+the[[:space:]]+.*[[:space:]]+review[[:space:]]+queue ]]; then
+  TITLE_REFS="$(echo "$PR_TITLE" | grep -oE '#[0-9]+' | tr -d '#' || true)"
+  if [[ -n "$TITLE_REFS" ]]; then
+    DRAIN_PRS="$DRAIN_PRS"$'\n'"$TITLE_REFS"
+  elif [[ -z "$DRAIN_PRS" ]]; then
+    echo "::warning::S1.queue_drain_title_no_ref title='$PR_TITLE' lacks #N and body lacks Drains-Cascade trailer → S_HALT_DEFER"
+    exit 2
+  fi
+fi
+DRAIN_PRS="$(echo "$DRAIN_PRS" | sort -u | grep -v '^$' || true)"
+DRAIN_SCOPE_FILES=""
+if [[ -n "$DRAIN_PRS" ]]; then
+  for drained in $DRAIN_PRS; do
+    files="$(gh api graphql -f query='query($o:String!,$n:String!,$p:Int!){
+      repository(owner:$o,name:$n){ pullRequest(number:$p){
+        reviewThreads(first:100){ nodes{ path isResolved } } } } }' \
+      -F o="$OWNER" -F n="$REPO" -F p="$drained" 2>/dev/null \
+      | jq -r '.data.repository.pullRequest.reviewThreads.nodes[]?.path' || true)"
+    DRAIN_SCOPE_FILES="$DRAIN_SCOPE_FILES"$'\n'"$files"
+  done
+  DRAIN_SCOPE_FILES="$(echo "$DRAIN_SCOPE_FILES" | sort -u | grep -v '^$' || true)"
+  echo "::notice::S1.drain_scope drained_prs='$DRAIN_PRS' files=$(echo "$DRAIN_SCOPE_FILES" | wc -l)"
+fi
+export DRAIN_SCOPE_FILES
+
 # ---- S5+S6: format gate + route --------------------------------------------
 
 python3 - "$PAYLOAD" "$PR_NUM" "$OWNER_REPO" <<'PY'
@@ -87,6 +120,11 @@ except ImportError:
 payload_path, pr_num, owner_repo = sys.argv[1], sys.argv[2], sys.argv[3]
 payload = json.load(open(payload_path))
 findings_in = payload.get("findings", [])
+
+# Drain scope lock (Rule 2): if this PR drains sibling PR(s), only accept
+# findings on the union of file paths from those PRs' review threads.
+drain_scope_raw = os.environ.get("DRAIN_SCOPE_FILES", "").strip()
+DRAIN_SCOPE = set(line.strip() for line in drain_scope_raw.splitlines() if line.strip()) if drain_scope_raw else None
 
 REQ = {"kind","priority","blocking_verdict","exploitability","file",
        "evidence_quote","fix_suggestion","withdraw_condition"}
@@ -115,6 +153,8 @@ for f in findings_in:
             subprocess.check_output(["grep","-F",quote,d["file"]], stderr=subprocess.DEVNULL)
         except Exception:
             dropped.append({"reason":"evidence_quote_grep_WITHDRAWN","file":d["file"]}); continue
+    if DRAIN_SCOPE is not None and d.get("file") not in DRAIN_SCOPE:
+        dropped.append({"reason":"outside_drain_scope","file":d.get("file")}); continue
     f["priority"] = d.get("priority")
     out.append(f)
 
