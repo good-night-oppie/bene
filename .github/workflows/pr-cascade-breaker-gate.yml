@@ -23,9 +23,9 @@ permissions:
 jobs:
   cascade-gate:
     if: >
-      contains('chatgpt-codex-connector[bot] chatgpt-codex-connector cursor-agent[bot] cursor-agent agy[bot]',
+      contains('chatgpt-codex-connector[bot] chatgpt-codex-connector codex[bot] cursor-agent[bot] cursor-agent agy[bot]',
                github.event.comment.user.login)
-      || contains('chatgpt-codex-connector[bot] chatgpt-codex-connector cursor-agent[bot] cursor-agent agy[bot]',
+      || contains('chatgpt-codex-connector[bot] chatgpt-codex-connector codex[bot] cursor-agent[bot] cursor-agent agy[bot]',
                   github.event.review.user.login)
     runs-on: [self-hosted, linux, x64]
     steps:
