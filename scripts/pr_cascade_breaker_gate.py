@@ -78,7 +78,12 @@ def gh_api_check(path: str, *flags: str) -> bool:
 
 
 def validate_body(body: str, repo_root: str) -> tuple[bool, str]:
-    """Return (ok, reason). ok=True means the comment passes; reason is human-readable."""
+    """Return (ok, reason). ok=True means the comment passes; reason is human-readable.
+
+    repo_root may be a single path or a colon-separated list (PATH-style). Evidence
+    quotes are accepted if found in ANY listed root — so a finding citing a line on
+    the LEFT side (deletion) still validates when both `base:head` roots are passed.
+    """
     if SKIP_MARKER_RE.search(body):
         return True, "skip-marker"
     if "<!-- pr-cascade-breaker:gate-warning -->" in body:
@@ -103,12 +108,17 @@ def validate_body(body: str, repo_root: str) -> tuple[bool, str]:
         return False, "HIGH_exploitability_without_exploit_demo"
     quote = (d.get("evidence_quote") or "").strip().split("\n", 1)[0]
     if quote and d.get("file"):
-        try:
-            subprocess.check_output(
-                ["grep", "-F", quote, f"{repo_root}/{d['file']}"],
-                stderr=subprocess.DEVNULL,
-            )
-        except Exception:
+        roots = [r for r in repo_root.split(":") if r]
+        for r in roots:
+            try:
+                subprocess.check_output(
+                    ["grep", "-F", quote, f"{r}/{d['file']}"],
+                    stderr=subprocess.DEVNULL,
+                )
+                break
+            except Exception:
+                continue
+        else:
             return False, "evidence_quote_grep_WITHDRAWN"
     return True, "ok"
 
