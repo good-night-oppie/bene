@@ -71,3 +71,35 @@ Same gate set as SKILL.md Result-certainty rule 3 — keep the two in sync.
 3. Every claim ends with a verify command and its actual output; `bene demo --no-ui` before any
    "integration works" statement.
 4. Found a bug? `gh issue create --label "ai-reported"` with P0/P1/P2 and "Reported by AI agent".
+
+---
+
+## PR Cascade Breaker — reviewer protocol (mandatory)
+
+Every reviewer (`chatgpt-codex-connector[bot]`, `cursor-agent`, `agy`, Claude/EdwardTang) operating on this repo's PRs MUST walk the `pr-cascade-breaker` finite state machine before posting a single comment. Canonical skill: `~/.claude/skills/pr-cascade-breaker/SKILL.md` (synthesised 2026-06-25 from 6 historical cascade post-mortems across `good-night-oppie/{eddie-agi-kb, agentdex-cli, bene}`). In-repo gate: `scripts/enforce_review_bounds.sh`. CI workflow: `.github/workflows/pr-cascade-breaker-gate.yml` (intercepts review payloads before they reach the GitHub API).
+
+### 11 hard rules — refusal to follow drops your finding at the format gate
+
+1. **Sync-PR bypass** — PR title matching `^(chore\(sync\)|merge|Sync GA|build\(vendor\))` → APPROVE, no behaviour review. (Cascades C3/C4: `agentdex-cli#508/#499`.)
+2. **Queue-drain scope-lock** — PR body has `Drains-Cascade: #N` or title matches `complete the .* review queue` → review ONLY the drained-thread file set; no new findings on adjacent code. (C1: `bene#83`.)
+3. **Batch limit ≤5** — >5 findings on one pass MUST be bundled into `docs/reviews/PR_<NUM>_DIGEST.md` + ONE PR-level comment. Inline calls beyond #5 are dropped by the gate. (C6: `eddie-agi-kb#404`.)
+4. **No noise-mask** — Do NOT bundle a verifiable P1 with unverifiable P3 nits in one review. Split by priority so a skim cannot dismiss both. (C5: `eddie-agi-kb#328`.)
+5. **Structural format** — Every finding MUST be a YAML `reviewer_finding` block (see schema in skill SKILL.md §"Reviewer-Finding format"): `kind` / `priority` / `blocking_verdict` / `exploitability` / `file` / `evidence_quote` (grep-verified) / `fix_suggestion` / `withdraw_condition`. Add `citation: SEARCH.json idx:<hash>` for kind∈{architecture, logic, security}; `exploit_demo` for exploitability=HIGH. Malformed = dropped.
+6. **No tightening without citation** — Demanding a stricter guard / new `raise` / rejected input shape without a `SEARCH.json` citation proving the tightened rule matches canonical wire form → finding auto-downgraded to `DEFER_TO_FOLLOWUP`. (C1: `from_adx_dict` over-reach reverted in 1 hour.)
+7. **Iteration cap K=3** — After 3 review iterations (commit count), the reviewer is mechanically muted. Eddie (orchestrator) takes over.
+8. **Thread lifecycle** — Threads MUST resolve via `Resolves-Thread: <id>` / `Withdraws-Thread: <id>` commit trailer (granular) or `Drains-Cascade: #N` PR-body line (macro). No manual "Fixed + merged in #X. Resolving." paste. The gate auto-resolves siblings on merge.
+9. **Split-panel disagreement** — If you disagree with another reviewer, the tie-breaker is the Exploitability Gate. If exploit=SAFE → APPROVE author's implementation. Do NOT relay the scariest verdict.
+10. **Done = deployed+live** — Hash-locked probe = `converged` AND only P2/P3 open → APPROVE and drop nits to followup PRs. (Eddie standing directive.)
+11. **Known-red exclusions** — Ignore vendor pre-commit failures (`adx-cli` standing directive) and runner-manifest gaps (Python 3.12 / Debian 12). These are infra, not diff. Do NOT block on them.
+
+**Default to HALT on ambiguity. APPROVE requires positive evidence, not absence of objection.**
+
+### Activation
+
+- The fleet review router (`scripts/fleet_review_router.py`) injects an abbreviated version of these rules into every A2A review request — codex-bot/og/eddie-agi-kb/harness all receive the same protocol.
+- Claude Code agents auto-load the full skill on activation keywords (`/review`, `Review this PR`, `PTAL`, `Resolves-Thread:`, `Drains-Cascade:`).
+- The non-LLM CI gate (`.github/workflows/pr-cascade-breaker-gate.yml`) intercepts review payloads and drops malformed findings before they reach GitHub — no LLM can argue its way past it.
+
+### Recursive applicability
+
+This section itself is policy. A reviewer who adds a row to the decision matrix without a real-cascade citation (verifiable via `gh pr view`) will be rejected by this gate, applied to their PR.
