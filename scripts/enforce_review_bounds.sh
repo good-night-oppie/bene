@@ -75,17 +75,23 @@ if [[ "$OPEN_THREADS" -gt 0 && -z "$HEAD_TRAILERS" && "$K" -gt 1 ]]; then
 fi
 
 # 1e. Drains-Cascade scope lock (Rule 2).
-# A PR with `Drains-Cascade: #N` in the body (or a queue-drain title) MUST be
-# reviewed only against the drained PR's file set. Otherwise reviewers can
-# slip new findings on adjacent files past the scope-lock.
-DRAIN_PRS=""
-if [[ "$PR_TITLE" =~ ^(chore\(drain\)|queue-drain) ]]; then
-  # title-based queue-drain: derive drained PR from the body trailer below
-  :
-fi
+# A PR with `Drains-Cascade: #N` in the body OR a title matching
+# `complete the .* review queue` (per AGENTS.md Rule 2) MUST be reviewed only
+# against the drained PR's file set.
 # Body trailer form: "Drains-Cascade: #123" (one or more allowed).
 DRAIN_PRS="$(echo "$PR_BODY" | grep -oE 'Drains-Cascade:[[:space:]]*#?[0-9]+' \
               | grep -oE '[0-9]+' || true)"
+# Title form: also accept any "#N" PR refs found in the queue-drain title.
+if [[ "$PR_TITLE" =~ complete[[:space:]]+the[[:space:]]+.*[[:space:]]+review[[:space:]]+queue ]]; then
+  TITLE_REFS="$(echo "$PR_TITLE" | grep -oE '#[0-9]+' | tr -d '#' || true)"
+  if [[ -n "$TITLE_REFS" ]]; then
+    DRAIN_PRS="$DRAIN_PRS"$'\n'"$TITLE_REFS"
+  elif [[ -z "$DRAIN_PRS" ]]; then
+    echo "::warning::S1.queue_drain_title_no_ref title='$PR_TITLE' lacks #N and body lacks Drains-Cascade trailer → S_HALT_DEFER"
+    exit 2
+  fi
+fi
+DRAIN_PRS="$(echo "$DRAIN_PRS" | sort -u | grep -v '^$' || true)"
 DRAIN_SCOPE_FILES=""
 if [[ -n "$DRAIN_PRS" ]]; then
   for drained in $DRAIN_PRS; do
