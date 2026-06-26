@@ -115,6 +115,7 @@ for f in findings_in:
             subprocess.check_output(["grep","-F",quote,d["file"]], stderr=subprocess.DEVNULL)
         except Exception:
             dropped.append({"reason":"evidence_quote_grep_WITHDRAWN","file":d["file"]}); continue
+    f["priority"] = d.get("priority")
     out.append(f)
 
 # Log dropped → D3 weekly-meta-loop input
