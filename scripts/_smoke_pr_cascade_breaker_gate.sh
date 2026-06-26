@@ -13,6 +13,7 @@
 #  (7) the literal opt-out marker exempts the comment (skip-marker)
 #  (8) the gate's own warning is exempt (gate-own-warning)
 #  (9) a PATH-style repo-root accepts evidence in either PR-head or base trees
+#  (10) non-mapping YAML is rejected without crashing
 set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GATE="$REPO/scripts/pr_cascade_breaker_gate.py"
@@ -53,6 +54,12 @@ cases = [
     ("missing_keys",
      "```reviewer_finding\nkind: bug\npriority: P2\nfile: scripts/sample.py\n```",
      False, "missing_keys"),
+    ("yaml_list",
+     "```reviewer_finding\n- not\n- a\n- mapping\n```",
+     False, "yaml_not_mapping:list"),
+    ("yaml_scalar",
+     "```reviewer_finding\nnot-a-mapping\n```",
+     False, "yaml_not_mapping:str"),
     ("arch_no_citation",
      "```reviewer_finding\nkind: architecture\npriority: P1\nblocking_verdict: BLOCK_MERGE\nexploitability: LOW\nfile: scripts/sample.py\nevidence_quote: raise ValueError(\"harness_ref required\")\nfix_suggestion: x\nwithdraw_condition: 'never'\n```",
      False, "architecture_without_citation"),
