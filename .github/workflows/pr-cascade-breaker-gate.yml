@@ -35,6 +35,18 @@ jobs:
           # script cannot weaken it for itself (same pattern as review-comment-signoff-gate).
           ref: ${{ github.event.pull_request.base.sha }}
 
+      - uses: actions/checkout@v4
+        with:
+          # Evidence target tree: validate_body() greps evidence_quote against
+          # files under --repo-root. PR-added lines are absent from the base
+          # checkout, so we point evidence verification at PR HEAD content. The
+          # gate SCRIPT still loads from base (trusted) — only the file under
+          # inspection comes from head. A PR cannot weaken its own gate this way:
+          # the only thing it can affect is what evidence_quote successfully
+          # matches, and the gate's job is to PASS valid findings.
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: head
+
       - name: validate review comment against reviewer_finding schema
         if: github.event_name == 'pull_request_review_comment'
         env:
@@ -46,5 +58,5 @@ jobs:
           set +e
           pip install --quiet --disable-pip-version-check pyyaml >/dev/null
           python3 scripts/pr_cascade_breaker_gate.py \
-            --repo "$REPO" --pr "$PR_NUM" --comment-id "$COMMENT_ID" --repo-root .
+            --repo "$REPO" --pr "$PR_NUM" --comment-id "$COMMENT_ID" --repo-root head
           exit 0
