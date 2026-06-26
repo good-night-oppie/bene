@@ -15,6 +15,7 @@
 #  (9) a PATH-style repo-root accepts evidence in either PR-head or base trees
 #  (10) non-mapping YAML is rejected without crashing
 #  (11) missing PyYAML fails closed
+#  (12) digest mode validates every reviewer_finding block
 set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GATE="$REPO/scripts/pr_cascade_breaker_gate.py"
@@ -112,6 +113,19 @@ if ok or reason != "yaml-missing-fail-closed":
     print(f"FAIL yaml_missing: ok={ok} reason={reason!r}")
     sys.exit(1)
 print(f"ok: yaml_missing → {reason}")
+
+valid_block = "```reviewer_finding\nkind: bug\npriority: P2\nblocking_verdict: SHOULD_FIX_BEFORE_MERGE\nexploitability: LOW\nfile: scripts/sample.py\nevidence_quote: return d\nfix_suggestion: keep as-is\nwithdraw_condition: 'never'\n```"
+invalid_block = "```reviewer_finding\nkind: bug\npriority: P2\nfile: scripts/sample.py\n```"
+ok, reason = mod.validate_body(valid_block + "\n\n" + valid_block, repo_root, all_blocks=True)
+if not ok or reason != "ok":
+    print(f"FAIL digest_all_valid: ok={ok} reason={reason!r}")
+    sys.exit(1)
+print(f"ok: digest_all_valid → {reason}")
+ok, reason = mod.validate_body(valid_block + "\n\n" + invalid_block, repo_root, all_blocks=True)
+if ok or not reason.startswith("block_1:missing_keys"):
+    print(f"FAIL digest_second_invalid: ok={ok} reason={reason!r}")
+    sys.exit(1)
+print(f"ok: digest_second_invalid → {reason}")
 PY
 
 echo "SMOKE_PR_CASCADE_BREAKER_GATE_PASS"
