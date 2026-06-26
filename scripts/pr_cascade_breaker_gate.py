@@ -133,12 +133,8 @@ def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--repo", required=True, help="owner/repo")
     p.add_argument("--pr", required=True, type=int)
-    p.add_argument(
-        "--comment-id", required=True, help="REST comment id (review_comment)"
-    )
-    p.add_argument(
-        "--repo-root", default=".", help="path to a clean checkout for grep-verify"
-    )
+    p.add_argument("--comment-id", required=True, help="REST comment id (review_comment)")
+    p.add_argument("--repo-root", default=".", help="path to a clean checkout for grep-verify")
     p.add_argument("--dry-run", action="store_true")
     a = p.parse_args()
 
@@ -154,24 +150,18 @@ def main() -> int:
         return 0
 
     ok, reason = validate_body(body, a.repo_root)
-    print(
-        f"::notice::pr-cascade-breaker: comment={a.comment_id} ok={ok} reason={reason}"
-    )
+    print(f"::notice::pr-cascade-breaker: comment={a.comment_id} ok={ok} reason={reason}")
     if ok:
         return 0
     if a.dry_run:
-        print(
-            f"::notice::DRY — would minimise comment {a.comment_id} (reason={reason})"
-        )
+        print(f"::notice::DRY — would minimise comment {a.comment_id} (reason={reason})")
         return 0
 
     if minimise_comment(node, reason):
         print(f"::notice::minimised comment {a.comment_id} via GraphQL")
         # Post a one-line warning on the PR (idempotent: only if not already there)
         existing = gh_api(f"repos/{a.repo}/issues/{a.pr}/comments")
-        already = any(
-            "pr-cascade-breaker:gate-warning" in c.get("body", "") for c in existing
-        )
+        already = any("pr-cascade-breaker:gate-warning" in c.get("body", "") for c in existing)
         if not already:
             warning = GATE_BANNER.format(reason=reason)
             subprocess.run(
