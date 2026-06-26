@@ -13,8 +13,6 @@ name: pr-cascade-breaker-gate
 on:
   pull_request_review_comment:
     types: [created, edited]
-  pull_request_review:
-    types: [submitted]
 
 permissions:
   contents: read
@@ -25,8 +23,6 @@ jobs:
     if: >
       contains('chatgpt-codex-connector[bot] chatgpt-codex-connector codex[bot] cursor-agent[bot] cursor-agent agy[bot]',
                github.event.comment.user.login)
-      || contains('chatgpt-codex-connector[bot] chatgpt-codex-connector codex[bot] cursor-agent[bot] cursor-agent agy[bot]',
-                  github.event.review.user.login)
     runs-on: [self-hosted, linux, x64]
     steps:
       - uses: actions/checkout@v4
@@ -48,7 +44,6 @@ jobs:
           path: head
 
       - name: validate review comment against reviewer_finding schema
-        if: github.event_name == 'pull_request_review_comment'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
