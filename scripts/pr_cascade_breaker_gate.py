@@ -99,6 +99,8 @@ def validate_body(body: str, repo_root: str) -> tuple[bool, str]:
         d = yaml.safe_load(m.group(1)) or {}
     except Exception as e:
         return False, f"yaml_parse:{e}"
+    if not isinstance(d, dict):
+        return False, f"yaml_not_mapping:{type(d).__name__}"
     missing = REQUIRED_KEYS - set(d.keys())
     if missing:
         return False, f"missing_keys:{sorted(missing)}"
