@@ -12,6 +12,7 @@
 #  (6) evidence_quote that doesn't grep against the file fails (_grep_WITHDRAWN)
 #  (7) the literal opt-out marker exempts the comment (skip-marker)
 #  (8) the gate's own warning is exempt (gate-own-warning)
+#  (9) a PATH-style repo-root accepts evidence in either PR-head or base trees
 set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GATE="$REPO/scripts/pr_cascade_breaker_gate.py"
@@ -26,13 +27,21 @@ def from_adx_dict(d):
         raise ValueError("harness_ref required")
     return d
 PY
+HEAD_ROOT="$TMP/head"; mkdir -p "$HEAD_ROOT/scripts"
+cat > "$HEAD_ROOT/scripts/sample.py" <<'PY'
+def from_adx_dict(d):
+    if "harness_ref" not in d:
+        raise ValueError("harness_ref required")
+    return {"new_head_line": True, **d}
+PY
 
 # Driver: import validate_body and assert (ok, reason) for each case.
-python3 - "$GATE" "$TMP" <<'PY'
+python3 - "$GATE" "$TMP" "$HEAD_ROOT" <<'PY'
 import importlib.util, sys, os
 spec = importlib.util.spec_from_file_location("g", sys.argv[1])
 mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
 repo_root = sys.argv[2]
+head_root = sys.argv[3]
 cases = [
     # (label, body, expect_ok, expect_reason_substring)
     ("ok_minimal",
@@ -64,6 +73,19 @@ for label, body, want_ok, want_reason in cases:
     ok, reason = mod.validate_body(body, repo_root)
     if ok != want_ok or want_reason not in reason:
         print(f"FAIL {label}: ok={ok} reason={reason!r} want_ok={want_ok} want_reason~{want_reason!r}")
+        sys.exit(1)
+    print(f"ok: {label} → {reason}")
+
+multi_root_cases = [
+    ("multi_root_head",
+     "```reviewer_finding\nkind: bug\npriority: P2\nblocking_verdict: SHOULD_FIX_BEFORE_MERGE\nexploitability: LOW\nfile: scripts/sample.py\nevidence_quote: new_head_line\nfix_suggestion: keep as-is\nwithdraw_condition: 'never'\n```"),
+    ("multi_root_base",
+     "```reviewer_finding\nkind: bug\npriority: P2\nblocking_verdict: SHOULD_FIX_BEFORE_MERGE\nexploitability: LOW\nfile: scripts/sample.py\nevidence_quote: return d\nfix_suggestion: keep as-is\nwithdraw_condition: 'never'\n```"),
+]
+for label, body in multi_root_cases:
+    ok, reason = mod.validate_body(body, f"{head_root}:{repo_root}")
+    if not ok or reason != "ok":
+        print(f"FAIL {label}: ok={ok} reason={reason!r}")
         sys.exit(1)
     print(f"ok: {label} → {reason}")
 PY
