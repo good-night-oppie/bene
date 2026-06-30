@@ -121,3 +121,10 @@ def ensure_v2(conn: sqlite3.Connection) -> None:
         (KERNEL_SCHEMA_VERSION,),
     )
     conn.commit()
+    # Additive: the truth-maintenance layer (belief facts/beliefs/decisions/
+    # conflicts) is also created here so a kernel-attached db has it. Its own
+    # idempotent ensure with a separate version stamp — local import keeps the
+    # module load cycle-free.
+    from bene.kernel.truth.schema import ensure_truth
+
+    ensure_truth(conn)
