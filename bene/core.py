@@ -417,7 +417,16 @@ class Bene:
 
     def _ensure_parents(self, agent_id: str, path: str) -> None:
         """Recursively create parent directories if they don't exist."""
+        # ⚡ Bolt: Fast path to avoid redundant checks for deep nested writes.
+        # If the immediate parent exists, all ancestors must exist.
         parts = PurePosixPath(path).parts
+        if len(parts) > 1:
+            parent_dir = str(PurePosixPath(*parts[:-1]))
+            if parent_dir == ".":
+                parent_dir = "/"
+            if self.exists(agent_id, parent_dir):
+                return
+
         for i in range(1, len(parts)):
             parent = str(PurePosixPath(*parts[:i]))
             if parent == ".":
