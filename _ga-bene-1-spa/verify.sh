@@ -9,8 +9,15 @@ cd "$(dirname "$0")"
 CHROME=$(command -v chromium chromium-browser google-chrome 2>/dev/null | head -1)
 [ -z "$CHROME" ] && { echo "no chromium"; exit 2; }
 PORT=8099
+TMP_LINE_ONLY=$(mktemp line-only.XXXXXX.html)
+SRV=
+cleanup(){
+  rm -f "$TMP_LINE_ONLY"
+  [ -n "$SRV" ] && kill "$SRV" 2>/dev/null || true
+}
 python3 -m http.server "$PORT" >/dev/null 2>&1 &
-SRV=$!; trap 'kill $SRV 2>/dev/null' EXIT
+SRV=$!
+trap cleanup EXIT
 sleep 1
 render(){ "$CHROME" --headless --disable-gpu --no-sandbox --virtual-time-budget=6000 --dump-dom "$1" 2>/dev/null; }
 fails=0; ok(){ echo "  ✓ $1"; }; no(){ echo "  ✗ $1"; fails=$((fails+1)); }
@@ -32,6 +39,40 @@ grep -Eq "147[0-9]|14[0-9][0-9]" <<<"$DOM"   && ok "Agent Pane Elo/rating from a
 echo "[GA-BENE-2 · live battle scene (battle-scene.js, light DOM)]"
 grep -q "bscene" <<<"$DOM"                    && ok "battle scene rendered frames (bscene markup)"        || no "battle scene"
 grep -q "bscene-ticker\|bscene-arena\|bscene-fog" <<<"$DOM" && ok "scene arena/ticker/fog present"       || no "scene internals"
+grep -Fq "BATTLE_ID_OVERRIDE" app.js           && ok "live smoke battle_id override is wired"              || no "battle_id override"
+cat >"$TMP_LINE_ONLY" <<'HTML'
+<!doctype html>
+<meta charset="utf-8">
+<script src="vendor/live/lineproto.js"></script>
+<script src="vendor/live/scene.js"></script>
+<script src="vendor/live/battle-scene.js"></script>
+<body>
+<script>
+const scene = document.createElement("battle-scene");
+document.body.append(scene);
+scene.pushFrame({
+  battle_id: "b_line_only",
+  seq: 0,
+  side: "p1",
+  ts_ms: 0,
+  lines: [
+    "|player|p1|Alpha||",
+    "|player|p2|Beta||",
+    "|switch|p1a: Azumarill|Azumarill, L82, M|100/100",
+    "|switch|p2a: Lumineon|Lumineon, L93, F|100/100",
+    "|turn|1"
+  ]
+});
+document.documentElement.setAttribute(
+  "data-line-only",
+  `${scene.scene.p1.species}/${scene.scene.p2.species}/turn-${scene.scene.turn}`
+);
+</script>
+HTML
+LINE_ONLY_DOM=$(render "http://localhost:$PORT/$TMP_LINE_ONLY")
+grep -Fq 'data-line-only="Azumarill/Lumineon/turn-1"' <<<"$LINE_ONLY_DOM" \
+  && ok "line-only SSE frame folds into the rendered scene" \
+  || no "line-only SSE frame did not update scene"
 
 echo "[GA-BENE-4 · Evolution · lineage (evo_panel.js)]"
 grep -Fq "+27.5pp" <<<"$DOM"                  && ok "Evolution headline uplift (top-level re-measure)"    || no "uplift"
@@ -50,6 +91,8 @@ grep -Fq "goal" <<<"$DOM"                     && ok "goal tag rendered"         
 grep -Fq "mine" <<<"$DOM"                     && ok "'mine' owner tag rendered"                            || no "mine tag"
 grep -Eq "138[0-9]|1487|1500|1601|1820" <<<"$DOM" && ok "Glicko ratings rendered"                        || no "ratings"
 grep -Fq "gen9randombattle" <<<"$DOM"         && ok "format label rendered (gen9randombattle)"             || no "format label"
+grep -Fq "ld-unavailable" <<<"$DOM"           && ok "missing live W/L renders unavailable"                 || no "missing W/L unavailable"
+grep -Fq "0W/0L" <<<"$DOM"                    && no "missing live W/L fabricated 0W/0L"                    || ok "missing live W/L does not fabricate 0W/0L"
 
 echo "----"
 [ "$fails" -eq 0 ] && { echo "RENDER-VERIFY PASS (all assertions)"; exit 0; } || { echo "RENDER-VERIFY FAIL ($fails)"; exit 1; }

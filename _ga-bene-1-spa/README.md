@@ -20,7 +20,7 @@ One dashboard composing the three panels against the canonical layout
 | roster + Agent Pane genome HUD | GA-BENE-1 | `vendor/agent_hud.js` | `/me/agents` (#539 `genome_summary`) |
 | live battle scene (US-3.1) | GA-BENE-2 | `vendor/live/*` (`<battle-scene>`) | GA-CORE-3 SSE frames |
 | Evolution · lineage (US-4.2) | GA-BENE-4 | `vendor/evo_panel.js` | `to_done_json` (held-out re-measure) |
-| ladder (US-5.1) | — | static placeholder | next GA-BENE panel |
+| ladder (US-5.1) | GA-BENE-3 | `vendor/ladder_panel.js` | `/me/ladder` owner-scoped slice |
 
 Selecting an agent re-renders the Agent Pane + Evolution panel and (re)starts its
 live battle adjacent to the pane (US-2.1 AC2 + US-3.1 adjacency).
@@ -42,24 +42,23 @@ all render, and the honesty gate holds (a real `pokeenv` result is NOT mock-badg
 ```
 roster   ./fixtures/me_agents.json          ⇄  GET /me/agents                    (session token)
 evo      ./fixtures/done.json               ⇄  GET /me/agents/<id>/evolution
+ladder   ./fixtures/me_ladder.json          ⇄  GET /me/ladder
 battle   MockLiveSource(golden fixture)     ⇄  SseLiveSource(battleId, "own", {sessionToken})
 ```
 
-`SseLiveSource` already encodes the endpoint-by-intent rule: owner
-`/me/battle/<id>/live` uses `fetch` + `ReadableStream` with
-`Authorization: Bearer <sessionToken>`, while public `/battle/<id>/live` remains native
-`EventSource` with no credentials. `app.js` accepts the token from
-`window.AGENTDEX_SESSION_TOKEN`, `?session_token=...` for smoke, or
-`localStorage.agentdex_session_token`; the production shell should inject it without
-putting tokens in URLs.
+`SseLiveSource` encodes the endpoint-by-intent rule: owner
+`/me/battle/<id>/live` uses `fetch` + `ReadableStream` so it can send a
+Bearer smoke token or same-site browser session cookies, while public
+`/battle/<id>/live` remains native `EventSource` with no credentials. `app.js`
+accepts the token from `window.AGENTDEX_SESSION_TOKEN`, `?session_token=...` for
+operator smoke, or `localStorage.agentdex_session_token`; the production shell
+should inject it without putting tokens in URLs. For live smoke against a known
+active battle, append `?live=1&battle_id=<id>` (or `live_battle_id`) to override
+the first selected roster row's `live_battle_id` without falling back to demo
+data.
 
-## Remaining for integration (adx-cli's deploy lane)
+## Remaining for integration / live gates
 
-1. **Live smoke** — run with `?live=1` against a real session token + a live
-   battle id (DNS/TLS-gated for agentdex.builders).
-2. **Ladder panel** — US-5.1 owner-scoped slice (the 4th region, still a placeholder).
-3. **Design polish (adx-cli design lane)** — agent_hud + evo were authored on the
-   Geist token set; this shell unifies everything onto the DESIGN/dashboard.html
-   tokens (Chakra Petch / IBM Plex Mono). A design pass can reconcile fonts/weights.
-4. **Home** — land under `agentdex-cli/tasks/agentdex-builders-ga/` and mount on
-   the deploy.
+1. **Live smoke** — run `https://agentdex.builders/dashboard/?live=1&battle_id=<active>&session_token=<smoke-token>` (or cookie-backed login) once an operator supplies a real session token + active battle id. Without those, the page correctly fails closed rather than using fixtures in live mode.
+2. **Deployment** — `agentdex.builders` currently serves `/dashboard/` from the bundled `web/dashboard` static mount; legacy `agentdex.ai-builders.space/dashboard/` still returns 404 and should either be redeployed or retired.
+3. **Design polish** — the shell now uses the Arena design-token family (Chakra Petch / IBM Plex Mono); a visual pass can still tune weights and spacing after live data is captured.

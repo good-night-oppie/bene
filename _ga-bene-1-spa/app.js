@@ -27,6 +27,9 @@ const SESSION_TOKEN =
   qs.get("session_token") ||
   window.localStorage?.getItem("agentdex_session_token") ||
   "";
+// Live-smoke escape hatch: operators can pin a known active battle without waiting
+// for /me/agents to expose `live_battle_id` on the first selected roster row.
+const BATTLE_ID_OVERRIDE = qs.get("battle_id") || qs.get("live_battle_id") || "";
 // render-verify drives the battle fast so frames have applied by dump-DOM time
 const STEP_MS = parseInt(qs.get("interval") || (qs.get("fast") ? "40" : "700"), 10);
 
@@ -78,18 +81,21 @@ function startBattle(agent) {
   if (battleSource) battleSource.close();
   scene.reset();
   if (LIVE) {
-    if (!agent.live_battle_id) {
+    const liveBattleId = BATTLE_ID_OVERRIDE || agent.live_battle_id;
+    if (!liveBattleId) {
       // owner dashboard, idle agent: leave the scene in its reset/empty state — NEVER demo data.
       battleSource = null;
       battleLabel.textContent = `idle · ${agent.agent_name} — no live battle`;
       return;
     }
     // GA-CORE-3 wiring — owner stream, endpoint chosen by intent ("own" => /me/battle/<id>/live).
-    // Owner stream is Bearer-only for launch; public spectator streams remain native EventSource.
-    battleSource = new LiveSource.SseLiveSource(agent.live_battle_id, "own", {
+    // Owner streams can use a bearer smoke token or same-site session cookies.
+    battleSource = new LiveSource.SseLiveSource(liveBattleId, "own", {
       sessionToken: SESSION_TOKEN,
     });
-    battleLabel.textContent = `live · ${agent.agent_name}`;
+    battleLabel.textContent = BATTLE_ID_OVERRIDE
+      ? `live smoke · ${agent.agent_name} · ${liveBattleId}`
+      : `live · ${agent.agent_name}`;
   } else {
     // build-ahead: the same frame seam, fed by the golden battle through the GA-CORE-3 reference projector
     const proj = Projector.project(globalThis.FIXTURE_BATTLE_LOG, "p1", {
