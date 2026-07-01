@@ -414,7 +414,7 @@ class PlasticityScanner:
     def demoted_skill_ids(self) -> set[int]:
         """Skill ids whose latest lifecycle status is demoted/retired."""
         rows = self.conn.execute(
-            "SELECT skill_id, status FROM skill_lifecycle l WHERE decided_at = ("
-            "  SELECT MAX(decided_at) FROM skill_lifecycle l2 WHERE l2.skill_id = l.skill_id)"
+            "SELECT skill_id, status FROM skill_lifecycle l WHERE lifecycle_id = ("
+            "  SELECT MAX(lifecycle_id) FROM skill_lifecycle l2 WHERE l2.skill_id = l.skill_id)"
         ).fetchall()
         return {r[0] for r in rows if r[1] in (DEMOTED, RETIRED)}
