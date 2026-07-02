@@ -74,13 +74,18 @@ class AgentTable(Widget):
         table.clear()
 
         agents = self.afs.query("""
+            WITH top_agents AS (
+                SELECT agent_id, name, status, created_at
+                FROM agents
+                ORDER BY created_at DESC LIMIT 50
+            )
             SELECT
                 a.agent_id, a.name, a.status, a.created_at,
                 (SELECT COUNT(*) FROM files f WHERE f.agent_id = a.agent_id AND f.deleted = 0) as file_count,
                 (SELECT COUNT(*) FROM tool_calls tc WHERE tc.agent_id = a.agent_id) as call_count,
                 (SELECT COALESCE(SUM(tc.token_count), 0) FROM tool_calls tc WHERE tc.agent_id = a.agent_id) as token_count
-            FROM agents a
-            ORDER BY a.created_at DESC LIMIT 50
+            FROM top_agents a
+            ORDER BY a.created_at DESC
         """)
 
         for agent in agents:
