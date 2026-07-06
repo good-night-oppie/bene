@@ -693,6 +693,71 @@ def test_multi_key_isolation(conn):
     assert len(store.list_active_beliefs()) == 3  # three distinct keys
 
 
+def test_concurrent_reconcile_does_not_double_process(tmp_path):
+    # Two+ reducers racing over the same DB file must not both process the same
+    # fact (which would trip the active-key unique index or write duplicate
+    # rows). Each fact is claimed under BEGIN IMMEDIATE, so concurrent runs
+    # serialize into exactly one belief per key with no errors — idempotent
+    # under concurrency (Rule 9).
+    import threading
+
+    db = str(tmp_path / "concurrent.db")
+    seed = Bene(db)
+    try:
+        s = TruthStore(seed.conn)
+        n_keys = 40
+        for i in range(n_keys):
+            _emit(s, f"v{i}", observed_at=T1, subject=f"s{i:03d}")
+    finally:
+        seed.close()
+
+    results: list = []
+    errors: list = []
+
+    def worker():
+        try:
+            b = Bene(db)
+            try:
+                results.append(reconcile_beliefs(b.conn, now=NOW))
+            finally:
+                b.close()
+        except Exception as exc:  # noqa: BLE001 — surface any race crash to the assert
+            errors.append(exc)
+
+    threads = [threading.Thread(target=worker) for _ in range(3)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert errors == []  # no IntegrityError / double-claim crash under the race
+
+    check = Bene(db)
+    try:
+        cs = TruthStore(check.conn)
+        # exactly one active belief per key — nothing lost, nothing duplicated
+        assert len(cs.list_active_beliefs()) == n_keys
+        assert check.conn.execute("SELECT COUNT(*) FROM beliefs").fetchone()[0] == n_keys
+        # every fact consumed exactly once
+        assert (
+            check.conn.execute(
+                "SELECT COUNT(*) FROM belief_facts WHERE reconciled_at IS NULL"
+            ).fetchone()[0]
+            == 0
+        )
+        # each fact produced exactly one create decision (no fact processed twice)
+        assert (
+            check.conn.execute(
+                "SELECT COUNT(*) FROM belief_decisions WHERE rule='rule_1_create'"
+            ).fetchone()[0]
+            == n_keys
+        )
+        # and the workers together created exactly n_keys beliefs (no overlap)
+        assert sum(r["created"] for r in results) == n_keys
+    finally:
+        check.close()
+
+
 # ---------------------------------------------------------------- no-LLM / imports (P5)
 
 # Banned: LLM SDKs, network, vector DBs, graph DBs, CLIPS, background/daemon mechanisms.

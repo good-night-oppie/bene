@@ -196,6 +196,32 @@ class TruthStore:
             (now, fact_id),
         )
 
+    def claim_fact(self, fact_id: str, now: str) -> bool:
+        """Atomically claim an unreconciled fact for processing under the write lock.
+
+        Returns ``True`` if THIS caller won the claim (the fact was unreconciled
+        and is now stamped), leaving an OPEN write transaction the caller must
+        commit once processing is done. Returns ``False`` if another reconciler
+        already consumed the fact (the reducer snapshots the unreconciled queue
+        before processing, so a concurrent caller may claim a row first); in that
+        case the transaction is rolled back before returning so the caller can
+        simply skip the fact.
+
+        ``BEGIN IMMEDIATE`` takes the write lock up front, so two reducers racing
+        over the same SQLite file serialize here instead of both processing the
+        same fact and hitting the active-key unique index or writing duplicate
+        decision/quarantine rows (keeps Rule 9 idempotent under concurrency).
+        """
+        self.conn.execute("BEGIN IMMEDIATE")
+        cur = self.conn.execute(
+            "UPDATE belief_facts SET reconciled_at = ? WHERE fact_id = ? AND reconciled_at IS NULL",
+            (now, fact_id),
+        )
+        if cur.rowcount == 0:
+            self.conn.rollback()
+            return False
+        return True
+
     # ---------------- belief queries ----------------
 
     def get_belief(self, belief_id: str) -> dict | None:

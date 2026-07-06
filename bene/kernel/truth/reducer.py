@@ -60,7 +60,10 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
     """Reconcile all unreconciled facts into beliefs. Returns transition counts.
 
     Deterministic + idempotent: only ``reconciled_at IS NULL`` facts are
-    processed, in ``(observed_at, fact_id)`` order; each is stamped reconciled.
+    processed, in ``(observed_at, value_hash, fact_id)`` order; each is stamped
+    reconciled. Concurrency-safe: every fact is claimed under a ``BEGIN
+    IMMEDIATE`` write transaction before processing, so two reducers racing over
+    the same DB serialize instead of double-processing a fact.
     """
     store = TruthStore(conn)
     if now is None:
@@ -79,7 +82,10 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
     # A fact carrying a future ``expires_at`` propagates that TTL onto the active
     # belief's ``active_until`` (below). A later reconcile whose ``now`` is past
     # that instant must demote the belief before reading facts, or it stays
-    # active + admissible for promotion/action past its time-to-live.
+    # active + admissible for promotion/action past its time-to-live. Serialize
+    # the sweep under the write lock so two concurrent reducers can't both demote
+    # the same belief and duplicate its rule_5_expired decision.
+    conn.execute("BEGIN IMMEDIATE")
     for stale in store.expired_active_beliefs(now):
         exp_decision = store.insert_decision(
             belief_id=stale["belief_id"],
@@ -99,12 +105,18 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
             now=now,
         )
         counts["expired"] += 1
-    if counts["expired"]:
-        conn.commit()
+    conn.commit()
 
     for fact in store.unreconciled_facts():
-        subject, relation, scope = fact["subject"], fact["relation"], fact["scope"]
         fid = fact["fact_id"]
+        # Claim the fact under the write lock BEFORE processing it. The queue was
+        # snapshotted above with no lock, so a concurrent reducer may have already
+        # consumed this row; if so, skip it. On success the write transaction is
+        # held open until this iteration commits, making claim + processing atomic.
+        if not store.claim_fact(fid, now):
+            continue
+
+        subject, relation, scope = fact["subject"], fact["relation"], fact["scope"]
         vhash = fact["value_hash"]
         value = fact["value"]
         confidence = fact["confidence"]
