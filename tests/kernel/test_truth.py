@@ -568,6 +568,63 @@ def test_out_of_order_contradiction_after_refresh_stays_deterministic(conn, tmp_
         other.close()
 
 
+def test_equal_timestamp_contradiction_honors_value_hash_tiebreak(tmp_path):
+    # Two different values observed at the SAME timestamp. The reducer's canonical
+    # order (observed_at, value_hash, fact_id) breaks the tie on value_hash, so the
+    # value with the greater value_hash must win regardless of INGESTION order —
+    # incremental reconciliation must equal a from-scratch replay.
+    v1, v2 = "alpha", "omega"
+    hi, lo = (v1, v2) if value_hash(v1) > value_hash(v2) else (v2, v1)
+    assert value_hash(hi) > value_hash(lo)
+
+    def active_value_for_order(path, first, second):
+        b = Bene(str(path))
+        try:
+            s = TruthStore(b.conn)
+            _emit(s, first, observed_at=T2)
+            reconcile_beliefs(b.conn, now=NOW)
+            _emit(s, second, observed_at=T2)  # same timestamp, different value
+            reconcile_beliefs(b.conn, now=NOW)
+            actives = s.list_active_beliefs()
+            assert len(actives) == 1
+            return actives[0]["value"]
+        finally:
+            b.close()
+
+    # Whichever order the two same-timestamp facts arrive, the higher value_hash wins.
+    assert active_value_for_order(tmp_path / "lo_then_hi.db", lo, hi) == hi
+    assert active_value_for_order(tmp_path / "hi_then_lo.db", hi, lo) == hi
+
+    # ...and that matches a from-scratch replay of both facts together.
+    b = Bene(str(tmp_path / "replay.db"))
+    try:
+        s = TruthStore(b.conn)
+        _emit(s, lo, observed_at=T2)
+        _emit(s, hi, observed_at=T2)
+        reconcile_beliefs(b.conn, now=NOW)
+        actives = s.list_active_beliefs()
+        assert len(actives) == 1 and actives[0]["value"] == hi
+    finally:
+        b.close()
+
+
+def test_latest_evidence_key_reads_by_key_not_derived_from(conn):
+    # The supersession gate must read latest evidence via a fixed-parameter
+    # (key, value_hash) query — never one bound parameter per derived_from id,
+    # which can exceed SQLite's host-parameter limit on a hot key. Prove the
+    # lookup is key/value driven and independent of the belief's derived_from.
+    store = TruthStore(conn)
+    _emit(store, "A", observed_at=T1)
+    _emit(store, "A", observed_at=T3)  # same key+value, later observation
+    reconcile_beliefs(conn, now=NOW)
+    active = store.list_active_beliefs()[0]
+    # Even with an empty derived_from passed in, the key/value query still finds
+    # the newest same-value evidence (T3) and returns its value_hash.
+    ts, vhash = store.latest_evidence_key({**active, "derived_from": []})
+    assert ts == T3
+    assert vhash == active["value_hash"]
+
+
 def _key_tuples(store):
     return sorted(
         (b["subject"], b["relation"], b["scope"], b["value"], b["lifecycle"])
