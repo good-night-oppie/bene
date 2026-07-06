@@ -365,17 +365,20 @@ class TruthStore:
         observed_at: str,
         value_hash: str,
         fact_id: str,
+        now: str,
     ) -> bool:
-        """True if a VALID reconciled fact for the key sorts AFTER
+        """True if a fact VALID AS OF ``now`` for the key sorts AFTER
         ``(observed_at, value_hash, fact_id)`` in the reducer's canonical order.
 
         Used by Rule 1 to stop a late, out-of-order fact from resurrecting as
-        active when the key already has newer evidence whose belief has since been
-        superseded or TTL-expired (leaving no active belief). A from-scratch
-        replay would process that newer fact last and leave this older one
-        superseded/expired, not active. Same supporting-fact filter as
-        ``latest_evidence_key`` (quarantined / reconcile-time-expired facts don't
-        count); fixed parameter count.
+        active when the key still has genuinely-newer valid evidence but no active
+        belief. Validity is judged at the CURRENT reconcile: a newer fact that has
+        expired by ``now`` would be Rule-5-rejected in a from-scratch replay and
+        must NOT block the late fact (otherwise incremental and replay diverge —
+        e.g. A@Jan2 exp Jan10 reconciled Jan5, swept Jan11, then late B@Jan1: a
+        fresh reconcile at Jan11 rejects A and makes B active, so B must not be
+        suppressed). Quarantined / unreliable facts are likewise excluded. Fixed
+        parameter count.
         """
         unreliable = sorted(UNRELIABLE_SOURCE_TYPES)
         src_placeholders = ",".join("?" for _ in unreliable)
@@ -383,7 +386,7 @@ class TruthStore:
             "SELECT 1 FROM belief_facts"
             " WHERE subject = ? AND relation = ? AND scope = ?"
             " AND reconciled_at IS NOT NULL AND unsafe = 0"
-            " AND (expires_at IS NULL OR expires_at >= reconciled_at)"
+            " AND (expires_at IS NULL OR expires_at >= ?)"
             f" AND (source_type IS NULL OR source_type NOT IN ({src_placeholders}))"  # noqa: S608
             " AND (observed_at > ?"
             "      OR (observed_at = ? AND value_hash > ?)"
@@ -393,6 +396,7 @@ class TruthStore:
                 subject,
                 relation,
                 scope,
+                now,
                 *unreliable,
                 observed_at,
                 observed_at,

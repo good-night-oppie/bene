@@ -199,7 +199,7 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
             # older, out-of-order fact is stale — a from-scratch replay processes
             # the newer fact last and leaves this one superseded/expired, not
             # active — so record it as ignored instead of resurrecting stale truth.
-            if store.has_newer_key_evidence(subject, relation, scope, observed_at, vhash, fid):
+            if store.has_newer_key_evidence(subject, relation, scope, observed_at, vhash, fid, now):
                 store.insert_decision(
                     belief_id=None,
                     rule=RULE_STALE_IGNORED,

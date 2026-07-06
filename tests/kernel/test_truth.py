@@ -523,30 +523,49 @@ def test_active_beliefs_limit_applies_with_ttl_filter(conn):
     assert len(store.list_active_beliefs(now=NOW)) == 5
 
 
-def test_expired_belief_does_not_resurrect_older_evidence(conn):
-    # After a TTL'd belief expires (no active belief), a late OLDER out-of-order
-    # fact must not become active — a from-scratch replay would leave it
-    # superseded/expired, not active. But a genuinely NEWER observation still
-    # re-establishes truth.
-    jan1, jan2 = "2026-01-01T00:00:00.000", "2026-01-02T00:00:00.000"
+def test_late_fact_after_ttl_expiry_becomes_active_like_replay(conn, tmp_path):
+    # After A's TTL expires there is no active belief; a late OLDER fact B then
+    # becomes active — matching a from-scratch replay, which REJECTS the expired A
+    # (Rule 5) and creates B. The Rule-1 guard must judge "newer evidence" AS OF
+    # now: an expired-as-of-now fact must NOT suppress the late fact.
     store = TruthStore(conn)
-    _emit(store, "A", observed_at=jan2, expires_at="2026-01-10T00:00:00.000")
+    _emit(store, "A", observed_at="2026-01-02T00:00:00.000", expires_at="2026-01-10T00:00:00.000")
     reconcile_beliefs(conn, now="2026-01-05T00:00:00.000")  # active A
-    assert len(store.list_active_beliefs(now="2026-01-05T00:00:00.000")) == 1
-    reconcile_beliefs(conn, now="2026-01-11T00:00:00.000")  # sweep expires A
+    reconcile_beliefs(conn, now="2026-01-11T00:00:00.000")  # sweep expires A (past its TTL)
     assert store.list_active_beliefs(now="2026-01-11T00:00:00.000") == []
-
-    _emit(store, "B", observed_at=jan1)  # late, OLDER than A's evidence
+    _emit(store, "B", observed_at="2026-01-01T00:00:00.000")  # late, older, no TTL
     counts = reconcile_beliefs(conn, now="2026-01-11T00:00:00.000")
-    assert counts["created"] == 0 and counts["skipped"] == 1
-    assert store.list_active_beliefs(now="2026-01-11T00:00:00.000") == []  # not resurrected
+    assert counts["created"] == 1  # B created, NOT suppressed by the expired A
+    active = store.list_active_beliefs(now="2026-01-11T00:00:00.000")
+    assert len(active) == 1 and active[0]["value"] == "B"
 
-    # a genuinely newer observation after expiry DOES re-establish truth
-    _emit(store, "C", observed_at="2026-01-20T00:00:00.000")
-    c2 = reconcile_beliefs(conn, now="2026-01-21T00:00:00.000")
-    assert c2["created"] == 1
-    active = store.list_active_beliefs(now="2026-01-21T00:00:00.000")
-    assert len(active) == 1 and active[0]["value"] == "C"
+    # ...and that matches a from-scratch replay of the same two facts at Jan 11.
+    other = Bene(str(tmp_path / "replay.db"))
+    try:
+        s2 = TruthStore(other.conn)
+        _emit(s2, "A", observed_at="2026-01-02T00:00:00.000", expires_at="2026-01-10T00:00:00.000")
+        _emit(s2, "B", observed_at="2026-01-01T00:00:00.000")
+        reconcile_beliefs(other.conn, now="2026-01-11T00:00:00.000")
+        replay = s2.list_active_beliefs(now="2026-01-11T00:00:00.000")
+        assert len(replay) == 1 and replay[0]["value"] == "B"
+    finally:
+        other.close()
+
+
+def test_late_fact_suppressed_when_newer_valid_belief_removed_out_of_band(conn):
+    # If a genuinely-newer, still-valid fact exists but its belief was removed
+    # out-of-band (manual quarantine), a late OLDER fact must not resurrect as the
+    # active truth — has_newer_key_evidence still guards this case.
+    store = TruthStore(conn)
+    _emit(store, "A", observed_at="2026-01-02T00:00:00.000")  # newer, no TTL, valid
+    reconcile_beliefs(conn, now=NOW)
+    active = store.list_active_beliefs(now=NOW)[0]
+    quarantine_belief(conn, active["belief_id"], reason="manual review", now=NOW)
+    assert store.list_active_beliefs(now=NOW) == []  # no active belief now
+    _emit(store, "B", observed_at="2026-01-01T00:00:00.000")  # late, older
+    counts = reconcile_beliefs(conn, now=NOW)
+    assert counts["created"] == 0 and counts["skipped"] == 1  # B not resurrected
+    assert store.list_active_beliefs(now=NOW) == []
 
 
 def test_rule10_manual_quarantine(conn):  # Test 9
