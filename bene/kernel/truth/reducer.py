@@ -231,6 +231,16 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
             # (deterministic max); the belief value/lifecycle are unchanged.
             refreshed_conf = max(active["confidence"], confidence)
             store.link_fact_to_belief(active["belief_id"], fid, now, confidence=refreshed_conf)
+            # Propagate the confirming fact's TTL when it is the NEWEST evidence
+            # for the key: a later same-value observation with a longer (or absent)
+            # expires_at must extend the belief, otherwise the original, shorter
+            # TTL expires it early even though fresh evidence keeps it valid. The
+            # incoming fact was already claimed (reconciled), so it is counted in
+            # latest_evidence_key; observed_at == that max iff no strictly-later
+            # evidence exists, i.e. this fact carries the governing TTL.
+            latest_ts, _ = store.latest_evidence_key(active)
+            if observed_at >= latest_ts:
+                store.set_belief_active_until(active["belief_id"], expires_at, now)
             refresh_decision = store.insert_decision(
                 belief_id=active["belief_id"],
                 rule=RULE_REFRESH,

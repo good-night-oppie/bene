@@ -457,6 +457,28 @@ def test_belief_expires_when_ttl_elapses(conn):
     assert c3["expired"] == 0
 
 
+def test_refresh_extends_ttl_with_newer_evidence(conn):
+    # A later same-value observation with a longer TTL must EXTEND the belief's
+    # active_until; otherwise the original, shorter TTL expires it early even
+    # though fresh confirming evidence keeps it valid.
+    jan1, jan9 = "2026-01-01T00:00:00.000", "2026-01-09T00:00:00.000"
+    jan10, feb1 = "2026-01-10T00:00:00.000", "2026-02-01T00:00:00.000"
+    store = TruthStore(conn)
+    _emit(store, "A", observed_at=jan1, expires_at=jan10)  # short TTL
+    _emit(store, "A", observed_at=jan9, expires_at=feb1)  # newer, longer TTL
+    reconcile_beliefs(conn, now="2026-01-09T12:00:00.000")
+    active = store.list_active_beliefs(now="2026-01-09T12:00:00.000")
+    assert len(active) == 1
+    assert active[0]["active_until"] == feb1  # extended to the newest evidence's TTL
+
+    # past the ORIGINAL (jan10) TTL the belief is still live, and a reconcile there
+    # does NOT expire it
+    assert len(store.list_active_beliefs(now="2026-01-11T00:00:00.000")) == 1
+    c = reconcile_beliefs(conn, now="2026-01-11T00:00:00.000")
+    assert c["expired"] == 0
+    assert len(store.list_active_beliefs(now="2026-01-11T00:00:00.000")) == 1
+
+
 def test_read_path_hides_beliefs_past_ttl_without_reconcile(conn):
     # TTL must be enforced on the READ path, not only during a reconcile sweep:
     # if no new facts arrive after the TTL passes, a caller that only reads active
