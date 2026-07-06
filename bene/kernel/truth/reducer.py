@@ -238,13 +238,16 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
             conn.commit()
             continue
 
-        # different value — supersede only if this fact is newer than the LATEST
-        # evidence backing the active belief (not merely its active_from). Using
-        # active_from lets a late, out-of-order fact between two same-value
-        # observations flip the active value in a way a from-scratch replay would
-        # not, breaking replay determinism (chatgpt-codex-connector, PR #117).
-        latest_evidence = store.latest_observed_at(active)
-        if observed_at > latest_evidence:
+        # different value — supersede only if this fact sorts AFTER the latest
+        # evidence backing the active belief in the reducer's canonical order
+        # (observed_at, value_hash). Comparing active_from alone lets a late,
+        # out-of-order fact between two same-value observations flip the active
+        # value a replay would not; comparing observed_at alone mishandles a
+        # contradiction sharing the latest timestamp (replay breaks that tie on
+        # value_hash). Using the full key keeps incremental == replay for the
+        # ACTIVE value (chatgpt-codex-connector, PR #117 / #123).
+        latest_evidence = store.latest_evidence_key(active)
+        if (observed_at, vhash) > latest_evidence:
             # ---- Rule 2: newer different value → supersede + create new active ----
             sup_decision = store.insert_decision(
                 belief_id=active["belief_id"],
@@ -312,8 +315,7 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
             from_lifecycle="active",
             to_lifecycle="active",
             reason=(
-                f"stale fact ignored: observed_at {observed_at} <= latest evidence"
-                f" {latest_evidence}"
+                f"stale fact ignored: ({observed_at}, {vhash}) <= latest evidence {latest_evidence}"
             ),
             fact_id=fid,
             admissible=(

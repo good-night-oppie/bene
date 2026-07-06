@@ -267,29 +267,35 @@ class TruthStore:
             limit=limit,
         )
 
-    def latest_observed_at(self, belief: dict) -> str:
-        """Newest observation timestamp backing ``belief`` — its latest evidence.
+    def latest_evidence_key(self, belief: dict) -> tuple[str, str]:
+        """Canonical sort key ``(observed_at, value_hash)`` of the newest fact
+        supporting the belief's value — the tuple a late contradiction must beat.
 
-        Returns ``MAX(observed_at)`` over every fact in the belief's
-        ``derived_from`` lineage, never earlier than ``active_from``. This is the
-        timestamp a late-arriving, out-of-order fact must beat to supersede the
-        belief; comparing against ``active_from`` alone (the FIRST supporting
-        fact) makes incremental reconciliation disagree with a from-scratch
-        replay once a same-value refresh has advanced the evidence past
-        ``active_from``. Falls back to ``active_from`` when the lineage is empty.
+        The reducer's total order is ``(observed_at, value_hash, fact_id)``, so a
+        supersession gate that compares ``observed_at`` alone disagrees with a
+        from-scratch replay when a contradiction shares the latest timestamp: the
+        replay breaks the tie on ``value_hash``. Returning the full key lets the
+        gate honor that tie-break. The timestamp is floored at ``active_from``
+        (the belief is at least as old as its first supporting fact).
+
+        Queried by ``(subject, relation, scope, value_hash)`` with a FIXED
+        parameter count and the ``idx_belief_facts_key`` index — never by an
+        unbounded ``derived_from`` list, which could exceed SQLite's per-statement
+        host-parameter limit on a heavily refreshed key and crash the reducer.
+        Historical same-value facts (from an earlier belief of the same value)
+        are always older than ``active_from`` and cannot dominate the MAX, so
+        this is equivalent to the max over the belief's own lineage.
         """
         floor = belief.get("active_from") or ""
-        df = list(belief.get("derived_from") or [])
-        if not df:
-            return floor
-        placeholders = ",".join("?" for _ in df)
-        # `placeholders` is a run of bound "?" markers only; every id is bound.
+        vhash = belief.get("value_hash") or ""
         row = self.conn.execute(
-            f"SELECT MAX(observed_at) FROM belief_facts WHERE fact_id IN ({placeholders})",  # noqa: S608
-            df,
+            "SELECT MAX(observed_at) FROM belief_facts"
+            " WHERE subject = ? AND relation = ? AND scope = ? AND value_hash = ?"
+            " AND reconciled_at IS NOT NULL",
+            (belief["subject"], belief["relation"], belief["scope"], vhash),
         ).fetchone()
         latest = row[0] if row and row[0] is not None else ""
-        return max(latest, floor)
+        return (max(latest, floor), vhash)
 
     def expired_active_beliefs(self, now: str) -> list[dict]:
         """Active beliefs whose TTL (``active_until``) has elapsed as of ``now``.
