@@ -700,6 +700,25 @@ def test_latest_evidence_key_reads_by_key_not_derived_from(conn):
     assert vhash == active["value_hash"]
 
 
+def test_latest_evidence_excludes_quarantined_same_value_fact(conn):
+    # A same-value fact that was quarantined (unsafe/unreliable) never became
+    # active evidence, so its timestamp must NOT gate a real contradiction. A
+    # valid B newer than the real supporting fact (T1) but older than the
+    # quarantined observation must supersede — matching a from-scratch replay.
+    store = TruthStore(conn)
+    _emit(store, "A", observed_at=T1)  # real supporting evidence
+    reconcile_beliefs(conn, now=NOW)
+    # out-of-order: an unsafe same-value observation lands later and is quarantined
+    _emit(store, "A", observed_at="2026-06-05T00:00:00.000", unsafe=True)
+    reconcile_beliefs(conn, now=NOW)
+    # a valid contradiction between the real evidence (T1) and the quarantined obs
+    _emit(store, "B", observed_at=T2)  # T2 = 2026-06-02
+    counts = reconcile_beliefs(conn, now=NOW)
+    assert counts["superseded"] == 1  # NOT skipped/stale
+    actives = store.list_active_beliefs(now=NOW)
+    assert len(actives) == 1 and actives[0]["value"] == "B"
+
+
 def _key_tuples(store):
     return sorted(
         (b["subject"], b["relation"], b["scope"], b["value"], b["lifecycle"])

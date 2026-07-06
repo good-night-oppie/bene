@@ -17,6 +17,7 @@ from typing import Any
 import ulid
 
 from bene.kernel.truth.contract import (
+    UNRELIABLE_SOURCE_TYPES,
     decode_value,
     encode_value,
     validate_fact,
@@ -325,14 +326,25 @@ class TruthStore:
         Historical same-value facts (from an earlier belief of the same value)
         are always older than ``active_from`` and cannot dominate the MAX, so
         this is equivalent to the max over the belief's own lineage.
+
+        Only facts that ACTUALLY support the belief count: a same-value fact that
+        was quarantined (``unsafe`` / unreliable source) or expired at reconcile
+        time never became active evidence, so its timestamp must not gate a real
+        contradiction (which a from-scratch replay would supersede to). Those are
+        excluded here.
         """
         floor = belief.get("active_from") or ""
         vhash = belief.get("value_hash") or ""
+        unreliable = sorted(UNRELIABLE_SOURCE_TYPES)
+        src_placeholders = ",".join("?" for _ in unreliable)
         row = self.conn.execute(
             "SELECT MAX(observed_at) FROM belief_facts"
             " WHERE subject = ? AND relation = ? AND scope = ? AND value_hash = ?"
-            " AND reconciled_at IS NOT NULL",
-            (belief["subject"], belief["relation"], belief["scope"], vhash),
+            " AND reconciled_at IS NOT NULL"
+            " AND unsafe = 0"
+            " AND (expires_at IS NULL OR expires_at >= reconciled_at)"
+            f" AND (source_type IS NULL OR source_type NOT IN ({src_placeholders}))",  # noqa: S608
+            (belief["subject"], belief["relation"], belief["scope"], vhash, *unreliable),
         ).fetchone()
         latest = row[0] if row and row[0] is not None else ""
         return (max(latest, floor), vhash)
