@@ -495,6 +495,32 @@ def test_read_path_hides_beliefs_past_ttl_without_reconcile(conn):
     assert conn.execute("SELECT lifecycle FROM beliefs").fetchone()[0] == "active"
 
 
+def test_expired_belief_does_not_resurrect_older_evidence(conn):
+    # After a TTL'd belief expires (no active belief), a late OLDER out-of-order
+    # fact must not become active — a from-scratch replay would leave it
+    # superseded/expired, not active. But a genuinely NEWER observation still
+    # re-establishes truth.
+    jan1, jan2 = "2026-01-01T00:00:00.000", "2026-01-02T00:00:00.000"
+    store = TruthStore(conn)
+    _emit(store, "A", observed_at=jan2, expires_at="2026-01-10T00:00:00.000")
+    reconcile_beliefs(conn, now="2026-01-05T00:00:00.000")  # active A
+    assert len(store.list_active_beliefs(now="2026-01-05T00:00:00.000")) == 1
+    reconcile_beliefs(conn, now="2026-01-11T00:00:00.000")  # sweep expires A
+    assert store.list_active_beliefs(now="2026-01-11T00:00:00.000") == []
+
+    _emit(store, "B", observed_at=jan1)  # late, OLDER than A's evidence
+    counts = reconcile_beliefs(conn, now="2026-01-11T00:00:00.000")
+    assert counts["created"] == 0 and counts["skipped"] == 1
+    assert store.list_active_beliefs(now="2026-01-11T00:00:00.000") == []  # not resurrected
+
+    # a genuinely newer observation after expiry DOES re-establish truth
+    _emit(store, "C", observed_at="2026-01-20T00:00:00.000")
+    c2 = reconcile_beliefs(conn, now="2026-01-21T00:00:00.000")
+    assert c2["created"] == 1
+    active = store.list_active_beliefs(now="2026-01-21T00:00:00.000")
+    assert len(active) == 1 and active[0]["value"] == "C"
+
+
 def test_rule10_manual_quarantine(conn):  # Test 9
     store = TruthStore(conn)
     _emit(store, "green", observed_at=T1)
