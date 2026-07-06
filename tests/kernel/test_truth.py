@@ -340,6 +340,25 @@ def test_rule3_same_value_no_duplicate(conn):  # Test 6
     assert set(actives[0]["derived_from"]) == {f1, f2}
 
 
+def test_refresh_updates_last_decision_id(conn):
+    # A same-value refresh mutates derived_from/confidence, so it must become the
+    # belief's last_decision_id — an audit following last_decision_id should land
+    # on the confirmation, not the older create decision.
+    store = TruthStore(conn)
+    _emit(store, "A", observed_at=T1)
+    reconcile_beliefs(conn, now=NOW)
+    create_decision = store.list_active_beliefs()[0]["last_decision_id"]
+    _emit(store, "A", observed_at=T2)  # confirming, same value
+    reconcile_beliefs(conn, now=NOW)
+    refreshed = store.list_active_beliefs()[0]
+    assert refreshed["last_decision_id"] != create_decision
+    last_rule = conn.execute(
+        "SELECT rule FROM belief_decisions WHERE decision_id = ?",
+        (refreshed["last_decision_id"],),
+    ).fetchone()
+    assert last_rule[0] == "rule_3_refresh"
+
+
 def test_rule4_unreliable_source_quarantined(conn):  # Test 7
     store = TruthStore(conn)
     _emit(store, "bad", observed_at=T1, source_type="failed")
