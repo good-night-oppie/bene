@@ -209,8 +209,13 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
             conn.commit()
             continue
 
-        # different value
-        if observed_at > (active["active_from"] or ""):
+        # different value — supersede only if this fact is newer than the LATEST
+        # evidence backing the active belief (not merely its active_from). Using
+        # active_from lets a late, out-of-order fact between two same-value
+        # observations flip the active value in a way a from-scratch replay would
+        # not, breaking replay determinism (chatgpt-codex-connector, PR #117).
+        latest_evidence = store.latest_observed_at(active)
+        if observed_at > latest_evidence:
             # ---- Rule 2: newer different value → supersede + create new active ----
             sup_decision = store.insert_decision(
                 belief_id=active["belief_id"],
@@ -278,8 +283,8 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
             from_lifecycle="active",
             to_lifecycle="active",
             reason=(
-                f"stale fact ignored: observed_at {observed_at} <= active_from"
-                f" {active['active_from']}"
+                f"stale fact ignored: observed_at {observed_at} <= latest evidence"
+                f" {latest_evidence}"
             ),
             fact_id=fid,
             admissible=(

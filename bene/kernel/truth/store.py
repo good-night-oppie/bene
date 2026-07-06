@@ -267,6 +267,30 @@ class TruthStore:
             limit=limit,
         )
 
+    def latest_observed_at(self, belief: dict) -> str:
+        """Newest observation timestamp backing ``belief`` — its latest evidence.
+
+        Returns ``MAX(observed_at)`` over every fact in the belief's
+        ``derived_from`` lineage, never earlier than ``active_from``. This is the
+        timestamp a late-arriving, out-of-order fact must beat to supersede the
+        belief; comparing against ``active_from`` alone (the FIRST supporting
+        fact) makes incremental reconciliation disagree with a from-scratch
+        replay once a same-value refresh has advanced the evidence past
+        ``active_from``. Falls back to ``active_from`` when the lineage is empty.
+        """
+        floor = belief.get("active_from") or ""
+        df = list(belief.get("derived_from") or [])
+        if not df:
+            return floor
+        placeholders = ",".join("?" for _ in df)
+        # `placeholders` is a run of bound "?" markers only; every id is bound.
+        row = self.conn.execute(
+            f"SELECT MAX(observed_at) FROM belief_facts WHERE fact_id IN ({placeholders})",  # noqa: S608
+            df,
+        ).fetchone()
+        latest = row[0] if row and row[0] is not None else ""
+        return max(latest, floor)
+
     # ---------------- decisions / conflicts queries ----------------
 
     def decisions_for(self, belief_id: str) -> list[dict]:

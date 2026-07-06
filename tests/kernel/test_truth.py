@@ -489,6 +489,39 @@ def test_stale_fact_does_not_supersede(conn):
     )
 
 
+def test_out_of_order_contradiction_after_refresh_stays_deterministic(conn, tmp_path):
+    # Incremental reconciliation must agree with a from-scratch replay: A@T1
+    # creates the belief, A@T3 refreshes it (advancing the evidence to T3), then
+    # a late B@T2 arrives out of order. B is newer than active_from (T1) but
+    # OLDER than the latest evidence (T3), so it must NOT supersede — replaying
+    # A@T1, B@T2, A@T3 in timestamp order also ends at A.
+    store = TruthStore(conn)
+    _emit(store, "A", observed_at=T1)
+    reconcile_beliefs(conn, now=NOW)
+    _emit(store, "A", observed_at=T3)  # confirming refresh advances evidence to T3
+    reconcile_beliefs(conn, now=NOW)
+    _emit(store, "B", observed_at=T2)  # late, different value, older than latest evidence
+    counts = reconcile_beliefs(conn, now=NOW)
+    assert counts["skipped"] == 1
+    assert counts["superseded"] == 0
+    actives = store.list_active_beliefs()
+    assert len(actives) == 1 and actives[0]["value"] == "A"  # NOT flipped to B
+
+    # ...and it matches the value a fresh replay of the same three facts yields.
+    other = Bene(str(tmp_path / "replay.db"))
+    try:
+        s2 = TruthStore(other.conn)
+        _emit(s2, "A", observed_at=T1)
+        _emit(s2, "B", observed_at=T2)
+        _emit(s2, "A", observed_at=T3)
+        reconcile_beliefs(other.conn, now=NOW)
+        replay_actives = s2.list_active_beliefs()
+        assert len(replay_actives) == 1
+        assert replay_actives[0]["value"] == actives[0]["value"] == "A"
+    finally:
+        other.close()
+
+
 def _key_tuples(store):
     return sorted(
         (b["subject"], b["relation"], b["scope"], b["value"], b["lifecycle"])
