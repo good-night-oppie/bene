@@ -219,7 +219,7 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
             # (deterministic max); the belief value/lifecycle are unchanged.
             refreshed_conf = max(active["confidence"], confidence)
             store.link_fact_to_belief(active["belief_id"], fid, now, confidence=refreshed_conf)
-            store.insert_decision(
+            refresh_decision = store.insert_decision(
                 belief_id=active["belief_id"],
                 rule=RULE_REFRESH,
                 from_lifecycle="active",
@@ -233,6 +233,11 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
                 ),
                 now=now,
             )
+            # A refresh mutates derived_from/confidence/updated_at, so it IS the
+            # decision that explains the belief's current evidence. Point
+            # last_decision_id at it; otherwise an audit following the belief lands
+            # on the older create/supersede decision and misses the confirmation.
+            store.set_belief_last_decision(active["belief_id"], refresh_decision)
             store.mark_fact_reconciled(fid, now)
             counts["refreshed"] += 1
             conn.commit()
