@@ -412,9 +412,19 @@ class PlasticityScanner:
         return eng
 
     def demoted_skill_ids(self) -> set[int]:
-        """Skill ids whose latest lifecycle status is demoted/retired."""
+        """Skill ids whose latest lifecycle status is demoted/retired.
+
+        "Latest" uses the canonical lifecycle ordering ``decided_at DESC,
+        lifecycle_id DESC`` (same as ``current_status()``), not ``MAX(lifecycle_id)``
+        alone: for backfilled/imported rows or a clock correction where insertion
+        order diverges from ``decided_at``, the autoincrement-max row can differ
+        from the canonically-current one, which would make this API disagree with
+        ``current_status()`` and misreport a restored skill as demoted (or vice
+        versa). ``lifecycle_id`` remains the tie-breaker for same-microsecond rows.
+        """
         rows = self.conn.execute(
             "SELECT skill_id, status FROM skill_lifecycle l WHERE lifecycle_id = ("
-            "  SELECT MAX(lifecycle_id) FROM skill_lifecycle l2 WHERE l2.skill_id = l.skill_id)"
+            "  SELECT lifecycle_id FROM skill_lifecycle l2 WHERE l2.skill_id = l.skill_id"
+            "  ORDER BY decided_at DESC, lifecycle_id DESC LIMIT 1)"
         ).fetchall()
         return {r[0] for r in rows if r[1] in (DEMOTED, RETIRED)}
