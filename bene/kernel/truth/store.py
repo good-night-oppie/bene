@@ -564,6 +564,16 @@ class TruthStore:
             (decision_id, belief_id),
         )
 
+    def set_belief_active_until(self, belief_id: str, active_until: str | None, now: str) -> None:
+        """Set a belief's TTL boundary. Unlike ``set_belief_lifecycle``'s optional
+        ``active_until``, this writes the value even when it is ``None`` (used by a
+        Rule 3 refresh whose confirming fact carries no TTL, making the belief
+        open-ended again)."""
+        self.conn.execute(
+            "UPDATE beliefs SET active_until = ?, updated_at = ? WHERE belief_id = ?",
+            (active_until, now, belief_id),
+        )
+
     def link_fact_to_belief(
         self, belief_id: str, fact_id: str, now: str, *, confidence: float | None = None
     ) -> None:
