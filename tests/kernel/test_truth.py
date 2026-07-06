@@ -495,6 +495,34 @@ def test_read_path_hides_beliefs_past_ttl_without_reconcile(conn):
     assert conn.execute("SELECT lifecycle FROM beliefs").fetchone()[0] == "active"
 
 
+def test_read_ttl_boundary_matches_reconcile_sweep(conn):
+    # At now == active_until the belief must still read as active, matching the
+    # reducer's sweep (which expires only when active_until < now). No boundary
+    # disagreement between the read overlay and reconcile.
+    store = TruthStore(conn)
+    ttl = "2026-06-10T00:00:00.000"
+    _emit(store, "A", observed_at=T1, expires_at=ttl)
+    reconcile_beliefs(conn, now="2026-06-05T00:00:00.000")
+    # exactly at the TTL instant: still visible on read...
+    assert len(store.list_active_beliefs(now=ttl)) == 1
+    # ...and a reconcile at the same instant does not expire it
+    assert reconcile_beliefs(conn, now=ttl)["expired"] == 0
+    assert conn.execute("SELECT lifecycle FROM beliefs").fetchone()[0] == "active"
+    # one instant past the TTL: hidden on read
+    assert store.list_active_beliefs(now="2026-06-10T00:00:00.001") == []
+
+
+def test_active_beliefs_limit_applies_with_ttl_filter(conn):
+    # A bounded read (`--limit`) must stay bounded: the TTL predicate is pushed
+    # into SQL so `limit` is honored by the database, not by a post-filter slice.
+    store = TruthStore(conn)
+    for i in range(5):
+        _emit(store, f"v{i}", observed_at=T1, subject=f"s{i}")
+    reconcile_beliefs(conn, now=NOW)
+    assert len(store.list_active_beliefs(now=NOW, limit=2)) == 2
+    assert len(store.list_active_beliefs(now=NOW)) == 5
+
+
 def test_expired_belief_does_not_resurrect_older_evidence(conn):
     # After a TTL'd belief expires (no active belief), a late OLDER out-of-order
     # fact must not become active — a from-scratch replay would leave it

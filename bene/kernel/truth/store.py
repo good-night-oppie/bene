@@ -251,6 +251,7 @@ class TruthStore:
         scope: str | None = None,
         lifecycle: str | None = None,
         limit: int | None = None,
+        active_as_of: str | None = None,
     ) -> list[dict]:
         clauses, params = [], []
         if subject is not None:
@@ -265,6 +266,12 @@ class TruthStore:
         if lifecycle is not None:
             clauses.append("lifecycle = ?")
             params.append(lifecycle)
+        if active_as_of is not None:
+            # TTL predicate, pushed into SQL so `limit` stays bounded. Boundary
+            # matches the reducer's expiry sweep (`active_until < now` expires),
+            # so a belief is live while active_until IS NULL or >= now.
+            clauses.append("(active_until IS NULL OR active_until >= ?)")
+            params.append(active_as_of)
         where = f" WHERE {' AND '.join(clauses)}" if clauses else ""
         # noqa: S608 — `where` is hardcoded "col = ?" fragments only; values bound via params.
         sql = f"SELECT * FROM beliefs{where} ORDER BY subject, relation, scope, created_at"  # noqa: S608
@@ -294,19 +301,20 @@ class TruthStore:
         TTL-bound belief is never READ as active past its expiry, regardless of
         when reconcile last ran (the common case: no new facts arrive after the
         TTL passes and a caller only reads). ``now`` defaults to the current
-        time. The TTL filter is applied before ``limit``.
+        time. The TTL predicate is pushed into SQL alongside ``limit`` (so a
+        bounded read stays bounded) and uses the same boundary as the reducer's
+        expiry sweep (live while ``active_until IS NULL or >= now``).
         """
         if now is None:
             now = self.now()
-        rows = self.list_beliefs(
+        return self.list_beliefs(
             subject=subject,
             relation=relation,
             scope=scope,
             lifecycle="active",
-            limit=None,
+            limit=limit,
+            active_as_of=now,
         )
-        live = [b for b in rows if b.get("active_until") is None or b["active_until"] > now]
-        return live[:limit] if limit is not None else live
 
     def latest_evidence_key(self, belief: dict) -> tuple[str, str]:
         """Canonical sort key ``(observed_at, value_hash)`` of the newest fact
