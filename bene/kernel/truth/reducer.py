@@ -264,10 +264,15 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
                 admissible=_ADMIT_NONE,
                 now=now,
             )
+            # End the old belief at the REPLACEMENT observation time, not the
+            # reducer's wall-clock `now`. The new belief is active_from=observed_at;
+            # using `now` (which can be far later, e.g. a batch reconcile at T15
+            # for a fact observed at T2) would leave the two beliefs' active
+            # intervals overlapping for the same key.
             store.set_belief_lifecycle(
                 active["belief_id"],
                 "superseded",
-                active_until=now,
+                active_until=observed_at,
                 admissible=_ADMIT_NONE,
                 last_decision_id=sup_decision,
                 now=now,

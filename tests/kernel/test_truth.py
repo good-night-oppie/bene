@@ -326,6 +326,24 @@ def test_rule2_supersede(conn):  # Test 5
     )
 
 
+def test_supersede_ends_old_belief_at_replacement_time(conn):
+    # The superseded belief's active_until must be the REPLACING fact's
+    # observed_at (T2), not the reducer's wall-clock `now` (NOW, far later), so the
+    # old and new beliefs' active intervals abut instead of overlapping.
+    store = TruthStore(conn)
+    _emit(store, "A", observed_at=T1)
+    reconcile_beliefs(conn, now=NOW)
+    _emit(store, "B", observed_at=T2)
+    reconcile_beliefs(conn, now=NOW)  # NOW (2026-06-15) is far after T2
+    superseded = store.list_beliefs(lifecycle="superseded")
+    assert len(superseded) == 1 and superseded[0]["value"] == "A"
+    assert superseded[0]["active_until"] == T2  # replacement time, NOT NOW
+    new_active = store.list_active_beliefs()[0]
+    assert new_active["value"] == "B" and new_active["active_from"] == T2
+    # intervals abut on T2 — no overlapping truth for the same key
+    assert superseded[0]["active_until"] == new_active["active_from"]
+
+
 def test_rule3_same_value_no_duplicate(conn):  # Test 6
     store = TruthStore(conn)
     f1 = _emit(store, "A", observed_at=T1)
