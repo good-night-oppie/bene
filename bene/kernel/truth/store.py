@@ -284,14 +284,28 @@ class TruthStore:
         relation: str | None = None,
         scope: str | None = None,
         limit: int | None = None,
+        now: str | None = None,
     ) -> list[dict]:
-        return self.list_beliefs(
+        """Currently-active beliefs, with TTL-elapsed rows excluded.
+
+        A belief whose ``active_until`` has passed as of ``now`` is filtered out
+        even if a reconcile sweep has not yet demoted its lifecycle row — so a
+        TTL-bound belief is never READ as active past its expiry, regardless of
+        when reconcile last ran (the common case: no new facts arrive after the
+        TTL passes and a caller only reads). ``now`` defaults to the current
+        time. The TTL filter is applied before ``limit``.
+        """
+        if now is None:
+            now = self.now()
+        rows = self.list_beliefs(
             subject=subject,
             relation=relation,
             scope=scope,
             lifecycle="active",
-            limit=limit,
+            limit=None,
         )
+        live = [b for b in rows if b.get("active_until") is None or b["active_until"] > now]
+        return live[:limit] if limit is not None else live
 
     def latest_evidence_key(self, belief: dict) -> tuple[str, str]:
         """Canonical sort key ``(observed_at, value_hash)`` of the newest fact
