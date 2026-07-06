@@ -216,6 +216,12 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
                 counts["skipped"] += 1
                 conn.commit()
                 continue
+            # Clamp active_from so a resurrected belief (created after a prior
+            # same-key belief superseded/expired) abuts that prior interval rather
+            # than overlapping it: a late fact observed before the prior interval
+            # ended must not claim to have been true during it. For a first-ever
+            # create there is no prior interval, so this is a no-op.
+            active_from = max(observed_at, store.latest_interval_end(subject, relation, scope))
             bid = store.insert_belief(
                 subject=subject,
                 relation=relation,
@@ -224,7 +230,7 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
                 scope=scope,
                 lifecycle="active",
                 confidence=confidence,
-                active_from=observed_at,
+                active_from=active_from,
                 active_until=expires_at,
                 derived_from=[fid],
                 admissible=_ADMIT_ACTIVE,

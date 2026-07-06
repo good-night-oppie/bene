@@ -568,6 +568,25 @@ def test_late_fact_suppressed_when_newer_valid_belief_removed_out_of_band(conn):
     assert store.list_active_beliefs(now=NOW) == []
 
 
+def test_resurrected_belief_abuts_expired_interval(conn):
+    # When a late fact IS created active after a prior same-key belief expired,
+    # its active interval must ABUT the expired one, not overlap it: B was
+    # observed before A's interval ended, but it must not claim to have been true
+    # while A actually was (same invariant as test_supersede_ends_old_belief...).
+    store = TruthStore(conn)
+    _emit(store, "A", observed_at="2026-01-02T00:00:00.000", expires_at="2026-01-10T00:00:00.000")
+    reconcile_beliefs(conn, now="2026-01-05T00:00:00.000")  # active A [Jan2, Jan10]
+    reconcile_beliefs(conn, now="2026-01-11T00:00:00.000")  # sweep expires A
+    _emit(store, "B", observed_at="2026-01-01T00:00:00.000")  # late, older than A's interval end
+    reconcile_beliefs(conn, now="2026-01-11T00:00:00.000")
+    b = store.list_active_beliefs(now="2026-01-11T00:00:00.000")[0]
+    assert b["value"] == "B"
+    a = store.list_beliefs(lifecycle="expired")[0]
+    assert a["value"] == "A" and a["active_until"] == "2026-01-10T00:00:00.000"
+    # B's active_from is clamped up to A's interval end — intervals abut, no overlap
+    assert b["active_from"] == a["active_until"]
+
+
 def test_rule10_manual_quarantine(conn):  # Test 9
     store = TruthStore(conn)
     _emit(store, "green", observed_at=T1)

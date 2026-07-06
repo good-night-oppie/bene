@@ -408,6 +408,22 @@ class TruthStore:
         ).fetchone()
         return row is not None
 
+    def latest_interval_end(self, subject: str, relation: str, scope: str) -> str:
+        """The latest ``active_until`` across the key's non-active (superseded /
+        expired / quarantined) beliefs, or ``""`` if none.
+
+        Used to clamp a resurrected belief's ``active_from`` so its active
+        interval abuts, rather than overlaps, a prior belief's interval for the
+        same key (same invariant as Rule 2's supersede bookkeeping). Beliefs with
+        ``active_until IS NULL`` are ignored (an open interval has no end).
+        """
+        row = self.conn.execute(
+            "SELECT MAX(active_until) FROM beliefs"
+            " WHERE subject = ? AND relation = ? AND scope = ? AND active_until IS NOT NULL",
+            (subject, relation, scope),
+        ).fetchone()
+        return row[0] if row and row[0] is not None else ""
+
     def expired_active_beliefs(self, now: str) -> list[dict]:
         """Active beliefs whose TTL (``active_until``) has elapsed as of ``now``.
 
