@@ -291,6 +291,25 @@ class TruthStore:
         latest = row[0] if row and row[0] is not None else ""
         return max(latest, floor)
 
+    def expired_active_beliefs(self, now: str) -> list[dict]:
+        """Active beliefs whose TTL (``active_until``) has elapsed as of ``now``.
+
+        Ordered deterministically by key so the reducer's expiry sweep is
+        replay-stable. Beliefs with ``active_until IS NULL`` (no TTL) are never
+        returned. ISO timestamps compare chronologically as text.
+        """
+        cur = self.conn.execute(
+            "SELECT * FROM beliefs WHERE lifecycle = 'active'"
+            " AND active_until IS NOT NULL AND active_until < ?"
+            " ORDER BY subject, relation, scope, belief_id",
+            (now,),
+        )
+        rows = cur.fetchall()
+        return [
+            _decode_value_field(_parse_json_cols(_row_to_dict(cur, r), _JSON_BELIEF_COLS))
+            for r in rows
+        ]
+
     # ---------------- decisions / conflicts queries ----------------
 
     def decisions_for(self, belief_id: str) -> list[dict]:

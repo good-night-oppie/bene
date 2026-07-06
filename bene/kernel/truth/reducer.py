@@ -72,7 +72,35 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
         "quarantined": 0,
         "rejected": 0,
         "skipped": 0,
+        "expired": 0,
     }
+
+    # ---- Rule 5 (belief side): expire active beliefs past their TTL first ----
+    # A fact carrying a future ``expires_at`` propagates that TTL onto the active
+    # belief's ``active_until`` (below). A later reconcile whose ``now`` is past
+    # that instant must demote the belief before reading facts, or it stays
+    # active + admissible for promotion/action past its time-to-live.
+    for stale in store.expired_active_beliefs(now):
+        exp_decision = store.insert_decision(
+            belief_id=stale["belief_id"],
+            rule=RULE_EXPIRED,
+            from_lifecycle="active",
+            to_lifecycle="expired",
+            reason=f"belief TTL elapsed at {stale['active_until']} (now={now})",
+            fact_id=None,
+            admissible=_ADMIT_NONE,
+            now=now,
+        )
+        store.set_belief_lifecycle(
+            stale["belief_id"],
+            "expired",
+            admissible=_ADMIT_NONE,
+            last_decision_id=exp_decision,
+            now=now,
+        )
+        counts["expired"] += 1
+    if counts["expired"]:
+        conn.commit()
 
     for fact in store.unreconciled_facts():
         subject, relation, scope = fact["subject"], fact["relation"], fact["scope"]
@@ -81,6 +109,7 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
         value = fact["value"]
         confidence = fact["confidence"]
         observed_at = fact["observed_at"]
+        expires_at = fact.get("expires_at")
 
         active = store.get_active_belief(subject, relation, scope)
 
@@ -162,7 +191,7 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
                 lifecycle="active",
                 confidence=confidence,
                 active_from=observed_at,
-                active_until=None,
+                active_until=expires_at,
                 derived_from=[fid],
                 admissible=_ADMIT_ACTIVE,
                 now=now,
@@ -244,7 +273,7 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
                 lifecycle="active",
                 confidence=confidence,
                 active_from=observed_at,
-                active_until=None,
+                active_until=expires_at,
                 derived_from=[fid],
                 admissible=_ADMIT_ACTIVE,
                 now=now,
