@@ -3666,5 +3666,231 @@ def _kernel_story() -> None:
     )
 
 
+@cli.group("belief")
+def belief():
+    """Deterministic truth maintenance — facts, beliefs, decisions, admissibility.
+
+    BENE engrams remember what happened; facts structure it; the reducer
+    reconciles facts into beliefs (the current accepted state); every lifecycle
+    transition is explained by a stored decision. No LLM, no network — boring,
+    auditable, replayable.
+    """
+
+
+@belief.command("emit")
+@click.option(
+    "--json",
+    "payload",
+    default=None,
+    help="Fact payload as a JSON object (use '-' or omit to read from stdin). "
+    "NOTE: this is the INPUT fact; the global `bene --json ...` flag controls OUTPUT.",
+)
+@click.option("--db", default=DEFAULT_DB, help="Database file path")
+@click.pass_context
+def belief_emit(ctx, payload: str | None, db: str):
+    """Emit a fact: bene belief emit --json '{"kind":"observation","subject":...}'."""
+    from bene.kernel.truth import InvalidFact, ensure_truth
+    from bene.kernel.truth import emit_fact as _emit_fact
+
+    if payload is None or payload == "-":
+        payload = sys.stdin.read()
+    try:
+        data = json.loads(payload)
+    except (ValueError, TypeError) as e:
+        if not _json_err(ctx, f"invalid JSON payload: {e}"):
+            console.print(f"[red]Error:[/red] invalid JSON payload: {e}")
+            sys.exit(1)
+        return
+    if not isinstance(data, dict):
+        if not _json_err(ctx, "fact payload must be a JSON object"):
+            console.print("[red]Error:[/red] fact payload must be a JSON object")
+            sys.exit(1)
+        return
+    afs = _get_afs(db)
+    try:
+        ensure_truth(afs.conn)
+        try:
+            fid = _emit_fact(afs.conn, **data)
+        except (InvalidFact, TypeError, ValueError) as e:
+            if not _json_err(ctx, str(e)):
+                console.print(f"[red]Error:[/red] {e}")
+                sys.exit(1)
+            return
+        if _json_out(ctx, {"fact_id": fid}):
+            return
+        console.print(f"[green]Fact emitted[/green]  fact_id={fid}")
+    finally:
+        afs.close()
+
+
+@belief.command("reconcile")
+@click.option("--db", default=DEFAULT_DB, help="Database file path")
+@click.pass_context
+def belief_reconcile(ctx, db: str):
+    """Run the deterministic reducer over all unreconciled facts."""
+    from bene.kernel.truth import ensure_truth
+    from bene.kernel.truth import reconcile_beliefs as _reconcile
+
+    afs = _get_afs(db)
+    try:
+        ensure_truth(afs.conn)
+        counts = _reconcile(afs.conn)
+        if _json_out(ctx, counts):
+            return
+        console.print(
+            "[green]Reconciled[/green]  " + "  ".join(f"{k}={v}" for k, v in counts.items())
+        )
+    finally:
+        afs.close()
+
+
+@belief.command("ls")
+@click.option("--subject", default=None, help="Filter by subject")
+@click.option("--relation", default=None, help="Filter by relation")
+@click.option("--scope", default=None, help="Filter by scope")
+@click.option("--lifecycle", default=None, help="Filter by lifecycle state")
+@click.option("--limit", "-n", default=None, type=int, help="Max rows")
+@click.option("--db", default=DEFAULT_DB, help="Database file path")
+@click.pass_context
+def belief_ls(ctx, subject, relation, scope, lifecycle, limit, db: str):
+    """List beliefs (all lifecycles)."""
+    from bene.kernel.truth import ensure_truth
+    from bene.kernel.truth import list_beliefs as _list_beliefs
+
+    afs = _get_afs(db)
+    try:
+        ensure_truth(afs.conn)
+        rows = _list_beliefs(
+            afs.conn,
+            subject=subject,
+            relation=relation,
+            scope=scope,
+            lifecycle=lifecycle,
+            limit=limit,
+        )
+        if _json_out(ctx, rows):
+            return
+        _print_beliefs(rows)
+    finally:
+        afs.close()
+
+
+@belief.command("active")
+@click.option("--subject", default=None, help="Filter by subject")
+@click.option("--relation", default=None, help="Filter by relation")
+@click.option("--scope", default=None, help="Filter by scope")
+@click.option("--limit", "-n", default=None, type=int, help="Max rows")
+@click.option("--db", default=DEFAULT_DB, help="Database file path")
+@click.pass_context
+def belief_active(ctx, subject, relation, scope, limit, db: str):
+    """List only the current accepted (active) beliefs."""
+    from bene.kernel.truth import ensure_truth
+    from bene.kernel.truth import list_active_beliefs as _list_active
+
+    afs = _get_afs(db)
+    try:
+        ensure_truth(afs.conn)
+        rows = _list_active(afs.conn, subject=subject, relation=relation, scope=scope, limit=limit)
+        if _json_out(ctx, rows):
+            return
+        _print_beliefs(rows)
+    finally:
+        afs.close()
+
+
+@belief.command("explain")
+@click.argument("belief_id")
+@click.option("--db", default=DEFAULT_DB, help="Database file path")
+@click.pass_context
+def belief_explain(ctx, belief_id: str, db: str):
+    """Explain a belief: its source facts, decisions, conflicts, admissibility."""
+    from bene.kernel.truth import ensure_truth
+    from bene.kernel.truth import explain_belief as _explain
+
+    afs = _get_afs(db)
+    try:
+        ensure_truth(afs.conn)
+        ex = _explain(afs.conn, belief_id)
+        if ex is None:
+            if not _json_err(ctx, f"belief not found: {belief_id}"):
+                console.print(f"[red]Error:[/red] belief not found: {belief_id}")
+                sys.exit(1)
+            return
+        if _json_out(ctx, ex):
+            return
+        b = ex["belief"]
+        console.print(
+            f"[bold cyan]{b['belief_id']}[/bold cyan]  "
+            f"[yellow]{b['lifecycle']}[/yellow]  "
+            f"{b['subject']} · {b['relation']} · {b['scope']} = {b['value']!r}"
+        )
+        adm = ex["admissibility"]
+        console.print(
+            f"  admissible: context={adm['context']} promotion={adm['promotion']} "
+            f"action={adm['action']}"
+        )
+        console.print(f"  facts ({len(ex['facts'])}):")
+        for f in ex["facts"]:
+            console.print(
+                f"    [dim]{f['observed_at']}[/dim] {f['kind']} = {f['value']!r} "
+                f"[dim](src={f.get('source_type')})[/dim]"
+            )
+        console.print(f"  decisions ({len(ex['decisions'])}):")
+        for d in ex["decisions"]:
+            console.print(
+                f"    {d['rule']}: {d['from_lifecycle']} -> {d['to_lifecycle']}"
+                f"  [dim]{d['reason']}[/dim]"
+            )
+        if ex["conflicts"]:
+            console.print(f"  conflicts ({len(ex['conflicts'])}):")
+            for c in ex["conflicts"]:
+                console.print(f"    {c['kind']} -> {c['resolution']}")
+    finally:
+        afs.close()
+
+
+@belief.command("quarantine")
+@click.argument("belief_id")
+@click.option("--reason", required=True, help="Why this belief is being quarantined")
+@click.option("--db", default=DEFAULT_DB, help="Database file path")
+@click.pass_context
+def belief_quarantine(ctx, belief_id: str, reason: str, db: str):
+    """Manually quarantine a belief (Rule 10) — overrides active, records a decision."""
+    from bene.kernel.truth import ensure_truth
+    from bene.kernel.truth import quarantine_belief as _quarantine
+
+    afs = _get_afs(db)
+    try:
+        ensure_truth(afs.conn)
+        res = _quarantine(afs.conn, belief_id, reason=reason)
+        if res["status"] == "not_found":
+            if not _json_err(ctx, f"belief not found: {belief_id}"):
+                console.print(f"[red]Error:[/red] belief not found: {belief_id}")
+                sys.exit(1)
+            return
+        if _json_out(ctx, res):
+            return
+        if res["status"] == "already_quarantined":
+            console.print(f"[yellow]Already quarantined:[/yellow] {belief_id}")
+        else:
+            console.print(f"[green]Quarantined[/green]  {belief_id}  reason={reason!r}")
+    finally:
+        afs.close()
+
+
+def _print_beliefs(rows: list) -> None:
+    if not rows:
+        console.print("[dim]No beliefs[/dim]")
+        return
+    for b in rows:
+        console.print(
+            f"[bold cyan]{b['belief_id']}[/bold cyan]  "
+            f"[yellow]{b['lifecycle']:<11}[/yellow]  "
+            f"{b['subject']} · {b['relation']} · {b['scope']} = {b['value']!r}  "
+            f"[dim]ctx={b['admissible_for_context']} "
+            f"promo={b['admissible_for_promotion']} act={b['admissible_for_action']}[/dim]"
+        )
+
+
 if __name__ == "__main__":
     cli()
