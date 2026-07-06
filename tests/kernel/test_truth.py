@@ -374,6 +374,52 @@ def test_rule5_expired_fact_no_active(conn):  # Test 8
     )
 
 
+def test_future_ttl_propagates_to_belief_active_until(conn):
+    # A fact that is NOT expired at reconcile time but carries a future
+    # expires_at must propagate that TTL onto the active belief's active_until,
+    # not create an indefinitely-active belief.
+    store = TruthStore(conn)
+    _emit(store, "A", observed_at=T1, expires_at="2027-01-01T00:00:00.000")
+    counts = reconcile_beliefs(conn, now=NOW)  # NOW (2026-06-15) < TTL → active
+    assert counts["created"] == 1
+    actives = store.list_active_beliefs()
+    assert len(actives) == 1
+    assert actives[0]["active_until"] == "2027-01-01T00:00:00.000"  # TTL kept, not None
+    assert actives[0]["admissible_for_promotion"] == 1
+
+
+def test_belief_expires_when_ttl_elapses(conn):
+    # Reconcile before the TTL: belief is active. A later reconcile whose `now`
+    # is past the TTL must demote it to `expired` and strip admissibility, even
+    # though the source fact was already consumed.
+    store = TruthStore(conn)
+    _emit(store, "A", observed_at=T1, expires_at="2026-06-10T00:00:00.000")
+    c1 = reconcile_beliefs(conn, now="2026-06-05T00:00:00.000")  # before TTL
+    assert c1["created"] == 1
+    assert len(store.list_active_beliefs()) == 1
+
+    c2 = reconcile_beliefs(conn, now="2026-06-20T00:00:00.000")  # past TTL
+    assert c2["expired"] == 1
+    assert store.list_active_beliefs() == []  # no longer active
+    expired = store.list_beliefs(lifecycle="expired")
+    assert len(expired) == 1
+    assert (
+        expired[0]["admissible_for_context"],
+        expired[0]["admissible_for_promotion"],
+        expired[0]["admissible_for_action"],
+    ) == (0, 0, 0)
+    # the demotion is explained (Rule 8) and points at the belief, not a fact
+    row = conn.execute(
+        "SELECT belief_id, fact_id FROM belief_decisions"
+        " WHERE rule='rule_5_expired' AND to_lifecycle='expired'"
+    ).fetchall()
+    assert len(row) == 1 and row[0][0] == expired[0]["belief_id"] and row[0][1] is None
+
+    # idempotent: a third reconcile at the same `now` expires nothing new
+    c3 = reconcile_beliefs(conn, now="2026-06-20T00:00:00.000")
+    assert c3["expired"] == 0
+
+
 def test_rule10_manual_quarantine(conn):  # Test 9
     store = TruthStore(conn)
     _emit(store, "green", observed_at=T1)
@@ -642,6 +688,7 @@ def test_empty_reconcile_is_all_zero(conn):
         "quarantined": 0,
         "rejected": 0,
         "skipped": 0,
+        "expired": 0,
     }
 
 
