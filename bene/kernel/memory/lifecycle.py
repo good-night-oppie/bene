@@ -283,7 +283,7 @@ class ScheduledConsolidator:
             "   SELECT 1 FROM engram_links l"
             "   WHERE l.dst_id=e.engram_id AND l.link_type='consolidates'"
             " )"
-            " ORDER BY e.created_at ASC, e.engram_id ASC"
+            " ORDER BY e.created_at ASC, e.rowid ASC"
         ).fetchall()
         candidates: list[dict[str, Any]] = []
         for row in rows:
