@@ -348,25 +348,25 @@ class Bene:
         if path == "/":
             prefix = "/"
 
-        rows = self.conn.execute(
+        cursor = self.conn.execute(
             "SELECT path, is_dir, size, modified_at, version FROM files "
             "WHERE agent_id = ? AND deleted = 0 "
             "AND path LIKE ? AND path != ? "
             "AND path NOT LIKE ? "
             "ORDER BY path",
             (agent_id, prefix + "%", path, prefix + "%/%"),
-        ).fetchall()
+        )
 
         return [
             {
                 "path": r[0],
-                "name": PurePosixPath(r[0]).name,
+                "name": r[0].rsplit("/", 1)[-1] if r[0] != "/" else "",
                 "is_dir": bool(r[1]),
                 "size": r[2],
                 "modified_at": r[3],
                 "version": r[4],
             }
-            for r in rows
+            for r in cursor
         ]
 
     def stat(self, agent_id: str, path: str) -> dict:
@@ -416,12 +416,29 @@ class Bene:
         self.conn.commit()
 
     def _ensure_parents(self, agent_id: str, path: str) -> None:
-        """Recursively create parent directories if they don't exist."""
-        parts = PurePosixPath(path).parts
-        for i in range(1, len(parts)):
-            parent = str(PurePosixPath(*parts[:i]))
-            if parent == ".":
-                parent = "/"
+        """Recursively create parent directories if they don't exist.
+
+        Assumes path has been canonicalized via _normalize_path (always begins
+        with '/' and never has a trailing slash).
+        """
+        if path == "/":
+            return
+
+        current = path.rsplit("/", 1)[0]
+        if not current:
+            current = "/"
+
+        if self.exists(agent_id, current):
+            return
+
+        parents = [current]
+        while current != "/":
+            current = current.rsplit("/", 1)[0]
+            if not current:
+                current = "/"
+            parents.append(current)
+
+        for parent in reversed(parents):
             if not self.exists(agent_id, parent):
                 self.conn.execute(
                     "INSERT OR IGNORE INTO files (agent_id, path, is_dir) VALUES (?, ?, 1)",
