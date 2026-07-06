@@ -158,6 +158,32 @@ def test_restore_reactivates(db, store, skills, agent):
     assert sid not in sc.demoted_skill_ids()
 
 
+def test_demoted_ids_use_decided_at_ordering_not_max_id(db, store, skills, agent):
+    # A backfilled/imported lifecycle row can have a HIGHER autoincrement id but an
+    # OLDER decided_at. demoted_skill_ids must agree with current_status: both pick
+    # the canonically-latest row by (decided_at DESC, lifecycle_id DESC), not
+    # MAX(lifecycle_id) — otherwise a restored skill is misreported as demoted.
+    sid = _skill(skills, agent)
+    sc = _scanner(db, store)  # constructing the scanner creates skill_lifecycle
+    conn = db.conn
+    ins = (
+        "INSERT INTO skill_lifecycle (skill_id, status, reason, decided_by, decided_at)"
+        " VALUES (?,?,?,?,?)"
+    )
+    conn.execute(ins, (sid, "demoted", "degraded", "policy:test", "2026-01-01T00:00:00.000"))
+    conn.execute(ins, (sid, "restored", "human review", "human:eddie", "2026-02-01T00:00:00.000"))
+    # backfilled OLD demoted audit row, inserted LAST (highest lifecycle_id)
+    conn.execute(
+        ins, (sid, "demoted", "backfilled audit", "import:legacy", "2025-12-01T00:00:00.000")
+    )
+    conn.commit()
+
+    # canonically current = the Feb-1 restore, so the skill is NOT demoted;
+    # MAX(lifecycle_id) would wrongly pick the backfilled Dec-1 demoted row
+    assert sc.current_status(sid) == "restored"
+    assert sid not in sc.demoted_skill_ids()
+
+
 # ---------------- supersede gate ----------------
 
 
