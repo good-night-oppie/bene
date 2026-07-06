@@ -194,6 +194,28 @@ def reconcile_beliefs(conn: sqlite3.Connection, *, now: str | None = None) -> di
 
         # ---- Rule 1: no active belief → create one ----
         if active is None:
+            # ...unless the key already has NEWER valid evidence whose belief was
+            # since superseded or TTL-expired (leaving no active belief). This
+            # older, out-of-order fact is stale — a from-scratch replay processes
+            # the newer fact last and leaves this one superseded/expired, not
+            # active — so record it as ignored instead of resurrecting stale truth.
+            if store.has_newer_key_evidence(subject, relation, scope, observed_at, vhash, fid):
+                store.insert_decision(
+                    belief_id=None,
+                    rule=RULE_STALE_IGNORED,
+                    from_lifecycle=None,
+                    to_lifecycle=None,
+                    reason=(
+                        f"stale: newer evidence exists for key; not resurrecting"
+                        f" ({observed_at}, {vhash})"
+                    ),
+                    fact_id=fid,
+                    admissible=_ADMIT_NONE,
+                    now=now,
+                )
+                counts["skipped"] += 1
+                conn.commit()
+                continue
             bid = store.insert_belief(
                 subject=subject,
                 relation=relation,

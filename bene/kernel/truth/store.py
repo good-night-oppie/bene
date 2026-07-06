@@ -349,6 +349,53 @@ class TruthStore:
         latest = row[0] if row and row[0] is not None else ""
         return (max(latest, floor), vhash)
 
+    def has_newer_key_evidence(
+        self,
+        subject: str,
+        relation: str,
+        scope: str,
+        observed_at: str,
+        value_hash: str,
+        fact_id: str,
+    ) -> bool:
+        """True if a VALID reconciled fact for the key sorts AFTER
+        ``(observed_at, value_hash, fact_id)`` in the reducer's canonical order.
+
+        Used by Rule 1 to stop a late, out-of-order fact from resurrecting as
+        active when the key already has newer evidence whose belief has since been
+        superseded or TTL-expired (leaving no active belief). A from-scratch
+        replay would process that newer fact last and leave this older one
+        superseded/expired, not active. Same supporting-fact filter as
+        ``latest_evidence_key`` (quarantined / reconcile-time-expired facts don't
+        count); fixed parameter count.
+        """
+        unreliable = sorted(UNRELIABLE_SOURCE_TYPES)
+        src_placeholders = ",".join("?" for _ in unreliable)
+        row = self.conn.execute(
+            "SELECT 1 FROM belief_facts"
+            " WHERE subject = ? AND relation = ? AND scope = ?"
+            " AND reconciled_at IS NOT NULL AND unsafe = 0"
+            " AND (expires_at IS NULL OR expires_at >= reconciled_at)"
+            f" AND (source_type IS NULL OR source_type NOT IN ({src_placeholders}))"  # noqa: S608
+            " AND (observed_at > ?"
+            "      OR (observed_at = ? AND value_hash > ?)"
+            "      OR (observed_at = ? AND value_hash = ? AND fact_id > ?))"
+            " LIMIT 1",
+            (
+                subject,
+                relation,
+                scope,
+                *unreliable,
+                observed_at,
+                observed_at,
+                value_hash,
+                observed_at,
+                value_hash,
+                fact_id,
+            ),
+        ).fetchone()
+        return row is not None
+
     def expired_active_beliefs(self, now: str) -> list[dict]:
         """Active beliefs whose TTL (``active_until``) has elapsed as of ``now``.
 
