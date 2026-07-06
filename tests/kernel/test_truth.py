@@ -433,11 +433,11 @@ def test_belief_expires_when_ttl_elapses(conn):
     _emit(store, "A", observed_at=T1, expires_at="2026-06-10T00:00:00.000")
     c1 = reconcile_beliefs(conn, now="2026-06-05T00:00:00.000")  # before TTL
     assert c1["created"] == 1
-    assert len(store.list_active_beliefs()) == 1
+    assert len(store.list_active_beliefs(now="2026-06-05T00:00:00.000")) == 1
 
     c2 = reconcile_beliefs(conn, now="2026-06-20T00:00:00.000")  # past TTL
     assert c2["expired"] == 1
-    assert store.list_active_beliefs() == []  # no longer active
+    assert store.list_active_beliefs(now="2026-06-20T00:00:00.000") == []  # no longer active
     expired = store.list_beliefs(lifecycle="expired")
     assert len(expired) == 1
     assert (
@@ -455,6 +455,22 @@ def test_belief_expires_when_ttl_elapses(conn):
     # idempotent: a third reconcile at the same `now` expires nothing new
     c3 = reconcile_beliefs(conn, now="2026-06-20T00:00:00.000")
     assert c3["expired"] == 0
+
+
+def test_read_path_hides_beliefs_past_ttl_without_reconcile(conn):
+    # TTL must be enforced on the READ path, not only during a reconcile sweep:
+    # if no new facts arrive after the TTL passes, a caller that only reads active
+    # beliefs must still not see the expired one.
+    store = TruthStore(conn)
+    _emit(store, "A", observed_at=T1, expires_at="2026-06-10T00:00:00.000")
+    reconcile_beliefs(conn, now="2026-06-05T00:00:00.000")  # before TTL → active
+    # before expiry: visible
+    assert len(store.list_active_beliefs(now="2026-06-08T00:00:00.000")) == 1
+    # after expiry, WITHOUT a second reconcile: the read path hides it
+    assert store.list_active_beliefs(now="2026-06-20T00:00:00.000") == []
+    # the lifecycle row is still 'active' until a sweep runs — the read overlay
+    # is what makes TTL authoritative for callers
+    assert conn.execute("SELECT lifecycle FROM beliefs").fetchone()[0] == "active"
 
 
 def test_rule10_manual_quarantine(conn):  # Test 9
