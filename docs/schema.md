@@ -51,7 +51,6 @@ Two conventions hold everywhere:
 
 bene's audit trail. Every move an agent makes — file writes, tool calls, lifecycle transitions, checkpoints — is appended here and never rewritten, so the journal you query is exactly what happened.
 
-
 ```sql
 CREATE TABLE IF NOT EXISTS events (
     event_id        INTEGER PRIMARY KEY AUTOINCREMENT,
