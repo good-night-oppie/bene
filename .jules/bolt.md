@@ -1,0 +1,3 @@
+## 2024-07-08 - Batched Database Queries for N+1 performance optimization in EngramStore.lineage
+**Learning:** Calling `self.get()` in a list comprehension performs N+1 queries under the hood, significantly hurting performance when deep lineages are walked over. Even though `get()` triggers a cache-like `flush()`, it still causes an N+1 SQLite execution roundtrip. This was observed in `bene/kernel/engrams.py`.
+**Action:** Replace iterative query fetching (`return [self.get(eid) for eid in ordered]`) by collecting the identifiers and executing a single parameterized batched `IN` query. This yields significant performance improvements without altering graph search logic.

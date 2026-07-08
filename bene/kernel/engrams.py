@@ -334,7 +334,20 @@ class EngramStore:
             frontier = [r[0] for r in rows if r[0] not in seen]
             seen.update(frontier)
             ordered.extend(frontier)
-        return [self.get(eid) for eid in ordered]
+
+        if not ordered:
+            return []
+
+        placeholders = ",".join("?" * len(ordered))
+        rows = self.conn.execute(
+            "SELECT engram_id, kind, tier, title, content_hash, inline_body, "
+            "metadata, provenance, agent_id, created_at, superseded_by "
+            f"FROM engrams WHERE engram_id IN ({placeholders})",
+            ordered,
+        ).fetchall()
+
+        row_map = {r[0]: r for r in rows}
+        return [self._to_engram(row_map[eid]) for eid in ordered if eid in row_map]
 
     # ---------------- promotion / linking ----------------
 
