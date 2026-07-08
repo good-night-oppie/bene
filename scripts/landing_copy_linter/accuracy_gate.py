@@ -85,7 +85,8 @@ def cmd_register():
 
 
 def cmd_check():
-    GATE_DB.parent.mkdir(parents=True, exist_ok=True)
+    if not GATE_DB.exists():
+        cmd_register()
     db = Bene(str(GATE_DB))
     store = _store(db)
     registered = db.conn.execute(
