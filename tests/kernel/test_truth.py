@@ -495,6 +495,17 @@ def test_read_path_hides_beliefs_past_ttl_without_reconcile(conn):
     assert conn.execute("SELECT lifecycle FROM beliefs").fetchone()[0] == "active"
 
 
+def test_lifecycle_active_list_hides_beliefs_past_ttl_without_reconcile(conn, monkeypatch):
+    # `list_beliefs(lifecycle="active")` is also an active-truth read path, so it
+    # must apply the same TTL overlay as `list_active_beliefs()`.
+    store = TruthStore(conn)
+    _emit(store, "A", observed_at=T1, expires_at="2026-06-10T00:00:00.000")
+    reconcile_beliefs(conn, now="2026-06-05T00:00:00.000")
+
+    monkeypatch.setattr(store, "now", lambda: "2026-06-20T00:00:00.000")
+    assert store.list_beliefs(lifecycle="active") == []
+
+
 def test_read_ttl_boundary_matches_reconcile_sweep(conn):
     # At now == active_until the belief must still read as active, matching the
     # reducer's sweep (which expires only when active_until < now). No boundary
