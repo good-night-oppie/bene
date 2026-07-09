@@ -85,8 +85,23 @@ def cmd_register():
 
 
 def cmd_check():
+    GATE_DB.parent.mkdir(parents=True, exist_ok=True)
     db = Bene(str(GATE_DB))
     store = _store(db)
+    registered = db.conn.execute(
+        "SELECT 1 FROM probe_registry WHERE name=?", (PROBE_NAME,)
+    ).fetchone()
+    if registered is None:
+        cand = store.append(
+            "strategic",
+            "landing-docs-accuracy-deliverable",
+            "shipped copy resolves + doc numbers match the real db",
+            tier=4,
+            provenance={"agent_id": "harness-7"},
+        )
+        Probe(PROBE_NAME, GATES, measure).register(
+            store, db.conn, baseline="baseline", subject_ref=cand
+        )
     probe = Probe(PROBE_NAME, GATES, measure)
     v = probe.run("live", "baseline", store=store, conn=db.conn)
     m = measure("live")
