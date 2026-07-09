@@ -266,6 +266,8 @@ class TruthStore:
         if lifecycle is not None:
             clauses.append("lifecycle = ?")
             params.append(lifecycle)
+            if lifecycle == "active" and active_as_of is None:
+                active_as_of = self.now()
         if active_as_of is not None:
             # TTL predicate, pushed into SQL so `limit` stays bounded. Boundary
             # matches the reducer's expiry sweep (`active_until < now` expires),

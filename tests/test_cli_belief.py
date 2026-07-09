@@ -7,6 +7,7 @@ exercised exactly as a user would. JSON output is parsed to prove it is valid.
 from __future__ import annotations
 
 import json
+import sqlite3
 
 import pytest
 from click.testing import CliRunner
@@ -90,6 +91,30 @@ def test_active_and_ls(runner, db):
     assert len(actives) == 1 and actives[0]["value"] == "green"
     rl = runner.invoke(cli, ["--json", "belief", "ls", "--db", db])
     assert len(json.loads(rl.output)) == 1
+
+
+def test_ls_lifecycle_active_hides_ttl_expired_rows(runner, db):
+    _emit(
+        runner,
+        db,
+        kind="observation",
+        subject="svc",
+        relation="status",
+        value="up",
+        observed_at="2026-06-01T00:00:00.000",
+        expires_at="2999-01-01T00:00:00.000",
+    )
+    r = runner.invoke(cli, ["belief", "reconcile", "--db", db])
+    assert r.exit_code == 0, r.output
+    with sqlite3.connect(db) as conn:
+        conn.execute(
+            "UPDATE beliefs SET active_until = ? WHERE lifecycle = 'active'",
+            ("2020-01-01T00:00:00.000",),
+        )
+
+    active = runner.invoke(cli, ["--json", "belief", "ls", "--lifecycle", "active", "--db", db])
+    assert active.exit_code == 0, active.output
+    assert json.loads(active.output) == []
 
 
 def test_explain_json_structure(runner, db):
