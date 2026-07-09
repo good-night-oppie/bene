@@ -334,7 +334,31 @@ class EngramStore:
             frontier = [r[0] for r in rows if r[0] not in seen]
             seen.update(frontier)
             ordered.extend(frontier)
-        return [self.get(eid) for eid in ordered]
+
+        # Batched hydration instead of one get() per node (N+1). Chunked so a
+        # deep/wide lineage can never exceed SQLite's per-statement host-parameter
+        # limit, and missing ids still raise UnknownEngram exactly like get() —
+        # a dangling link is graph corruption, not something to silently drop.
+        # Pending engrams were already flushed by the existence-check get() above.
+        row_map: dict[str, Any] = {}
+        chunk_size = 500
+        for i in range(0, len(ordered), chunk_size):
+            chunk = ordered[i : i + chunk_size]
+            placeholders = ",".join("?" * len(chunk))
+            for r in self.conn.execute(
+                "SELECT engram_id, kind, tier, title, content_hash, inline_body, metadata,"
+                " provenance, agent_id, created_at, superseded_by FROM engrams"
+                f" WHERE engram_id IN ({placeholders})",  # noqa: S608 — bound "?" markers only
+                chunk,
+            ).fetchall():
+                row_map[r[0]] = r
+        result = []
+        for eid in ordered:
+            row = row_map.get(eid)
+            if row is None:
+                raise UnknownEngram(eid)
+            result.append(self._to_engram(row))
+        return result
 
     # ---------------- promotion / linking ----------------
 
