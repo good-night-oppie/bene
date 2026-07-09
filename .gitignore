@@ -30,6 +30,7 @@ __pycache__/
 .specstory/
 .serena/
 .coverage*
+!.coverage-floor
 
 # employer-derived benchmark data: keep local, never publish (NDA)
 bene/benchmarks/bug_triage/data/
