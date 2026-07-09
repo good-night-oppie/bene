@@ -210,6 +210,8 @@ _SKILL_USES_DDL = (
     """,
     # ⚡ Bolt Optimization: Compound index includes use_id DESC and exact sort order to avoid Temp B-Tree on window scans
     # Impact: Avoids O(N log N) sort step per agent query, ensuring O(1) fetch times as telemetry grows.
+    # Drop the superseded v1 index so existing DBs don't pay double write overhead.
+    "DROP INDEX IF EXISTS idx_skill_uses_skill",
     "CREATE INDEX IF NOT EXISTS idx_skill_uses_skill_v2 ON skill_uses(skill_id, used_at DESC, use_id DESC)",
     "CREATE INDEX IF NOT EXISTS idx_skill_uses_agent ON skill_uses(agent_id, used_at)",
     "CREATE INDEX IF NOT EXISTS idx_skill_uses_quality ON skill_uses(skill_id, quality)",
