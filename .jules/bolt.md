@@ -7,3 +7,8 @@
 
 **Learning:** In the `events` table (an append-only audit trail), the primary access pattern is fetching an agent's most recent events using `ORDER BY event_id DESC` or `MAX(event_id)`. Despite having an index on `(agent_id, timestamp)`, SQLite was forced to use a temporary B-tree for sorting and grouping by `event_id`, which severely impacts performance as the journal grows large.
 **Action:** Always create compound indexes that cover both the filtering condition (`agent_id`) and the sorting/aggregation condition (`event_id`) directly, e.g., `(agent_id, event_id)`. This guarantees O(1) reads for `MAX()` and prevents the use of temp B-trees for `ORDER BY`, yielding ~100x to ~350x speedups in high-volume tables.
+
+## 2025-02-23 - Index modifications require renaming for deployment to existing DBs
+
+**Learning:** When modifying an existing `CREATE INDEX IF NOT EXISTS` statement inline (e.g. adding columns to a compound index in dynamically initialized tables like `skill_uses` or `skill_lifecycle`), keeping the original index name causes SQLite to silently skip the creation on existing databases because an index with that name already exists.
+**Action:** Always append a version suffix (e.g., `_v2`) to the index name when changing an index definition without a formal `DROP INDEX` or migration script. This guarantees the improved index gets deployed to existing users.
