@@ -231,32 +231,13 @@ async def api_agents(request: Request) -> JSONResponse:
                 a.metadata,
                 a.created_at,
                 a.last_heartbeat,
-                COALESCE(fc.cnt, 0) AS file_count,
-                COALESCE(tc.cnt, 0) AS tool_call_count,
-                COALESCE(tc.tokens, 0) AS token_count,
-                COALESCE(ec.cnt, 0) AS event_count,
+                (SELECT COUNT(*) FROM files WHERE agent_id = a.agent_id AND deleted=0) AS file_count,
+                (SELECT COUNT(*) FROM tool_calls WHERE agent_id = a.agent_id) AS tool_call_count,
+                (SELECT COALESCE(SUM(token_count), 0) FROM tool_calls WHERE agent_id = a.agent_id) AS token_count,
+                (SELECT COUNT(*) FROM events WHERE agent_id = a.agent_id) AS event_count,
                 strftime('%Y-%m-%dT%H:%M', a.created_at) AS batch_minute,
-                COALESCE(st.value, '') AS task_description
+                COALESCE((SELECT value FROM state WHERE agent_id = a.agent_id AND key = 'task'), '') AS task_description
             FROM agents a
-            LEFT JOIN (
-                SELECT agent_id, COUNT(*) as cnt
-                FROM files WHERE deleted=0
-                GROUP BY agent_id
-            ) fc ON fc.agent_id = a.agent_id
-            LEFT JOIN (
-                SELECT agent_id, COUNT(*) as cnt, COALESCE(SUM(token_count),0) as tokens
-                FROM tool_calls
-                GROUP BY agent_id
-            ) tc ON tc.agent_id = a.agent_id
-            LEFT JOIN (
-                SELECT agent_id, COUNT(*) as cnt
-                FROM events
-                GROUP BY agent_id
-            ) ec ON ec.agent_id = a.agent_id
-            LEFT JOIN (
-                SELECT agent_id, value
-                FROM state WHERE key = 'task'
-            ) st ON st.agent_id = a.agent_id
             ORDER BY a.created_at DESC
         """,
         )
@@ -285,23 +266,12 @@ async def api_agent_detail(request: Request) -> JSONResponse:
             SELECT
                 a.agent_id, a.name, a.parent_id, a.status,
                 a.config, a.metadata, a.created_at, a.last_heartbeat, a.pid,
-                COALESCE(fc.cnt, 0) AS file_count,
-                COALESCE(tc.cnt, 0) AS tool_call_count,
-                COALESCE(tc.tokens, 0) AS token_count,
-                COALESCE(ec.cnt, 0) AS event_count,
-                s.value AS task_description
+                (SELECT COUNT(*) FROM files WHERE agent_id = a.agent_id AND deleted=0) AS file_count,
+                (SELECT COUNT(*) FROM tool_calls WHERE agent_id = a.agent_id) AS tool_call_count,
+                (SELECT COALESCE(SUM(token_count), 0) FROM tool_calls WHERE agent_id = a.agent_id) AS token_count,
+                (SELECT COUNT(*) FROM events WHERE agent_id = a.agent_id) AS event_count,
+                (SELECT value FROM state WHERE agent_id = a.agent_id AND key = 'task') AS task_description
             FROM agents a
-            LEFT JOIN (
-                SELECT agent_id, COUNT(*) as cnt FROM files WHERE deleted=0 GROUP BY agent_id
-            ) fc ON fc.agent_id = a.agent_id
-            LEFT JOIN (
-                SELECT agent_id, COUNT(*) as cnt, COALESCE(SUM(token_count),0) as tokens
-                FROM tool_calls GROUP BY agent_id
-            ) tc ON tc.agent_id = a.agent_id
-            LEFT JOIN (
-                SELECT agent_id, COUNT(*) as cnt FROM events GROUP BY agent_id
-            ) ec ON ec.agent_id = a.agent_id
-            LEFT JOIN state s ON s.agent_id = a.agent_id AND s.key = 'task'
             WHERE a.agent_id = ?
         """,
             (agent_id,),
@@ -672,23 +642,12 @@ async def api_graph(request: Request) -> JSONResponse:
             SELECT
                 a.agent_id, a.name, a.parent_id, a.status,
                 strftime('%Y-%m-%dT%H:%M', a.created_at) AS batch_minute,
-                COALESCE(tk.value, '') AS task,
-                COALESCE(sc.value, '') AS scores_json,
-                COALESCE(us.value, '') AS usage_json,
-                COALESCE(fw.cnt, 0)    AS file_count,
-                COALESCE(tc.cnt, 0)    AS tool_count
+                COALESCE((SELECT value FROM state WHERE agent_id = a.agent_id AND key = 'task'), '') AS task,
+                COALESCE((SELECT value FROM state WHERE agent_id = a.agent_id AND key = 'scores'), '') AS scores_json,
+                COALESCE((SELECT value FROM state WHERE agent_id = a.agent_id AND key = 'usage'), '') AS usage_json,
+                (SELECT COUNT(*) FROM events WHERE agent_id = a.agent_id AND event_type = 'file_write') AS file_count,
+                (SELECT COUNT(*) FROM events WHERE agent_id = a.agent_id AND event_type = 'tool_call_start') AS tool_count
             FROM agents a
-            LEFT JOIN state tk ON tk.agent_id = a.agent_id AND tk.key = 'task'
-            LEFT JOIN state sc ON sc.agent_id = a.agent_id AND sc.key = 'scores'
-            LEFT JOIN state us ON us.agent_id = a.agent_id AND us.key = 'usage'
-            LEFT JOIN (
-                SELECT agent_id, COUNT(*) cnt FROM events
-                WHERE event_type = 'file_write' GROUP BY agent_id
-            ) fw ON fw.agent_id = a.agent_id
-            LEFT JOIN (
-                SELECT agent_id, COUNT(*) cnt FROM events
-                WHERE event_type = 'tool_call_start' GROUP BY agent_id
-            ) tc ON tc.agent_id = a.agent_id
             ORDER BY a.created_at ASC
         """,
         )
