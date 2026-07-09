@@ -180,6 +180,38 @@ def test_lineage_unknown_engram_raises(store):
         store.lineage("01HNOPE00000000000000000000")
 
 
+def test_lineage_wide_batch_beyond_chunk(store):
+    # Lineage hydration is batched in chunks of 500 bound parameters; a lineage
+    # wider than one chunk must still hydrate every node (and never crash on
+    # SQLite's per-statement host-parameter limit).
+    root = store.append("trace", "root", "r", provenance=PROV)
+    children = []
+    for i in range(501):  # one past the chunk boundary
+        c = store.append("trace", f"c{i}", "x", provenance=PROV)
+        store.link(c, root, "derived_from")
+        children.append(c)
+    out = store.lineage(root, direction="descendants")
+    assert len(out) == 501
+    assert {e.engram_id for e in out} == set(children)
+    assert all(e.title.startswith("c") for e in out)  # fully hydrated Engram objects
+
+
+def test_lineage_dangling_link_raises(store):
+    # A dangling link (engram row deleted out-of-band) is graph corruption:
+    # lineage must raise UnknownEngram exactly like get(), not silently drop it.
+    a = store.append("trace", "a", "x", provenance=PROV)
+    b = store.append("trace", "b", "y", provenance=PROV)
+    store.link(b, a, "derived_from")  # b derived_from a -> a's descendants include b
+    # PRAGMA foreign_keys is a no-op while a transaction is open — commit first.
+    store.conn.commit()
+    store.conn.execute("PRAGMA foreign_keys=OFF")
+    store.conn.execute("DELETE FROM engrams WHERE engram_id = ?", (b,))
+    store.conn.commit()
+    store.conn.execute("PRAGMA foreign_keys=ON")
+    with pytest.raises(UnknownEngram):
+        store.lineage(a, direction="descendants")
+
+
 def test_link_rejects_unknown_type(store):
     a = store.append("trace", "a", "x", provenance=PROV)
     b = store.append("trace", "b", "y", provenance=PROV)
