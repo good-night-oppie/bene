@@ -2064,7 +2064,7 @@ async def _dispatch(name: str, args: dict[str, Any]) -> str:
 
     elif name == "prisma":
         # Prisma deep-reasoning tool — LEVERAGES the BENE TierRouter to pick the backend
-        # (hard -> gemini-ultra-deepthink :8319 = Eddie's Gemini Ultra sub; easy -> cheap).
+        # (hard -> claude-fable-deepthink = Claude Code Fable 5 subprocess; easy -> cheap).
         # The router is the routing mechanism Prisma uses; it does NOT route "to prisma".
         goal = args.get("goal", "implementation_plan")
         persona = {

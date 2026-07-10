@@ -81,7 +81,7 @@ class TierRouter:
         # Initialize provider clients — one per model. A backend whose key/endpoint is
         # unavailable is SKIPPED (logged), not fatal — its tiers fall back to fallback_model.
         # A routing layer must not crash because ONE optional backend lacks a key (e.g.
-        # gemini-ultra-deepthink needs CLI_PROXY_GEMINI_KEY; key-less bene callers — the KB
+        # an openai-endpoint model whose api_key_env is unset; key-less bene callers — the KB
         # pipeline, CI swarms — must still build a working router on the keyless models).
         self.clients: dict[str, VLLMClient | LLMProvider] = {}
         for name, cfg in models.items():
