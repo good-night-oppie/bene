@@ -8,7 +8,7 @@ GA-CORE-3 #377), so the only step beyond this is the DNS/TLS-gated live smoke.
 
 Built ahead in this scratch dir (untracked, same convention as the 3 panels);
 offered to adx-cli for integration into `agentdex-cli/tasks/agentdex-builders-ga/`
-+ deploy (adx-cli owns the agentdex.builders deploy lane).
+and deploy (adx-cli owns the agentdex.builders deploy lane).
 
 ## What it is
 
@@ -39,7 +39,7 @@ all render, and the honesty gate holds (a real `pokeenv` result is NOT mock-badg
 
 ## The one data seam — `?live=1` flips fixtures → live (same call shape)
 
-```
+```text
 roster   ./fixtures/me_agents.json          ⇄  GET /me/agents                    (session token)
 evo      ./fixtures/done.json               ⇄  GET /me/agents/<id>/evolution
 ladder   ./fixtures/me_ladder.json          ⇄  GET /me/ladder

@@ -39,7 +39,7 @@ grep -Eq "147[0-9]|14[0-9][0-9]" <<<"$DOM"   && ok "Agent Pane Elo/rating from a
 echo "[GA-BENE-2 · live battle scene (battle-scene.js, light DOM)]"
 grep -q "bscene" <<<"$DOM"                    && ok "battle scene rendered frames (bscene markup)"        || no "battle scene"
 grep -q "bscene-ticker\|bscene-arena\|bscene-fog" <<<"$DOM" && ok "scene arena/ticker/fog present"       || no "scene internals"
-grep -Fq "BATTLE_ID_OVERRIDE" app.js           && ok "live smoke battle_id override is wired"              || no "battle_id override"
+grep -Fq 'qs.get("battle_id")' app.js && grep -Fq "battleIdOverride" app.js && ok "live smoke battle_id override is wired" || no "battle_id override"
 cat >"$TMP_LINE_ONLY" <<'HTML'
 <!doctype html>
 <meta charset="utf-8">

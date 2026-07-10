@@ -29,7 +29,10 @@ const SESSION_TOKEN =
   "";
 // Live-smoke escape hatch: operators can pin a known active battle without waiting
 // for /me/agents to expose `live_battle_id` on the first selected roster row.
-const BATTLE_ID_OVERRIDE = qs.get("battle_id") || qs.get("live_battle_id") || "";
+// Mutable on purpose: the override pins only the CURRENT smoke battle — once the
+// operator asks for the next battle, it is cleared so the fresh `live_battle_id`
+// wins (otherwise "Next battle" would loop back to the ended smoke stream).
+let battleIdOverride = qs.get("battle_id") || qs.get("live_battle_id") || "";
 // render-verify drives the battle fast so frames have applied by dump-DOM time
 const STEP_MS = parseInt(qs.get("interval") || (qs.get("fast") ? "40" : "700"), 10);
 
@@ -81,7 +84,7 @@ function startBattle(agent) {
   if (battleSource) battleSource.close();
   scene.reset();
   if (LIVE) {
-    const liveBattleId = BATTLE_ID_OVERRIDE || agent.live_battle_id;
+    const liveBattleId = battleIdOverride || agent.live_battle_id;
     if (!liveBattleId) {
       // owner dashboard, idle agent: leave the scene in its reset/empty state — NEVER demo data.
       battleSource = null;
@@ -93,7 +96,7 @@ function startBattle(agent) {
     battleSource = new LiveSource.SseLiveSource(liveBattleId, "own", {
       sessionToken: SESSION_TOKEN,
     });
-    battleLabel.textContent = BATTLE_ID_OVERRIDE
+    battleLabel.textContent = battleIdOverride
       ? `live smoke · ${agent.agent_name} · ${liveBattleId}`
       : `live · ${agent.agent_name}`;
   } else {
@@ -140,6 +143,9 @@ async function select(agents, i) {
 scene.addEventListener("next-battle", async () => {
   if (!current) return;
   if (LIVE) {
+    // The smoke override is single-use: its battle is over by the time the operator
+    // clicks "Next battle", so drop it and follow the agent's fresh live_battle_id.
+    battleIdOverride = "";
     try {
       const data = await loadAgents();
       const key = current.agent_id || current.agent_name;

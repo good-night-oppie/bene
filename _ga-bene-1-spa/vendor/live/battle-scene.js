@@ -174,7 +174,12 @@
     _applyFrameScene(frame) {
       if (!frame) return;
       if (frame.scene) {
-        this.scene = frame.scene;
+        // Wire snapshots carry only the renderable subset (SceneReducer.snapshot()
+        // omits reducer-internal state such as `teams`). Rehydrate onto a fresh
+        // reducer scene so a LATER line-only frame can fold `switch`/`faint`
+        // lines without throwing on the missing fields (mixed streams are exactly
+        // what the line-folding fallback below exists to tolerate).
+        this.scene = SR ? Object.assign(SR.newScene(), frame.scene) : frame.scene;
         return;
       }
       if (!SR || !frame.lines) return;
