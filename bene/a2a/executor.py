@@ -73,8 +73,13 @@ class BeneAgentExecutor(AgentExecutor):
                 return "decision", entry.log_id
         except (KeyError, ValueError, TypeError):
             pass  # malformed typed payload -> durable mail fallback below
+        recipient = data.get("recipient")
+        if not isinstance(recipient, str) or not recipient.strip():
+            recipient = "bene"
+        else:
+            recipient = recipient.strip()
         entry = log.mail(
-            sender, "bene", text or json.dumps(data), metadata={"via": "a2a", "kind": kind}
+            sender, recipient, text or json.dumps(data), metadata={"via": "a2a", "kind": kind}
         )
         return "mail", entry.log_id
 
