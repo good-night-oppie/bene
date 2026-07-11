@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 SCHEMA_SQL = """
 -- Agent Registry
@@ -176,9 +176,9 @@ CREATE TABLE IF NOT EXISTS shared_log (
     created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%f','now'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_shared_log_type     ON shared_log(type, created_at);
-CREATE INDEX IF NOT EXISTS idx_shared_log_agent    ON shared_log(agent_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_shared_log_ref      ON shared_log(ref_id) WHERE ref_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_shared_log_type_v2  ON shared_log(type, position);
+CREATE INDEX IF NOT EXISTS idx_shared_log_agent_v2 ON shared_log(agent_id, position);
+CREATE INDEX IF NOT EXISTS idx_shared_log_ref_v2   ON shared_log(ref_id, position) WHERE ref_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_shared_log_position ON shared_log(position);
 """
 
@@ -265,6 +265,19 @@ CREATE INDEX IF NOT EXISTS idx_events_agent_event_id ON events(agent_id, event_i
 """
 
 
+# Migration to v6: compound indices on shared_log including `position`
+# Eliminates SQLite temp B-tree on `ORDER BY position` when querying shared log
+MIGRATION_V6_SQL = """
+CREATE INDEX IF NOT EXISTS idx_shared_log_type_v2  ON shared_log(type, position);
+CREATE INDEX IF NOT EXISTS idx_shared_log_agent_v2 ON shared_log(agent_id, position);
+CREATE INDEX IF NOT EXISTS idx_shared_log_ref_v2   ON shared_log(ref_id, position) WHERE ref_id IS NOT NULL;
+
+DROP INDEX IF EXISTS idx_shared_log_type;
+DROP INDEX IF EXISTS idx_shared_log_agent;
+DROP INDEX IF EXISTS idx_shared_log_ref;
+"""
+
+
 def init_schema(conn: sqlite3.Connection) -> None:
     """Initialize the database schema, applying migrations if needed."""
     conn.executescript(SCHEMA_SQL)
@@ -277,6 +290,7 @@ def init_schema(conn: sqlite3.Connection) -> None:
         conn.executescript(MIGRATION_V3_SQL)
         conn.executescript(MIGRATION_V4_SQL)
         conn.executescript(MIGRATION_V5_SQL)
+        conn.executescript(MIGRATION_V6_SQL)
         conn.execute("INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,))
         conn.commit()
     elif current < SCHEMA_VERSION:
@@ -293,5 +307,7 @@ def _apply_migrations(conn: sqlite3.Connection, from_version: int, to_version: i
         conn.executescript(MIGRATION_V4_SQL)
     if from_version < 5:
         conn.executescript(MIGRATION_V5_SQL)
+    if from_version < 6:
+        conn.executescript(MIGRATION_V6_SQL)
     conn.execute("INSERT INTO schema_version (version) VALUES (?)", (to_version,))
     conn.commit()
