@@ -12,7 +12,15 @@ import pytest
 
 pytest.importorskip("a2a", reason="a2a extra not installed")
 
-from a2a.types import Message, MessageSendParams, Part, Role, SendMessageRequest, TextPart  # noqa: E402
+from a2a.types import (  # noqa: E402
+    DataPart,
+    Message,
+    MessageSendParams,
+    Part,
+    Role,
+    SendMessageRequest,
+    TextPart,
+)
 from a2a.utils import new_task  # noqa: E402
 from starlette.testclient import TestClient  # noqa: E402
 
@@ -21,11 +29,14 @@ from bene.a2a import SharedLogTaskStore, build_app, build_bene_agent_card  # noq
 from bene.shared_log import SharedLog  # noqa: E402
 
 
-def _user_msg(text: str, **metadata) -> Message:
+def _user_msg(text: str, data: dict | None = None, **metadata) -> Message:
+    parts = [Part(root=TextPart(text=text))]
+    if data is not None:
+        parts.append(Part(root=DataPart(data=data)))
     return Message(
         message_id="m-test",
         role=Role.user,
-        parts=[Part(root=TextPart(text=text))],
+        parts=parts,
         metadata=metadata or None,
     )
 
@@ -74,8 +85,10 @@ def test_taskstore_get_missing_returns_none(tmp_path):
 # ---------------- End-to-end JSON-RPC over the Starlette app ----------------
 
 
-def _post_message(client: TestClient, text: str, **metadata):
-    req = SendMessageRequest(id="1", params=MessageSendParams(message=_user_msg(text, **metadata)))
+def _post_message(client: TestClient, text: str, data: dict | None = None, **metadata):
+    req = SendMessageRequest(
+        id="1", params=MessageSendParams(message=_user_msg(text, data=data, **metadata))
+    )
     return client.post("/", json=req.model_dump(mode="json", by_alias=True, exclude_none=True))
 
 
@@ -103,16 +116,29 @@ def test_message_send_records_intent_in_sharedlog(tmp_path):
     assert "prune stale checkpoints" in intents[0].payload.get("action", "")
 
 
-def test_message_send_defaults_to_mail(tmp_path):
+@pytest.mark.parametrize("data", [None, {"recipient": "   "}, {"recipient": 7}])
+def test_message_send_defaults_to_mail(tmp_path, data):
     db = str(tmp_path / "a2a.db")
     app = build_app(db, "http://testserver/")
     with TestClient(app) as client:
-        r = _post_message(client, "fyi: rebuilt the index", agent="adx")  # no kind -> mail
+        r = _post_message(client, "fyi: rebuilt the index", data=data, agent="adx")
         assert r.status_code == 200, r.text
     log = SharedLog(Bene(db).conn)
     mails = log.read(type="mail")
     assert len(mails) == 1 and mails[0].agent_id == "adx"
     assert mails[0].payload.get("to") == "bene"
+
+
+def test_message_send_routes_mail_to_structured_recipient(tmp_path):
+    db = str(tmp_path / "a2a.db")
+    app = build_app(db, "http://testserver/")
+    with TestClient(app) as client:
+        r = _post_message(
+            client, "claim the capsule", data={"recipient": "  mroute-weco  "}, agent="adx"
+        )
+        assert r.status_code == 200, r.text
+    mails = SharedLog(Bene(db).conn).read(type="mail")
+    assert len(mails) == 1 and mails[0].payload.get("to") == "mroute-weco"
 
 
 def test_harness_validate_handshake_accepts_good_source(tmp_path):
