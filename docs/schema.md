@@ -566,12 +566,12 @@ CREATE TABLE IF NOT EXISTS schema_version (
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
-| `version` | INTEGER | PRIMARY KEY | The migration number. Current: 5. |
+| `version` | INTEGER | PRIMARY KEY | The migration number. Current: 6. |
 | `applied_at` | TEXT | NOT NULL, auto-generated | When that migration ran. |
 
 ### Migration mechanics
 
-- First initialization inserts version 5.
+- First initialization inserts version 6.
 - On later opens, a database that trails the code's `SCHEMA_VERSION` is brought forward by incremental migrations through `_apply_migrations()`.
 - Future steps land as `if from_version < N:` blocks in `bene/schema.py`.
 
@@ -627,3 +627,6 @@ Each index that ships with the schema, and the query shape it serves:
 | events | `idx_events_agent_time` | `agent_id, timestamp` | No | Chronological event stream |
 | events | `idx_events_type` | `event_type` | No | Filter by event type |
 | checkpoints | `idx_checkpoints_agent` | `agent_id, created_at` | No | Chronological checkpoint listing |
+| shared_log | `idx_shared_log_type_v2` | `type, position` | No | Filter shared_log by type efficiently |
+| shared_log | `idx_shared_log_agent_v2` | `agent_id, position` | No | Filter shared_log by agent efficiently |
+| shared_log | `idx_shared_log_ref_v2` | `ref_id, position` | Yes (`ref_id IS NOT NULL`) | Find thread logs efficiently |

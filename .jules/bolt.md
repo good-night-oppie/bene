@@ -12,3 +12,8 @@
 
 **Learning:** When modifying an existing `CREATE INDEX IF NOT EXISTS` statement inline (e.g. adding columns to a compound index in dynamically initialized tables like `skill_uses` or `skill_lifecycle`), keeping the original index name causes SQLite to silently skip the creation on existing databases because an index with that name already exists.
 **Action:** Always append a version suffix (e.g., `_v2`) to the index name when changing an index definition without a formal `DROP INDEX` or migration script. This guarantees the improved index gets deployed to existing users.
+
+## 2025-02-23 - Eliminating Temp B-Trees on Shared Log Reads
+
+**Learning:** Similar to the `events` table, `shared_log` queries frequently filter by `type`, `agent_id`, or `ref_id` and sort by `position`. Existing single-column indices caused SQLite to use an expensive Temp B-Tree for `ORDER BY position`, creating a massive bottleneck on the multi-agent coordination log.
+**Action:** Replaced single-column indices with compound indices containing `position` (e.g. `(type, position)`, `(agent_id, position)`). Added a `_v2` suffix since this operates on an existing table. This optimization allows SQLite to stream results directly from the index, yielding significantly faster log reads (especially for threaded messages via `ref_id`).
