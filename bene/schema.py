@@ -130,9 +130,14 @@ CREATE TABLE IF NOT EXISTS memory (
     created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%f','now'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_memory_agent ON memory(agent_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_memory_type  ON memory(type);
-CREATE INDEX IF NOT EXISTS idx_memory_key   ON memory(key) WHERE key IS NOT NULL;
+-- ⚡ Bolt Optimization: Compound indexes include memory_id DESC and exact sort order to avoid Temp B-Trees on window scans
+-- Impact: Avoids O(N log N) sort step per agent query, ensuring O(1) fetch times for recent memory access.
+-- Drop the superseded v1 index so existing DBs don't pay double write overhead.
+DROP INDEX IF EXISTS idx_memory_agent;
+CREATE INDEX IF NOT EXISTS idx_memory_agent_v2 ON memory(agent_id, created_at DESC, memory_id DESC);
+CREATE INDEX IF NOT EXISTS idx_memory_recent   ON memory(created_at DESC, memory_id DESC);
+CREATE INDEX IF NOT EXISTS idx_memory_type     ON memory(type);
+CREATE INDEX IF NOT EXISTS idx_memory_key      ON memory(key) WHERE key IS NOT NULL;
 
 -- FTS5 full-text search index over memory
 CREATE VIRTUAL TABLE IF NOT EXISTS memory_fts USING fts5(
