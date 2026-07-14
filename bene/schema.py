@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 SCHEMA_SQL = """
 -- Agent Registry
@@ -265,6 +265,13 @@ CREATE INDEX IF NOT EXISTS idx_events_agent_event_id ON events(agent_id, event_i
 """
 
 
+# Migration to v6: fast compound index for fetching/counting events by type
+# Avoids scanning through the agent's full event history when filtering by event_type.
+MIGRATION_V6_SQL = """
+CREATE INDEX IF NOT EXISTS idx_events_agent_type_event_id ON events(agent_id, event_type, event_id);
+"""
+
+
 def init_schema(conn: sqlite3.Connection) -> None:
     """Initialize the database schema, applying migrations if needed."""
     conn.executescript(SCHEMA_SQL)
@@ -277,6 +284,7 @@ def init_schema(conn: sqlite3.Connection) -> None:
         conn.executescript(MIGRATION_V3_SQL)
         conn.executescript(MIGRATION_V4_SQL)
         conn.executescript(MIGRATION_V5_SQL)
+        conn.executescript(MIGRATION_V6_SQL)
         conn.execute("INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,))
         conn.commit()
     elif current < SCHEMA_VERSION:
@@ -293,5 +301,7 @@ def _apply_migrations(conn: sqlite3.Connection, from_version: int, to_version: i
         conn.executescript(MIGRATION_V4_SQL)
     if from_version < 5:
         conn.executescript(MIGRATION_V5_SQL)
+    if from_version < 6:
+        conn.executescript(MIGRATION_V6_SQL)
     conn.execute("INSERT INTO schema_version (version) VALUES (?)", (to_version,))
     conn.commit()
