@@ -12,3 +12,8 @@
 
 **Learning:** When modifying an existing `CREATE INDEX IF NOT EXISTS` statement inline (e.g. adding columns to a compound index in dynamically initialized tables like `skill_uses` or `skill_lifecycle`), keeping the original index name causes SQLite to silently skip the creation on existing databases because an index with that name already exists.
 **Action:** Always append a version suffix (e.g., `_v2`) to the index name when changing an index definition without a formal `DROP INDEX` or migration script. This guarantees the improved index gets deployed to existing users.
+
+## 2024-07-12 - Avoid SQLite Temp B-Trees on ORDER BY Queries
+
+**Learning:** When querying SQLite with an `ORDER BY col1 DESC, col2 DESC` clause (like in `memory` cross-agent queries fetching recent records), if an index only covers `col1` or covers both but in default `ASC` order, SQLite falls back to a Temp B-Tree. This makes fetch times $O(N \log N)$ instead of $O(1)$, which is a huge bottleneck as the table grows.
+**Action:** Define compound indexes that exactly match the `ORDER BY` conditions, including the `DESC` keyword explicitly, such as `CREATE INDEX idx_name ON table(col1 DESC, col2 DESC)`.
