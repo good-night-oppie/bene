@@ -571,7 +571,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
 
 ### Migration mechanics
 
-- First initialization inserts version 5.
+- First initialization inserts version 6.
 - On later opens, a database that trails the code's `SCHEMA_VERSION` is brought forward by incremental migrations through `_apply_migrations()`.
 - Future steps land as `if from_version < N:` blocks in `bene/schema.py`.
 
