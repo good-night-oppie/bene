@@ -14,17 +14,14 @@ models:
     timeout: 1800
     use_for: [trivial, moderate, code_completion, code_generation]
 
-  # HARD-PROBLEM TIER — Eddie 2026-06-23: route hard problems to the Gemini Ultra
-  # sub via the dedicated cli-proxy-gemini (:8319), the same deep-think engine Prisma
-  # runs on. gemini-3.1-pro-max alias -> real gemini-3.1-pro-low (1100+ reasoning
-  # tokens). Zero paid API. Key from $CLI_PROXY_GEMINI_KEY (downstream.key).
-  gemini-ultra-deepthink:
-    provider: openai
-    endpoint: "http://127.0.0.1:8319/v1"
-    model_id: "gemini-3.1-pro-max"
-    api_key_env: "CLI_PROXY_GEMINI_KEY"
-    max_context: 1000000
-    timeout: 600
+  # HARD-PROBLEM TIER — Eddie 2026-07-03: switched from the Gemini Ultra sub
+  # (cli-proxy-gemini :8319) to Claude Code Fable 5 — same claude_code subprocess
+  # provider as claude-sonnet above, zero paid API, uses the Claude Code subscription.
+  claude-fable-deepthink:
+    provider: claude_code
+    model_id: claude-fable-5
+    max_context: 300000
+    timeout: 1800
     use_for: [complex, critical, planning]
 
 router:
