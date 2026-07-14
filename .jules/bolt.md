@@ -12,3 +12,8 @@
 
 **Learning:** When modifying an existing `CREATE INDEX IF NOT EXISTS` statement inline (e.g. adding columns to a compound index in dynamically initialized tables like `skill_uses` or `skill_lifecycle`), keeping the original index name causes SQLite to silently skip the creation on existing databases because an index with that name already exists.
 **Action:** Always append a version suffix (e.g., `_v2`) to the index name when changing an index definition without a formal `DROP INDEX` or migration script. This guarantees the improved index gets deployed to existing users.
+
+## 2025-02-23 - Index on event filtering in SQLite
+
+**Learning:** When fetching events filtered by `event_type` and sorted by `event_id DESC`, SQLite has to scan the whole index `idx_events_agent_event_id` backwards to find enough matches for the limit. This creates a severe N+1-like bottleneck or a slow scan for large `events` tables (e.g. agent audit trails).
+**Action:** Always create a compound index `idx_events_agent_type_event_id` on `(agent_id, event_type, event_id)` to ensure O(1) matching with limit bounds and avoid scanning agent history, significantly improving query speed on large tables.
