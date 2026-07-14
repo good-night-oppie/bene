@@ -122,8 +122,8 @@
 
   /*
    * SseLiveSource — the real GA-CORE-3 consumer. Public spectator streams use
-   * native EventSource. Owner streams are Bearer-only for launch and therefore
-   * use fetch+ReadableStream; EventSource cannot set Authorization headers.
+   * native EventSource. Owner streams use fetch+ReadableStream so they can carry
+   * either a Bearer token or browser HttpOnly session cookies.
    */
   function SseLiveSource(battleId, intent, opts) {
     Emitter.call(this);
@@ -142,9 +142,8 @@
   SseLiveSource.prototype = Object.create(Emitter.prototype);
   SseLiveSource.prototype.start = function () {
     if (this.endpoint.auth) {
-      if (!this._token) throw new Error("SseLiveSource: owner stream requires opts.sessionToken");
       if (!this._fetch || !this._TextDecoder) throw new Error("SseLiveSource: fetch streaming unavailable");
-      this._streamTask = this._startBearerStream();
+      this._streamTask = this._startOwnerStream();
       return this;
     }
     if (!this._EventSource) throw new Error("SseLiveSource: no EventSource (wire GA-CORE-3 first)");
@@ -158,15 +157,18 @@
     this._es.onerror = (ev) => this._emit("error", ev);
     return this;
   };
-  SseLiveSource.prototype._startBearerStream = async function () {
+  SseLiveSource.prototype._startOwnerStream = async function () {
     const controller = this._AbortController ? new this._AbortController() : null;
     this._abort = controller;
     try {
       const res = await this._fetch(this.endpoint.url, {
-        headers: {
-          Accept: "text/event-stream",
-          Authorization: `Bearer ${this._token}`,
-        },
+        headers: this._token
+          ? {
+              Accept: "text/event-stream",
+              Authorization: `Bearer ${this._token}`,
+            }
+          : { Accept: "text/event-stream" },
+        credentials: this._token ? "same-origin" : "include",
         signal: controller ? controller.signal : undefined,
       });
       if (!res || !res.ok) throw new Error(`SseLiveSource: HTTP ${res ? res.status : "?"}`);

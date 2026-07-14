@@ -2,7 +2,7 @@
   "owner_agents": ["litany-vii", "max-damage-baseline", "fresh-recruit"],
   "entrants": [
     {"name": "top-10-ps-player",  "rating": 1820.0, "rd": 18.0,  "games": 620, "wins": 492, "losses": 128, "is_goal_line": true},
-    {"name": "community-ace",     "rating": 1601.0, "rd": 35.0,  "games": 140, "wins": 98,  "losses": 42},
+    {"name": "community-ace",     "rating": 1601.0, "rd": 35.0,  "games": 140},
     {"name": "fresh-recruit",     "rating": 1500.0, "rd": 350.0, "games": 0,   "wins": 0,   "losses": 0,   "is_owner": true, "live": false, "genome_summary": null},
     {"name": "litany-vii",        "rating": 1487.3, "rd": 41.2,  "games": 50,  "wins": 38,  "losses": 12,  "is_owner": true, "live": true,  "live_battle_id": "b_demo1",
       "genome_summary": {"harness_id": "h_8f3c91ad", "move_selection_strategy": "llm_freeform", "generation": 7, "allow_switch": true, "prompt_summary": "Lead with your fastest threat and preserve the win condition."}},
