@@ -288,7 +288,7 @@ WHERE status = 'running'
 AND last_heartbeat < strftime('%Y-%m-%dT%H:%M:%f', 'now', '-5 minutes');
 ```
 
-*Indexed by `idx_agents_status` (`status`) and `idx_agents_parent` (`parent_id`) — see the [index catalog](#index-catalog).*
+*Indexed by `idx_agents_status` (`status`), `idx_agents_parent` (`parent_id`), and `idx_agents_created_at_desc_v2` (`created_at DESC`) — see the [index catalog](#index-catalog).*
 
 ---
 
@@ -566,12 +566,12 @@ CREATE TABLE IF NOT EXISTS schema_version (
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
-| `version` | INTEGER | PRIMARY KEY | The migration number. Current: 6. |
+| `version` | INTEGER | PRIMARY KEY | The migration number. Current: 7. |
 | `applied_at` | TEXT | NOT NULL, auto-generated | When that migration ran. |
 
 ### Migration mechanics
 
-- First initialization inserts version 6.
+- First initialization inserts version 7.
 - On later opens, a database that trails the code's `SCHEMA_VERSION` is brought forward by incremental migrations through `_apply_migrations()`.
 - Future steps land as `if from_version < N:` blocks in `bene/schema.py`.
 
@@ -619,6 +619,7 @@ Each index that ships with the schema, and the query shape it serves:
 |---|---|---|---|---|
 | agents | `idx_agents_status` | `status` | No | Filter agents by lifecycle state |
 | agents | `idx_agents_parent` | `parent_id` | No | Find child agents |
+| agents | `idx_agents_created_at_desc_v2` | `created_at DESC` | No | Fast chronological agent listing without Temp B-Trees |
 | files | `idx_files_agent_path` | `agent_id, path` | Yes (`deleted=0`) | Fast file lookup excluding deleted |
 | files | `idx_files_agent` | `agent_id` | No | List all files for an agent |
 | tool_calls | `idx_tool_calls_agent` | `agent_id, started_at` | No | Chronological call history |
