@@ -17,3 +17,8 @@
 
 **Learning:** When querying SQLite with an `ORDER BY col1 DESC, col2 DESC` clause (like in `memory` cross-agent queries fetching recent records), if an index only covers `col1` or covers both but in default `ASC` order, SQLite falls back to a Temp B-Tree. This makes fetch times $O(N \log N)$ instead of $O(1)$, which is a huge bottleneck as the table grows.
 **Action:** Define compound indexes that exactly match the `ORDER BY` conditions, including the `DESC` keyword explicitly, such as `CREATE INDEX idx_name ON table(col1 DESC, col2 DESC)`.
+
+## 2024-05-19 - Bidirectional default B-Tree indexes
+
+**Learning:** When trying to optimize queries that sort both ascending and descending on the same column (like `ORDER BY created_at DESC` vs `ORDER BY created_at ASC`), creating two separate indices is unnecessary and harms write performance. In both SQLite and PostgreSQL, default B-tree indexes are naturally bidirectional and can be efficiently scanned forwards or backwards.
+**Action:** When indexing a single column for chronologically-sorted retrieval, create just one index (e.g., `CREATE INDEX idx_col ON table(col DESC);`). It will serve both `ASC` and `DESC` queries effortlessly without duplicating storage and write overhead.
