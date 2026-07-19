@@ -4,7 +4,7 @@ Open `bene.db` with any SQLite client and you can answer, in plain SQL, every qu
 
 > **The entire state of your agent fleet is one SQLite file — query it, `cp` it, back it up; nothing leaves your machine.**
 
-The schema is at version **4**, defined in `bene/schema.py`.
+The schema is at version **7**, defined in `bene/schema.py`.
 
 ---
 
@@ -250,6 +250,9 @@ CREATE TABLE IF NOT EXISTS agents (
     pid             INTEGER,
     last_heartbeat  TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_agents_status ON agents(status);
+CREATE INDEX IF NOT EXISTS idx_agents_parent ON agents(parent_id);
+CREATE INDEX IF NOT EXISTS idx_agents_created_at ON agents(created_at);
 ```
 
 ### Column guide
@@ -571,7 +574,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
 
 ### Migration mechanics
 
-- First initialization inserts version 6.
+- First initialization inserts version 7.
 - On later opens, a database that trails the code's `SCHEMA_VERSION` is brought forward by incremental migrations through `_apply_migrations()`.
 - Future steps land as `if from_version < N:` blocks in `bene/schema.py`.
 

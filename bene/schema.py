@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 SCHEMA_SQL = """
 -- Agent Registry
@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS agents (
 
 CREATE INDEX IF NOT EXISTS idx_agents_status ON agents(status);
 CREATE INDEX IF NOT EXISTS idx_agents_parent ON agents(parent_id);
+CREATE INDEX IF NOT EXISTS idx_agents_created_at ON agents(created_at);
 
 -- Virtual Filesystem
 CREATE TABLE IF NOT EXISTS files (
@@ -282,6 +283,13 @@ CREATE INDEX IF NOT EXISTS idx_shared_log_ref_v2   ON shared_log(ref_id, positio
 """
 
 
+# Migration to v7: fast index for dashboard agent queries
+# Eliminates SQLite Temp B-Tree on `ORDER BY created_at DESC`
+MIGRATION_V7_SQL = """
+CREATE INDEX IF NOT EXISTS idx_agents_created_at ON agents(created_at);
+"""
+
+
 def init_schema(conn: sqlite3.Connection) -> None:
     """Initialize the database schema, applying migrations if needed."""
     conn.executescript(SCHEMA_SQL)
@@ -295,6 +303,7 @@ def init_schema(conn: sqlite3.Connection) -> None:
         conn.executescript(MIGRATION_V4_SQL)
         conn.executescript(MIGRATION_V5_SQL)
         conn.executescript(MIGRATION_V6_SQL)
+        conn.executescript(MIGRATION_V7_SQL)
         conn.execute("INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,))
         conn.commit()
     elif current < SCHEMA_VERSION:
@@ -313,5 +322,7 @@ def _apply_migrations(conn: sqlite3.Connection, from_version: int, to_version: i
         conn.executescript(MIGRATION_V5_SQL)
     if from_version < 6:
         conn.executescript(MIGRATION_V6_SQL)
+    if from_version < 7:
+        conn.executescript(MIGRATION_V7_SQL)
     conn.execute("INSERT INTO schema_version (version) VALUES (?)", (to_version,))
     conn.commit()
