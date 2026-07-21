@@ -17,3 +17,8 @@
 
 **Learning:** When querying SQLite with an `ORDER BY col1 DESC, col2 DESC` clause (like in `memory` cross-agent queries fetching recent records), if an index only covers `col1` or covers both but in default `ASC` order, SQLite falls back to a Temp B-Tree. This makes fetch times $O(N \log N)$ instead of $O(1)$, which is a huge bottleneck as the table grows.
 **Action:** Define compound indexes that exactly match the `ORDER BY` conditions, including the `DESC` keyword explicitly, such as `CREATE INDEX idx_name ON table(col1 DESC, col2 DESC)`.
+
+## 2026-07-21 - Avoid SQLite Temp B-Trees on get_by_key with ORDER BY DESC
+
+**Learning:** When retrieving the latest entry for a specific key (like `MemoryStore.get_by_key`) with `ORDER BY created_at DESC, memory_id DESC`, a single-column index on `key` is insufficient and forces SQLite to use a Temp B-Tree for sorting. Even when filtering by an additional column (like `agent_id`), the compound index must include both the filter columns and the exact order columns to remain an $O(1)$ lookup instead of $O(N \log N)$.
+**Action:** Replace single-column indexes on keys with compound indexes that include the exact `ORDER BY` columns in the correct direction. If an optional filter (e.g., `agent_id`) is sometimes used alongside the key, create an additional index incorporating that filter column right after the primary lookup key, for example: `CREATE INDEX idx_memory_key_v2 ON memory(key, created_at DESC, memory_id DESC)` and `CREATE INDEX idx_memory_key_agent_v2 ON memory(key, agent_id, created_at DESC, memory_id DESC)`.
