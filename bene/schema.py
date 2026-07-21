@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 SCHEMA_SQL = """
 -- Agent Registry
@@ -137,7 +137,8 @@ DROP INDEX IF EXISTS idx_memory_agent;
 CREATE INDEX IF NOT EXISTS idx_memory_agent_v2 ON memory(agent_id, created_at DESC, memory_id DESC);
 CREATE INDEX IF NOT EXISTS idx_memory_recent   ON memory(created_at DESC, memory_id DESC);
 CREATE INDEX IF NOT EXISTS idx_memory_type     ON memory(type);
-CREATE INDEX IF NOT EXISTS idx_memory_key      ON memory(key) WHERE key IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_memory_key_v2       ON memory(key, created_at DESC, memory_id DESC) WHERE key IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_memory_key_agent_v2 ON memory(key, agent_id, created_at DESC, memory_id DESC) WHERE key IS NOT NULL;
 
 -- FTS5 full-text search index over memory
 CREATE VIRTUAL TABLE IF NOT EXISTS memory_fts USING fts5(
@@ -282,6 +283,15 @@ CREATE INDEX IF NOT EXISTS idx_shared_log_ref_v2   ON shared_log(ref_id, positio
 """
 
 
+# Migration to v7: fast compound indexes for memory keys
+# Eliminates SQLite Temp B-Tree on `ORDER BY created_at DESC, memory_id DESC` when fetching memories by key.
+MIGRATION_V7_SQL = """
+DROP INDEX IF EXISTS idx_memory_key;
+CREATE INDEX IF NOT EXISTS idx_memory_key_v2       ON memory(key, created_at DESC, memory_id DESC) WHERE key IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_memory_key_agent_v2 ON memory(key, agent_id, created_at DESC, memory_id DESC) WHERE key IS NOT NULL;
+"""
+
+
 def init_schema(conn: sqlite3.Connection) -> None:
     """Initialize the database schema, applying migrations if needed."""
     conn.executescript(SCHEMA_SQL)
@@ -295,6 +305,7 @@ def init_schema(conn: sqlite3.Connection) -> None:
         conn.executescript(MIGRATION_V4_SQL)
         conn.executescript(MIGRATION_V5_SQL)
         conn.executescript(MIGRATION_V6_SQL)
+        conn.executescript(MIGRATION_V7_SQL)
         conn.execute("INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,))
         conn.commit()
     elif current < SCHEMA_VERSION:
@@ -313,5 +324,7 @@ def _apply_migrations(conn: sqlite3.Connection, from_version: int, to_version: i
         conn.executescript(MIGRATION_V5_SQL)
     if from_version < 6:
         conn.executescript(MIGRATION_V6_SQL)
+    if from_version < 7:
+        conn.executescript(MIGRATION_V7_SQL)
     conn.execute("INSERT INTO schema_version (version) VALUES (?)", (to_version,))
     conn.commit()
