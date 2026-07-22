@@ -4,7 +4,7 @@ Open `bene.db` with any SQLite client and you can answer, in plain SQL, every qu
 
 > **The entire state of your agent fleet is one SQLite file — query it, `cp` it, back it up; nothing leaves your machine.**
 
-The schema is at version **4**, defined in `bene/schema.py`.
+The schema is at version **7**, defined in `bene/schema.py`.
 
 ---
 
