@@ -19,5 +19,6 @@
 **Action:** Define compound indexes that exactly match the `ORDER BY` conditions, including the `DESC` keyword explicitly, such as `CREATE INDEX idx_name ON table(col1 DESC, col2 DESC)`.
 
 ## 2026-07-22 - Avoid SQLite Temp B-Trees on ORDER BY Queries in UI Dashboard
+
 **Learning:** When retrieving a list of agents sorted by `created_at` in the UI dashboard (e.g. `ORDER BY a.created_at DESC`), SQLite is forced to use a Temp B-Tree if there is no corresponding index. This makes the query $O(N \log N)$ instead of $O(1)$, which severely degrades performance as the agent count grows over time.
 **Action:** Add an explicit index on the column used for sorting (e.g. `CREATE INDEX IF NOT EXISTS idx_agents_created_at ON agents(created_at DESC)`) to enable SQLite to use an index scan.
