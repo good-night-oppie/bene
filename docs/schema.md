@@ -4,7 +4,7 @@ Open `bene.db` with any SQLite client and you can answer, in plain SQL, every qu
 
 > **The entire state of your agent fleet is one SQLite file — query it, `cp` it, back it up; nothing leaves your machine.**
 
-The schema is at version **4**, defined in `bene/schema.py`.
+The schema is at version **7**, defined in `bene/schema.py`.
 
 ---
 
@@ -566,12 +566,12 @@ CREATE TABLE IF NOT EXISTS schema_version (
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
-| `version` | INTEGER | PRIMARY KEY | The migration number. Current: 6. |
+| `version` | INTEGER | PRIMARY KEY | The migration number. Current: 7. |
 | `applied_at` | TEXT | NOT NULL, auto-generated | When that migration ran. |
 
 ### Migration mechanics
 
-- First initialization inserts version 6.
+- First initialization inserts version 7.
 - On later opens, a database that trails the code's `SCHEMA_VERSION` is brought forward by incremental migrations through `_apply_migrations()`.
 - Future steps land as `if from_version < N:` blocks in `bene/schema.py`.
 
