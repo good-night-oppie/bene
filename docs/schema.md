@@ -4,7 +4,7 @@ Open `bene.db` with any SQLite client and you can answer, in plain SQL, every qu
 
 > **The entire state of your agent fleet is one SQLite file — query it, `cp` it, back it up; nothing leaves your machine.**
 
-The schema is at version **4**, defined in `bene/schema.py`.
+The schema is at version **7**, defined in `bene/schema.py`.
 
 ---
 
@@ -619,6 +619,7 @@ Each index that ships with the schema, and the query shape it serves:
 |---|---|---|---|---|
 | agents | `idx_agents_status` | `status` | No | Filter agents by lifecycle state |
 | agents | `idx_agents_parent` | `parent_id` | No | Find child agents |
+| agents | `idx_agents_created_at_v7` | `created_at DESC` | No | Fast descending sort by creation time (e.g. dashboards) |
 | files | `idx_files_agent_path` | `agent_id, path` | Yes (`deleted=0`) | Fast file lookup excluding deleted |
 | files | `idx_files_agent` | `agent_id` | No | List all files for an agent |
 | tool_calls | `idx_tool_calls_agent` | `agent_id, started_at` | No | Chronological call history |
