@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS agents (
 );
 CREATE INDEX IF NOT EXISTS idx_agents_status ON agents(status);
 CREATE INDEX IF NOT EXISTS idx_agents_name ON agents(name);
+CREATE INDEX IF NOT EXISTS idx_agents_created_at_v7 ON agents(created_at DESC);
 
 CREATE TABLE IF NOT EXISTS files (
     file_id          BIGSERIAL PRIMARY KEY,
