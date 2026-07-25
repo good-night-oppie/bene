@@ -17,3 +17,8 @@
 
 **Learning:** When querying SQLite with an `ORDER BY col1 DESC, col2 DESC` clause (like in `memory` cross-agent queries fetching recent records), if an index only covers `col1` or covers both but in default `ASC` order, SQLite falls back to a Temp B-Tree. This makes fetch times $O(N \log N)$ instead of $O(1)$, which is a huge bottleneck as the table grows.
 **Action:** Define compound indexes that exactly match the `ORDER BY` conditions, including the `DESC` keyword explicitly, such as `CREATE INDEX idx_name ON table(col1 DESC, col2 DESC)`.
+
+## 2026-07-25 - Avoid O(N log N) Temp B-Trees on Global Dashboard Queries
+
+**Learning:** While we previously solved Temp B-Trees on compound indexes, simple single-column `ORDER BY` queries on high-volume root tables (like sorting the entire `agents` table by `created_at DESC` for a global dashboard) can also force a massive Temp B-Tree if no exact index exists on that column. This degrades dashboard load times from O(1) to O(N log N).
+**Action:** Always create a dedicated index on columns frequently used for global, cross-tenant `ORDER BY ... LIMIT` queries (such as `created_at`), even if they seem like simple metadata.
