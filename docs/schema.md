@@ -566,12 +566,12 @@ CREATE TABLE IF NOT EXISTS schema_version (
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
-| `version` | INTEGER | PRIMARY KEY | The migration number. Current: 6. |
+| `version` | INTEGER | PRIMARY KEY | The migration number. Current: 7. |
 | `applied_at` | TEXT | NOT NULL, auto-generated | When that migration ran. |
 
 ### Migration mechanics
 
-- First initialization inserts version 6.
+- First initialization inserts version 7.
 - On later opens, a database that trails the code's `SCHEMA_VERSION` is brought forward by incremental migrations through `_apply_migrations()`.
 - Future steps land as `if from_version < N:` blocks in `bene/schema.py`.
 
@@ -617,7 +617,8 @@ Each index that ships with the schema, and the query shape it serves:
 
 | Table | Index Name | Columns | Partial? | Purpose |
 |---|---|---|---|---|
-| agents | `idx_agents_status` | `status` | No | Filter agents by lifecycle state |
+| agents | `idx_agents_status_v2` | `status, created_at` | No | Filter agents by lifecycle state and ordered by created_at |
+| agents | `idx_agents_created_at` | `created_at` | No | Order agents chronologically |
 | agents | `idx_agents_parent` | `parent_id` | No | Find child agents |
 | files | `idx_files_agent_path` | `agent_id, path` | Yes (`deleted=0`) | Fast file lookup excluding deleted |
 | files | `idx_files_agent` | `agent_id` | No | List all files for an agent |

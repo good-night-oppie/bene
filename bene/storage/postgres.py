@@ -39,8 +39,9 @@ CREATE TABLE IF NOT EXISTS agents (
     pid             INTEGER,
     last_heartbeat  TIMESTAMPTZ
 );
-CREATE INDEX IF NOT EXISTS idx_agents_status ON agents(status);
-CREATE INDEX IF NOT EXISTS idx_agents_name ON agents(name);
+CREATE INDEX IF NOT EXISTS idx_agents_status_v2 ON agents(status, created_at);
+CREATE INDEX IF NOT EXISTS idx_agents_name_v2 ON agents(name, created_at);
+CREATE INDEX IF NOT EXISTS idx_agents_created_at ON agents(created_at);
 
 CREATE TABLE IF NOT EXISTS files (
     file_id          BIGSERIAL PRIMARY KEY,
