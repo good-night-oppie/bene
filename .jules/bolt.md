@@ -19,5 +19,6 @@
 **Action:** Define compound indexes that exactly match the `ORDER BY` conditions, including the `DESC` keyword explicitly, such as `CREATE INDEX idx_name ON table(col1 DESC, col2 DESC)`.
 
 ## 2024-07-28 - SQLite Temp B-Trees on ORDER BY created_at
+
 **Learning:** In SQLite, querying a table with `ORDER BY created_at` when the dataset is large causes an expensive O(N log N) Temp B-Tree sort if there is no explicit index on `created_at` or a compound index including it with the filtered columns. A 166x speedup was observed when resolving this in the agents table.
 **Action:** Always ensure that columns frequently used in `ORDER BY` clauses (like `created_at` in dashboards/listings) have explicit or compound indexes covering the queries.
