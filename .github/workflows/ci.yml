@@ -158,6 +158,7 @@ jobs:
           BASE_REF: origin/${{ github.event.pull_request.base.ref }}
           BENE_CONFIG: .github/bene/bene-ci.yaml
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./scripts/ci/regression_gate.sh
       - name: Upload triage artifact
         if: always()
@@ -238,6 +239,7 @@ jobs:
           GITHUB_HEAD_REF: ${{ github.event.pull_request.head.ref }}
           BENE_CONFIG: .github/bene/bene-ci.yaml
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Gate: only auto-apply when the PR carries the 'auto-apply-swarm'
           # label. Otherwise the swarm runs in advisory-only mode (default).
           SWARM_APPLY_FLAG: >-
@@ -292,6 +294,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BENE_CONFIG: .github/bene/bene-ci.yaml
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: "${{ runner.temp }}/bene-pin/bin/python scripts/ci/review_swarm.py"
       - name: Upload review artifact
         if: always()

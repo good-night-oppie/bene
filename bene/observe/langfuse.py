@@ -89,10 +89,9 @@ class _V2Node:
     def __enter__(self) -> _V2Node:
         return self
 
-    def __exit__(self, *exc: Any) -> bool:
+    def __exit__(self, *exc: Any) -> None:
         if not self._is_root:
             _safe(self._obj.end)
-        return False
 
     def _wrap(self, child: Any) -> Any:
         return _V2Node(self._client, child) if child is not None else NullObservation()
@@ -164,7 +163,7 @@ class _V4Node:
         # Enter the trace-attribute propagation context FIRST so session_id /
         # metadata / tags propagate to the observation span created below.
         if self._trace_fields:
-            self._propagate_cm = _safe(lambda: _propagate_attributes(self._trace_fields))
+            self._propagate_cm = _safe(lambda: _propagate_attributes(self._trace_fields or {}))
             if self._propagate_cm is not None:
                 _safe(self._propagate_cm.__enter__)
         self._cm = _safe(self._factory)
@@ -173,12 +172,11 @@ class _V4Node:
         self._obj = _safe(self._cm.__enter__)
         return self
 
-    def __exit__(self, *exc: Any) -> bool:
+    def __exit__(self, *exc: Any) -> None:
         if self._cm is not None:
             _safe(lambda: self._cm.__exit__(*exc))
         if self._propagate_cm is not None:
             _safe(lambda: self._propagate_cm.__exit__(*exc))
-        return False
 
     def span(self, name: str, *, input: Any = None, metadata: dict | None = None) -> _V4Node:
         return _V4Node(

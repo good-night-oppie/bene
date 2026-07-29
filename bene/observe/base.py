@@ -27,7 +27,7 @@ class Observation(Protocol):
 
     def __enter__(self) -> Observation: ...
 
-    def __exit__(self, *exc: Any) -> bool: ...
+    def __exit__(self, *exc: Any) -> None: ...
 
     def span(
         self, name: str, *, input: Any = None, metadata: dict[str, Any] | None = None
@@ -81,8 +81,8 @@ class NullObservation:
     def __enter__(self) -> NullObservation:
         return self
 
-    def __exit__(self, *exc: Any) -> bool:
-        return False
+    def __exit__(self, *exc: Any) -> None:
+        pass
 
     def span(self, name: str, **_: Any) -> NullObservation:
         return self
