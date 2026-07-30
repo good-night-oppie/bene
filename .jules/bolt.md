@@ -19,5 +19,6 @@
 **Action:** Define compound indexes that exactly match the `ORDER BY` conditions, including the `DESC` keyword explicitly, such as `CREATE INDEX idx_name ON table(col1 DESC, col2 DESC)`.
 
 ## 2025-02-23 - Prevent SQLite Temp B-Trees on Agent Dashboards
+
 **Learning:** Queries fetching the most recent rows from a table using `ORDER BY created_at DESC LIMIT X` will trigger an expensive O(N log N) Temp B-Tree sort if an explicit descending index on `created_at` doesn't exist. This was occurring on dashboard queries for the `agents` table.
 **Action:** Always verify query plans with `EXPLAIN QUERY PLAN` on endpoints returning paginated lists or dashboards. Add single-column descending indexes like `CREATE INDEX idx_table_created_at ON table(created_at DESC)` for the primary sort key in tables handling user or agent lists.
