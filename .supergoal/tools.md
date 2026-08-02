@@ -1,7 +1,8 @@
-# Detected tools (2026-06-11)
-- WebSearch / WebFetch — available (deferred; load via ToolSearch)
-- Skill tool — available; perspective skills at ~/.claude/skills/{hassabis-perspective,ilya-sutskever-perspective,andrej-karpathy-perspective}/SKILL.md (READ FILES DIRECTLY — more deterministic than skill invocation)
-- kaos MCP (mcp__kaos__*) — available but NOT needed; read ../kaos source directly
-- Context7 — NOT available
-- Workflow/ultracode — available in main session only, NOT in /goal executor; executor uses Agent/parallel reads
-- Memory dir: /home/admin/.claude/projects/-home-admin/memory
+# Tools detected this session
+
+- **Context7** (`mcp__claude_ai_Context7__*`) — library docs. Low need: this is an internal SQLite/stdlib feature.
+- **WebSearch / WebFetch** (deferred) — available. Optional: NeuSymMS is inspiration-only; no implementation needed.
+- **prisma_deep_plan** / **pal** (thinkdeep, codereview, secaudit) — architecture/review delegation. Optional adversarial review pass in Polish phase.
+- **serena** — semantic code navigation (optional).
+
+Decision: this is a deterministic stdlib+SQLite kernel feature. Plan against repo conventions + Python stdlib (`sqlite3`, `json`, `hashlib`); no external SDKs. Use `ulid` (already a dep). Reuse `bene/kernel/genome_canonical.py` canonical hashing for value-equality. No LLM/network/vector/graph deps by hard constraint.

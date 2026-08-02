@@ -1,61 +1,58 @@
 SUPERGOAL_PHASE_START
-Phase: 1 of 10 — Mine corpus, audit rivals
-Task: Mine the eddie-agi-kb gold corpus into a paper→capability synthesis and produce an evidence-backed KAOS/the 0.1.0 predecessor shortcoming audit.
-Type: brownfield, research, docs
-Mandatory commands: uv run python -m pytest tests/ -q -p no:cacheprovider, uv run ruff check .
-Acceptance criteria: 7
-Evidence required: SYNTHESIS.md + GAP-AUDIT.md excerpts in transcript, citation count grep, pytest tail, ruff exit code
+Phase: 1 of 6 — ADR + schema + contract
+Task: Write the ADR (14 answers) and create the additive 4-table truth schema + Fact/Belief/Decision/Conflict contract.
+Type: brownfield · core-infra · kernel-feature
+Mandatory commands: uv run python -m pytest tests/kernel/test_truth.py -v ; uv run ruff check bene/kernel/truth/ tests/kernel/test_truth.py ; uv run ruff format --check bene/kernel/truth/ tests/kernel/test_truth.py
+Acceptance criteria: 9
+Evidence required: pytest schema output+exit; sqlite_master/PRAGMA dump; ADR section count; ruff exit codes
 Depends on phases: none
 
 ## Why
 
-Every BENE 2.0 capability must trace to a paper and every "beyond KAOS/the 0.1.0 predecessor" claim to an evidenced shortcoming — this file pair is the ground truth for phases 2, 3, and 10.
-
-## Context you need (executor has zero prior context)
-
-- Repo: /home/admin/gh/bene-main — BENE v0.1.0, a local-first multi-agent orchestration framework (rebranded from the 0.1.0 predecessor). Read CLAUDE.md and README.md first.
-- Gold corpus: /home/admin/gh/eddie-agi-kb/data/gold/lists/ — 11 list dirs, ~100 entries. Each entry is a directory named `NN_<chinese title>` containing `transcript.txt` (full readable transcript — the deep-read target), `slides.json`, `slides.pdf`, `slides/`.
-  - Lists + entry counts: agent-auto-opt-papers(16), agent-context-memory(10), agent-loop-papers(10), agent-multi-prompt-opt(6), agent-skills-mgmt-papers(8), agent-theory-research(4), agent-kv-cache(2), agent-fun-research(2), harness-engineering(32), vibe-coding(10), apple-em-aidev-2026(empty).
-- Rival 1: KAOS v0.9.1 at /home/admin/gh/kaos — read its CLAUDE.md, README.md, and `ls kaos/` module tree. Notable: dream/, eval/harness (falsifiable probes, ISA.lock kill gates), experiments.py, ideal_state.py, neuroplasticity in skills.py, GEPA router, 58 MCP tools.
-- Rival 2: the 0.1.0 predecessor ≈ bene 0.1.0 itself (this repo IS the rebranded the 0.1.0 predecessor; original at $PREDECESSOR_SRC). Audit ./bene as the the 0.1.0 predecessor state. Notable edges: temporal/, storage/ protocol (sqlite+postgres), runtime/, intake.py, benchmarks/; 37 MCP tools; NO eval discipline, NO dream, NO experiments journal.
-- Five pillars the synthesis maps onto (from .supergoal/THINKING.md — read it):
-  1. KAOS-parity core (falsifiable eval, experiments, consolidation, plasticity)
-  2. Evolution engine (GEPA/MIPRO, Trace2Skill, SkillClaw, SkillX, EvoMap genes)
-  3. Memory & context OS (MemGAS, RF-Mem, AgentSwing, context-pollution ICLR26)
-  4. Harness-engineering layer (OpenAI harness canon, LangChain harness series, Claude Code lessons)
-  5. Trust & Experience (Apple-grade UX; engineers trust agents — audit, falsifiability, replay)
+The contract and schema are load-bearing; the ADR forces every definitional question to be answered before code locks it in.
 
 ## Work
 
-- Read .supergoal/THINKING.md and .supergoal/ROADMAP.md for full plan context.
-- Enumerate all list dirs; build the candidate table (list, entry, title-derived topic).
-- Define the selection rubric (relevance to the 5 pillars; prefer: all 6 multi-prompt-opt entries' techniques GEPA/MIPRO/ADOPT, auto-opt entries on Meta-Harness/SkillX/EvoMap/Trace2Skill/SkillClaw/Ctx2Skill, context-memory entries AgentSwing/MemGAS/RF-Mem/MemCoE/GAM, theory entries on context pollution, loop entries ReAct/Plan&Execute/AdaPlanner/ReCAP/RLM, harness-engineering: OpenAI series ①–⑦ + autonomy threshold ⑧ + debt ⑦/⑨ + Schmid + LangChain series + Claude Code lessons; kv-cache TokenDance; dedupe duplicate entries which exist in several lists).
-- Deep-read transcript.txt for ~25 selected entries (they are long; read enough of each to extract the core mechanism honestly — typically the first 200-400 lines + skim). Skim slides.json titles for the rest.
-- Write docs/research/SYNTHESIS.md: per-entry citation block (list/entry-dir-name, paper/technique name, core idea ≤2 lines, the BENE 2.0 capability it informs, pillar 1–5). End with a pillar→papers matrix.
-- Inventory both rivals from source (module trees, MCP tool counts via grep, key mechanisms) into docs/research/GAP-AUDIT.md.
-- Write shortcoming lists with evidence: ≥8 for KAOS (e.g. no durable/Temporal runtime, no storage protocol/Postgres path, no autonomy ladder, no context-pollution defense, no trust surface, single-process orientation, no benchmark data machinery like bene's, eval harness not unified with memory substrate — verify each against source before claiming), ≥8 for the 0.1.0 predecessor/bene (no falsifiable eval, no experiments journal, no dream/consolidation, static skills no plasticity, no pollution defense, no autonomy ladder, no trust ledger, FTS5-only retrieval — verify each).
-- Add the subsumption-table skeleton: rows = every KAOS capability + every bene capability; columns = capability, rival mechanism, BENE-2.0 mechanism (leave blank — phase 2 fills), notes.
+- Write `docs/adr/0001-belief-fact-contract-and-truth-maintenance.md` (create `docs/adr/`). Answer ALL 14 ADR questions, each as its own `##` section:
+  1. What is a Fact? 2. What is a Belief? 3. What is a Decision? 4. What is a Conflict? 5. Fact vs Claim? 6. Claim vs Belief? 7. Stable reconciliation key? 8. How does scope work? 9. Lifecycle states? 10. Which beliefs admissible for context/promotion/action? 11. Why deterministic reducer? 12. Why LLM extraction/semantic interpretation OUTSIDE core? 13. Why SQLite is enough for v1? 14. How this later serves agentdex-cli + eddie-agi-kb?
+  - State the schema (4 tables + columns), reconciliation rules 1–10, and the single-active-belief DB invariant in the ADR.
+- Create `bene/kernel/truth/` package:
+  - `schema.py`: `TRUTH_SCHEMA_VERSION = 1`, `TRUTH_SCHEMA_SQL` (all `CREATE ... IF NOT EXISTS`), `ensure_truth(conn)` idempotent + concurrency-safe (`INSERT OR IGNORE` into `truth_schema_version`, mirroring `ensure_v2`'s rationale). Four tables:
+    - `belief_facts`(fact_id PK, kind, subject, relation, value, value_hash, scope DEFAULT 'global', source, source_type, confidence REAL, observed_at, expires_at, run_id, agent_id, trace_id, evidence_uri, derived_from DEFAULT '[]', metadata DEFAULT '{}', unsafe INTEGER DEFAULT 0, reconciled_at, created_at). `kind` CHECK in the 6 fact kinds. agent_id is plain TEXT (nullable, NO FK). Indexes on (subject,relation,scope), kind, source_type, reconciled_at.
+    - `beliefs`(belief_id PK, subject, relation, value, value_hash, scope, lifecycle CHECK in 6 states, confidence, active_from, active_until, derived_from DEFAULT '[]', last_decision_id, admissible_for_context INTEGER DEFAULT 0, admissible_for_promotion INTEGER DEFAULT 0, admissible_for_action INTEGER DEFAULT 0, created_at, updated_at). Partial unique index: `CREATE UNIQUE INDEX IF NOT EXISTS idx_beliefs_active_key ON beliefs(subject,relation,scope) WHERE lifecycle='active'`.
+    - `belief_decisions`(decision_id PK, belief_id (nullable — no-op/rejected facts), rule, from_lifecycle, to_lifecycle, reason, fact_id, admissible_for_context, admissible_for_promotion, admissible_for_action, metadata DEFAULT '{}', created_at). Index on belief_id, rule.
+    - `belief_conflicts`(conflict_id PK, subject, relation, scope, belief_id, fact_id, kind, resolution, decision_id, created_at). Index on (subject,relation,scope).
+    - `truth_schema_version`(version PK, applied_at).
+  - `contract.py`: frozen-ish dataclasses `Fact`, `Belief`, `Decision`, `Conflict`; constants `FACT_KINDS`, `BELIEF_LIFECYCLES`, `UNRELIABLE_SOURCE_TYPES = frozenset({"failed","unreliable","untrusted","error"})`, rule-name constants; `validate_fact(...)`; `value_hash(value)` = `genome_hash({"value": value})` (reuse `bene/kernel/genome_canonical.py`).
+  - `__init__.py`: export `ensure_truth`, `TRUTH_SCHEMA_VERSION`, contract classes + constants (API funcs added in later phases).
+- Wire `ensure_truth(conn)` into `bene/kernel/schema_v2.py::ensure_v2` (call it at the end — additive, does not change `kernel_schema_version`).
+- `tests/kernel/test_truth.py`: schema tests (tables exist, columns present, partial unique index present, idempotent double-run, ensure_v2 creates truth tables, kind/lifecycle constants, value_hash canonicality, no ALTER of legacy tables).
 
 ## Acceptance criteria (all must pass — verify each in transcript)
 
-- SYNTHESIS.md cites ≥20 distinct gold-corpus entries by list + entry dir name, each with core idea, informed capability, and pillar number (grep -c the citation blocks and show the count)
-- ≥12 distinct papers/techniques mapped; every pillar 1–5 has ≥2 papers in the matrix (show the matrix)
-- Selection rubric section exists and names what was deep-read vs skimmed
-- GAP-AUDIT.md contains both rival inventories with module trees and MCP tool counts taken from source (show the inventory headers)
-- ≥8 evidenced KAOS shortcomings + ≥8 evidenced bene/the 0.1.0 predecessor shortcomings (each cites a file/module or its absence — show 3 examples of each in transcript)
-- Subsumption-table skeleton present with every rival capability as a row
-- Both mandatory commands exit 0
+- `ensure_truth(conn)` creates exactly `belief_facts`, `beliefs`, `belief_decisions`, `belief_conflicts`, `truth_schema_version` (verified by querying `sqlite_master`).
+- `belief_facts` and `beliefs` expose `subject`, `relation`, `scope`, `value`, `value_hash` as real columns (`PRAGMA table_info`), not JSON-only.
+- A partial unique index enforces one `active` belief per `(subject,relation,scope)` (verified via index list / `sqlite_master`).
+- `ensure_truth` is idempotent: running twice leaves exactly one `truth_schema_version` row and raises no error.
+- `ensure_v2(conn)` also creates the 4 truth tables AND still creates the legacy v2 tables (engrams etc.).
+- `FACT_KINDS == {observation,claim,state,hypothesis,decision,policy}` and `BELIEF_LIFECYCLES == {candidate,active,superseded,quarantined,expired,rejected}`.
+- `value_hash(1) == value_hash(1.0)` and `value_hash("a") != value_hash(1)`.
+- ADR file exists and contains a `##`/`###` section answering each of the 14 questions (≥14).
+- No legacy table is ALTERed (diff has no `ALTER TABLE agents|files|blobs|tool_calls|state|events|checkpoints|memory|shared_log|agent_skills`).
 
 ## Mandatory commands (run each, surface last ~10 lines + exit code)
 
-- uv run python -m pytest tests/ -q -p no:cacheprovider
-- uv run ruff check .
+- `uv run python -m pytest tests/kernel/test_truth.py -v`
+- `uv run ruff check bene/kernel/truth/ tests/kernel/test_truth.py`
+- `uv run ruff format --check bene/kernel/truth/ tests/kernel/test_truth.py`
 
-## Evidence required
+## Evidence required in transcript
 
-- File existence: ls -la docs/research/
-- Citation count: grep output showing ≥20 entry citations
-- 3 sample KAOS + 3 sample bene shortcomings pasted
-- pytest tail + ruff exit code
+- pytest output (schema tests pass) + exit code
+- a `sqlite_master` + `PRAGMA table_info` dump proving the 5 tables, key columns, and the partial unique index
+- `grep -c` of the 14 ADR question sections + the question titles
+- ruff check + format exit codes
 
-[Print SUPERGOAL_PHASE_VERIFY with per-criterion pass/fail, then SUPERGOAL_PHASE_DONE; update .supergoal/STATE.md; follow .supergoal/PROTOCOL.md on failure.]
+## Notes
+
+Follow `ensure_v2`'s idempotency comment style verbatim in spirit. Keep all DDL `IF NOT EXISTS`. Do NOT FK `belief_facts.agent_id`. value/value_hash and the reconciliation key MUST be real columns. Reuse `genome_hash`; do not write a parallel canonicalizer.

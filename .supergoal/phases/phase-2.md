@@ -1,56 +1,52 @@
 SUPERGOAL_PHASE_START
-Phase: 2 of 10 — Mastermind BENE 2.0 design
-Task: Design BENE 2.0 through the fused Hassabis/Sutskever/Karpathy lenses — architecture, kernel spec, and a three-perspective design-rationale log.
-Type: brownfield, design, docs
-Mandatory commands: uv run python -m pytest tests/ -q -p no:cacheprovider, uv run ruff check .
-Acceptance criteria: 8
-Evidence required: doc excerpts, decision-count grep, subsumption table shown, pytest tail
+Phase: 2 of 6 — Persistence: emit + queries (TruthStore)
+Task: Build TruthStore — emit_fact persisting all reconciliation-critical fields + inspectable belief/fact queries + explain_belief skeleton.
+Type: brownfield · core-infra · kernel-feature
+Mandatory commands: uv run python -m pytest tests/kernel/test_truth.py -v ; uv run ruff check bene/kernel/truth/ tests/kernel/test_truth.py ; uv run ruff format --check bene/kernel/truth/ tests/kernel/test_truth.py
+Acceptance criteria: 7
+Evidence required: pytest output+exit; raw-SQL dump of one emitted fact row; ruff exit codes
 Depends on phases: 1
 
 ## Why
 
-The redesign IS the three-perspective synthesis — this document trio is the engineering blueprint for phases 4–9 AND the centerpiece interview artifact for phase 3.
-
-## Context you need
-
-- Inputs: docs/research/SYNTHESIS.md + GAP-AUDIT.md (phase 1), .supergoal/THINKING.md, the current codebase (read bene/core.py, bene/schema.py, bene/skills.py, bene/memory.py, bene/metaharness/, bene/storage/protocol.py headers to design against reality).
-- The three mastermind lenses — READ THESE FILES (do not just invoke skills):
-  - ~/.claude/skills/hassabis-perspective/SKILL.md — expect: solve-intelligence-then-use-it, games as stepping stones/testbeds, scale + breakthrough, scientific falsifiability, multi-disciplinary fusion
-  - ~/.claude/skills/ilya-sutskever-perspective/SKILL.md — expect: compression-is-understanding/prediction, scale conviction, simple unified objectives, learn-from-data over hand-engineering
-  - ~/.claude/skills/andrej-karpathy-perspective/SKILL.md — expect: LLM-OS framing, Software 2.0/3.0, autonomy sliders, march of nines, jagged intelligence, build-to-understand, verification realism
-- The unifying kernel concept (from THINKING.md): **everything is an engram** — one typed, append-only substrate where traces, memories, skills, eval verdicts, experiments, strategies are engram kinds with provenance links and a compression ladder: raw trace → episodic → semantic → procedural (skill) → strategic (gene). Sutskever's compression made architectural; the Dune "Other Memory" made literal; Karpathy's LLM-OS kernel made concrete.
-- Dune naming is retained and extended (BENE = Breeding-program · Evolutionary · Nexus · Engrams; Missionaria Protectiva = skill propagation; Litany = checkpoint/restore; Bene Gesserit lore in README).
-- The five pillars (THINKING.md). Pillar 5 (Trust & Experience) is the user's own addition — Apple-grade zero-config UX + "engineers trust agents because every claim is checkable."
+Facts must be storable with every reconciliation-critical field intact before any reducer can reason over them; queries provide the inspectable read surface.
 
 ## Work
 
-- Read all inputs above.
-- docs/design/MASTERMIND-RATIONALE.md — for ≥10 major design decisions, write: the decision, what each lens (H/S/K) pushes for, the tension, the resolution BENE 2.0 adopts. Required decisions include at least: (1) unified engram substrate vs separate stores; (2) compression ladder vs flat memory; (3) evolution with kill gates vs unconstrained self-improvement; (4) autonomy ladder vs full autonomy; (5) local-first SQLite vs server-first; (6) falsifiable probes vs benchmark scores; (7) text-evolution (GEPA) vs RL/fine-tuning; (8) trust ledger design; (9) context OS strategy selection vs fixed compaction; (10) port-over vs rewrite of legacy modules.
-- docs/design/BENE2-DESIGN.md — the architecture: kernel diagram (ASCII), the five pillars each with subsystem API sketch + the papers (cited from SYNTHESIS.md) that ground it + the lore mapping; the COMPLETED subsumption table (fill every blank row from phase 1's skeleton: every KAOS capability and every bene capability → its BENE-2.0 mechanism — no row left blank, "kept as-is via X" is a legal answer); the autonomy ladder L0–L4 with per-level verification gates; the "beyond both" section: ≥5 capabilities neither rival has (e.g. context-pollution recovery, trust ledger, autonomy enforcement, strategy genes w/ Pareto frontier, engram compression ladder).
-- docs/design/KERNEL-SPEC.md — buildable spec: complete SQL DDL for additive v2 tables (engrams, engram_links, capabilities, probes, verdicts, experiments, trust_events — design carefully against bene/schema.py conventions: ULIDs, created_at, agent_id scoping); Python API signatures (class + method stubs with docstrings) for bene/kernel/{engrams,bus,capabilities}.py, bene/kernel/eval/, bene/kernel/evolve/, bene/kernel/memory/, bene/kernel/harness/; the port plan table: every legacy module → keep / adapt(phase 9) / supersede, with phase numbers.
-- Keep docs tight: DESIGN ≤ ~600 lines, RATIONALE ≤ ~400, KERNEL-SPEC ≤ ~600.
+- `bene/kernel/truth/store.py` — `class TruthStore` with `__init__(self, conn)` (call `ensure_truth(conn)` defensively):
+  - `emit_fact(self, *, kind, subject, relation, value, scope="global", source=None, source_type=None, confidence=1.0, observed_at=None, expires_at=None, run_id=None, agent_id=None, trace_id=None, evidence_uri=None, derived_from=None, metadata=None, unsafe=False) -> str` — validates kind (via `validate_fact`), mints `ulid`, computes `value_hash`, serializes `derived_from`/`metadata` JSON, defaults `observed_at` to DB now, leaves `reconciled_at` NULL, INSERTs, returns fact_id. Parameterized SQL only.
+  - `get_fact(self, fact_id) -> dict | None`
+  - `list_facts(self, *, subject=None, relation=None, scope=None, kind=None, reconciled=None, limit=None) -> list[dict]`
+  - `list_beliefs(self, *, subject=None, relation=None, scope=None, lifecycle=None, limit=None) -> list[dict]`
+  - `list_active_beliefs(self, *, subject=None, relation=None, scope=None, limit=None) -> list[dict]` (lifecycle='active')
+  - `get_belief(self, belief_id) -> dict | None`
+  - `explain_belief(self, belief_id) -> dict | None` — SKELETON: returns `{belief, facts (from derived_from + key match), decisions: [], conflicts: [], admissibility}`. Decisions/conflicts arrays are wired here (read belief_decisions/belief_conflicts) so P3 only fills the writer side.
+  - Internal helpers for inserting belief/decision/conflict rows (used by P3 reducer): `_insert_belief`, `_insert_decision`, `_insert_conflict`, `_set_belief_lifecycle`. Keep them on TruthStore so reducer composes them.
+- Module-level convenience wrappers in `__init__.py`: `emit_fact(conn, ...)`, `list_beliefs(conn, ...)`, `list_active_beliefs(conn, ...)`, `get_fact`/`explain_belief` (each constructs a `TruthStore`).
+- Extend `tests/kernel/test_truth.py` with emit + query tests.
 
 ## Acceptance criteria (all must pass — verify each in transcript)
 
-- All three SKILL.md files read (quote one signature idea from each in RATIONALE's preamble)
-- RATIONALE: ≥10 decisions, each with explicit H/S/K analysis + tension + resolution (grep decision headers, show count)
-- DESIGN covers all 5 pillars, each citing ≥1 SYNTHESIS.md paper by name
-- Engram substrate + 5-tier compression ladder fully specified (show the ladder section)
-- Subsumption table: zero blank mechanism cells (show the table or its row count + spot rows)
-- Autonomy ladder L0–L4 with per-level gates specified
-- KERNEL-SPEC: complete DDL (show CREATE TABLE count ≥6) + API signatures for all 5 kernel subsystems + port-plan table covering every bene/ top-level module
-- Both mandatory commands exit 0
+- `emit_fact` persists ALL reconciliation-critical fields (fact_id, kind, subject, relation, value, value_hash, scope, source, source_type, confidence, observed_at, expires_at, run_id, agent_id, trace_id, evidence_uri, derived_from, metadata, unsafe) — a direct-SQL read returns each supplied value (Test 1).
+- `emit_fact` computes/stores `value_hash`, defaults `scope='global'`, sets `observed_at`, leaves `reconciled_at` NULL.
+- `emit_fact` raises a clear error for an unknown `kind`.
+- Emitting a `claim` fact creates a `belief_facts` row but NO `beliefs` row (Test 2 precondition — reducer not yet run).
+- `list_beliefs`/`list_active_beliefs` return inspectable rows; empty DB returns `[]` (no crash).
+- `explain_belief` on a missing id returns None/empty (no crash); on a present belief returns belief + source facts (+ empty decisions/conflicts for now).
+- Direct-SQL test asserts `SELECT COUNT(*) FROM belief_facts` matches the number emitted (Test 12 — SQLite directly inspectable).
 
 ## Mandatory commands (run each, surface last ~10 lines + exit code)
 
-- uv run python -m pytest tests/ -q -p no:cacheprovider
-- uv run ruff check .
+- `uv run python -m pytest tests/kernel/test_truth.py -v`
+- `uv run ruff check bene/kernel/truth/ tests/kernel/test_truth.py`
+- `uv run ruff format --check bene/kernel/truth/ tests/kernel/test_truth.py`
 
-## Evidence required
+## Evidence required in transcript
 
-- ls -la docs/design/
-- Decision-count grep; one full sample decision pasted
-- Subsumption table excerpt; DDL table count
-- pytest tail + ruff exit code
+- pytest output (emit/query tests pass) + exit code
+- a transcript dump of one emitted fact row read back via raw `SELECT * FROM belief_facts` showing all fields populated
+- ruff check + format exit codes
 
-[Print SUPERGOAL_PHASE_VERIFY then SUPERGOAL_PHASE_DONE; update .supergoal/STATE.md; follow .supergoal/PROTOCOL.md on failure.]
+## Notes
+
+Parameterized SQL ONLY (no f-string value interpolation). Return plain dicts (sqlite3 Row → dict) so output is JSON-serializable for the CLI later. `derived_from`/`metadata` stored as JSON text, returned parsed. Keep insert helpers reducer-friendly; the reducer in P3 must not duplicate persistence logic.

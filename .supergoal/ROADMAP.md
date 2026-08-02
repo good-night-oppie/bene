@@ -1,221 +1,251 @@
-# Roadmap: BENE 2.0 Mastermind Redesign + Apple EM Interview Kit
+# Roadmap: BENE Truth Maintenance layer (Belief/Fact Contract + Reducer)
 
-**Task:** Redesign BENE through Hassabis/Sutskever/Karpathy lenses, grounded in the eddie-agi-kb gold corpus, to subsume KAOS + the 0.1.0 predecessor — interview materials for the Apple EM screen (Fri 2026-06-12 11:30 PT) land first.
-**Type:** brownfield, refactor, docs-heavy
-**Created:** 2026-06-11
-**Total phases:** 10
+**Task:** Add BENE's first deterministic, SQLite-backed Truth Maintenance layer — a Belief/Fact contract + reducer that distinguishes raw observations, candidate facts, current beliefs, lifecycle decisions, and promotion/action admissibility.
+**Type:** brownfield · core-infra · kernel-feature
+**Created:** 2026-06-29
+**Total phases:** 6
 
 ## Context summary
 
-- **Stack:** Python 3.11+ (hatchling), SQLite/WAL core, Temporal optional, Starlette UI
-- **Package manager:** uv
-- **Build / test / lint commands:** `uv run python -m pytest tests/ -q` · `uv run ruff check .` · `uv run ruff format --check .`
-- **Risky areas:** interview clock (~26h to phase-3 deadline); new-kernel work must never break legacy suite; apple kit lives outside repo at /home/admin/gh/agentdex-cli/tasks/apple-em-ai-tooling-enablement/
+- **Stack:** Python 3, click CLI, single-file SQLite. IDs via `ulid`.
+- **Package manager:** `uv` (NEVER pip/poetry).
+- **Build / test / lint commands:** `uv sync` · `uv run python -m pytest tests/ -v` · `uv run ruff check .` / `uv run ruff format --check .`
+- **Risky areas:** reducer determinism vs wall-clock; idempotency/double-processing; CLI `--json` collision + agent_id FK; repo CI ruff drift (gate on local green).
 
 ## Assumptions
 
-- BENE 2.0 version is **0.2.0**, shipped at Phase 9; Dune naming (engrams, Other Memory, Breeding Program, Missionaria Protectiva) is retained and extended.
-- Kernel v2 = `bene/kernel/` package + **additive** v2 SQLite tables in the same .db; legacy modules keep working untouched until Phase 9 adapters.
-- Perspective inputs = the three SKILL.md files read directly from ~/.claude/skills/; no live web research required (WebSearch optional enrichment only).
-- Gold-corpus deep-read cap ≈ 25 entries (relevance rubric in phase 1); remaining entries skimmed via titles/slides.json.
-- All new tests run keyless/offline (mock providers); Temporal/e2e live tests excluded from mandatory gates if they require services (pre-flight decides the exact pytest invocation).
-- Apple kit follows the existing package layout (artifacts/ subdir + BILINGUAL doc + INDEX.md table); files prefixed `bene2-` under `artifacts/bene2/`.
-- No git in repo (corrupt .git): Baseline ref = `no-git`; deliverable checks use file existence; cleanliness checks use grep over new/changed paths.
+Non-blocking decisions recorded here so we can proceed without round-trips. If any are wrong, stop the run and tell us:
+
+- **Home:** new kernel subpackage `bene/kernel/truth/` (mirrors `eval/`, `memory/`), 4 tables created by an idempotent `ensure_truth(conn)` with its own `truth_schema_version`; also invoked from `ensure_v2`. No legacy table is ALTERed.
+- **Standalone MVP:** facts/beliefs are their own tables. They *reference* engram/run/agent/trace ids as opaque provenance (`evidence_uri`, `derived_from`) but do NOT deep-wire into the engram substrate or the promotion/runner paths yet. Future consumer integrations (agentdex-cli, eddie-agi-kb) are documented, not implemented.
+- **agent_id nullable, no hard FK** on `belief_facts` (facts may originate outside BENE agents).
+- **Value equality** reuses `bene/kernel/genome_canonical.py::genome_hash` (int==float, NFC==NFD; num≠str).
+- **Reliability policy:** `UNRELIABLE_SOURCE_TYPES = {failed, unreliable, untrusted, error}` + explicit `unsafe=1` → quarantine; unknown source_types default reliable.
+- **Admissibility default:** active+reliable+not-expired ⇒ context/promotion/action all True; every other lifecycle ⇒ all False. Set explicitly by the decision row.
+- **Determinism:** reducer consumes only `reconciled_at IS NULL` facts, ordered `(observed_at, fact_id)`; expiry uses an injectable, recorded `now`; replay-from-scratch reproduces identical beliefs.
+- **Docs:** ADR at `docs/adr/0001-belief-fact-contract-and-truth-maintenance.md`; design explainer `docs/design/TRUTH-MAINTENANCE.md`. Not added to published site nav → no `site/*.html` artifact.
+- **Delivery:** build/verify in-tree, then stash-only-my-files → git worktree → feature branch → PR via `gh` (matching #112–#116). Local-green gated.
 
 ## Risk top 3
 
-1. **Interview deadline slips past phase 3** — likelihood: medium, mitigation: phases 1–3 are self-contained (no implementation dependency); phase-3 demo script uses only commands that already run on 0.1.0.
-2. **New core destabilizes the repo** — likelihood: medium, mitigation: kernel is additive (`bene/kernel/`, v2 tables); every phase's mandatory commands include the legacy suite; ports are adapters in phase 9, not rewrites.
-3. **Research/design scope explosion** — likelihood: high, mitigation: deep-read cap, per-phase acceptance counts, design doc page targets, hard "claims must be implemented-or-marked-planned" rule audited in phase 10.
+1. **Reducer determinism vs wall-clock** (expiry + "newer" comparison) — likelihood: med, mitigation: fixed `(observed_at, fact_id)` order, injectable+recorded `now`, belief stores authoritative source `observed_at`, stale facts recorded as conflicts not silently applied, replay-from-scratch equality test.
+2. **Idempotency / double-processing** — likelihood: med, mitigation: `reconciled_at` watermark + partial unique active index `(subject,relation,scope) WHERE lifecycle='active'`; "reconcile twice" test asserts row counts unchanged.
+3. **Surface collisions** (global `--json` vs `emit --json` payload; agent_id FK blocking external facts) — likelihood: low-med, mitigation: local `--json` value option for emit (+ stdin), nullable un-FK'd agent_id; both documented + tested.
 
 ## Phase map
 
 | # | Phase | Depends on | Deliverable |
 |---|-------|------------|-------------|
-| 1 | Mine corpus, audit rivals | — | docs/research/SYNTHESIS.md + GAP-AUDIT.md |
-| 2 | Mastermind BENE 2.0 design | 1 | docs/design/BENE2-DESIGN.md + MASTERMIND-RATIONALE.md + KERNEL-SPEC.md |
-| 3 | Apple interview narrative kit | 2 | bene2 kit in apple task package + BILINGUAL/INDEX updates |
-| 4 | Kernel v2 engram substrate | 2 | bene/kernel/ (engrams, bus, capabilities, schema v2) + tests |
-| 5 | Trust & falsifiable-eval layer | 4 | bene/kernel/eval/ + trust ledger + experiments + CLI |
-| 6 | Evolution engine | 4, 5 | bene/kernel/evolve/ (GEPA-style, distill, genes) + offline loop |
-| 7 | Memory & context OS | 4 | bene/kernel/memory/ (granules, retrieval, contextos, pollution) |
-| 8 | Harness-engineering layer | 4 | bene/kernel/harness/ (autonomy, senses, sweeper, guards) |
-| 9 | Port, DevEx & demo 2.0 | 4–8 | adapters, `bene demo` 2.0, UI panels, README 2.0, v0.2.0 |
-| 10 | Polish & Harden | 1–9 | full gates, claims-vs-implementation audit, kit refresh |
+| 1 | ADR + schema + contract | — | ADR (14 answers) + `truth/{schema,contract}.py` + idempotent 4-table `ensure_truth` |
+| 2 | Persistence: emit + queries | 1 | `TruthStore` with `emit_fact`, `list_beliefs`, `list_active_beliefs`, `get_fact`, `explain_belief` skeleton |
+| 3 | Deterministic reducer | 1, 2 | `reconcile_beliefs` (Rules 1–9) + `quarantine_belief` (Rule 10) + admissibility + decisions |
+| 4 | CLI `bene belief …` | 3 | 6 subcommands (emit/reconcile/ls/active/explain/quarantine) + `--json` |
+| 5 | Docs + public API + fact catalog | 3, 4 | design doc, `__init__` exports, future-consumer fact catalogs, no-LLM test |
+| 6 | Polish & Harden + Delivery | 1..5 | full suite green, ruff-clean files, hardening passes, worktree + PR |
 
 ---
 
-## Phase 1 — Mine corpus, audit rivals
+## Phase 1 — ADR + schema + contract
 
-**Why:** Every 2.0 capability must trace to a paper and every "beyond KAOS/the 0.1.0 predecessor" claim to an evidenced shortcoming.
-
-**Deliverables:**
-- docs/research/SYNTHESIS.md
-- docs/research/GAP-AUDIT.md
-
-**Acceptance criteria:**
-- [ ] SYNTHESIS.md cites ≥20 gold-corpus entries by list+entry name with per-entry: core idea (≤2 lines), BENE-2.0 capability it informs, pillar assignment (1–5)
-- [ ] ≥12 distinct papers/techniques mapped into the five pillars; every pillar has ≥2 papers
-- [ ] Selection rubric stated (why these ~25 of ~100; what was skimmed vs deep-read)
-- [ ] GAP-AUDIT.md inventories KAOS v0.9.1 modules + MCP surface and bene 0.1.0 modules + MCP surface (from source at /home/admin/gh/kaos and ./bene)
-- [ ] ≥8 KAOS shortcomings and ≥8 the 0.1.0 predecessor/bene shortcomings, each with file/module evidence
-- [ ] A "subsumption table" skeleton: every KAOS + the 0.1.0 predecessor capability listed with planned BENE-2.0 mechanism column (filled in phase 2)
-- [ ] Legacy suite green (mandatory command)
-
-## Phase 2 — Mastermind BENE 2.0 design
-
-**Why:** The redesign IS the three-perspective synthesis — this document is also the centerpiece interview artifact.
+**Why:** The contract and schema are the load-bearing foundation; an ADR forces every definitional question to be answered before code locks them in.
 
 **Deliverables:**
-- docs/design/BENE2-DESIGN.md
-- docs/design/MASTERMIND-RATIONALE.md
-- docs/design/KERNEL-SPEC.md
+- `docs/adr/0001-belief-fact-contract-and-truth-maintenance.md` (answers all 14 ADR questions)
+- `bene/kernel/truth/__init__.py`
+- `bene/kernel/truth/schema.py` (`TRUTH_SCHEMA_SQL`, `TRUTH_SCHEMA_VERSION`, `ensure_truth(conn)`)
+- `bene/kernel/truth/contract.py` (Fact/Belief/Decision/Conflict dataclasses; `FACT_KINDS`, `BELIEF_LIFECYCLES`, `UNRELIABLE_SOURCE_TYPES`; validation; `value_hash`)
+- `ensure_v2` calls `ensure_truth` (additive); `tests/kernel/test_truth.py` (schema tests)
 
 **Acceptance criteria:**
-- [ ] All three perspective SKILL.md files read; RATIONALE contains ≥10 design decisions each analyzed through all 3 lenses (H/S/K) with the tension + resolution stated
-- [ ] DESIGN covers all 5 pillars with subsystem APIs and ties each to ≥1 cited paper from SYNTHESIS.md
-- [ ] The engram substrate + compression ladder (raw→episodic→semantic→procedural→strategic) fully specified
-- [ ] KERNEL-SPEC has complete SQL DDL (v2 tables, additive) + Python API signatures for kernel, eval, evolve, memory, harness modules
-- [ ] Subsumption table completed: every KAOS + bene capability → BENE-2.0 mechanism (no row blank)
-- [ ] Autonomy ladder L0–L4 specified with per-level verification gates
-- [ ] Port plan maps each legacy module to keep/adapt/supersede with phase number
-- [ ] Legacy suite green
+- [ ] `ensure_truth(conn)` creates exactly `belief_facts`, `beliefs`, `belief_decisions`, `belief_conflicts`, `truth_schema_version` — verified by querying `sqlite_master`.
+- [ ] `belief_facts` and `beliefs` have `subject`, `relation`, `scope`, `value`, `value_hash` as real columns (verified via `PRAGMA table_info`), not JSON-only.
+- [ ] A partial unique index enforces one `active` belief per `(subject,relation,scope)` (verified via `sqlite_master` / index list).
+- [ ] `ensure_truth` is idempotent: running twice leaves one `truth_schema_version` row and does not error.
+- [ ] `ensure_v2(conn)` also creates the 4 truth tables (additive wiring) and still creates legacy v2 tables.
+- [ ] `FACT_KINDS == {observation,claim,state,hypothesis,decision,policy}` and `BELIEF_LIFECYCLES == {candidate,active,superseded,quarantined,expired,rejected}`.
+- [ ] `value_hash(1) == value_hash(1.0)` and `value_hash("a") != value_hash(1)` (canonical, via `genome_hash`).
+- [ ] ADR file exists and contains a section answering each of the 14 required questions.
+- [ ] No legacy table is ALTERed (grep diff: no `ALTER TABLE` against legacy tables).
 
-## Phase 3 — Apple interview narrative kit
+**Mandatory commands:**
+- `uv run python -m pytest tests/kernel/test_truth.py -v`
+- `uv run ruff check bene/kernel/truth/ tests/kernel/test_truth.py`
+- `uv run ruff format --check bene/kernel/truth/ tests/kernel/test_truth.py`
 
-**Why:** HM screen Fri 11:30 PT — this phase is the deadline-critical, self-contained interview payload.
+**Evidence required:**
+- pytest output showing schema tests pass + exit code
+- `sqlite_master`/`PRAGMA` dump proving the 5 tables + columns + partial unique index
+- `grep -c "^## " docs/adr/0001-*.md` (≥14 question sections) + the question list
+- ruff exit codes
+
+**Dependencies:** none
+
+---
+
+## Phase 2 — Persistence: emit + queries (TruthStore)
+
+**Why:** Facts must be storable with every reconciliation-critical field intact before any reducer can reason over them; queries give the inspectable read surface.
 
 **Deliverables:**
-- /home/admin/gh/agentdex-cli/tasks/apple-em-ai-tooling-enablement/artifacts/bene2/bene2-talk-track.md
-- .../artifacts/bene2/design-defense-cards.md
-- .../artifacts/bene2/demo-script-5min.md
-- .../artifacts/bene2/paper-qa-cards.md
-- .../apple-prep-BILINGUAL.md updated (≥4 TODO sections filled, EN/中文)
-- .../INDEX.md artifacts table updated
+- `bene/kernel/truth/store.py` — `TruthStore(conn)`: `emit_fact(...)`, `get_fact(fact_id)`, `list_facts(...)`, `list_beliefs(...)`, `list_active_beliefs(...)`, `explain_belief(belief_id)` skeleton (belief + facts; decisions/conflicts filled in P3), plus internal belief/decision/conflict insert helpers.
+- Module-level wrappers `emit_fact(conn, ...)`, `list_beliefs(conn, ...)`, `list_active_beliefs(conn, ...)` in `__init__.py`.
+- Tests in `tests/kernel/test_truth.py` for emit + queries.
 
 **Acceptance criteria:**
-- [ ] Talk track: ≥6 EM-framed stories (vision, org/process, technical judgment, cross-functional, developer-trust, metrics) each ≤90s spoken, mined from the redesign + real BENE/KAOS/the 0.1.0 predecessor history
-- [ ] Design-defense cards: ≥10 anticipated challenges (why not just KAOS? why local-first? why SQLite? why evolution? how to staff it? how to measure DevEx success?) with crisp answers
-- [ ] Demo script: ≤5 min, every command verified to run TODAY on bene 0.1.0 (executor must actually run each and paste output), plus a 60-second 2.0-vision close from the design doc
-- [ ] Paper-QA cards: ≥12 papers, each: 1-line idea, what it informs in BENE, "how I'd productionize it" EM angle
-- [ ] BILINGUAL doc: §0 At-a-glance, §2 role context, §9 prep plan, §11 one-page glance filled EN+中文 interleaved
-- [ ] INDEX.md table row(s) added pointing at the bene2 kit
-- [ ] Zero fabricated claims: every metric/fact in materials traceable to repo/corpus/audit (FDE-resume discipline)
-- [ ] Legacy suite green
+- [ ] `emit_fact` persists ALL reconciliation-critical fields (fact_id, kind, subject, relation, value, scope, source, source_type, confidence, observed_at, expires_at, run_id, agent_id, trace_id, evidence_uri, derived_from, metadata, value_hash, unsafe) — a direct-SQL read returns each non-null where supplied (Test 1).
+- [ ] `emit_fact` computes and stores `value_hash` and defaults (`scope='global'`, `observed_at` set, `reconciled_at` NULL).
+- [ ] `emit_fact` rejects an unknown `kind` with a clear error (validation).
+- [ ] Emitting a `claim` fact creates a `belief_facts` row but **no** `beliefs` row (reducer hasn't run) (Test 2 precondition).
+- [ ] `list_beliefs` / `list_active_beliefs` return inspectable dict/dataclass rows; empty DB returns `[]` (no crash).
+- [ ] `explain_belief` on a missing id returns a clear empty/None result (no crash), and on a present belief returns belief + source facts.
+- [ ] Direct-SQL test asserts `SELECT COUNT(*) FROM belief_facts` reflects emitted facts (Test 12 — SQLite inspectable).
 
-## Phase 4 — Kernel v2 engram substrate
+**Mandatory commands:**
+- `uv run python -m pytest tests/kernel/test_truth.py -v`
+- `uv run ruff check bene/kernel/truth/ tests/kernel/test_truth.py`
+- `uv run ruff format --check bene/kernel/truth/ tests/kernel/test_truth.py`
 
-**Why:** The unifying "everything is an engram" core that all four capability layers build on.
+**Evidence required:**
+- pytest output (emit/query tests pass) + exit code
+- a transcript dump of one emitted fact row read back via raw SQL showing all fields
+- ruff exit codes
+
+**Dependencies:** 1
+
+---
+
+## Phase 3 — Deterministic reducer + quarantine
+
+**Why:** This is the core truth-maintenance engine: deterministic reconciliation, supersession, quarantine, expiry, admissibility, and a decision row for every transition.
 
 **Deliverables:**
-- bene/kernel/__init__.py, engrams.py, bus.py, capabilities.py, schema_v2.py
-- tests/kernel/test_engrams.py, test_bus.py, test_capabilities.py
+- `bene/kernel/truth/reducer.py` — `reconcile_beliefs(conn, *, now=None)` implementing Rules 1–9; `quarantine_belief(conn, belief_id, *, reason)` implementing Rule 10; admissibility computation (Rules 6/7); decision-write on every transition (Rule 8).
+- `explain_belief` completed (belief + source facts + decisions + conflicts + admissibility flags).
+- Module-level wrappers `reconcile_beliefs`, `quarantine_belief`, `explain_belief` exported.
+- Tests in `tests/kernel/test_truth.py` covering Tests 3–11.
 
 **Acceptance criteria:**
-- [ ] Typed engram store: kinds (trace, episodic, semantic, procedural, strategic, eval, experiment, trust), provenance links (parent_ids), compression tier field, content-addressed payloads via existing blob store
-- [ ] FTS5 search over engrams; lineage query (ancestors/descendants) works
-- [ ] Event bus: subscribe/publish with at-least-once dispatch to registered handlers; events also persisted to legacy journal
-- [ ] Capability registry: register/lookup/list with autonomy-level metadata per capability
-- [ ] Schema v2 is additive: opening a pre-existing 0.1.0 .db works; legacy tables untouched (test proves it)
-- [ ] Every engram requires provenance (source agent or system origin) — enforced, tested
-- [ ] ≥25 new kernel tests pass; legacy suite green
+- [ ] Rule 1: a valid candidate fact with no active belief for its key creates exactly one `active` belief + a decision (Test 3).
+- [ ] Rule 9 idempotency: running `reconcile_beliefs` twice over the same facts does not duplicate beliefs or decisions — belief/decision row counts identical after the 2nd run (Test 4).
+- [ ] Rule 2: a newer same-key different-value fact moves the old belief to `superseded` (with `active_until` set) and creates a new `active` belief; both transitions have decisions; a `belief_conflicts` row records the contradiction (Test 5).
+- [ ] Rule 3: a newer same-key same-value fact does NOT create a duplicate active belief (exactly one active remains) and links the fact (Test 6).
+- [ ] Rule 4: a fact with `source_type` in `UNRELIABLE_SOURCE_TYPES` or `unsafe=1` produces a `quarantined` belief/candidate, never `active`, with a decision (Test 7).
+- [ ] Rule 5: an expired fact (`expires_at` < `now`) does not create an `active` belief; the non-activation is explained by a decision row (Test 8).
+- [ ] Rule 10: `quarantine_belief` moves an `active` belief to `quarantined`, sets admissibility all-False, and records a decision (Test 9).
+- [ ] Rule 6: beliefs in `quarantined`/`superseded`/`expired`/`rejected` have `admissible_for_promotion = 0` (Test 10).
+- [ ] Rule 7: an `active` reliable belief has admissibility flags set explicitly by its decision row (decision flags == belief flags) (admissibility test).
+- [ ] Rule 8: every lifecycle transition has a corresponding `belief_decisions` row (no orphan transitions) (audited in tests).
+- [ ] `explain_belief` returns belief, source facts, decisions, conflicts (if any), and admissibility flags (Test 11).
+- [ ] Determinism/replay: reconciling the same fact set from a fresh DB twice yields identical belief `(subject,relation,scope,value,lifecycle)` tuples (replay test).
+- [ ] Stale fact (older `observed_at` than active belief, different value) does NOT supersede; recorded as a conflict/no-op decision.
 
-## Phase 5 — Trust & falsifiable-eval layer
+**Mandatory commands:**
+- `uv run python -m pytest tests/kernel/test_truth.py -v`
+- `uv run ruff check bene/kernel/truth/ tests/kernel/test_truth.py`
+- `uv run ruff format --check bene/kernel/truth/ tests/kernel/test_truth.py`
 
-**Why:** KAOS-parity eval discipline plus the trust pillar — engineers trust agents because claims are checkable.
+**Evidence required:**
+- pytest output showing Tests 3–11 + replay + stale all pass + exit code
+- a transcript excerpt of `explain_belief` output for a superseded key (belief + facts + decisions + conflict)
+- ruff exit codes
+
+**Dependencies:** 1, 2
+
+---
+
+## Phase 4 — CLI `bene belief …`
+
+**Why:** The feature must be scriptable and honest from the command line, matching BENE's existing click + `--json` conventions.
 
 **Deliverables:**
-- bene/kernel/eval/{__init__,probe,gates,verdict}.py
-- bene/kernel/trust.py
-- CLI groups: `bene probe`, `bene trust`, `bene experiments` (in bene/cli/main.py)
-- tests/kernel/test_eval.py, test_trust.py
+- `@cli.group("belief")` in `bene/cli/main.py` with subcommands: `emit` (`--json '{...}'` payload + stdin), `reconcile`, `ls`, `active`, `explain <belief_id>`, `quarantine <belief_id> --reason "..."`. Each calls `ensure_truth` + supports global `--json` output + `--db`.
+- `tests/test_cli_belief.py` (CliRunner).
 
 **Acceptance criteria:**
-- [ ] Probe primitive: pre-registered gates, lock-hash (sha256) over gate spec, tamper detection (edited lock refuses to run — tested)
-- [ ] Self-falsification admissibility: a probe whose baseline cannot trigger a kill gate is INADMISSIBLE (tested)
-- [ ] Verdicts ACCEPT/REJECT/VOID persisted as eval engrams with provenance to the probed mechanism
-- [ ] Experiments journal: every probe/evolution run queryable (`bene experiments ls/show --json`)
-- [ ] Trust ledger: per-agent trust summary computed from verifiable events (checkpoint coverage, probe pass rate, audit-trail completeness); `bene trust <agent_id> --json` works
-- [ ] ≥20 new tests pass; legacy suite green; ruff clean on new files
+- [ ] `bene belief emit --json '{...}'` persists a fact and prints/returns its `fact_id`; reads from stdin when payload is `-` or omitted.
+- [ ] `bene belief reconcile` runs the reducer and prints a summary (created/superseded/quarantined/refreshed counts); `--json` returns structured counts.
+- [ ] `bene belief ls` lists beliefs; `bene belief active` lists only active beliefs; both honor `--json`.
+- [ ] `bene belief explain <belief_id>` prints belief + facts + decisions + conflicts + admissibility; `--json` returns the structured object.
+- [ ] `bene belief quarantine <belief_id> --reason "..."` quarantines and records a decision; reason appears in the decision.
+- [ ] An end-to-end CliRunner test: emit → reconcile → active shows the belief → quarantine → active no longer shows it.
+- [ ] `--json` output is valid JSON for every subcommand (parsed in tests).
+- [ ] Unknown belief_id / malformed `--json` payload produce a clear non-crash error (exit code + message; `--json` error shape).
 
-## Phase 6 — Evolution engine
+**Mandatory commands:**
+- `uv run python -m pytest tests/test_cli_belief.py -v`
+- `uv run ruff check bene/cli/main.py tests/test_cli_belief.py`
+- `uv run ruff format --check tests/test_cli_belief.py`
 
-**Why:** The Breeding Program made real — reflective evolution with kill gates, beyond KAOS's metaharness and bene's static skills.
+**Evidence required:**
+- pytest output (CLI tests pass) + exit code
+- a real terminal run of the emit→reconcile→active→explain→quarantine sequence on a temp DB
+- ruff exit codes (no NEW errors introduced in main.py vs baseline)
+
+**Dependencies:** 3
+
+---
+
+## Phase 5 — Docs + public API + fact catalog
+
+**Why:** The contract must be explained in BENE language and the public seam (API + future-consumer fact kinds) made explicit, without implementing consumer integrations yet.
 
 **Deliverables:**
-- bene/kernel/evolve/{__init__,gepa,distill,genes}.py
-- tests/kernel/test_evolve.py
+- `docs/design/TRUTH-MAINTENANCE.md` — engrams/facts/beliefs/decisions/admissibility in BENE language; explicit "this is NOT RAG / vector memory / a full expert system"; the agentdex-cli, eddie-agi-kb, and BENE fact catalogs; CLI + API usage.
+- `bene/kernel/truth/__init__.py` exporting `emit_fact, reconcile_beliefs, list_beliefs, list_active_beliefs, explain_belief, quarantine_belief, TruthStore, ensure_truth` + constants.
+- `tests/kernel/test_truth.py`: no-LLM/no-network/no-banned-dep source-scan test (Test 13) + public-import test.
 
 **Acceptance criteria:**
-- [ ] GEPA-style loop: candidate harness/prompt genomes, reflective mutation from trace feedback, multi-objective Pareto frontier (score, cost, tokens) maintained + queryable
-- [ ] Trace→skill distillation: mine trace engrams → propose skill patches → consolidate into 3-level hierarchy (planning/functional/atomic, SkillX-style), stored as procedural engrams with provenance to source traces
-- [ ] Strategy genes: compact strategy encoding attached to evolved candidates (EvoMap-style)
-- [ ] Promotion gate: no evolved artifact becomes active without an ACCEPT verdict from a phase-5 probe (tested)
-- [ ] Full evolution loop runs offline on a mock benchmark, no API keys, in CI-able test
-- [ ] ≥20 new tests pass; legacy suite green
+- [ ] `from bene.kernel.truth import emit_fact, reconcile_beliefs, list_beliefs, list_active_beliefs, explain_belief, quarantine_belief` succeeds (import test).
+- [ ] `docs/design/TRUTH-MAINTENANCE.md` contains the 5 BENE-language statements (engrams remember / facts structure / beliefs = current state / decisions explain / admissibility gates) and the "not RAG/vector/expert-system" disclaimer.
+- [ ] The doc lists the agentdex-cli, eddie-agi-kb, and BENE fact catalogs (e.g. `baseline.status`, `paper.proposes.technique`, `tool_call.status`).
+- [ ] Test 13: a source-scan over `bene/kernel/truth/` asserts no import of `litellm`, `openai`, `httpx`, `requests`, `socket`, CLIPS, graph/vector DB libs, and no thread/daemon spawn.
+- [ ] `value_hash`/canonical reuse documented (provenance/lineage section).
 
-## Phase 7 — Memory & context OS
+**Mandatory commands:**
+- `uv run python -m pytest tests/kernel/test_truth.py -v`
+- `uv run python -c "from bene.kernel.truth import emit_fact, reconcile_beliefs, list_beliefs, list_active_beliefs, explain_belief, quarantine_belief, TruthStore, ensure_truth; print('ok')"`
+- `uv run ruff check bene/kernel/truth/`
 
-**Why:** Other Memory made real — beyond KAOS memory and bene FTS5: granularity, adaptive retrieval, pollution defense.
+**Evidence required:**
+- import command output (`ok`) + exit code
+- pytest output (no-LLM + import tests pass)
+- `grep` proof the doc contains the 5 statements + disclaimer + 3 fact catalogs
 
-**Deliverables:**
-- bene/kernel/memory/{__init__,granules,retrieval,contextos,pollution}.py
-- tests/kernel/test_memory_os.py
+**Dependencies:** 3, 4
 
-**Acceptance criteria:**
-- [ ] Memory granules at 4 levels (turn/episode/semantic/procedural) with promotion (episodic→semantic consolidation) implemented + tested
-- [ ] Adaptive retrieval: fast familiarity path (repeat/near-duplicate queries short-circuit) + slow associative path; test proves both paths taken appropriately
-- [ ] Context OS: token-budget manager + strategy selection (choose retrieval/compaction strategy from task signals, AgentSwing-style); strategies pluggable
-- [ ] Pollution detector: flags context contamination (wrong-path commitment patterns) in a planted test trace; recovery triggers legacy checkpoint restore (wrap, don't port)
-- [ ] ≥20 new tests pass; legacy suite green
+---
 
-## Phase 8 — Harness-engineering layer
+## Phase 6 — Polish & Harden + Delivery (worktree + PR)
 
-**Why:** The OpenAI/LangChain/Anthropic harness canon as first-class BENE primitives — neither KAOS nor the 0.1.0 predecessor has this layer.
+**Why:** Catch what earlier phases missed (edge cases, determinism corners, stray debug), prove the whole suite is green, then land additively via a reviewable PR.
 
-**Deliverables:**
-- bene/kernel/harness/{__init__,autonomy,senses,sweeper,guards}.py
-- tests/kernel/test_harness_layer.py
+**Sub-passes (each must produce evidence):**
 
-**Acceptance criteria:**
-- [ ] Autonomy ladder L0–L4 with per-level allowed-capability sets; enforcement test: an L1 agent denied an L3 capability
-- [ ] Agent senses: machine-readable project manifest generated from a live db (agents, skills, memories, capabilities, recent engrams) — the discoverability surface
-- [ ] Debt sweeper: scans VFS/file engrams for slop signatures (debug prints, dead TODOs, duplicated blocks), emits report engram; finds planted slop in fixture
-- [ ] Loop guards: repeated-action cycle detection over event stream trips on synthetic loop, emits intervention event
-- [ ] ≥18 new tests pass; legacy suite green
-
-## Phase 9 — Port, DevEx & demo 2.0
-
-**Why:** Subsumption becomes real: legacy capabilities flow through the kernel, and the fifth pillar ships — Apple-grade experience.
-
-**Deliverables:**
-- Adapters: memory/skills/shared_log emit engrams; metaharness can use evolve; runner can use contextos (feature-flagged)
-- `bene demo` 2.0 (zero-config, keyless, <60s) telling the 5-pillar story
-- UI: engram + trust panels in web dashboard
-- README.md 2.0 sections, CLAUDE.md update, version 0.2.0 everywhere
+- [ ] **Edges** — empty inputs, missing optional fields, long/special-char subjects/values, multi-key isolation (facts for different keys don't cross-contaminate), bulk reconcile of many facts.
+- [ ] **Determinism/idempotency re-proof** — replay-from-scratch equality + reconcile-twice no-op re-run as part of the full suite.
+- [ ] **Security/safety** — validation on all emit inputs; quarantine/expiry/rejected truly non-admissible-for-promotion (the north-star invariant); no SQL injection (parameterized queries only — grep for f-string SQL).
+- [ ] **Honesty** — CLI copy reads well, no debug placeholders, no work-trace/agent-session text in `docs/` (per repo doc policy).
+- [ ] **Diff review** — `git diff` reviewed for stray `print`/debug, TODO/FIXME from this run, dead imports; clean.
+- [ ] **Regression sweep** — full `pytest tests/` green (no NEW failures vs baseline) + my files ruff-clean.
+- [ ] **Delivery** — stash-only-my-files → `git worktree` → feature branch → commit (Co-Authored-By trailer) → `gh pr create` (additive, body describes contract + rules + tests).
 
 **Acceptance criteria:**
-- [ ] Legacy API back-compat: existing public calls still work (shim tests); full legacy suite green unchanged
-- [ ] `bene demo` runs clean on a fresh tmp dir with no keys, exercising engrams, a probe, an evolution mock round, memory granules, trust report
-- [ ] CLI UX pass: first-run guidance, helpful error messages with next-step hints, consistent --json everywhere new
-- [ ] Web UI shows engram browser + per-agent trust panel (server endpoint + static page section)
-- [ ] Version 0.2.0 in pyproject.toml, bene/__init__.py, CLI, uv.lock; README documents the 2.0 architecture + pillars; CLAUDE.md architecture map updated
-- [ ] Full suite (legacy + all kernel tests) green; ruff clean
+- [ ] Full suite: `uv run python -m pytest tests/ -q` shows 0 failed (or no NEW failures vs the pre-run baseline, with any pre-existing failures named).
+- [ ] `uv run ruff check bene/kernel/truth/ tests/kernel/test_truth.py tests/test_cli_belief.py` and `ruff format --check` on the same paths are clean.
+- [ ] All parameterized SQL (no f-string-interpolated values in queries) — grep evidence.
+- [ ] North-star invariant test: no `quarantined`/`superseded`/`expired`/`rejected` belief is ever `admissible_for_promotion=1` (asserted across all reducer tests).
+- [ ] `git diff --stat` reviewed; no stray debug/TODO from this run.
+- [ ] PR opened via `gh pr create` (capture URL) OR, if `gh` is unavailable, a feature branch with committed work + the exact `gh pr create` command printed.
 
-## Phase 10 — Polish & Harden
+**Mandatory commands:**
+- `uv run python -m pytest tests/ -q`
+- `uv run ruff check bene/kernel/truth/ tests/kernel/test_truth.py tests/test_cli_belief.py`
+- `uv run ruff format --check bene/kernel/truth/ tests/kernel/test_truth.py tests/test_cli_belief.py`
 
-**Why:** "Every aspect perfect" enforced: gates, claims audit, edge cases, kit refresh with implemented reality.
+**Evidence required:**
+- Full test summary (passed/failed counts) + exit code; pre-existing failures (if any) named and shown to pre-date this run
+- ruff exit codes
+- `git diff --stat` summary
+- PR URL (or branch name + ready-to-run `gh pr create` command)
 
-**Deliverables:**
-- docs/design/CLAIMS-AUDIT.md (every design claim: implemented | planned, with evidence)
-- Apple kit refreshed (demo script updated to what NOW runs; one-page glance updated)
-- Edge-case + security hardening commits
-
-**Acceptance criteria:**
-- [ ] `uv run python -m pytest tests/ -q` fully green; `uv run ruff check .` and `uv run ruff format --check .` clean
-- [ ] Edge cases tested: empty db, missing provenance rejected, concurrent agent engram writes, corrupt lock hash, oversized payload
-- [ ] Security pass: all new SQL parameterized (grep audit), no secrets in code/docs, no debug prints in new modules (grep clean)
-- [ ] CLAIMS-AUDIT.md: every BENE2-DESIGN claim marked implemented (with test/file ref) or planned (with phase/issue) — zero false "done" claims
-- [ ] Apple kit demo script re-verified by running every command; BILINGUAL one-page glance reflects final state
-- [ ] Cross-links: README ↔ design docs ↔ research docs all resolve (no dead relative links)
-- [ ] Memory writeback: project memory updated with BENE 2.0 state
+**Dependencies:** 1, 2, 3, 4, 5

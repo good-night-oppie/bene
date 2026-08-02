@@ -1,56 +1,51 @@
 SUPERGOAL_PHASE_START
-Phase: 5 of 10 — Trust & falsifiable-eval layer
-Task: Implement falsifiable probes with hash-locked kill gates, the experiments journal, and the per-agent trust ledger + CLI surfaces.
-Type: brownfield, feature
-Mandatory commands: uv run python -m pytest tests/ -q -p no:cacheprovider, uv run ruff check ., uv run ruff format --check .
-Acceptance criteria: 7
-Evidence required: tamper-detection test output, admissibility test output, trust CLI --json output, pytest tails
-Depends on phases: 4
+Phase: 5 of 6 — Docs + public API + fact catalog
+Task: Write the BENE-language design doc, finalize public API exports, document future-consumer fact catalogs, and add the no-LLM/no-network source-scan test.
+Type: brownfield · core-infra · kernel-feature
+Mandatory commands: uv run python -m pytest tests/kernel/test_truth.py -v ; uv run python -c "from bene.kernel.truth import emit_fact, reconcile_beliefs, list_beliefs, list_active_beliefs, explain_belief, quarantine_belief, TruthStore, ensure_truth; print('ok')" ; uv run ruff check bene/kernel/truth/
+Acceptance criteria: 5
+Evidence required: import 'ok'+exit; pytest no-LLM+import output; grep proof of 5 statements + disclaimer + 3 catalogs
+Depends on phases: 3, 4
 
 ## Why
 
-KAOS-parity eval discipline plus the user's trust pillar: engineers trust agents because every mechanism claim is falsifiable and every agent action auditable.
-
-## Context you need
-
-- KERNEL-SPEC.md defines the APIs. KAOS's pattern to improve on (read /home/admin/gh/kaos/CLAUDE.md "v0.9 falsifiable-eval discipline" + kaos/eval/harness/ source): pre-registered gate spec, sha256 lock, harness refuses edited locks, self-falsification admissibility (a probe whose baseline cannot trigger a kill gate is INADMISSIBLE), verdicts ACCEPT/REJECT/VOID, no retune-and-rerun.
-- BENE 2.0 improvement over KAOS: probes/verdicts/experiments are ENGRAMS (kind=eval, kind=experiment) with provenance to the probed mechanism — queryable through the same substrate as everything else, not a side system.
-- Trust ledger: computed, not declared — per-agent trust summary derived from verifiable events: checkpoint coverage (checkpoints per N events), probe pass rate, audit-trail completeness (tool calls with recorded results / total), provenance depth. Simple deterministic formulas; document them.
-- CLI lives in bene/cli/main.py (click groups, --json convention everywhere).
+The contract must be explained in BENE language and the public seam (API + future-consumer fact kinds) made explicit, without implementing consumer integrations yet.
 
 ## Work
 
-- bene/kernel/eval/probe.py — Probe base: gate spec (list of named gates w/ predicate descriptions + thresholds), register() computes sha256 lock over canonical JSON of the spec, run(subject, baseline) → Verdict; refuses to run if stored lock hash ≠ recomputed hash (tamper detection).
-- bene/kernel/eval/gates.py — gate evaluation helpers + KNOWN_LOCK_SHA256-style registry persisted as engrams.
-- bene/kernel/eval/verdict.py — Verdict (ACCEPT/REJECT/VOID + per-gate results), persisted as eval engram with provenance.
-- Admissibility self-test: before a probe is usable, it must demonstrate its baseline triggers ≥1 kill gate (i.e., the probe CAN kill); inadmissible probes are marked VOID-at-registration.
-- bene/kernel/trust.py — TrustLedger.summary(agent_id) → dict of the four computed signals + composite score; persists trust engrams; documented formulas in docstrings.
-- Experiments: every probe run + (later) evolution run logged as experiment engrams; query API.
-- CLI: `bene probe ls/show/run-selftest`, `bene trust <agent_id>`, `bene experiments ls/show` — all with --json.
-- tests/kernel/test_eval.py + test_trust.py: tamper test (edit stored spec → refuses), admissibility test (gate-less probe → VOID), verdict persistence + provenance, trust formulas on synthetic event streams, CLI smoke via click runner.
+- `docs/design/TRUTH-MAINTENANCE.md` — explain in BENE language:
+  - The five statements verbatim in spirit: BENE engrams remember what happened; BENE facts structure what was observed or claimed; BENE beliefs represent the current accepted state; BENE decisions explain why the accepted state changed; BENE admissibility flags decide whether a belief can be used for context, promotion, or action.
+  - Explicit disclaimer: this is NOT RAG, NOT vector memory, NOT a full expert system — it is a deterministic truth-maintenance layer for agent runs.
+  - The lifecycle diagram (states + transitions), the 10 reconciliation rules, the reconciliation key `(subject,relation,scope)`, scope semantics, provenance/lineage (evidence_uri/derived_from, value_hash via genome_canonical).
+  - CLI usage (the 6 `bene belief …` commands) + Python API usage.
+  - **Future-consumer fact catalogs** (documented, NOT implemented):
+    - agentdex-cli: `baseline.status`, `baseline.error_type`, `trace.completeness`, `judge.verdict`, `mutation_seed.proposed`, `probe.verdict`, `infra_fault.classification`.
+    - eddie-agi-kb: `paper.proposes.technique`, `tool.implements.capability`, `concept.alias`, `claim.freshness`, `claim.conflicts_with`.
+    - BENE itself: `tool_call.status`, `checkpoint.restored`, `context.pollution_detected`, `probe.verdict`, `promotion.blocked`, `autonomy.grant`.
+- Finalize `bene/kernel/truth/__init__.py` exports: `emit_fact, reconcile_beliefs, list_beliefs, list_active_beliefs, explain_belief, quarantine_belief, TruthStore, ensure_truth, value_hash` + contract classes + constants. Add module docstring in BENE language.
+- `tests/kernel/test_truth.py`: add Test 13 — a source-scan test that reads every `.py` under `bene/kernel/truth/` and asserts NONE import/use `litellm`, `openai`, `httpx`, `requests`, `urllib.request`, `socket`, `clips`, `neo4j`, `networkx`, `chromadb`, `faiss`, `pinecone`, `threading`, `multiprocessing`, `subprocess`, `asyncio` (no LLM/network/vector/graph/CLIPS/daemon). Plus a public-import test importing the full API surface.
 
 ## Acceptance criteria (all must pass — verify each in transcript)
 
-- Tamper detection: edited gate spec refuses to run (test output shown)
-- Admissibility: probe whose baseline can't trigger any kill gate is VOID/INADMISSIBLE (test shown)
-- Verdicts persisted as eval engrams with provenance to probed mechanism (test)
-- Trust summary computes all 4 documented signals + composite on a synthetic agent (CLI --json output pasted)
-- `bene experiments ls --json` returns logged probe runs
-- ≥20 new tests passing
-- Full suite green; ruff check + format clean
+- `from bene.kernel.truth import emit_fact, reconcile_beliefs, list_beliefs, list_active_beliefs, explain_belief, quarantine_belief, TruthStore, ensure_truth` succeeds.
+- `docs/design/TRUTH-MAINTENANCE.md` contains the 5 BENE-language statements AND the "not RAG / not vector memory / not a full expert system" disclaimer (grep-verified).
+- The doc lists all three fact catalogs (agentdex-cli, eddie-agi-kb, BENE) including representative kinds (`baseline.status`, `paper.proposes.technique`, `tool_call.status`).
+- Test 13 passes: the source-scan finds no banned imports/usage in `bene/kernel/truth/`.
+- Provenance/lineage (evidence_uri, derived_from, value_hash via genome_canonical) is documented.
 
 ## Mandatory commands (run each, surface last ~10 lines + exit code)
 
-- uv run python -m pytest tests/ -q -p no:cacheprovider
-- uv run ruff check .
-- uv run ruff format --check .
+- `uv run python -m pytest tests/kernel/test_truth.py -v`
+- `uv run python -c "from bene.kernel.truth import emit_fact, reconcile_beliefs, list_beliefs, list_active_beliefs, explain_belief, quarantine_belief, TruthStore, ensure_truth; print('ok')"`
+- `uv run ruff check bene/kernel/truth/`
 
-## Evidence required
+## Evidence required in transcript
 
-- Focused kernel-suite tail: uv run python -m pytest tests/kernel/ -q (evidence, not a pre-flight gate)
+- import command output (`ok`) + exit code
+- pytest output (no-LLM source-scan + import tests pass)
+- `grep` proof the doc contains the 5 statements + disclaimer + the 3 fact catalogs
+- ruff exit code
 
-- Tamper + admissibility test outputs
-- bene trust --json real output
-- pytest tails
+## Notes
 
-[Print SUPERGOAL_PHASE_VERIFY then SUPERGOAL_PHASE_DONE; update .supergoal/STATE.md; follow .supergoal/PROTOCOL.md on failure.]
+Put the doc under `docs/design/` (NOT the published site nav) so no `site/*.html` artifact is needed. No work-trace / agent-session text in the doc (repo doc policy). The source-scan test is the honest proof of the "no LLM/network/vector/graph/daemon" constraint — make its banned-list explicit and asserted.

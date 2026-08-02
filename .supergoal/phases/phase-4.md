@@ -1,54 +1,51 @@
 SUPERGOAL_PHASE_START
-Phase: 4 of 10 — Kernel v2 engram substrate
-Task: Implement bene/kernel/ — the unified typed engram store, event bus, and capability registry per KERNEL-SPEC.md, additive to the legacy schema.
-Type: brownfield, feature
-Mandatory commands: uv run python -m pytest tests/ -q -p no:cacheprovider, uv run ruff check ., uv run ruff format --check .
-Acceptance criteria: 7
-Evidence required: new-test count, back-compat test output, lineage query demo, pytest tails
-Depends on phases: 2
+Phase: 4 of 6 — CLI `bene belief …`
+Task: Add the `belief` click group (emit/reconcile/ls/active/explain/quarantine) with --json + --db, following BENE CLI conventions.
+Type: brownfield · core-infra · kernel-feature
+Mandatory commands: uv run python -m pytest tests/test_cli_belief.py -v ; uv run ruff check bene/cli/main.py tests/test_cli_belief.py ; uv run ruff format --check tests/test_cli_belief.py
+Acceptance criteria: 8
+Evidence required: pytest CLI output+exit; real terminal emit→reconcile→active→explain→quarantine run; ruff exit codes
+Depends on phases: 3
 
 ## Why
 
-"Everything is an engram" is the unifying substrate all four capability layers (phases 5–8) build on — provenance-linked, compression-tiered, searchable.
-
-## Context you need
-
-- Build EXACTLY to docs/design/KERNEL-SPEC.md (phase 2 output) — DDL + API signatures live there. Where the spec is ambiguous, follow existing conventions in bene/schema.py (ULIDs via ulid-py, created_at timestamps, agent_id scoping) and bene/blobs.py (content-addressed zstd blobs).
-- Legacy core (bene/core.py, schema.py, events.py, blobs.py) must remain UNTOUCHED except, if strictly needed, a hook point ≤5 lines. Kernel opens the same .db and creates v2 tables additively.
-- Engram kinds (minimum): trace, episodic, semantic, procedural, strategic, eval, experiment, trust. Tier field encodes the compression ladder position (0=raw trace … 4=strategic).
-- Reuse, don't duplicate: payloads go through the existing blob store; events also mirror into the legacy event journal so the legacy UI/logs still see kernel activity.
+The feature must be scriptable and honest from the command line, matching BENE's existing click + `--json` conventions.
 
 ## Work
 
-- bene/kernel/schema_v2.py — additive DDL + migration guard (CREATE TABLE IF NOT EXISTS; never ALTER legacy tables); FTS5 virtual table for engram search.
-- bene/kernel/engrams.py — EngramStore: append(kind, payload, provenance, parents, tier), get, search(fts + filters), lineage(engram_id, direction=ancestors|descendants), promote(engram_id, new_tier) creating a NEW linked engram (append-only — promotion never mutates).
-- bene/kernel/bus.py — EventBus: subscribe(event_type, handler), publish(event) with at-least-once sync dispatch + error isolation (one bad handler doesn't break others); mirror to legacy journal.
-- bene/kernel/capabilities.py — CapabilityRegistry: register(name, fn_ref, autonomy_level, description), lookup, list; persisted in v2 table.
-- tests/kernel/__init__.py + test_engrams.py, test_bus.py, test_capabilities.py — including: provenance REQUIRED (append without provenance raises — test), old 0.1.0 db opens and legacy tables byte-identical after kernel init (test by checksumming sqlite_master + a legacy table before/after), lineage across ≥3 generations, FTS search, promotion immutability.
-- Run ruff format on new files as you go.
+- In `bene/cli/main.py` add `@cli.group("belief")` def belief(): docstring "Deterministic truth maintenance — facts, beliefs, decisions, admissibility." Subcommands (each `@click.option("--db", default=DEFAULT_DB)` + `@click.pass_context`, open via `_get_afs(db)`, call `ensure_truth(afs.conn)`):
+  - `emit` — `@click.option("--json", "payload", default=None)` (the FACT payload string; if `None` or `-`, read from stdin). Parse JSON → `emit_fact(**payload)`. Honor GLOBAL output `--json` via `_json_out(ctx, {"fact_id": fid})`; human line otherwise. Malformed JSON → `_json_err`/clear message + exit 1.
+  - `reconcile` — call `reconcile_beliefs(conn)`; `_json_out(ctx, counts)`; human summary `created=… superseded=… refreshed=… quarantined=… rejected=… skipped=…`.
+  - `ls` — options `--subject/--relation/--scope/--lifecycle/--limit`; `list_beliefs(...)`; `_json_out` list; human table-ish lines.
+  - `active` — options `--subject/--relation/--scope/--limit`; `list_active_beliefs(...)`; `_json_out` list; human lines.
+  - `explain` — `@click.argument("belief_id")`; `explain_belief(...)`; `_json_out` object; human render (belief, facts, decisions, conflicts, admissibility). Missing id → clear "not found" + exit 1.
+  - `quarantine` — `@click.argument("belief_id")` + `@click.option("--reason", required=True)`; `quarantine_belief(...)`; `_json_out` result; human confirmation. Missing id → clear error + exit 1.
+  - Always `afs.close()` in `finally`.
+- `tests/test_cli_belief.py` using `click.testing.CliRunner` invoking `bene.cli.main.cli` with a temp `--db` (tmp_path). Cover each subcommand + the end-to-end flow + `--json` validity + error cases. For JSON output use `["--json", "belief", "active", "--db", db]`. For emit payload use `["belief", "emit", "--db", db, "--json", json.dumps({...})]`.
 
 ## Acceptance criteria (all must pass — verify each in transcript)
 
-- All four kernel modules + schema importable; `python -c "from bene.kernel import EngramStore"` works
-- Engram CRUD + FTS search + ≥3-generation lineage query demonstrated in tests
-- Promotion creates new linked engram; original unchanged (test)
-- Provenance enforcement test passes (missing provenance raises)
-- Back-compat test: pre-existing 0.1.0 db opens, legacy schema untouched after kernel init
-- ≥25 new tests in tests/kernel/, all passing
-- Full legacy suite still green; ruff check + format clean
+- `bene belief emit --json '{...}'` persists a fact and prints/returns its `fact_id`; reads payload from stdin when omitted or `-`.
+- `bene belief reconcile` runs the reducer and prints a summary; global `--json` returns structured counts.
+- `bene belief ls` lists beliefs; `bene belief active` lists only active beliefs; both honor `--json`.
+- `bene belief explain <belief_id>` returns belief + facts + decisions + conflicts + admissibility; `--json` returns the structured object.
+- `bene belief quarantine <belief_id> --reason "..."` quarantines + records a decision carrying the reason.
+- End-to-end CliRunner test: emit → reconcile → `active` shows the belief → quarantine → `active` no longer shows it.
+- Every subcommand's `--json` output parses as valid JSON (asserted via `json.loads` in tests).
+- Unknown belief_id and malformed `--json` payload produce a clear non-crash error (exit code ≠ 0 + message; `--json` error shape when global `--json` set).
 
 ## Mandatory commands (run each, surface last ~10 lines + exit code)
 
-- uv run python -m pytest tests/ -q -p no:cacheprovider
-- uv run ruff check .
-- uv run ruff format --check .
+- `uv run python -m pytest tests/test_cli_belief.py -v`
+- `uv run ruff check bene/cli/main.py tests/test_cli_belief.py`
+- `uv run ruff format --check tests/test_cli_belief.py`
 
-## Evidence required
+## Evidence required in transcript
 
-- Focused kernel-suite tail: uv run python -m pytest tests/kernel/ -q (evidence, not a pre-flight gate)
+- pytest output (CLI tests pass) + exit code
+- a real terminal run on a temp DB: `belief emit` → `belief reconcile` → `belief active` → `belief explain` → `belief quarantine` (show outputs)
+- ruff exit codes; confirm no NEW ruff errors in `main.py` introduced by the added lines (compare to baseline count if main.py has pre-existing drift)
 
-- pytest tails for both suites; new-test count
-- Back-compat test name + pass shown
-- One lineage query result pasted
+## Notes
 
-[Print SUPERGOAL_PHASE_VERIFY then SUPERGOAL_PHASE_DONE; update .supergoal/STATE.md; follow .supergoal/PROTOCOL.md on failure.]
+The `--json` duality is intentional: global `--json` (before the group) controls OUTPUT; `emit --json` is the fact INPUT payload (different parser levels, no click conflict). Document this in the emit help text. Do not reformat the rest of main.py (avoid touching pre-existing ruff drift). Reuse `_json_out`/`_json_err`/`_get_afs`/`DEFAULT_DB`.

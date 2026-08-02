@@ -1,47 +1,43 @@
-# THINKING — BENE 2.0 "Mastermind Redesign" + Apple EM Interview Kit
+# THINKING — BENE Truth Maintenance layer
 
 ## Goals
-1. **Redesign BENE** through the fused lenses of Hassabis (search+learning, falsifiable science, games-as-testbeds), Sutskever (compression-is-intelligence, learn-from-data, simple unified objectives), Karpathy (LLM-OS, autonomy sliders, march of nines, verification pragmatism).
-2. **Ground every capability in the gold corpus** (~100 entries, 11 lists at /home/admin/gh/eddie-agi-kb/data/gold/lists/) — paper-cited, not vibes.
-3. **Subsume and surpass KAOS v0.9.1 and the 0.1.0 predecessor/bene 0.1.0** — explicit capability mapping: everything they do, done better, plus capabilities neither has.
-4. **Interview kit lands FIRST** — Apple EM (AI Developer Tools, DevEx) HM screen Fri 2026-06-12 11:30 AM PT. Materials in /home/admin/gh/agentdex-cli/tasks/apple-em-ai-tooling-enablement/.
-5. **Fifth pillar (user-added):** Apple-grade developer experience + engineer trust in agents built with bene.
+- Deterministic, SQLite-backed **Belief/Fact contract + reducer** that separates: raw engrams (permanent) → **facts** (structured claims) → **beliefs** (current accepted state) → **decisions** (why lifecycle changed) → **admissibility** (safe for context / promotion / action).
+- Small, boring, auditable, **additive**. Kernel feature, not AI feature.
+- 100% explainable belief transitions; idempotent + replayable single-node reducer.
+- North star: BENE must never let future agents evolve from unsafe memories.
 
-## Constraints
-- New core ("kernel v2") chosen by user — but built ALONGSIDE legacy: additive schema, adapters not rewrites, legacy tests green in every phase's mandatory commands.
-- No working git in repo (corrupt .git) → Baseline ref = "no-git"; deliverable checks degrade to file-existence.
-- Offline-friendly: all new tests must run without API keys (mock providers exist in tests/).
-- Evolution/eval loops must run on mock benchmarks end-to-end keyless.
-- Interview materials = verified claims only (memory: FDE-resume discipline). Demo script commands must actually run.
+## Constraints (hard)
+- No CLIPS, graph DB, vector DB, Postgres, Django, background daemons, **no LLM calls**, no network. Stdlib `sqlite3`/`json`/`hashlib` + `ulid` only.
+- Never ALTER legacy tables. All new DDL `IF NOT EXISTS`, idempotent ensure. Preserve existing APIs.
+- bene-main is a shared multi-writer checkout → build/verify in-tree, deliver via worktree + PR.
+- Keep MY files ruff-clean; gate on local green (repo CI is structurally red on ruff drift — not mine).
 
-## The five pillars (design skeleton)
-1. **KAOS-parity core** — falsifiable-eval harness (pre-registered hash-locked kill gates, ACCEPT/REJECT/VOID, self-falsification admissibility), experiments journal, dream/consolidation analog, skill plasticity. Re-derived on the engram substrate, not copy-pasted.
-2. **Evolution engine** (Breeding Program) — GEPA-style reflective text evolution with Pareto frontier (agent-multi-prompt-opt list), Trace2Skill/SkillClaw trace→skill distillation, SkillX 3-level skill hierarchy, EvoMap strategy genes (agent-auto-opt list). Promotion gated by eval probes — breeding with kill gates.
-3. **Memory & context OS** (Other Memory) — multi-granularity memory + adaptive familiarity-driven retrieval (MemGAS/RF-Mem, agent-context-memory list), AgentSwing dynamic context-strategy selection, context-pollution detection & checkpoint-recovery (ICLR26 best paper, agent-theory list).
-4. **Harness-engineering layer** — autonomy ladder w/ thresholds (OpenAI harness canon, 32-entry list), agent senses/discoverability manifests, debt sweeper, verification-bottleneck tooling, loop guards (LangChain harness series).
-5. **Trust & Experience** (user pillar) — Apple-grade zero-config UX (`bene demo` <60s keyless), trust ledger (provenance chains, audit queries, per-agent verification status), deterministic replay surfaces. "Engineers trust agents because every claim is checkable."
+## Design decisions
+- **Home:** new subpackage `bene/kernel/truth/` (mirrors `eval/`, `memory/`): `schema.py`, `contract.py`, `store.py`, `reducer.py`, `__init__.py`. Reuse `(conn, store)` ctor style; module-level public API wrappers.
+- **4 tables** (`belief_facts`, `beliefs`, `belief_decisions`, `belief_conflicts`) via `ensure_truth(conn)` — own `truth_schema_version` table, `INSERT OR IGNORE`, idempotent + concurrency-safe (copying `ensure_v2`'s rationale). Also call `ensure_truth` from `ensure_v2` so kernel-attached DBs get it; CLI/API call it directly so it works standalone.
+- **Reconciliation key:** `(subject, relation, scope)` as real indexed columns (never JSON). `value` + canonical `value_hash` are real columns too.
+- **Single-active invariant** enforced at DB level: `CREATE UNIQUE INDEX ... ON beliefs(subject,relation,scope) WHERE lifecycle='active'`. One current belief per key, by construction.
+- **Value equality** via `bene/kernel/genome_canonical.py` (int==float, NFC==NFD, CRLF==LF; num≠str) → deterministic `value_hash`. Rule 2 (different value → supersede) vs Rule 3 (same value → refresh) is canonical, not naive string compare.
+- **agent_id is nullable, NO hard FK** on `belief_facts` — facts originate outside BENE agents (agentdex-cli, eddie-agi-kb, external imports). Documented in ADR §scope.
+- **Determinism mechanics:** reducer consumes only unreconciled facts (`reconciled_at IS NULL`), ordered `ORDER BY observed_at, fact_id`; pure rule functions; expiry compared against an **injectable `now` reference** recorded per reconcile so replay is reproducible. Belief stores its authoritative source `observed_at` (= `active_from`) so "newer" is an explicit comparison; **stale** facts (older than active) are recorded as conflicts, never silently applied.
+- **Admissibility (Rules 6/7):** decision row explicitly stores `admissible_for_{context,promotion,action}`; belief mirrors them. Active + reliable + not-expired ⇒ all three True; candidate/quarantined/expired/rejected/superseded ⇒ all False (Rule 6). Every transition writes a decision (Rule 8); `belief_id` nullable on decisions so a rejected/expired no-op fact is still explainable.
+- **Reliability policy (Rule 4):** deterministic, documented sets — `UNRELIABLE_SOURCE_TYPES = {failed, unreliable, untrusted, error}` plus explicit `unsafe=1` → quarantine path; unknown source_types default reliable (so future consumers work without edits).
+- **CLI `--json` duality:** global `--json` is the output flag (`bene --json belief active`); `belief emit` takes its fact payload via a local `--json TEXT` option (+ stdin fallback). Different parser levels → no click conflict. Documented.
+- **Docs home:** ADR at `docs/adr/0001-belief-fact-contract-and-truth-maintenance.md`; design explainer at `docs/design/TRUTH-MAINTENANCE.md`. Neither is in the published mkdocs/site nav → no `site/*.html` artifact needed (avoids the site-rebuild rabbit hole).
 
-## Kernel v2 concept (the unifying idea)
-**Everything is an engram.** One typed, append-only substrate where traces, memories, skills, eval verdicts, experiments, and strategies are engram kinds with provenance links and a **compression ladder**: raw trace → episodic → semantic → procedural (skill) → strategic (gene). This is Sutskever's compression-is-understanding made architectural, Hassabis's Other-Memory lore made literal, and Karpathy's LLM-OS kernel made concrete (engram store = memory subsystem; capability registry = syscalls; autonomy ladder = ring levels).
+## Risks (top 3)
+1. **Determinism vs wall-clock** (expiry + "newer"). Mitigation: fixed order, injectable+recorded `now`, stored source `observed_at`, explicit stale handling, replay-from-scratch equality test.
+2. **Idempotency / double counting.** Mitigation: `reconciled_at` watermark + partial unique active index; "reconcile twice" test asserts unchanged row counts.
+3. **Surface collisions** — `--json` global-vs-emit, agent_id FK blocking external facts. Mitigation: local `--json` value option for emit; nullable un-FK'd agent_id; both documented + tested.
 
-## Top 3 risks → mitigations
-1. **Interview clock (~26h).** Phases 1–3 are the critical path and self-contained; implementation phases follow. Phase 3's demo script uses only commands that run TODAY (current 0.1.0 demo + design vision), refreshed in Phase 10 with 2.0 reality.
-2. **New-core rewrite breaks the tree.** Kernel lives in bene/kernel/ with additive v2 tables; every phase's mandatory commands include the legacy test suite; ports are adapters. If kernel work stalls, 0.1.0 still demos.
-3. **Research scope explosion (100 entries).** Cap deep-reads ~25 entries via relevance rubric; the rest skimmed at title/slides.json level; synthesis cites what it reads.
+## Dependencies / ordering
+schema/contract → store/emit → reducer → CLI → docs/exports → polish+delivery. Tests folded into each phase (pass at that phase = independently shippable).
 
-## Non-obvious dependencies
-- Phase 6 (evolution) needs Phase 5's probes (promotion gates) — eval before evolution.
-- Phase 7's pollution recovery reuses legacy checkpoints — do not port checkpoints first, wrap them.
-- Phase 3 (interview) needs Phase 2's design tables but NOT implementation — by design.
-- Apple kit lives OUTSIDE the repo (absolute paths) — executor must write there explicitly; INDEX.md table update required so materials are discoverable.
+## Memory hits applied
+See `applied-memories.md`: worktree-PR delivery, ruff-local-green gating, genome-canonical reuse, re-run final suite in foreground, final gate = suite+ruff.
 
-## Tools/skills relied on
-- Perspective skills: read SKILL.md files directly (deterministic) during Phase 2.
-- Gold corpus: transcript.txt per entry; slides.json for skim tier.
-- KAOS source at /home/admin/gh/kaos (read-only reference for parity audit).
-- WebSearch optional in Phase 1 for paper arXiv IDs; degrade gracefully.
+## Tools relied on
+Repo conventions + Python stdlib + `ulid` + `genome_canonical`. No web/Context7 needed (deterministic internal feature). Optional adversarial review via `pal`/self-review in Polish.
 
 ## Best practices applied
-- Falsifiable-eval discipline (KAOS v0.9 pattern, improved: probes as engrams).
-- OpenAI harness canon: autonomy thresholds, mergeability, debt repayment.
-- Interview-first sequencing = de-risked deadline (ship narrative, then ship code).
+Additive migration (IF NOT EXISTS + version stamp), DB-enforced invariants (partial unique index), decision-per-transition audit trail, canonical hashing for equality, injectable clock for replay, source-scan test to prove no banned deps.
