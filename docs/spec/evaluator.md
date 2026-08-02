@@ -51,6 +51,8 @@ async evaluate(candidate: Candidate,
   - `/evaluation/scores.json` — aggregated scores
   - `/evaluation/per_problem.jsonl` — per-problem breakdown
   - `/evaluation/diagnosis.json` — surrogate-verifier output
+  - `/evaluation/resource_versions.json` — exact resource snapshot, when a
+    `ResourceRegistry` is active
 - Agent status is `completed`
 - A tool-call row exists per problem (`tool_name="candidate_run"`)
 
@@ -119,6 +121,12 @@ result = await evaluator.evaluate(candidate)
 ## Implementer notes
 
 - **Hermetic agent per evaluation**. Each `evaluate()` call spawns a new agent — never reuse one across candidates. The agent's VFS is the audit trail.
+- **Resource materialization**. When `candidate.resource_deltas` is non-empty
+  or `SearchConfig.resource_evolution_enabled` is true, the evaluator must
+  materialize the exact proposed resource snapshot into the eval agent VFS
+  before loading source. Candidate code still enters through `run(problem)`;
+  supporting prompts/tools/environment/memory policies are provided via files
+  or injected helpers according to their exported contracts.
 - **Dynamic module name MUST be unique per candidate** (use a prefix + short ULID). Two candidates loaded into the same module name would clobber each other's `run` function across threads.
 - **`llm()` injection happens before `exec()`** of the candidate source — the candidate must be able to reference `llm` as a free name in its top-level definitions, not just inside `run()`. Implementer must order setup correctly.
 - **Per-problem timeout is `total_timeout / num_problems`** — divide upfront so a single slow problem can't consume the entire wall-clock budget. The reference impl does this; bene must preserve.
@@ -129,5 +137,5 @@ result = await evaluator.evaluate(candidate)
 
 ## Cross-references
 
-- **Depends on**: `bene.core` (agent spawn, VFS, tool-call tracking), `bene.candidate` (data model), `Router` protocol, `Benchmark` protocol
+- **Depends on**: `bene.core` (agent spawn, VFS, tool-call tracking), `bene.candidate` (data model), `bene.resources` (optional materialization), `Router` protocol, `Benchmark` protocol
 - **Used by**: `bene.search` (the search loop calls `evaluate_parallel` once per iteration on the validated candidates)

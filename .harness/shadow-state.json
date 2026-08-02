@@ -1,0 +1,17 @@
+{
+  "fresh-tests-red": {
+    "invocations": 9,
+    "promoted": false,
+    "shadow_fires": 9
+  },
+  "llm-judge": {
+    "invocations": 7,
+    "promoted": false,
+    "shadow_fires": 7
+  },
+  "scope-drift": {
+    "invocations": 1,
+    "promoted": false,
+    "shadow_fires": 1
+  }
+}

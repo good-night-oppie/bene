@@ -11,7 +11,7 @@
 
 ## Design intent
 
-A `Candidate` carries source code (must define a `run(problem) -> dict` callable), an immutable ULID, parent lineage, iteration number, and arbitrary metadata. The candidate validates itself before evaluation (two-stage: AST + smoke-test import). An `EvaluationResult` carries per-objective aggregated scores plus a rich execution trace (the trace is the critical ingredient per the Meta-Harness paper ablation — 15+ points over scores-only). `SearchConfig` is the operator-facing knob set.
+A `Candidate` carries source code (must define a `run(problem) -> dict` callable), an immutable ULID, parent lineage, iteration number, and arbitrary metadata. The candidate validates itself before evaluation (two-stage: AST + smoke-test import). An `EvaluationResult` carries per-objective aggregated scores plus a rich execution trace (the trace is the critical ingredient per the reference harness-search paper ablation — 15+ points over scores-only). `SearchConfig` is the operator-facing knob set.
 
 Implementer note: the reference impl class is `HarnessCandidate`. In bene this is renamed to `Candidate` (drop the legacy "Harness" prefix per the cleanroom naming convention). The capability surface is identical.
 
@@ -27,6 +27,8 @@ class Candidate:
     parent_ids: list[str]
     iteration: int
     metadata: dict[str, Any]
+    resource_deltas: list[ResourceDelta] = []
+    base_resource_versions: dict[str, str] = {}
 ```
 
 **Class methods**:
@@ -77,6 +79,7 @@ class EvaluationResult:
     duration_ms: int
     error: str | None
     diagnosis: Any | None        # attached post-eval by the verifier
+    resource_versions: dict[str, str] = {}
 ```
 
 **Properties**:
@@ -95,6 +98,10 @@ EvaluationResult.to_trace_jsonl() -> str
 ```
 
 **Intent**: aggregated result of running one candidate against a problem set. `scores` are objective→float aggregates (the proposer + Pareto frontier consume these). `trace` is the per-problem rich record (inputs preview, prompt preview, prediction, correctness, scores, duration) — kept verbose deliberately because the proposer learns more from traces than scores alone.
+
+`resource_versions` records the exact resource snapshot materialized for the
+evaluation. A Phase 2 minimal implementation MAY leave it empty only when no
+`bene.resources` registry is active for the search.
 
 ### `class SearchConfig`
 
@@ -116,6 +123,7 @@ class SearchConfig:
     max_prior_seeds: int = 5
     stagnation_threshold: int = 3
     consolidation_interval: int = 5
+    resource_evolution_enabled: bool = True
 ```
 
 **Methods**:
@@ -134,6 +142,9 @@ SearchConfig.objective_directions() -> dict[str, str]
 - `consolidation_interval` — emit a skill-extraction heartbeat every N iterations (CORAL Tier 2).
 - `compaction_level` — proposer prompt compaction strength.
 - `max_prior_seeds` — cap on how many prior-discovery candidates are loaded as seeds.
+- `resource_evolution_enabled` — when true, candidate source and supporting
+  prompts/tools/environment/memory bindings are represented as registered
+  resources and accepted through `EvolutionCommit`.
 
 ## Implementer notes
 
@@ -143,8 +154,12 @@ SearchConfig.objective_directions() -> dict[str, str]
 - **`diagnosis` is attached post-eval**, not set by Candidate itself. Bene's `evaluator` runs a "surrogate verifier" pass that fills this field. Treat it as opaque at the data-model layer.
 - **`objectives` direction parsing**: `+name` maximize, `-name` minimize, bare `name` maximize. Implementer must accept all three forms.
 - **`seed_harnesses` field name** is a legacy holdover from "harness" terminology. The reference impl uses it; bene MAY rename to `seed_candidates` in a v2 of the config but the contract for v0.x is "this is a list of file paths whose contents are loaded as seed candidates".
+- **Resource-aware candidates**: `resource_deltas` should be empty for legacy
+  single-file candidates. When populated, the evaluator must materialize
+  `base_resource_versions + resource_deltas` into an isolated evaluation
+  snapshot before calling `run(problem)`.
 
 ## Cross-references
 
-- **Depends on**: nothing (pure data model)
+- **Depends on**: `bene.resources` for optional `ResourceDelta` references
 - **Used by**: `bene.evaluator` (consumes Candidate, produces EvaluationResult), `bene.proposer` (produces Candidates), `bene.search` (orchestrates), `bene.skills` (rationale strings often carry skill references), `bene.memory` (memory keys often include candidate_id)

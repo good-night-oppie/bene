@@ -1,0 +1,51 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/spec-injector.sh\"",
+            "timeout": 5,
+            "statusMessage": "Injecting IonQ spec"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/admin/gh/harness-engineering/scripts/sessionstart_corpus_query.sh harness agent kb",
+            "timeout": 60,
+            "statusMessage": "Running SessionStart corpus query"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^(Bash|apply_patch|Edit|Write)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/pretool-check.py\"",
+            "timeout": 5,
+            "statusMessage": "Checking IonQ guardrails"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/stop-integrity-check.py\"",
+            "timeout": 240,
+            "statusMessage": "Running IonQ integrity check"
+          }
+        ]
+      }
+    ]
+  }
+}

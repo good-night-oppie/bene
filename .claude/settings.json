@@ -66,6 +66,18 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/admin/gh/harness-engineering/scripts/sessionstart_corpus_query.sh harness agent kb"
+          }
+        ]
+      }
     ]
-  }
+  },
+  "//": "Claude Code project settings \u2014 checked into repo. Per harness-praxis D4 doctrine: SessionStart hook is the structural fix for corpus-blindness. See [[IDEAL_EXPERIENCE.md#IDEAL-4]] and scripts/sessionstart_corpus_query.sh docstring."
 }

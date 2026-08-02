@@ -1,0 +1,78 @@
+{
+  "mcpServers": {
+    "linear-server": {
+      "type": "http",
+      "url": "https://mcp.linear.app/mcp"
+    },
+    "browser-use": {
+      "type": "stdio",
+      "command": "/home/admin/gh/jobright-auto/.venv/bin/browser-use",
+      "args": [
+        "--mcp",
+        "--profile",
+        "jobright",
+        "--headed"
+      ],
+      "env": {
+        "PATH": "/home/admin/.local/bin:/usr/local/bin:/usr/bin:/bin",
+        "DISPLAY": ":99"
+      }
+    },
+    "kaos": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "/home/admin/gh/kaos",
+        "kaos",
+        "serve",
+        "--transport",
+        "stdio"
+      ],
+      "env": {}
+    },
+    "pal": {
+      "type": "stdio",
+      "command": "/home/admin/gh/pal-mcp-server/.pal_venv/bin/python",
+      "args": [
+        "/home/admin/gh/pal-mcp-server/server.py"
+      ],
+      "env": {
+        "COMPOSE_PROJECT_NAME": "pal-mcp",
+        "CONVERSATION_TIMEOUT_HOURS": "24",
+        "CUSTOM_API_URL": "http://localhost:8317/v1",
+        "CUSTOM_API_KEY": "factory-dummy-key",
+        "CUSTOM_MODELS_CONFIG_PATH": "/home/admin/.pal/custom_models.json",
+        "DEFAULT_MODEL": "op4.7",
+        "DEFAULT_THINKING_MODE_THINKDEEP": "medium",
+        "LOG_LEVEL": "DEBUG",
+        "LOG_MAX_SIZE": "10MB",
+        "MAX_CONVERSATION_TURNS": "40",
+        "TZ": "PST",
+        "ZEN_MCP_FORCE_ENV_OVERRIDE": "true",
+        "PAL_MCP_LOG_TO_STDERR": "false",
+        "PAL_MCP_STARTUP_TIMEOUT": "300",
+        "PAL_MCP_TOOL_TIMEOUT": "1800"
+      }
+    },
+    "mysearch": {
+      "type": "stdio",
+      "command": "/home/admin/gh/MySearch-Proxy/venv/bin/python",
+      "args": [
+        "-m",
+        "mysearch"
+      ],
+      "env": {
+        "PYTHONPATH": "/home/admin/gh/MySearch-Proxy",
+        "MYSEARCH_TAVILY_API_KEY": "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",
+        "MYSEARCH_FIRECRAWL_API_KEY": "fc-ed0382b5ad854f2a8e38da1897e714b2",
+        "MYSEARCH_EXA_API_KEY": "c9312bff-2962-474a-b6a8-819b9a42e43c"
+      }
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=yaejfeeghqyzbbdrryti&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching"
+    }
+  }
+}

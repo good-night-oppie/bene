@@ -11,13 +11,18 @@
 
 ## Design intent
 
-Algorithm 1 from the Meta-Harness paper, adapted to bene's substrate. The
+Algorithm 1 from the reference harness-search paper, adapted to bene's substrate. The
 search owns an "archive" — a `bene.core` agent whose VFS holds seeds,
 per-candidate sources/scores/traces, iteration metadata, the Pareto
 frontier history, CORAL tier-2 memory directories, and any skills loaded
 from / persisted to the cross-session knowledge agent. Every search step
 is checkpointed so a process crash mid-iteration recovers cleanly via
 `resume()`.
+
+With `bene.resources`, the archive also owns protocol-registered resources
+and accepted evolution commits. Candidate source remains the minimal execution
+unit, but prompts, tools, environment bootstraps, memory policies, and source
+programs can all be evolved through the same delta/commit path.
 
 Implementer note: the reference impl class is `MetaHarnessSearch`. In bene
 this is renamed to `Search` (drop legacy prefix).
@@ -45,25 +50,27 @@ async run() -> SearchResult
 
 **Intent**: execute the full search loop. Steps:
 1. Initialize the search agent + archive filesystem
-2. Load seeds (operator-supplied paths + prior discoveries from knowledge agent + benchmark defaults if no priors)
-3. Evaluate seeds (parallel)
-4. Compute initial Pareto frontier
-5. For each iteration `1..config.max_iterations`:
+2. Initialize `ResourceRegistry` and register seed candidates/resources
+3. Load seeds (operator-supplied paths + prior discoveries from knowledge agent + benchmark defaults if no priors)
+4. Evaluate seeds (parallel)
+5. Compute initial Pareto frontier
+6. For each iteration `1..config.max_iterations`:
    - Checkpoint the search state
-   - Proposer generates `k` candidates (with timeout)
-   - Validate interface on each (defense in depth — proposer already validates)
+   - Proposer generates `k` candidates or resource deltas (with timeout)
+   - Validate interface/deltas on each (defense in depth — proposer already validates)
    - Evaluate valid candidates in parallel (with eval-subset sampling if `config.eval_subset_size` set)
-   - Store results in archive
+   - Store results in archive and commit accepted resource versions
    - Recompute Pareto frontier
    - Update stagnation tracking (CORAL Tier 1)
    - Write iteration metadata
-6. File discoveries to the `bene-knowledge` singleton agent (winning sources + skills + summary)
-7. Complete the search agent
-8. Return `SearchResult`
+7. File discoveries to the `bene-knowledge` singleton agent (winning sources + skills + summary)
+8. Complete the search agent
+9. Return `SearchResult`
 
 **Post-conditions on completion**:
 - Search agent status = `completed`
 - Archive contains full history (every candidate's source + scores + trace)
+- Archive contains resource commits for every accepted self-evolution step
 - Knowledge agent contains winning sources at `/discoveries/<benchmark>/`
 - `SearchResult.frontier` is the final non-dominated set
 
@@ -97,6 +104,7 @@ class SearchResult:
     total_harnesses_evaluated: int      # legacy field name; consider rename to total_candidates_evaluated
     total_duration_seconds: float
     iterations_completed: int
+    resource_commits: list[EvolutionCommit]
 
     summary() -> str  # human-readable multi-line summary
 ```
@@ -172,13 +180,17 @@ print(result.summary())
 - **Single active search per archive**. Concurrent runs against the same `search_agent_id` will corrupt the archive. Implementer should consider an explicit lock file or status check.
 - **Proposer timeout MUST be enforced** (`config.proposer_timeout_seconds`, default 900s = 15 min). When proposer times out, the iteration logs an error in `/iterations/<n>/error.json` and proceeds to the next iteration WITHOUT crashing the search.
 - **Evaluation failure isolation**: per-candidate evaluation errors are captured into `EvaluationResult.error` and DO NOT crash the iteration. Iteration-level failures (e.g. all evals timed out) are logged but the search continues.
+- **Resource commit isolation**: failed evaluations never activate proposed
+  resource versions. Only accepted results create `EvolutionCommit`s.
 - **Stagnation epsilon = 0.001** — small enough to be sensitive to real improvements, large enough to ignore floating-point noise. Document if tuned.
 - **Resume MUST be tolerant of partial state**: `/harnesses/<id>/` directories may have some files but not others if a crash happened mid-store. Skip such candidates rather than failing.
 - **Knowledge filing is best-effort**: if the knowledge agent write fails, log a warning and DO NOT raise — the search results are still valuable in the local archive.
 - **`/harnesses/` vs `/candidates/` directory naming**: reference impl uses `/harnesses/`. Bene MAY rename to `/candidates/` to match the renamed class. If renamed, update `bene.proposer`'s `archive_*` tools' default paths consistently and document in this page.
-- **Frontier computation** is delegated to `bene.pareto.compute_pareto(results, objectives)` — see that module's spec (not included in initial 11 spec pages; covered by CONTRACT.md cross-reference if added later).
+- **Frontier computation** is delegated to `bene.pareto.compute_pareto(results, objectives)` — see that module's spec (not yet a standalone page; covered by CONTRACT.md cross-reference if added later).
+- **Resource-aware frontier entries** should carry both `candidate_id` and
+  `commit_id` so a winning point can be replayed exactly.
 
 ## Cross-references
 
-- **Depends on**: `bene.core` (agent + VFS + checkpoints + state), `bene.candidate` (data model), `bene.evaluator` (evaluate_parallel), `bene.proposer` (propose), `bene.pareto` (frontier compute), `bene.skills` (knowledge agent skill load/persist), `bene.memory` (result/error persistence), `Benchmark` protocol
+- **Depends on**: `bene.core` (agent + VFS + checkpoints + state), `bene.resources` (resource registry + commits), `bene.candidate` (data model), `bene.evaluator` (evaluate_parallel), `bene.proposer` (propose), `bene.pareto` (frontier compute), `bene.skills` (knowledge agent skill load/persist), `bene.memory` (result/error persistence), `Benchmark` protocol
 - **Used by**: bene callers / top-level applications; eventually agentdex `agentdex/modules/evolver/`

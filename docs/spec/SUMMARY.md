@@ -4,8 +4,9 @@
 > Phase 1 deliverable per `.harness/spec.md`. When this index is complete
 > and operator-approved, Phase 2 (implementation + tests) may begin.
 
-**Status**: ✅ Phase 1 complete — all 9 module spec pages + CONTRACT.md
+**Status**: ✅ Phase 1 complete — all 10 module spec pages + CONTRACT.md
 landed 2026-05-30 in a single session via batched commits on `main`.
+Resource evolution addendum landed 2026-06-05.
 
 ## What this spec is for
 
@@ -14,45 +15,39 @@ bene is the substrate layer for [agentdex](https://github.com/good-night-oppie/a
 ## Reading order
 
 1. **[`core.md`](core.md)** — the foundation (VFS engine, agent lifecycle, files, state, tool calls, checkpoints). Read first; everything else depends on it.
-2. **[`skills.md`](skills.md)** — the moat (cross-run procedural memory store with outcome tracking).
-3. **[`memory.md`](memory.md)** — cross-agent episodic memory (typed observation/result/insight/error entries).
-4. **[`shared_log.md`](shared_log.md)** — LogAct-style coordination log (append-only, position-ordered, intent→vote→decision→commit/result).
-5. **[`runner.md`](runner.md)** — agent execution engine (plan-act-observe loop, tool registry, permission policy, usage tracking).
-6. **[`candidate.md`](candidate.md)** — evolutionary search data model (Candidate, EvaluationResult, SearchConfig + interface validation).
-7. **[`evaluator.md`](evaluator.md)** — runs a Candidate against a Benchmark (hermetic agent per evaluation, dynamic module loading, injected `llm()`).
-8. **[`proposer.md`](proposer.md)** — generates new Candidates from archive state (cross-agent archive read, skill+memory context, pivot prompts).
-9. **[`search.md`](search.md)** — outer evolutionary search loop (seeds → iterations → frontier → knowledge filing; with resume).
-10. **[`CONTRACT.md`](CONTRACT.md)** — cross-module invariants (VFS isolation, persistence semantics, Pareto contract, checkpoint atomicity, audit trail, naming hygiene).
+2. **[`resources.md`](resources.md)** — protocol-registered resources, deltas, audited evolution commits, rollback.
+3. **[`skills.md`](skills.md)** — the moat (cross-run procedural memory store with outcome tracking).
+4. **[`memory.md`](memory.md)** — cross-agent episodic memory (typed observation/result/insight/error entries).
+5. **[`shared_log.md`](shared_log.md)** — LogAct-style coordination log (append-only, position-ordered, intent→vote→decision→commit/result).
+6. **[`runner.md`](runner.md)** — agent execution engine (plan-act-observe loop, tool registry, permission policy, usage tracking).
+7. **[`candidate.md`](candidate.md)** — evolutionary search data model (Candidate, EvaluationResult, SearchConfig + interface validation).
+8. **[`evaluator.md`](evaluator.md)** — runs a Candidate against a Benchmark (hermetic agent per evaluation, dynamic module loading, injected `llm()`).
+9. **[`proposer.md`](proposer.md)** — generates new Candidates from archive state (cross-agent archive read, skill+memory context, pivot prompts).
+10. **[`search.md`](search.md)** — outer evolutionary search loop (seeds → iterations → frontier → knowledge filing; with resume).
+11. **[`CONTRACT.md`](CONTRACT.md)** — cross-module invariants (VFS isolation, persistence semantics, Pareto contract, resource evolution safety, checkpoint atomicity, audit trail, naming hygiene).
 
 ## Module dependency graph
 
-```
-┌─────────────────┐
-│   bene.core     │  ← foundation (VFS, agents, state, checkpoints)
-└────┬────────────┘
-     │
-     ├─────────────┐──────────────┐──────────────┐
-     ▼             ▼              ▼              ▼
- bene.skills   bene.memory   bene.shared_log   bene.runner
-     │             │                              │
-     │             │                              │
-     └──────┬──────┘                              │
-            ▼                                     │
-     ┌──────────────┐                             │
-     │bene.candidate│  (pure data model)          │
-     └──────┬───────┘                             │
-            │                                     │
-     ┌──────┴──────┐                              │
-     ▼             ▼                              │
-bene.evaluator  bene.proposer ◄───────────────────┘
-     │             │
-     └──────┬──────┘
-            ▼
-       bene.search
+```text
+bene.core
+  -> bene.resources
+  -> bene.skills
+  -> bene.memory
+  -> bene.shared_log
+  -> bene.runner
+
+bene.resources + bene.candidate
+  -> bene.evaluator
+  -> bene.proposer
+  -> bene.search
+
+bene.skills + bene.memory + bene.runner
+  -> bene.proposer
+  -> bene.search
 ```
 
 `bene.pareto` (helper module for `compute_pareto` + `ParetoFrontier`) is
-referenced by search + proposer; not in the initial 11 spec pages but
+referenced by search + proposer; not yet a standalone spec page but
 will be added as a thin helper page when Phase 2 starts. CONTRACT.md
 defines its semantics.
 
@@ -60,7 +55,8 @@ defines its semantics.
 
 Before Phase 2 may start:
 
-- [x] All 9 module spec pages written
+- [x] All 9 original module spec pages written
+- [x] Resource evolution addendum page written
 - [x] CONTRACT.md written with cross-module invariants
 - [x] SUMMARY.md written (this file)
 - [ ] **Operator review pass** — pending

@@ -1,0 +1,35 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=yaejfeeghqyzbbdrryti&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching",
+      "disabled": false
+    },
+    "prisma_deep_plan": {
+      "command": "node",
+      "args": [
+        "/home/admin/gh/Prisma/docker/mcp-server.js"
+      ],
+      "disabled": false
+    },
+    "serena": {
+      "command": "/home/admin/.local/bin/uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "codex",
+        "--project",
+        "${workspaceFolder}"
+      ],
+      "env": {
+        "EXCLUDED_TOOLS": "onboarding,check_onboarding_performed,create_text_file,delete_lines,execute_shell_command,find_file,insert_after_symbol,insert_at_line,insert_before_symbol,jet_brains_find_referencing_symbols,jet_brains_find_symbol,jet_brains_get_symbols_overview,list_dir,open_dashboard,prepare_for_new_conversation,remove_project,rename_symbol,replace_lines,replace_content,replace_symbol_body,switch_modes",
+        "LANGUAGES": "python,yaml,markdown,bash,toml,rust",
+        "IGNORED_PATHS": "/*,!/gh/,!/gl/,!/**/,!/*/src/,!/*/src/triage/**,!/*/src/infrastructure,!/*/triage-rag-integration/triage-rag,!/*/triage-rag-integration/spinnaker-artifacts/"
+      },
+      "disabled": false
+    }
+  }
+}

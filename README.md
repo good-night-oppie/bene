@@ -7,6 +7,8 @@
 ## What it will provide
 
 - **Per-agent sandboxed VFS** — isolated filesystems backed by SQLite
+- **Protocol-registered resources** — prompts, agents, tools, environments,
+  memory policies, and candidates versioned as auditable evolution targets
 - **Cross-run skill graph** — FTS5 + BM25 store that compounds across runs (the moat)
 - **Evolutionary search** — AlphaEvolve-style loop over agent harnesses
 - **Pareto / MAP-Elites archive** — multi-objective candidate selection

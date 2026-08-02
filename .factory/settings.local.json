@@ -1,0 +1,23 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/admin/gh/harness-engineering/scripts/sessionstart_corpus_query.sh harness agent kb",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  },
+  "trustedFolders": {
+    "/home/admin/gh/agentdex-cli-main": {
+      "trustedAt": "2026-07-12T04:43:04.646716Z"
+    },
+    "/home/admin/gh/eddie-agi-kb": {
+      "trustedAt": "2026-07-12T04:43:04.646716Z"
+    }
+  }
+}

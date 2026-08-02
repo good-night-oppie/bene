@@ -53,6 +53,29 @@ After `restore`:
 
 Checkpoint round-trip is **lossless for VFS + state**, **not** for tool-call history (tool calls are append-only across restores).
 
+## Resource evolution safety
+
+All self-evolving agent components MUST be represented as protocol-registered
+resources before they become mutable search targets.
+
+- Evolvable resource types are `prompt`, `agent`, `tool`, `environment`,
+  `memory`, and `candidate`.
+- A resource update MUST be represented as a `ResourceDelta` and MUST pass
+  `ResourceRegistry.validate_delta()` before evaluation.
+- Active resource versions MUST change only through an `EvolutionCommit`.
+  Direct in-place mutation of active resources is broken behavior.
+- Every accepted commit records exact `resource_id -> version` bindings,
+  accepted delta IDs, scores, trace refs, verifier output, parent commit IDs,
+  and the search iteration.
+- Rollback is additive: it creates a new commit restoring a prior version map.
+  It never deletes or rewrites rejected commits.
+- A candidate evaluation MUST record the exact resource versions materialized
+  for that run. A score without its resource-version map is not reproducible.
+- Non-evolvable resources may be read and exported into contracts but cannot be
+  targeted by proposer deltas.
+- Tool resources exposed to models MUST export a compact tool contract with a
+  name, description, and input schema.
+
 ## Audit trail completeness
 
 For every state-mutating operation on an `Engine`, an event is recorded:
@@ -69,6 +92,10 @@ For every state-mutating operation on an `Engine`, an event is recorded:
 | `restore` | `checkpoint_restore` |
 | `log_tool_call` | `tool_call_start` |
 | `complete_tool_call` | `tool_call_end` |
+| `register resource` | `resource_register` |
+| `stage resource delta` | `resource_delta_stage` |
+| `commit resource versions` | `resource_commit` |
+| `rollback resource versions` | `resource_rollback` |
 
 The event journal is append-only; events are never modified or deleted. An agent can be reconstructed from its events alone (modulo checkpoint restore semantics).
 
