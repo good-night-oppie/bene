@@ -41,6 +41,10 @@ CREATE TABLE IF NOT EXISTS agents (
 );
 CREATE INDEX IF NOT EXISTS idx_agents_status ON agents(status);
 CREATE INDEX IF NOT EXISTS idx_agents_name ON agents(name);
+-- NOTE: When building against a populated production table, prefer
+-- CREATE INDEX CONCURRENTLY IF NOT EXISTS outside any transaction block
+-- to avoid blocking writes. The current form is correct for fresh deployments.
+CREATE INDEX IF NOT EXISTS idx_agents_created_at ON agents(created_at DESC);
 
 CREATE TABLE IF NOT EXISTS files (
     file_id          BIGSERIAL PRIMARY KEY,
