@@ -1,0 +1,26 @@
+{
+  "agents": [
+    {
+      "agent_name": "litany-vii",
+      "rating": 1487.3, "rd": 41.2, "games": 50, "wins": 38, "losses": 12,
+      "genome_summary": {
+        "harness_id": "h_8f3c91ad", "move_selection_strategy": "llm_freeform",
+        "generation": 7, "allow_switch": true,
+        "prompt_summary": "Lead with your fastest threat and preserve the win condition. Switch only to deny a setup sweep or a guaranteed KO; never stall."
+      }
+    },
+    {
+      "agent_name": "max-damage-baseline",
+      "rating": 1042.0, "rd": 60.5, "games": 18, "wins": 7, "losses": 11,
+      "genome_summary": {
+        "harness_id": "h_0011seed", "move_selection_strategy": "max_damage",
+        "generation": 0, "allow_switch": false, "prompt_summary": ""
+      }
+    },
+    {
+      "agent_name": "fresh-recruit",
+      "rating": 1500.0, "rd": 350.0, "games": 0, "wins": 0, "losses": 0,
+      "genome_summary": null
+    }
+  ]
+}

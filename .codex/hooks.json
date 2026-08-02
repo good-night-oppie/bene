@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/admin/gh/harness-engineering/scripts/sessionstart_corpus_query.sh harness agent kb",
+            "timeout": 60,
+            "statusMessage": "Running SessionStart corpus query"
+          }
+        ]
+      }
+    ]
+  }
+}

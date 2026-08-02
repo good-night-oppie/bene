@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>agentdex.builders — Evolution panel (GA-BENE-4 build-ahead)</title>
+<style>
+  :root{
+    --bg:#0a0c11; --panel:#11141b; --ink:#e8edf5; --mut:#8a93a6; --dim:#5b6473;
+    --line:#222834; --lime:#a6e22e; --gold:#ffcf5a; --disp:"Geist",system-ui,sans-serif;
+    --mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--disp);
+       padding:28px;display:flex;justify-content:center}
+  .wrap{width:380px;max-width:100%}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .ch{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid var(--line)}
+  .ch h3{margin:0;font-size:14px;font-weight:600;letter-spacing:.01em}
+  .r.dim.mono{font-family:var(--mono);color:var(--dim)}
+  .mono{font-family:var(--mono)}
+  .cb{padding:15px}
+  /* evolution */
+  .evo .lead{display:flex;align-items:baseline;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+  .evo .lead .up{font-family:var(--mono);font-size:24px;font-weight:600;color:var(--lime)}
+  .evo .lead .up.muted{color:var(--mut)}
+  .evo .lead .ci{font-family:var(--mono);font-size:11px;color:var(--mut)}
+  .ci-sig{color:var(--lime)} .ci-ns{color:var(--gold)}
+  .kg.ok{color:var(--lime)} .kg.no{color:#ff8e96}
+  .evo-badge.mock{font-family:var(--mono);font-size:11px;color:#0c0e13;background:var(--gold);
+    border-radius:6px;padding:4px 8px;margin-bottom:10px;display:inline-block}
+  .spark{display:flex;align-items:flex-end;gap:7px;height:84px;padding:6px 2px 2px;border-bottom:1px solid var(--line)}
+  .gcol{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
+  .gcol .mk{font-size:9px}
+  .gcol.kept .mk{color:var(--lime)} .gcol.killed .mk{color:var(--dim)}
+  .gcol .bar{width:100%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,#3a5a1f,#22301a)}
+  .gcol.kept .bar{background:linear-gradient(180deg,#b9f23a,#6f9a18)}
+  .gcol .gl{font-family:var(--mono);font-size:9.5px;color:var(--dim)}
+  .mut{margin-top:11px;font-family:var(--mono);font-size:12px;background:#0d1016;border:1px solid #3a5a1f;
+    border-left:3px solid var(--lime);border-radius:7px;padding:9px 11px}
+  .mut .h{color:var(--lime);font-weight:600;margin-bottom:4px}
+  .mut .b{color:#c3cad8;line-height:1.45}
+  .nonprompt{color:#0c0e13;background:var(--lime);border-radius:4px;padding:0 5px;font-size:10.5px}
+  .err{font-family:var(--mono);font-size:12px;color:#ff8e96}
+</style>
+</head>
+<body>
+  <div class="wrap"><div id="root"><div class="err">loading…</div></div></div>
+  <script type="module">
+    import { renderEvoPanel, loadFixture } from "./evo_panel.js";
+    const root = document.getElementById("root");
+    // SPA integration: swap this URL for the live to_done_json feed; same call shape.
+    const SRC = new URLSearchParams(location.search).get("src") || "./done_c2_pokeenv.sample.json";
+    (async () => {
+      try {
+        const done = await loadFixture(SRC);
+        const summary = renderEvoPanel(done, root);
+        window.__evoSummary = summary; // exposed for the render-verify assertions
+        document.title = `Evolution +${summary.upliftPP.toFixed(1)}pp — GA-BENE-4`;
+      } catch (e) {
+        root.innerHTML = `<div class="err">evo-panel error: ${e.message}</div>`;
+        window.__evoError = e.message;
+      }
+    })();
+  </script>
+</body>
+</html>

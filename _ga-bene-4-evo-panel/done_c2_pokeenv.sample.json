@@ -1,0 +1,61 @@
+{
+  "ok": true,
+  "lane": "C2",
+  "backend": "pokeenv",
+  "scaffold": false,
+  "battles_played": 240,
+  "gens_completed": 1,
+  "n_battles_per_matchup": 40,
+  "seed_fitness": {
+    "win_rate": 0.20833333333333334,
+    "elo": 345.22981581819516,
+    "move_legibility": 1.0,
+    "no_forfeit_exploit": 1.0,
+    "turn_efficiency": 0.5707491082045185
+  },
+  "best_fitness": {
+    "win_rate": 0.48333333333333334,
+    "elo": 1259.817713620755,
+    "move_legibility": 1.0,
+    "no_forfeit_exploit": 1.0,
+    "turn_efficiency": 0.9313154831199069
+  },
+  "win_rate_uplift_pp": 27.500000000000004,
+  "win_rate_uplift_ci95_pp": [
+    15.978745833895497,
+    39.021254166104505
+  ],
+  "ci_excludes_zero": true,
+  "killgate": {
+    "passed": true,
+    "margin_pp": 27.500000000000004,
+    "required_margin_pp": 10.0,
+    "seed_win_rate": 0.20833333333333334,
+    "best_win_rate": 0.48333333333333334,
+    "rejected": false
+  },
+  "lineage": [
+    {
+      "gen": 1,
+      "harness_id": "gen1-42",
+      "strategy": "max_damage",
+      "win_rate": 0.48333333333333334,
+      "kept": true
+    }
+  ],
+  "held_out_baselines": [
+    "RandomPlayer",
+    "MaxBasePowerPlayer",
+    "SimpleHeuristicsPlayer"
+  ],
+  "run_seed": 42,
+  "mocked_components": [
+    "evolve(LaneB/Contract4, bene-core)"
+  ],
+  "real_components": [
+    "genome(A2/Contract1, adx_showdown.harness)",
+    "runner(A1/Contract2, poke-env vs PS server)",
+    "fitness(A3/Contract3, adx-core)"
+  ],
+  "note": "REAL run: poke-env Lane-A1 runner vs the held-out baselines on a live PS server; multi_dim_fitness (A3) + BattleHarness (A2) real; only the evolve step (Lane B) is mocked. The win-rate uplift is reported with a two-proportion 95% CI; ok requires the CI to exclude 0 (SPEC DONE #3)."
+}

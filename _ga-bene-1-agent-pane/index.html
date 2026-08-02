@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>agentdex.builders — Agent roster + genome HUD (GA-BENE-1 build-ahead)</title>
+<style>
+  :root{
+    --bg:#0a0c11;--panel:#11141b;--ink:#e8edf5;--mut:#8a93a6;--dim:#5b6473;
+    --line:#222834;--lime:#a6e22e;--gold:#ffcf5a;--red:#ff8e96;
+    --disp:"Geist",system-ui,sans-serif;--mono:"Geist Mono",ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--disp);padding:24px;
+       display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+  .col{width:300px;max-width:100%}
+  .mono{font-family:var(--mono)} .dim{color:var(--dim)}
+  /* roster */
+  .roster h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:0 0 9px 2px}
+  .agent{border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:9px 11px;margin-bottom:7px;cursor:pointer}
+  .agent:hover{border-color:#33424f}
+  .agent.sel{border-color:var(--lime);box-shadow:0 0 0 1px rgba(166,226,46,.25),0 6px 18px -10px rgba(166,226,46,.4)}
+  .a-name{font-weight:600;font-size:13px} .a-meta{font-size:11px;color:var(--mut);margin-top:2px}
+  .a-gen{color:var(--lime)} .a-gen.pending{color:var(--gold)}
+  /* card / agent pane */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .ch{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid var(--line)}
+  .ch h3{margin:0;font-size:14px;font-weight:600} .r.dim.mono{font-family:var(--mono);color:var(--dim);font-size:11px}
+  .cb{padding:15px}
+  .ap-name-row{display:flex;align-items:center;gap:10px;margin-bottom:13px}
+  .ap-name{font-size:18px;font-weight:600}
+  .ap-name-row .gen{font-family:var(--mono);font-size:11px;color:var(--lime);border:1px solid #3a5a1f;border-radius:5px;padding:1px 6px}
+  .ap-name-row .gen.pending{color:var(--gold);border-color:#5a4a1f}
+  .ap-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:14px}
+  .stat{background:#0d1016;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+  .stat .k{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+  .stat .v{font-size:18px;font-weight:600;margin-top:2px} .stat .v.elo{color:var(--gold)} .stat .v.wr{color:var(--lime)}
+  .stat .v .rd{font-size:10px;color:var(--dim);font-weight:400}
+  .ap-genome{border-top:1px solid var(--line);padding-top:12px}
+  .kv{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:12px;margin-bottom:7px}
+  .kv .k{color:var(--mut)} .kv .vv{color:var(--ink)}
+  .pill{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-radius:5px;padding:1px 7px}
+  .pill.on{color:var(--lime);border-color:#3a5a1f;background:rgba(166,226,46,.07)}
+  .pill.off{color:var(--dim)}
+  .prompt{font-family:var(--mono);font-size:11.5px;line-height:1.5;color:#c3cad8;background:#0d1016;
+    border:1px solid var(--line);border-left:3px solid var(--lime);border-radius:7px;padding:9px 11px;margin-top:6px}
+  .prompt.empty{color:var(--dim);border-left-color:var(--dim)}
+  .genome-pending{font-family:var(--mono);font-size:11.5px;color:var(--gold);background:rgba(255,207,90,.06);
+    border:1px dashed #5a4a1f;border-radius:7px;padding:11px}
+  .err{font-family:var(--mono);color:var(--red)}
+</style>
+</head>
+<body>
+  <div class="col roster"><h2>Roster</h2><div id="roster"></div></div>
+  <div class="col"><div id="pane"><div class="err">loading…</div></div></div>
+  <script type="module">
+    import { mountAgentHud, loadAgents } from "./agent_hud.js";
+    const SRC = new URLSearchParams(location.search).get("src") || "./me_agents.sample.json";
+    (async () => {
+      try {
+        const data = await loadAgents(SRC);
+        const summary = mountAgentHud(data, document.getElementById("roster"), document.getElementById("pane"));
+        window.__hudSummary = summary;
+      } catch (e) {
+        document.getElementById("pane").innerHTML = `<div class="err">agent-hud error: ${e.message}</div>`;
+        window.__hudError = e.message;
+      }
+    })();
+  </script>
+</body>
+</html>
