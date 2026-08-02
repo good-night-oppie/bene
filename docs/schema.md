@@ -566,12 +566,12 @@ CREATE TABLE IF NOT EXISTS schema_version (
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
-| `version` | INTEGER | PRIMARY KEY | The migration number. Current: 6. |
+| `version` | INTEGER | PRIMARY KEY | The migration number. Current: 7. |
 | `applied_at` | TEXT | NOT NULL, auto-generated | When that migration ran. |
 
 ### Migration mechanics
 
-- First initialization inserts version 6.
+- First initialization inserts version 7.
 - On later opens, a database that trails the code's `SCHEMA_VERSION` is brought forward by incremental migrations through `_apply_migrations()`.
 - Future steps land as `if from_version < N:` blocks in `bene/schema.py`.
 
@@ -627,3 +627,5 @@ Each index that ships with the schema, and the query shape it serves:
 | events | `idx_events_agent_time` | `agent_id, timestamp` | No | Chronological event stream |
 | events | `idx_events_type` | `event_type` | No | Filter by event type |
 | checkpoints | `idx_checkpoints_agent` | `agent_id, created_at` | No | Chronological checkpoint listing |
+| memory | `idx_memory_key_v2` | `key, created_at DESC, memory_id DESC` | Yes (`key IS NOT NULL`) | Fast memory lookup by key without sorting |
+| memory | `idx_memory_key_agent_v2` | `key, agent_id, created_at DESC, memory_id DESC` | Yes (`key IS NOT NULL`) | Fast memory lookup by key and agent without sorting |
