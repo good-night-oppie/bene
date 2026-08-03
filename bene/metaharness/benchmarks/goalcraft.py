@@ -266,6 +266,7 @@ def score_goal(
     )
     contract_pass = float(
         not missing_sections
+        and brief_grounding >= 0.50
         and completeness >= 0.75
         and verifiability == 1.0
         and done_contract
