@@ -59,11 +59,12 @@ class Benchmark(ABC):
 
     def diagnostic_view(
         self, problem: Problem, output: dict[str, Any], scores: dict[str, float]
-    ) -> str | None:
+    ) -> str | dict[str, Any] | None:
         """Optional structured failure diagnostic for the Surrogate Verifier.
 
-        Default: none. Override to expose benchmark-specific failure detail
-        (e.g. the bug_triage benchmark returns mis-routed ticket fields).
+        Default: none. Override to expose benchmark-specific failure detail as a
+        string or a structured dict (e.g. the bug_triage benchmark returns
+        mis-routed ticket fields; goalcraft returns per-dimension metrics).
         NB: the evaluator calls this unconditionally — the 0.1.0 predecessor shipped without
         this default, which silently zeroed every evaluation (bench row B1).
         """
