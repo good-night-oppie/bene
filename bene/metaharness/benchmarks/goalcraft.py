@@ -205,9 +205,10 @@ def score_goal(
     missing_sections = sorted(set(_REQUIRED_SECTIONS) - set(present_sections))
     section_score = len(present_sections) / len(_REQUIRED_SECTIONS)
     brief_words = re.findall(r"[a-zA-Z]{5,}", (brief or "").lower())
-    outcome = _section_body_for(normalized, "outcome")
+    outcome_lower = _section_body_for(normalized, "outcome").lower()
     brief_grounding = (
-        sum(word in outcome.lower() for word in set(brief_words)) / len(set(brief_words))
+        sum(bool(re.search(rf"\b{re.escape(word)}\b", outcome_lower)) for word in set(brief_words))
+        / len(set(brief_words))
         if brief_words
         else 1.0
     )

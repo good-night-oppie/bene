@@ -85,6 +85,26 @@ Iterate/done/stop: Stop if blocked. Done only when verification passes. checklis
     scores = benchmark.score(problem, {"goal": goal})
     assert scores["accuracy"] == 0.0
     assert scores["composite"] > 0.0
+
+
+def test_brief_grounding_requires_word_boundaries() -> None:
+    benchmark = GoalcraftBenchmark()
+    problem = benchmark.get_search_set()[0]
+    problem.input["brief"]  # contains "payment form test"
+    # "repayment" contains the substring "payment" but is a different word.
+    goal = f"""Outcome: Update the repayment scheduler to handle leap years.
+Context: current repository state.
+Boundaries: scope.
+Constraints: preserve behavior.
+Verify: Run {problem.input["checks"]} and record results in {problem.input["state_file"]}.
+Iterate/done/stop: Stop if blocked. Done only when verification passes. checklist inspect."""
+    scores = benchmark.score(problem, {"goal": goal})
+    diagnostic = benchmark.diagnostic_view(problem, {"goal": goal}, scores)
+    assert diagnostic["metrics"]["brief_grounding"] < 0.5
+    assert scores["accuracy"] == 0.0
+
+
+def test_missing_required_sections_cannot_pass_contract() -> None:
     benchmark = GoalcraftBenchmark()
     problem = benchmark.get_search_set()[0]
     goal = f"""Outcome: {problem.input["brief"]}
