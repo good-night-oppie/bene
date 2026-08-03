@@ -291,7 +291,7 @@ async def list_tools() -> list[Tool]:
                 "properties": {
                     "benchmark": {
                         "type": "string",
-                        "description": "Benchmark name: text_classify, math_rag, agentic_coding, or a custom registered benchmark",
+                        "description": "Benchmark name: text_classify, math_rag, agentic_coding, goalcraft, or a custom registered benchmark",
                     },
                     "max_iterations": {
                         "type": "integer",
@@ -852,6 +852,7 @@ def _import_benchmarks() -> None:
     import bene.metaharness.benchmarks.text_classify  # noqa: F401
     import bene.metaharness.benchmarks.math_rag  # noqa: F401
     import bene.metaharness.benchmarks.agentic_coding  # noqa: F401
+    import bene.metaharness.benchmarks.goalcraft  # noqa: F401
 
     try:
         import bene.metaharness.benchmarks.arc_agi3  # noqa: F401

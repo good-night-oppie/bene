@@ -156,7 +156,7 @@ jobs:
           BASE_REF: origin/${{ github.event.pull_request.base.ref }}
           BENE_CONFIG: .github/bene/bene-ci.yaml
           BENE_STRICT_BASE: "1"
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: ./scripts/ci/regression_gate.sh
       - name: Upload triage artifact
         if: always()

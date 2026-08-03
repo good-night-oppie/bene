@@ -1109,7 +1109,7 @@ def mh():
     "--benchmark",
     "-b",
     required=True,
-    type=click.Choice(["text_classify", "math_rag", "agentic_coding"]),
+    type=click.Choice(["text_classify", "math_rag", "agentic_coding", "goalcraft"]),
     help="Benchmark to optimize for",
 )
 @click.option("--iterations", "-n", default=20, help="Number of search iterations")
@@ -1210,6 +1210,7 @@ def mh_search(
     import bene.metaharness.benchmarks.text_classify  # noqa: F401
     import bene.metaharness.benchmarks.math_rag  # noqa: F401
     import bene.metaharness.benchmarks.agentic_coding  # noqa: F401
+    import bene.metaharness.benchmarks.goalcraft  # noqa: F401
 
     afs = _get_afs(db)
     router = TierRouter.from_config(config_file)
@@ -1400,6 +1401,7 @@ def mh_resume(search_agent_id, benchmark, db, config_file):
     import bene.metaharness.benchmarks.text_classify  # noqa: F401
     import bene.metaharness.benchmarks.math_rag  # noqa: F401
     import bene.metaharness.benchmarks.agentic_coding  # noqa: F401
+    import bene.metaharness.benchmarks.goalcraft  # noqa: F401
     import bene.metaharness.benchmarks.paper_datasets  # noqa: F401
 
     afs = _get_afs(db)

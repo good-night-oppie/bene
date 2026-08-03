@@ -629,7 +629,7 @@ Kick off a Meta-Harness search: seed harnesses get scored on a benchmark, then e
 
 | Name | Type | Required | Description |
 |---|---|---|---|
-| `benchmark` | string | yes | Benchmark name: `text_classify`, `math_rag`, `agentic_coding`, or a custom registered benchmark. |
+| `benchmark` | string | yes | Benchmark name: `text_classify`, `math_rag`, `agentic_coding`, `goalcraft`, or a custom registered benchmark. |
 | `max_iterations` | integer | no | Number of search iterations. Default: 10. |
 | `candidates_per_iteration` | integer | no | Candidates proposed per iteration. Default: 2. |
 | `config` | object | no | Additional SearchConfig overrides. |
@@ -663,7 +663,7 @@ Pick an interrupted search back up at its last finished iteration. Nothing is lo
 | Name | Type | Required | Description |
 |---|---|---|---|
 | `search_agent_id` | string | yes | Search agent ID of the interrupted search. |
-| `benchmark` | string | yes | Benchmark the search was started on (`text_classify`, `math_rag`, or `agentic_coding`) — the worker needs it to resume scoring. |
+| `benchmark` | string | yes | Benchmark the search was started on (`text_classify`, `math_rag`, `agentic_coding`, or `goalcraft`) — the worker needs it to resume scoring. |
 
 **Returns:** JSON carrying `search_agent_id`, `status`, `pid`, `log_path`, and `message`.
 

@@ -16,17 +16,18 @@ database:
   compression: zstd
 
 models:
-  claude-sonnet:
-    provider: anthropic
-    model_id: claude-sonnet-4-20250514
-    api_key_env: ANTHROPIC_API_KEY
-    max_context: 200000
+  deepseek-v4-flash:
+    provider: openai
+    endpoint: https://api.deepseek.com/v1
+    api_key_env: DEEPSEEK_API_KEY
+    model_id: deepseek-v4-flash-0731
+    max_context: 131072
     timeout: 600
     use_for: [trivial, moderate, complex, critical, code_completion, code_generation, planning]
 
 router:
   type: tier
-  fallback_model: claude-sonnet
+  fallback_model: deepseek-v4-flash
   context_compression: true
   max_retries: 1
 
