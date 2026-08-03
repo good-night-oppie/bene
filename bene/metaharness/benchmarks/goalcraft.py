@@ -265,9 +265,11 @@ def score_goal(
         + 0.10 * resume_ability
     )
     contract_pass = float(
-        completeness >= 0.75
+        not missing_sections
+        and completeness >= 0.75
         and verifiability == 1.0
         and done_contract
+        and no_effort_done
         and anti_premature_done >= 0.70
         and char_count <= max_chars
     )
@@ -290,7 +292,7 @@ def _is_negated(text: str, term: str | None) -> bool:
         return False
     return bool(
         re.search(
-            rf"\b(?:do not|don't|never|without|must not|shall not)\b[^.\n]{{0,80}}{re.escape(term)}",
+            rf"\b(?:do not|don't|never|without|must not|should not|shall not|avoid|no)\b[^.\n]{{0,80}}{re.escape(term)}",
             text,
             re.IGNORECASE,
         )

@@ -73,6 +73,42 @@ Iterate/done/stop: Stop if blocked. Done only when verification passes. checklis
     assert golden_score - max(negative_scores) >= 0.25
 
 
+def test_missing_required_sections_cannot_pass_contract() -> None:
+    benchmark = GoalcraftBenchmark()
+    problem = benchmark.get_search_set()[0]
+    goal = f"""Outcome: {problem.input["brief"]}
+Boundaries: scope.
+Verify: Run {problem.input["checks"]} and record results in {problem.input["state_file"]}.
+Iterate/done/stop: Stop if blocked. Done only when verification passes. checklist inspect."""
+    assert benchmark.score(problem, {"goal": goal})["accuracy"] == 0.0
+
+
+def test_effort_based_stop_cannot_pass_contract() -> None:
+    benchmark = GoalcraftBenchmark()
+    problem = benchmark.get_search_set()[0]
+    goal = f"""Outcome: {problem.input["brief"]}
+Context: current repository state.
+Boundaries: scope.
+Constraints: preserve behavior.
+Verify: Run {problem.input["checks"]} and record results in {problem.input["state_file"]}.
+Iterate/done/stop: Stop after 3 turns. Done only when verification passes. checklist inspect."""
+    assert benchmark.score(problem, {"goal": goal})["accuracy"] == 0.0
+
+
+def test_should_not_evidence_cannot_pass_contract() -> None:
+    benchmark = GoalcraftBenchmark()
+    problem = benchmark.get_search_set()[0]
+    goal = f"""Outcome: {problem.input["brief"]}
+Context: current repository state.
+Boundaries: scope.
+Constraints: preserve behavior.
+Verify: Should not run {problem.input["checks"]}; should not write {problem.input["state_file"]}.
+Iterate/done/stop: Stop if blocked. Done only when verification passes. checklist inspect."""
+    scores = benchmark.score(problem, {"goal": goal})
+    assert scores["verifiability"] == 0.0
+    assert scores["accuracy"] == 0.0
+
+
 def test_keyword_stuffing_does_not_count_as_a_goal_contract() -> None:
     stuffed = (
         "Outcome Context Boundaries Constraints Verify Iterate/done/stop. "
