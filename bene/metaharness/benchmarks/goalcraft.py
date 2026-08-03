@@ -108,7 +108,7 @@ def run(problem):
         "Constraints: Preserve existing behavior and meaningful test coverage.\\n\\n"
         f"Verify: Run {checks}; inspect failures and record the exact evidence in {state_file}.\\n\\n"
         "Iterate/done/stop: After each attempt update the checklist, select the next failed or unverified "
-        "requirement, and continue. Done only when the stated verification passes; stop for an approval boundary "
+        "requirement, and continue. Done only when the stated verification passes; stop if an approval boundary "
         "or a blocker and report the evidence needed to unblock it."
     )
     return {"goal": goal, "context_tokens": len(goal.split())}
@@ -232,10 +232,11 @@ def score_goal(
     blockers = bool(
         re.search(r"\b(?:stop if|blocked|pause for|do not proceed)\b", iterate_body.lower())
     )
+    done_clause = _done_clause(iterate_body)
     done_contract = bool(
-        re.search(
-            r"\bdone only when\b.*\b(?:verification|verify|check|test).*\bpass(?:es|ed)?\b",
-            iterate_body,
+        re.fullmatch(
+            r"\s*done only when\s+(?:(?:the|a)\s+)?(?:stated\s+)?(?:verification|verify|check|test).*\bpass(?:es|ed)?\s*[.!]?\s*",
+            done_clause,
             re.IGNORECASE,
         )
     )
@@ -286,6 +287,15 @@ def score_goal(
         "brief_grounding": round(brief_grounding, 4),
         "contract_pass": contract_pass,
     }
+
+
+def _done_clause(text: str) -> str:
+    match = re.search(
+        r"\bdone only when\b.*?\bpass(?:es|ed)?(?=\s*(?:[.;!\n]|$))",
+        text,
+        re.IGNORECASE,
+    )
+    return match.group(0) if match else ""
 
 
 def _is_negated(text: str, term: str | None) -> bool:

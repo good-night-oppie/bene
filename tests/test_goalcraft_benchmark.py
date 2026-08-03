@@ -120,6 +120,18 @@ Iterate/done/stop: Stop if blocked. Done only when verification passes. checklis
     assert scores["accuracy"] == 0.0
 
 
+def test_disjunctive_done_condition_cannot_pass_contract() -> None:
+    benchmark = GoalcraftBenchmark()
+    problem = benchmark.get_search_set()[0]
+    goal = f"""Outcome: {problem.input["brief"]}
+Context: current repository state.
+Boundaries: scope.
+Constraints: preserve behavior.
+Verify: Run {problem.input["checks"]} and record results in {problem.input["state_file"]}.
+Iterate/done/stop: Stop if blocked. Done only when verification passes or the output looks good. checklist inspect."""
+    assert benchmark.score(problem, {"goal": goal})["accuracy"] == 0.0
+
+
 def test_keyword_stuffing_does_not_count_as_a_goal_contract() -> None:
     stuffed = (
         "Outcome Context Boundaries Constraints Verify Iterate/done/stop. "
