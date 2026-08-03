@@ -20,7 +20,7 @@ models:
     provider: openai
     endpoint: https://api.deepseek.com/v1
     api_key_env: DEEPSEEK_API_KEY
-    model_id: deepseek-v4-flash
+    model_id: deepseek-v4-flash-0731
     max_context: 131072
     timeout: 600
     use_for: [trivial, moderate, complex, critical, code_completion, code_generation, planning]
