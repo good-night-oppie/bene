@@ -122,7 +122,7 @@ Brief catalogue of patterns. Each entry is a one-glance preview — what the pro
 
 **BENE.** Meta-Harness proposer learns red-flag checklists from prior attempt traces.
 
-→ Component: [Meta-Harness — Examples](meta-harness.md#sources-and-worked-examples) · Script: `examples/meta_harness_fraud_detection.py` (`fraud_detection` is not a built-in `-b` value; `-b` takes `text_classify` / `math_rag` / `agentic_coding`)
+→ Component: [Meta-Harness — Examples](meta-harness.md#sources-and-worked-examples) · Script: `examples/meta_harness_fraud_detection.py` (`fraud_detection` is not a built-in `-b` value; `-b` takes `text_classify` / `math_rag` / `agentic_coding` / `goalcraft`)
 
 ---
 

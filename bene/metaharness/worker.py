@@ -51,6 +51,7 @@ def main() -> None:
     import bene.metaharness.benchmarks.text_classify  # noqa: F401
     import bene.metaharness.benchmarks.math_rag  # noqa: F401
     import bene.metaharness.benchmarks.agentic_coding  # noqa: F401
+    import bene.metaharness.benchmarks.goalcraft  # noqa: F401
 
     try:
         import bene.metaharness.benchmarks.arc_agi3  # noqa: F401

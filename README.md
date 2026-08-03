@@ -259,7 +259,7 @@ bene mh lint <search_agent_id>
 bene mh knowledge
 ```
 
-Current CLI benchmark choices are `text_classify`, `math_rag`, and `agentic_coding`.
+Current CLI benchmark choices are `text_classify`, `math_rag`, `agentic_coding`, and `goalcraft` (a deterministic goal-contract benchmark, not a measure of real task completion).
 
 ## MCP Server
 
