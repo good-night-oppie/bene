@@ -41,7 +41,31 @@ stop if an approval boundary blocks progress and report the evidence needed to u
     assert scores["verifiability"] == 1.0
 
 
-def test_negative_corpus_is_separated_from_golden_goal() -> None:
+def test_all_advertised_section_aliases_are_parsed() -> None:
+    benchmark = GoalcraftBenchmark()
+    problem = benchmark.get_search_set()[0]
+    goal = f"""Objective: {problem.input["brief"]}
+Context: current repository state.
+Scope: files needed for this fix.
+Constraints: preserve behavior.
+Verification: Run {problem.input["checks"]} and record results in {problem.input["state_file"]}.
+Done/stop: Stop if blocked. Done only when verification passes. checklist inspect."""
+    scores = benchmark.score(problem, {"goal": goal})
+    assert scores["accuracy"] == 1.0
+
+
+def test_must_not_evidence_cannot_pass_contract() -> None:
+    benchmark = GoalcraftBenchmark()
+    problem = benchmark.get_search_set()[0]
+    goal = f"""Outcome: {problem.input["brief"]}
+Context: current repository state.
+Boundaries: scope.
+Constraints: preserve behavior.
+Verify: Must not run {problem.input["checks"]}; must not write {problem.input["state_file"]}.
+Iterate/done/stop: Stop if blocked. Done only when verification passes. checklist inspect."""
+    scores = benchmark.score(problem, {"goal": goal})
+    assert scores["verifiability"] == 0.0
+    assert scores["accuracy"] == 0.0
     golden_score = score_goal(GOLDEN_GOALS[0], brief="repair login flow")["composite"]
     negative_scores = [
         score_goal(goal, brief="repair login flow")["composite"] for goal in NEGATIVE_GOALS
@@ -117,7 +141,12 @@ def test_search_and_test_sets_are_disjoint() -> None:
 def test_benchmark_exposes_pareto_objectives() -> None:
     benchmark = GoalcraftBenchmark()
     assert benchmark.name == "goalcraft"
-    assert benchmark.objectives == ["+composite", "+verifiability", "-char_count"]
+    assert benchmark.objectives == [
+        "+accuracy",
+        "+composite",
+        "+verifiability",
+        "-char_count",
+    ]
 
 
 def test_benchmark_is_registered_in_native_registry() -> None:

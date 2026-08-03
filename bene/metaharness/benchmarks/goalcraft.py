@@ -1,8 +1,10 @@
 """Deterministic structural benchmark for Goalcraft-style ``/goal`` objectives.
 
 This benchmark deliberately measures a parseable *contract surface*, not whether a
-model will complete a real software task. Its corpus is split before search and
-its scorer is pure Python so fitness is repeatable, fast, and usable in CI.
+model will complete a real software task. Its corpus provides disjoint search and
+held-out sets for callers that perform final evaluation; MetaHarnessSearch itself
+optimizes only the search set. Its scorer is pure Python so fitness is repeatable,
+fast, and usable in CI.
 
 The evidence grammar is intentionally narrow: a passing goal must name the
 problem's exact check and state file in a non-negated Verify clause, and bind
@@ -128,7 +130,7 @@ class GoalcraftBenchmark(Benchmark):
 
     @property
     def objectives(self) -> list[str]:
-        return ["+composite", "+verifiability", "-char_count"]
+        return ["+accuracy", "+composite", "+verifiability", "-char_count"]
 
     def get_search_set(self) -> list[Problem]:
         return list(self._search)
@@ -203,7 +205,7 @@ def score_goal(
     missing_sections = sorted(set(_REQUIRED_SECTIONS) - set(present_sections))
     section_score = len(present_sections) / len(_REQUIRED_SECTIONS)
     brief_words = re.findall(r"[a-zA-Z]{5,}", (brief or "").lower())
-    outcome = _section_body(normalized, "outcome")
+    outcome = _section_body_for(normalized, "outcome")
     brief_grounding = (
         sum(word in outcome.lower() for word in set(brief_words)) / len(set(brief_words))
         if brief_words
@@ -213,10 +215,8 @@ def score_goal(
     if not normalized:
         completeness = 0.0
 
-    verify_body = _section_body(normalized, "verify")
-    iterate_body = _section_body(normalized, "iterate/done/stop") or _section_body(
-        normalized, "iterate"
-    )
+    verify_body = _section_body_for(normalized, "verify")
+    iterate_body = _section_body_for(normalized, "iterate")
     exact_check = bool(expected_check and expected_check in verify_body)
     exact_state_file = bool(expected_state_file and expected_state_file in verify_body)
     negated_evidence = _is_negated(verify_body, expected_check) or _is_negated(
@@ -290,7 +290,7 @@ def _is_negated(text: str, term: str | None) -> bool:
         return False
     return bool(
         re.search(
-            rf"\b(?:do not|don't|never|without)\b[^.\n]{{0,80}}{re.escape(term)}",
+            rf"\b(?:do not|don't|never|without|must not|shall not)\b[^.\n]{{0,80}}{re.escape(term)}",
             text,
             re.IGNORECASE,
         )
@@ -299,6 +299,14 @@ def _is_negated(text: str, term: str | None) -> bool:
 
 def _has_section_heading(text: str, alias: str) -> bool:
     return bool(re.search(rf"(?im)^\s*{re.escape(alias)}\s*:\s*\S", text))
+
+
+def _section_body_for(text: str, section: str) -> str:
+    for alias in _REQUIRED_SECTIONS[section]:
+        body = _section_body(text, alias)
+        if body:
+            return body
+    return ""
 
 
 def _section_body(text: str, name: str) -> str:
