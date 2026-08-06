@@ -32,6 +32,11 @@ jobs:
         with:
           version: "0.11.7"
           enable-cache: true
+          # Self-hosted runners share /home/admin/.cache/uv; concurrent post-job
+          # prunes race each other (observed: PR #172 Tests 3.11 green suite, red
+          # job — prune hit a vanished tmp file, exit 2). Cache size is managed
+          # host-side; never prune from CI.
+          prune-cache: false
       - name: Install dev dependencies
         run: uv sync --dev --group temporal
       - name: Lint and format check
@@ -47,6 +52,11 @@ jobs:
         with:
           version: "0.11.7"
           enable-cache: true
+          # Self-hosted runners share /home/admin/.cache/uv; concurrent post-job
+          # prunes race each other (observed: PR #172 Tests 3.11 green suite, red
+          # job — prune hit a vanished tmp file, exit 2). Cache size is managed
+          # host-side; never prune from CI.
+          prune-cache: false
       - name: Install dev dependencies
         run: uv sync --dev --group temporal
       - name: mypy (full bene scope, advisory)
@@ -108,6 +118,11 @@ jobs:
         with:
           version: "0.11.7"
           enable-cache: true
+          # Self-hosted runners share /home/admin/.cache/uv; concurrent post-job
+          # prunes race each other (observed: PR #172 Tests 3.11 green suite, red
+          # job — prune hit a vanished tmp file, exit 2). Cache size is managed
+          # host-side; never prune from CI.
+          prune-cache: false
           python-version: ${{ matrix.python-version }}
       - name: Install dev dependencies
         run: uv sync --dev --group temporal
@@ -146,6 +161,11 @@ jobs:
         with:
           version: "0.11.7"
           enable-cache: true
+          # Self-hosted runners share /home/admin/.cache/uv; concurrent post-job
+          # prunes race each other (observed: PR #172 Tests 3.11 green suite, red
+          # job — prune hit a vanished tmp file, exit 2). Cache size is managed
+          # host-side; never prune from CI.
+          prune-cache: false
       - name: Install dev dependencies
         run: uv sync --dev --group temporal
       - name: Install pinned bene (CI-isolated venv)
@@ -189,6 +209,11 @@ jobs:
         with:
           version: "0.11.7"
           enable-cache: true
+          # Self-hosted runners share /home/admin/.cache/uv; concurrent post-job
+          # prunes race each other (observed: PR #172 Tests 3.11 green suite, red
+          # job — prune hit a vanished tmp file, exit 2). Cache size is managed
+          # host-side; never prune from CI.
+          prune-cache: false
       - name: Run autofix
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -223,6 +248,11 @@ jobs:
         with:
           version: "0.11.7"
           enable-cache: true
+          # Self-hosted runners share /home/admin/.cache/uv; concurrent post-job
+          # prunes race each other (observed: PR #172 Tests 3.11 green suite, red
+          # job — prune hit a vanished tmp file, exit 2). Cache size is managed
+          # host-side; never prune from CI.
+          prune-cache: false
       - name: Install dev dependencies
         run: uv sync --dev --group temporal
       - name: Install pinned bene (CI-isolated venv)
@@ -278,6 +308,11 @@ jobs:
         with:
           version: "0.11.7"
           enable-cache: true
+          # Self-hosted runners share /home/admin/.cache/uv; concurrent post-job
+          # prunes race each other (observed: PR #172 Tests 3.11 green suite, red
+          # job — prune hit a vanished tmp file, exit 2). Cache size is managed
+          # host-side; never prune from CI.
+          prune-cache: false
       - name: Install dev dependencies
         run: uv sync --dev --group temporal
       - name: Install pinned bene (CI-isolated venv)
