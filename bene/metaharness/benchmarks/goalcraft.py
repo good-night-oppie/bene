@@ -47,6 +47,66 @@ _EFFORT_DONE_PATTERNS = (
     r"\bwhen you feel\b",
 )
 
+# Any negation marker. ``not`` subsumes "do not"/"does not"/"must not"/"is not",
+# and \b keeps it from firing inside words like "noting"/"nothing". Bare ``no``
+# stays in the grammar ("make NO use of <check>") — term masking already keeps
+# it from tearing commands/paths, and dropping it would un-negate goals the
+# pre-rewrite scorer handled correctly.
+_NEGATION_RE = r"(?:\b(?:not|no|never|avoid|without|refrain|cannot)\b|n't\b)"
+
+# Connectives that move a preceding negation off the term that follows them:
+# "Do not merge BEFORE running <check>" prohibits merging, not running <check>.
+_SCOPE_BREAKER_RE = r"\b(?:before|until|unless|prior to|ahead of|rather than|instead of)\b"
+
+# Sentinel substituted for a masked term; \x00 never appears in goal prose.
+_TERM_MARKER = "\x00term\x00"
+
+# Clause delimiters shared by every clause-scoped check in this module.
+_CLAUSE_SPLIT_RE = r"[.;\n]"
+
+# Sub-clause boundaries INSIDE one clause: the shared delimiters plus the
+# coordinators that hand a negation's scope to the next predicate ("has no
+# failures AND passes" — the "no" stops at "and").
+_SUBCLAUSE_SPLIT_RE = rf"(?:{_CLAUSE_SPLIT_RE}|,|\b(?:and|but|or)\b)"
+
+# Tokens that state the passing predicate of a done clause.
+_PASS_TOKEN_RE = r"\b(?:pass(?:es|ed|ing)?|green|succeed(?:s|ed)?)\b"
+
+# A short comma-delimited insertion ("Do not, before merging, run <check>")
+# parks a scope-breaker between a negation and its target without changing
+# what is negated. Conservative by construction: BOTH commas must be present,
+# at most five words sit between them, and a segment holding the masked term
+# never matches (\x00 is excluded from the word tokens).
+_PARENTHETICAL_RE = r",\s*(?:[^\s,\x00]+(?:\s+[^\s,\x00]+){0,4})\s*,"
+
+# An auxiliary may sit between the term and a negation that governs it
+# ("<check> must not be run"), but a conjunction may not ("<check> and do not …").
+# Known tradeoff: "<check> must not be SKIPPED" (a double negative that requires
+# the check) also matches and scores 0.0 — acceptable for a deterministic regex
+# scorer; search simply avoids the phrasing.
+_TRAILING_NEGATION_RE = (
+    r"\s*(?:is|are|was|were|will|shall|should|must|can|could|may|might|do|does|did|has|have|had)?"
+    r"\s*(?:not|never)\b"
+)
+
+# A verify section has to COMMAND the evidence, not merely mention it: the
+# degenerate stub pastes the command and the state file with no verb at all.
+# The verb must also sit in the SAME clause as the expected check — a verb
+# stranded in a neighboring clause commands something else (see
+# ``_evidence_verb_commands``).
+_EVIDENCE_VERB_RE = (
+    r"\b(?:run|runs|running|rerun|reruns|rerunning|re-run|execute|executes|executing"
+    r"|inspect|inspects|inspecting|record|records|recording|capture|captures|capturing"
+    r"|report|reports|reporting|attach|attaches|attaching|paste|pastes|pasting"
+    r"|log|logs|logging|save|saves|saving|write|writes|writing)\b"
+)
+
+# A required section carrying a single token ("Boundaries: x", "Context: repository")
+# is placeholder stuffing, not a contract. Deliberately the weakest threshold that
+# kills the degenerate stub: this benchmark grades contract SURFACE, not prose, and
+# terse-but-real bodies ("Constraints: preserve behavior") must keep passing.
+_MIN_SECTION_WORDS = 2
+
 
 GOLDEN_GOALS = (
     """Outcome: Repair the login flow for email and SSO users.
@@ -115,6 +175,24 @@ def run(problem):
 """
 
 
+SEED_PARTIAL = """\
+def run(problem):
+    brief = problem["brief"]
+    checks = problem["checks"]
+    goal = (
+        f"Outcome: {brief}\\n\\n"
+        "Context: Start from the current repository state and keep a written plan.\\n\\n"
+        "Boundaries: Touch only files necessary to deliver this outcome; do not deploy "
+        "or change credentials.\\n\\n"
+        "Constraints: Preserve existing behavior and meaningful test coverage.\\n\\n"
+        f"Verify: Run {checks} and record the exact output in the attempt notes.\\n\\n"
+        "Iterate/done/stop: After each attempt update the checklist and select the next "
+        "unverified requirement. Done when the work looks correct; stop if blocked."
+    )
+    return {"goal": goal, "context_tokens": len(goal.split())}
+"""
+
+
 class GoalcraftBenchmark(Benchmark):
     """Score whether a goal objective exposes a compact, evidence-first contract."""
 
@@ -155,7 +233,13 @@ class GoalcraftBenchmark(Benchmark):
         }
 
     def get_seed_harnesses(self) -> list[str]:
-        return [SEED_MINIMAL, SEED_DURABLE]
+        # Seeds are STARTING POINTS, never the answer key. ``SEED_DURABLE``
+        # already scores the exact contract on every search AND held-out
+        # problem, so shipping it as a seed left search with no gradient except
+        # ``-char_count`` — which only rewards shrinking toward a stub. It stays
+        # exported as the reference proving 1.0 is reachable; the search starts
+        # below it.
+        return [SEED_MINIMAL, SEED_PARTIAL]
 
     def diagnostic_view(
         self, problem: Problem, output: dict[str, Any], scores: dict[str, float]
@@ -203,7 +287,13 @@ def score_goal(
         if any(_has_section_heading(normalized, alias) for alias in aliases)
     ]
     missing_sections = sorted(set(_REQUIRED_SECTIONS) - set(present_sections))
-    section_score = len(present_sections) / len(_REQUIRED_SECTIONS)
+    # A heading with a placeholder body ("Boundaries: x") is stuffing, not a
+    # contract: it must not earn the same completeness as a real section.
+    thin_sections = sorted(
+        name for name in present_sections if _section_words(normalized, name) < _MIN_SECTION_WORDS
+    )
+    substantive = len(present_sections) - len(thin_sections)
+    section_score = substantive / len(_REQUIRED_SECTIONS)
     brief_words = re.findall(r"[a-zA-Z]{5,}", (brief or "").lower())
     outcome_lower = _section_body_for(normalized, "outcome").lower()
     brief_grounding = (
@@ -223,7 +313,8 @@ def score_goal(
     negated_evidence = _is_negated(verify_body, expected_check) or _is_negated(
         verify_body, expected_state_file
     )
-    evidence_contract = exact_check and exact_state_file and not negated_evidence
+    evidence_verb = _evidence_verb_commands(verify_body, expected_check)
+    evidence_contract = exact_check and exact_state_file and evidence_verb and not negated_evidence
     verifiability = (
         float(evidence_contract)
         if expected_check
@@ -234,13 +325,20 @@ def score_goal(
         re.search(r"\b(?:stop if|blocked|pause for|do not proceed)\b", iterate_body.lower())
     )
     done_clause = _done_clause(iterate_body)
+    # `.*` between the verification noun and "pass" otherwise swallows the
+    # inversion, so "Done only when verification does not pass" — a goal that
+    # declares done-on-failure — would satisfy the completion contract. The
+    # negation test is scoped to the sub-clause carrying the passing
+    # predicate: "has no failures and passes" leaves the pass predicate clean
+    # (the "no" governs "failures") and remains a valid contract, while
+    # "does not pass" negates the predicate itself and is rejected.
     done_contract = bool(
         re.fullmatch(
             r"\s*done only when\s+(?:(?:the|a)\s+)?(?:stated\s+)?(?:verification|verify|check|test).*\bpass(?:es|ed)?\s*[.!]?\s*",
             done_clause,
             re.IGNORECASE,
         )
-    )
+    ) and not _pass_predicate_negated(done_clause)
     no_effort_done = not any(
         re.search(pattern, iterate_body.lower()) for pattern in _EFFORT_DONE_PATTERNS
     )
@@ -268,6 +366,7 @@ def score_goal(
     )
     contract_pass = float(
         not missing_sections
+        and not thin_sections
         and brief_grounding >= 0.50
         and completeness >= 0.75
         and verifiability == 1.0
@@ -285,9 +384,14 @@ def score_goal(
         "composite": round(composite, 4),
         "char_count": char_count,
         "missing_sections": missing_sections,
+        "thin_sections": thin_sections,
         "brief_grounding": round(brief_grounding, 4),
         "contract_pass": contract_pass,
     }
+
+
+def _section_words(text: str, section: str) -> int:
+    return len(re.findall(r"[A-Za-z0-9`/._-]+", _section_body_for(text, section)))
 
 
 def _done_clause(text: str) -> str:
@@ -300,14 +404,87 @@ def _done_clause(text: str) -> str:
 
 
 def _is_negated(text: str, term: str | None) -> bool:
+    """Report whether a negation actually governs ``term`` in ``text``.
+
+    Scoped to the clause holding the term, and checked in BOTH directions:
+    a prohibition can precede the term ("do not run <check>") or follow it
+    ("<check> must not be run"). A negation separated from the term by a
+    scope-breaking connective governs the other verb, not the term.
+    """
     if not term:
         return False
-    return bool(
-        re.search(
-            rf"\b(?:do not|don't|never|without|must not|should not|shall not|avoid|no)\b[^.\n]{{0,80}}{re.escape(term)}",
-            text,
-            re.IGNORECASE,
-        )
+    # Terms are commands and paths, so they contain the very characters used as
+    # clause delimiters ("pytest tests/test_payment_form.py"). Mask them before
+    # splitting, or the term is torn in half and never found.
+    masked = text.replace(term, _TERM_MARKER)
+    return any(
+        _clause_negates(clause, _TERM_MARKER)
+        for clause in re.split(_CLAUSE_SPLIT_RE, masked)
+        if _TERM_MARKER in clause
+    )
+
+
+def _clause_negates(clause: str, term: str) -> bool:
+    # A comma-delimited parenthetical between a negation and the term ("Do
+    # not, before merging, run <check>") must not break the negation's scope:
+    # strip short insertions before scope analysis so the negation reattaches
+    # to what follows. _PARENTHETICAL_RE never matches across the masked term.
+    clause = re.sub(_PARENTHETICAL_RE, " ", clause)
+    # The term can occur several times in one clause ("Run <check>, but never
+    # run <check> …"). Prohibition wins for a kill-gate scorer: the term is
+    # negated when ANY occurrence is.
+    index = clause.find(term)
+    while index >= 0:
+        if _occurrence_negated(clause[:index], clause[index + len(term) :]):
+            return True
+        index = clause.find(term, index + len(term))
+    return False
+
+
+def _occurrence_negated(before: str, after: str) -> bool:
+    # Negation BEFORE the term — only if nothing re-scopes it onto another verb.
+    last = None
+    for match in re.finditer(_NEGATION_RE, before, re.IGNORECASE):
+        last = match
+    if last is not None and not re.search(_SCOPE_BREAKER_RE, before[last.end() :], re.IGNORECASE):
+        return True
+
+    # Negation AFTER the term — must attach to the term itself, not to a
+    # following coordinated clause.
+    return bool(re.match(_TRAILING_NEGATION_RE, after, re.IGNORECASE))
+
+
+def _evidence_verb_commands(text: str, term: str | None) -> bool:
+    """Report whether an evidence verb commands ``term`` in the SAME clause.
+
+    A verb anywhere in the Verify section is not a command of the evidence:
+    "Inspect the documentation; <check> with output in <state>" mentions the
+    check without commanding it. The verb must share a clause (split on the
+    same delimiters as negation scoping) with an occurrence of the term.
+    Without an expected term the section-wide scan is kept.
+    """
+    if not term:
+        return bool(re.search(_EVIDENCE_VERB_RE, text, re.IGNORECASE))
+    masked = text.replace(term, _TERM_MARKER)
+    return any(
+        _TERM_MARKER in clause and re.search(_EVIDENCE_VERB_RE, clause, re.IGNORECASE)
+        for clause in re.split(_CLAUSE_SPLIT_RE, masked)
+    )
+
+
+def _pass_predicate_negated(done_clause: str) -> bool:
+    """Report whether the done clause negates its own passing predicate.
+
+    The clause is cut at the shared clause delimiters plus intra-clause
+    coordinators; only a negation inside a sub-clause that carries a pass
+    token (pass/green/succeeds) rejects. "has no failures and passes" stays
+    clean — its "no" governs "failures", not "passes" — while "does not
+    pass" is rejected.
+    """
+    return any(
+        re.search(_NEGATION_RE, sub, re.IGNORECASE)
+        for sub in re.split(_SUBCLAUSE_SPLIT_RE, done_clause, flags=re.IGNORECASE)
+        if re.search(_PASS_TOKEN_RE, sub, re.IGNORECASE)
     )
 
 
