@@ -88,7 +88,7 @@ class PollutionDetector:
         text = " ".join(r[0].lower() for r in rows)
         contradictions = sum(text.count(m) for m in CONTRADICTION_MARKERS)
 
-        signals = {
+        signals: dict[str, dict[str, Any]] = {
             "repeated_failed_calls": {"max_repeat": max_repeat, "tripped": repeated},
             "error_rate_spike": {"error_rate": round(error_rate, 4), "tripped": spike},
             "contradiction_markers": {"count": contradictions, "tripped": contradictions >= 2},

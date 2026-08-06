@@ -22,7 +22,7 @@ import time
 import traceback
 from typing import Any
 
-import numpy as np
+import numpy as np  # type: ignore[import-not-found]  # optional 'benchmarks' dep group; absent from default mypy env
 
 from bene.metaharness.benchmarks import register_benchmark
 from bene.metaharness.benchmarks.base import Benchmark, Problem
@@ -44,11 +44,14 @@ def _mcp_safe_sh_init(self, stream=None):
     _orig_sh_init(self, stream)
 
 
-_logging.StreamHandler.__init__ = _mcp_safe_sh_init
+_logging.StreamHandler.__init__ = _mcp_safe_sh_init  # type: ignore[method-assign]  # intentional monkeypatch to keep MCP stdio clean
 
 try:
-    import arc_agi
-    from arcengine.enums import GameAction as GA, GameState as GS
+    import arc_agi  # type: ignore[import-not-found]  # optional third-party SDK, not a declared dependency
+    from arcengine.enums import (  # type: ignore[import-not-found]  # ships with arc_agi, also optional
+        GameAction as GA,
+        GameState as GS,
+    )
 
     ARC_AVAILABLE = True
 except ImportError:
@@ -90,7 +93,7 @@ def run_agent_on_game(agent_code: str, env_info, arcade, time_budget=120, max_ac
                tried_actions, level, total_actions, actions_this_level
     """
     # Compile agent code
-    agent_ns = {}
+    agent_ns: dict[str, Any] = {}
     exec(
         agent_code,
         {
@@ -118,8 +121,8 @@ def run_agent_on_game(agent_code: str, env_info, arcade, time_budget=120, max_ac
     frame = env.reset()
     avail_vals = frame.available_actions
 
-    # State passed to agent
-    state = {
+    # State passed to agent (heterogeneous scratch dict the agent may extend)
+    state: dict[str, Any] = {
         "prev_grid": None,
         "prev_action": None,
         "prev_hash": None,

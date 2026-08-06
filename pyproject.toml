@@ -47,6 +47,7 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.4",
     "mypy>=1.10",
+    "types-pyyaml>=6.0.12.20260724",
 ]
 benchmarks = [
     "numpy>=1.24",

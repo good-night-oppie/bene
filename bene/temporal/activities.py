@@ -8,7 +8,7 @@ retries never produce duplicate audit rows.
 
 from __future__ import annotations
 
-from temporalio import activity
+from temporalio import activity  # type: ignore[import-not-found]  # optional `temporal` dep group, absent in default env
 
 from bene.temporal.runtime import (
     get_blobs,

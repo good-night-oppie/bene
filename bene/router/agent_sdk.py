@@ -66,7 +66,13 @@ class AgentSDKProvider(LLMProvider):
     ) -> LLMResponse:
         try:
             # ai-lint-override: R-II-001 - claude_agent_sdk is an optional dependency; lazy import keeps bene importable without it
-            from claude_agent_sdk import query, ClaudeAgentOptions, ResultMessage
+            # type-ignore: optional third-party dep with no stubs in this env;
+            # guarded by the ImportError branch below.
+            from claude_agent_sdk import (  # type: ignore[import-not-found]
+                ClaudeAgentOptions,
+                ResultMessage,
+                query,
+            )
         except ImportError:
             raise ImportError(
                 "claude-agent-sdk not installed. Install with: uv pip install claude-agent-sdk\n"

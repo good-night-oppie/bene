@@ -38,17 +38,22 @@ import warnings
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from temporalio.client import (
+from temporalio.client import (  # type: ignore[import-not-found]  # optional `temporal` dep group, absent in default env
     Client,
     WorkflowFailureError,
     WorkflowQueryRejectedError,
 )
-from temporalio.common import WorkflowIDReusePolicy
-from temporalio.exceptions import (
+from temporalio.common import (  # type: ignore[import-not-found]  # optional `temporal` dep group, absent in default env
+    WorkflowIDReusePolicy,
+)
+from temporalio.exceptions import (  # type: ignore[import-not-found]  # optional `temporal` dep group, absent in default env
     TerminatedError,
     WorkflowAlreadyStartedError,
 )
-from temporalio.service import RPCError, RPCStatusCode
+from temporalio.service import (  # type: ignore[import-not-found]  # optional `temporal` dep group, absent in default env
+    RPCError,
+    RPCStatusCode,
+)
 
 from bene.runtime.core import (
     SideEffectKind,

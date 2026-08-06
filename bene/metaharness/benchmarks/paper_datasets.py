@@ -23,11 +23,17 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
 import httpx
 
 from bene.metaharness.benchmarks import register_benchmark
 from bene.metaharness.benchmarks.text_classify import TextClassifyBenchmark
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from bene.metaharness.benchmarks.base import Benchmark
 
 logger = logging.getLogger(__name__)
 
@@ -192,7 +198,12 @@ def load_uspto50k(
     )
 
 
-# Register paper benchmarks
-register_benchmark("lawbench", lambda **kw: load_lawbench(**kw))
-register_benchmark("symptom2disease", lambda **kw: load_symptom2disease(**kw))
-register_benchmark("uspto_50k", lambda **kw: load_uspto50k(**kw))
+# Register paper benchmarks.
+# cast: the registry only ever calls its entry with **kwargs (see
+# get_benchmark), so a factory callable is interchangeable with the declared
+# ``type[Benchmark]``; widening register_benchmark's signature itself lives in
+# benchmarks/__init__.py, outside this file.
+_register_factory = cast("Callable[[str, Callable[..., Benchmark]], None]", register_benchmark)
+_register_factory("lawbench", lambda **kw: load_lawbench(**kw))
+_register_factory("symptom2disease", lambda **kw: load_symptom2disease(**kw))
+_register_factory("uspto_50k", lambda **kw: load_uspto50k(**kw))
