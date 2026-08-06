@@ -10,6 +10,11 @@ name: push-dev
 on:
   push:
     branches: [dev]
+  # Pushes made with GITHUB_TOKEN (cherry-pick-back's policy-denial
+  # fallback, manual dev syncs) never fire the push trigger, leaving the
+  # dev tip without the ci/strict check nightly-promote requires.
+  # workflow_dispatch lets the reconciler (and humans) attach it on demand.
+  workflow_dispatch:
 
 permissions:
   contents: read

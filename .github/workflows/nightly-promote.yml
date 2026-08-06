@@ -38,9 +38,29 @@ jobs:
         run: |
           set -euo pipefail
           dev_sha="$(git rev-parse origin/dev)"
-          status="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${dev_sha}/check-runs" \
-            --jq '[.check_runs[] | select(.name | startswith("ci/strict")) | .conclusion] | unique')"
+          strict_status() {
+            gh api "repos/${GITHUB_REPOSITORY}/commits/${dev_sha}/check-runs" \
+              --jq '[.check_runs[] | select(.name | startswith("ci/strict")) | .conclusion] | unique'
+          }
+          status="$(strict_status)"
           echo "dev ci/strict conclusions: ${status}"
+          # Reconciler (review P1, #177 follow-up): dev tips pushed with
+          # GITHUB_TOKEN (cherry-pick-back policy fallback, manual syncs)
+          # never trigger push-dev, so the ci/strict check is MISSING —
+          # not failed. Dispatch push-dev for the tip and wait bounded;
+          # a real red still aborts immediately.
+          if [ "${status}" = "[]" ]; then
+            echo "::warning::no ci/strict check on dev tip — dispatching push-dev and waiting"
+            gh workflow run push-dev.yml --ref dev
+            for _ in $(seq 1 30); do
+              sleep 60
+              status="$(strict_status)"
+              case "${status}" in
+                '["success"]'|*failure*|*cancelled*) break ;;
+              esac
+            done
+            echo "post-dispatch dev ci/strict conclusions: ${status}"
+          fi
           case "${status}" in
             '["success"]') echo "dev is green; proceeding" ;;
             *) echo "::error title=dev not green::abort promotion (${status})"; exit 1 ;;
