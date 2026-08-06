@@ -110,20 +110,29 @@ jobs:
           body="${body} for the PR-based flow rationale."
           existing="$(gh pr list --head "${branch}" --base main --state open \
             --json number --jq '.[0].number // empty')"
+          gh_err="$(mktemp)"
           if [ -n "${existing}" ]; then
             gh pr edit "${existing}" --title "${title}" --body "${body}"
           elif ! gh pr create \
               --base main \
               --head "${branch}" \
               --title "${title}" \
-              --body "${body}"
+              --body "${body}" \
+              2> "${gh_err}"
           then
-            # Org policy currently denies GITHUB_TOKEN PR creation. The
-            # bump stays force-pushed on the stable branch (idempotent);
-            # surface a visible warning instead of failing the job.
-            echo "::warning::ratchet PR creation denied by org policy —" \
-              "floor bump ${before} -> ${after} is parked on ${branch}"
-            exit 0
+            # Classify before swallowing (review Medium/Major, #177
+            # follow-up): only the documented org-policy denial exits 0
+            # (bump stays parked on the idempotent stable branch).
+            # Transient API/auth/network errors FAIL so the parked branch
+            # gets investigated instead of silently rotting.
+            if grep -qi "not permitted to create or approve pull requests" "${gh_err}"; then
+              echo "::warning::ratchet PR creation denied by org policy —" \
+                "floor bump ${before} -> ${after} is parked on ${branch}"
+              exit 0
+            fi
+            cat "${gh_err}" >&2
+            echo "::error::ratchet PR creation failed for a non-policy reason"
+            exit 1
           fi
           gh pr merge --auto --squash "${branch}" \
             || echo "auto-merge unavailable; ratchet PR awaits a manual nudge"
