@@ -48,3 +48,6 @@ site/**/*.bak
 
 # A2A coordination store (live endpoint runtime db)
 a2a-coord.db*
+
+# Auto-generated per-session memory (distill_highlights.py) — never commit
+LATEST_HIGHLIGHTS.md

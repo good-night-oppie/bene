@@ -224,9 +224,14 @@ jobs:
     name: BENE Refactor Swarm (mypy)
     runs-on: eng-github-runners
     needs: [lint]
+    # Dependabot-triggered runs never receive Actions secrets, so the swarm's
+    # DeepSeek route cannot initialize (observed on PR #168: empty
+    # DEEPSEEK_API_KEY -> ValueError at provider init). Skip cleanly instead
+    # of failing red on every dependabot PR.
     if: >-
       github.event_name == 'pull_request'
       && github.event.pull_request.draft == false
+      && github.actor != 'dependabot[bot]'
     continue-on-error: true
     permissions:
       contents: write
@@ -290,9 +295,11 @@ jobs:
     name: BENE Review Swarm (dogfood CI)
     runs-on: eng-github-runners
     needs: [lint]
+    # Same dependabot-secrets restriction as refactor-swarm above.
     if: >-
       github.event_name == 'pull_request'
       && github.event.pull_request.draft == false
+      && github.actor != 'dependabot[bot]'
     continue-on-error: true
     permissions:
       contents: read

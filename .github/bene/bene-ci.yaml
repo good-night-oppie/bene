@@ -20,7 +20,12 @@ models:
     provider: openai
     endpoint: https://api.deepseek.com/v1
     api_key_env: DEEPSEEK_API_KEY
-    model_id: deepseek-v4-flash-0731
+    # Callable API id. `-0731` is a version LABEL, not an addressable model:
+    # TierRouter forwards model_id verbatim, so it 400s once DEEPSEEK_API_KEY
+    # is present (observed on PR #166, 2026-08-03T05:41Z). Verified live
+    # 2026-08-06: GET https://api.deepseek.com/models serves exactly
+    # ['deepseek-v4-flash', 'deepseek-v4-pro'] — no dated variant exists.
+    model_id: deepseek-v4-flash
     max_context: 131072
     timeout: 600
     use_for: [trivial, moderate, complex, critical, code_completion, code_generation, planning]
