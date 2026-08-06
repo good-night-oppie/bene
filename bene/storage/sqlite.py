@@ -28,7 +28,9 @@ from bene.storage.protocol import BlobStore, Storage
 # prometheus_client is not installed so this module remains import-safe in
 # minimal environments.
 try:
-    from prometheus_client import Counter as _PromCounter
+    # type-ignore: optional third-party dep with no stubs in this env; the
+    # ImportError fallback below substitutes _LocalCounter.
+    from prometheus_client import Counter as _PromCounter  # type: ignore[import-not-found]
 
     IDEMPOTENCY_HITS_TOTAL = _PromCounter(
         "idempotency_hits_total",

@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import asyncio
 import inspect
-from collections.abc import Callable, Mapping, Sequence
-from typing import Any
+from collections.abc import Callable, Coroutine, Mapping, Sequence
+from typing import Any, cast
 
 from bene.kernel.battle.genome import BattleHarness, FitnessVector
 
@@ -55,7 +55,9 @@ def _await_if_needed(value: Any) -> Any:
     try:
         asyncio.get_running_loop()
     except RuntimeError:
-        return asyncio.run(value)
+        # cast: isawaitable narrows only to Awaitable, but asyncio.run itself
+        # rejects non-coroutine awaitables at runtime, so this mirrors its check.
+        return asyncio.run(cast(Coroutine[Any, Any, Any], value))
     raise RuntimeError(
         "async run_vs_baselines cannot be awaited inside an active event loop; "
         "pass a synchronous wrapper to make_contract3_fitness_fn"

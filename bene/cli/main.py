@@ -2240,7 +2240,8 @@ def temporal_worker(address, namespace, queue, db, postgres_dsn):
 def temporal_run(ctx, address, namespace, queue, name, prompt, model, max_steps, workflow_id):
     """Start an AgentWorkflow on Temporal and wait for the result."""
     try:
-        from temporalio.client import Client
+        # temporalio is an optional extra ("bene[temporal]") absent from the dev env
+        from temporalio.client import Client  # type: ignore[import-not-found]
 
         from bene.temporal.workflow import AgentInput, AgentWorkflow
     except ImportError as exc:
@@ -2294,7 +2295,8 @@ def temporal_run(ctx, address, namespace, queue, name, prompt, model, max_steps,
 def temporal_signal(address, namespace, workflow_id, signal_name):
     """Send pause/resume/kill to a running AgentWorkflow."""
     try:
-        from temporalio.client import Client
+        # temporalio is an optional extra ("bene[temporal]") absent from the dev env
+        from temporalio.client import Client  # type: ignore[import-not-found]
     except ImportError:
         console.print("[red]Temporal extras not installed[/red]")
         sys.exit(1)
@@ -3003,21 +3005,21 @@ def observe_status(ctx, config: str):
     langfuse_sdk_installed = importlib.util.find_spec("langfuse") is not None
     obs_cfg = _observability_config(config)
     host = os.environ.get("LANGFUSE_HOST") or None
+    selected_provider = resolve_provider(obs_cfg)
+    providers = available_providers()
     data = {
-        "selected_provider": resolve_provider(obs_cfg),
-        "available_providers": available_providers(),
+        "selected_provider": selected_provider,
+        "available_providers": providers,
         "langfuse_host": host,
         "langfuse_sdk_installed": langfuse_sdk_installed,
         "config": obs_cfg,
     }
     if _json_out(ctx, data):
         return
-    console.print(f"observability backend: [cyan]{data['selected_provider']}[/cyan]")
-    console.print(f"  available providers: {', '.join(data['available_providers'])}")
+    console.print(f"observability backend: [cyan]{selected_provider}[/cyan]")
+    console.print(f"  available providers: {', '.join(providers)}")
     console.print(f"  LANGFUSE_HOST: {host or '[dim]unset[/dim]'}")
-    if (
-        data["selected_provider"] == "langfuse" or "langfuse" in data["available_providers"]
-    ) and not langfuse_sdk_installed:
+    if (selected_provider == "langfuse" or "langfuse" in providers) and not langfuse_sdk_installed:
         console.print(
             "  [yellow]langfuse selected but its SDK is not installed[/yellow] — "
             'install: pip install "bene[langfuse]"'
@@ -3543,7 +3545,7 @@ def _kernel_story() -> None:
     import time as _t
 
     from bene.kernel import CapabilityRegistry, EngramStore, ensure_v2
-    from bene.kernel.eval import Probe
+    from bene.kernel.eval import Gate, Probe
     from bene.kernel.evolve import Genome, ReflectiveEvolver, promote
     from bene.kernel.harness import AutonomyPolicy, SensesManifest
     from bene.kernel.memory import GranuleStore, PollutionDetector
@@ -3609,7 +3611,7 @@ def _kernel_story() -> None:
         f"  [green]breeding[/green]     2 offline generations -> best quality {best.scores['quality']:.2f} (frontier {len(frontier.members())})"
     )
 
-    gate = {
+    gate: Gate = {
         "name": "G1_improves",
         "description": "quality must improve",
         "metric": "quality",
@@ -3620,7 +3622,8 @@ def _kernel_story() -> None:
     probe = Probe("story-probe", [gate], lambda gn: bench(gn) if isinstance(gn, Genome) else gn)
     probe.register(store, b.conn, baseline=seed, subject_ref=best.engram_id)
     verdict = probe.run(best, seed, store=store, conn=b.conn)
-    promote(best.engram_id, store=store, conn=b.conn)
+    # ReflectiveEvolver.run persists every frontier member, so engram_id is set
+    promote(cast(str, best.engram_id), store=store, conn=b.conn)
     console.print(
         f"  [green]kill gates[/green]   probe {verdict.status} -> promotion ALLOWED (without it: PromotionBlocked)"
     )

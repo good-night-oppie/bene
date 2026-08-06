@@ -143,7 +143,8 @@ class TruthStore:
         reconciled: bool | None = None,
         limit: int | None = None,
     ) -> list[dict]:
-        clauses, params = [], []
+        clauses: list[str] = []
+        params: list[str | int] = []
         if subject is not None:
             clauses.append("subject = ?")
             params.append(subject)
@@ -253,7 +254,8 @@ class TruthStore:
         limit: int | None = None,
         active_as_of: str | None = None,
     ) -> list[dict]:
-        clauses, params = [], []
+        clauses: list[str] = []
+        params: list[str | int] = []
         if subject is not None:
             clauses.append("subject = ?")
             params.append(subject)

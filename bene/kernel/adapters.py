@@ -42,11 +42,14 @@ from __future__ import annotations
 
 import sqlite3
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from bene.kernel.engrams import EngramStore
 from bene.kernel.schema_v2 import ensure_v2
 from bene.kernel.trust import TrustLedger
+
+if TYPE_CHECKING:
+    from bene.kernel.evolve import Genome
 
 #: legacy memory types → engram tier (semantic facts vs raw observations)
 _MEMORY_TIERS = {"observation": 0, "result": 1, "insight": 2, "error": 1, "skill": 3}
@@ -220,7 +223,7 @@ def _add_weighted_tally(log: Any, trust: TrustLedger) -> None:
 # ---------------- metaharness ↔ evolve bridge ----------------
 
 
-def genome_from_candidate(candidate: dict[str, Any]) -> "Genome":  # noqa: F821
+def genome_from_candidate(candidate: dict[str, Any]) -> Genome:
     """Bridge a metaharness harness-candidate dict into an evolve Genome so
     mh_search results can enter the kill-gated breeding program (opt-in)."""
     from bene.kernel.evolve import Genome

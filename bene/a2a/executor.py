@@ -19,10 +19,18 @@ from __future__ import annotations
 import json
 import sqlite3
 
-from a2a.server.agent_execution import AgentExecutor, RequestContext
-from a2a.server.events import EventQueue
-from a2a.server.tasks import TaskUpdater
-from a2a.utils import get_data_parts, get_message_text, new_agent_text_message, new_task
+from a2a.server.agent_execution import (  # type: ignore[import-not-found]  # a2a-sdk is the optional bene[a2a] extra, absent from the type-check env
+    AgentExecutor,
+    RequestContext,
+)
+from a2a.server.events import EventQueue  # type: ignore[import-not-found]  # a2a-sdk is the optional bene[a2a] extra, absent from the type-check env
+from a2a.server.tasks import TaskUpdater  # type: ignore[import-not-found]  # a2a-sdk is the optional bene[a2a] extra, absent from the type-check env
+from a2a.utils import (  # type: ignore[import-not-found]  # a2a-sdk is the optional bene[a2a] extra, absent from the type-check env
+    get_data_parts,
+    get_message_text,
+    new_agent_text_message,
+    new_task,
+)
 
 from bene.shared_log import SharedLog
 

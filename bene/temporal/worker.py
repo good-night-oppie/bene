@@ -37,8 +37,8 @@ async def build_worker(
     max_concurrent_activities: int = 50,
 ):
     """Connect to Temporal and return a configured ``Worker`` ready to run."""
-    from temporalio.client import Client
-    from temporalio.worker import Worker
+    from temporalio.client import Client  # type: ignore[import-not-found]  # optional `temporal` dep group, absent in default env
+    from temporalio.worker import Worker  # type: ignore[import-not-found]  # optional `temporal` dep group, absent in default env
 
     from bene.temporal.activities import ALL_ACTIVITIES
     from bene.temporal.workflow import AgentWorkflow

@@ -13,7 +13,7 @@ package requires ``a2a-sdk``; the rest of ``bene`` does not.
 from __future__ import annotations
 
 try:
-    import a2a  # noqa: F401
+    import a2a  # type: ignore[import-not-found]  # noqa: F401  # a2a-sdk is the optional bene[a2a] extra, absent from the type-check env
 except ModuleNotFoundError as e:  # pragma: no cover - import guard
     raise ModuleNotFoundError(
         "bene.a2a requires the 'a2a' extra. Install it with: pip install \"bene[a2a]\""

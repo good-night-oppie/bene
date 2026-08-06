@@ -15,7 +15,7 @@ Contract every provider MUST honor:
 
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Literal, Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -81,7 +81,7 @@ class NullObservation:
     def __enter__(self) -> NullObservation:
         return self
 
-    def __exit__(self, *exc: Any) -> bool:
+    def __exit__(self, *exc: Any) -> Literal[False]:
         return False
 
     def span(self, name: str, **_: Any) -> NullObservation:

@@ -8,7 +8,11 @@ coordination, and the engine side of the autogenesis HarnessStore
 
 from __future__ import annotations
 
-from a2a.types import AgentCapabilities, AgentCard, AgentSkill
+from a2a.types import (  # type: ignore[import-not-found]  # a2a-sdk is the optional bene[a2a] extra, absent from the type-check env
+    AgentCapabilities,
+    AgentCard,
+    AgentSkill,
+)
 
 from bene import __version__
 

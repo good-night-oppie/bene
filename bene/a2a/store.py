@@ -12,8 +12,8 @@ from __future__ import annotations
 
 import sqlite3
 
-from a2a.server.tasks import TaskStore
-from a2a.types import Task
+from a2a.server.tasks import TaskStore  # type: ignore[import-not-found]  # a2a-sdk is the optional bene[a2a] extra, absent from the type-check env
+from a2a.types import Task  # type: ignore[import-not-found]  # a2a-sdk is the optional bene[a2a] extra, absent from the type-check env
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS a2a_tasks (

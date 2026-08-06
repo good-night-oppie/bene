@@ -212,7 +212,8 @@ class TextClassifyBenchmark(Benchmark):
 
     def _to_problems(self, data: list[dict]) -> list[Problem]:
         problems = []
-        seen_so_far = []  # Simulates online learning — labeled examples seen before this one
+        # Simulates online learning — labeled examples seen before this one
+        seen_so_far: list[dict[str, Any]] = []
 
         for i, item in enumerate(data):
             problems.append(

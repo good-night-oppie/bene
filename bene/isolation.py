@@ -90,7 +90,10 @@ class IsolatedAgentProcess:
         os.makedirs(self.mount_point, exist_ok=True)
 
         try:
-            from bene._fuse import AgentFUSE
+            # type-ignore: optional FUSE module without type info; shipping a
+            # py.typed marker is a packaging change beyond this file, and the
+            # ImportError fallback below handles its absence.
+            from bene._fuse import AgentFUSE  # type: ignore[import-untyped]
 
             self._fuse = AgentFUSE(self.afs, self.agent_id)
             # FUSE mount runs in a background thread

@@ -349,7 +349,11 @@ class ClaudeCodeRunner:
             }
         )
 
-    async def run_agent(self, agent_id: str, task: str) -> str:
+    # type-ignore[return]: every path in the body returns or raises, but the
+    # Observation protocol types __exit__ as ``-> bool`` (bene/observe/base.py),
+    # so mypy assumes the trace with-block may swallow the raise and fall
+    # through; the real fix (``Literal[False]``) belongs to that file.
+    async def run_agent(self, agent_id: str, task: str) -> str:  # type: ignore[return]
         """
         Main agent loop — plan, act, observe, repeat.
 

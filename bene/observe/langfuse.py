@@ -15,7 +15,7 @@ set) resolves here without ``bene.observe`` eagerly importing the SDK.
 from __future__ import annotations
 
 import os
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 
 from bene.observe.base import NullObservation
 from bene.observe.registry import register_provider
@@ -34,7 +34,7 @@ def _make_client(cfg: dict[str, Any]) -> Any:
     if not host:
         raise RuntimeError("langfuse requires LANGFUSE_HOST (env or config.host)")
     try:
-        from langfuse import Langfuse
+        from langfuse import Langfuse  # type: ignore[import-not-found]  # optional dep (bene[langfuse] extra); guarded by try/except below
     except Exception as e:  # noqa: BLE001
         raise RuntimeError(
             f'langfuse SDK not installed ({e}). Install it with: pip install "bene[langfuse]"'
@@ -63,7 +63,7 @@ def _propagate_attributes(trace_fields: dict[str, Any]) -> Any:
     is absent or lacks the function — the caller wraps this in ``_safe`` so a
     missing SDK degrades to a no-op.
     """
-    from langfuse import propagate_attributes
+    from langfuse import propagate_attributes  # type: ignore[import-not-found]  # optional dep; caller wraps in _safe so absence degrades to no-op
 
     kwargs: dict[str, Any] = {}
     if "name" in trace_fields:
@@ -89,7 +89,7 @@ class _V2Node:
     def __enter__(self) -> _V2Node:
         return self
 
-    def __exit__(self, *exc: Any) -> bool:
+    def __exit__(self, *exc: Any) -> Literal[False]:
         if not self._is_root:
             _safe(self._obj.end)
         return False
@@ -164,7 +164,10 @@ class _V4Node:
         # Enter the trace-attribute propagation context FIRST so session_id /
         # metadata / tags propagate to the observation span created below.
         if self._trace_fields:
-            self._propagate_cm = _safe(lambda: _propagate_attributes(self._trace_fields))
+            # Bind to a local so the None-narrowing survives into the lambda
+            # (mypy does not narrow attribute types inside closures).
+            trace_fields = self._trace_fields
+            self._propagate_cm = _safe(lambda: _propagate_attributes(trace_fields))
             if self._propagate_cm is not None:
                 _safe(self._propagate_cm.__enter__)
         self._cm = _safe(self._factory)
@@ -173,7 +176,7 @@ class _V4Node:
         self._obj = _safe(self._cm.__enter__)
         return self
 
-    def __exit__(self, *exc: Any) -> bool:
+    def __exit__(self, *exc: Any) -> Literal[False]:
         if self._cm is not None:
             _safe(lambda: self._cm.__exit__(*exc))
         if self._propagate_cm is not None:

@@ -10,7 +10,7 @@ import pytest
 
 from bene import Bene
 from bene.kernel import EngramStore, ensure_v2
-from bene.kernel.eval import Probe
+from bene.kernel.eval import Gate, Probe
 from bene.kernel.evolve import PromotionBlocked, promote
 from bene.metaharness.benchmarks.base import Benchmark, Problem
 from bene.metaharness.evaluator import HarnessEvaluator
@@ -401,7 +401,7 @@ def test_bridged_metaharness_candidate_uses_existing_kill_gate_promotion(tmp_pat
         with pytest.raises(PromotionBlocked):
             promote(candidate_engram, store=store, conn=db.conn)
 
-        gate = {
+        gate: Gate = {
             "name": "G_accuracy_improves",
             "description": "candidate improves accuracy over baseline",
             "metric": "accuracy",
