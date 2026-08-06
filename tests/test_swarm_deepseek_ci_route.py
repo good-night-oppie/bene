@@ -7,7 +7,10 @@ import yaml
 
 from bene.router import TierRouter
 
-MODEL_SLUG = "deepseek-v4-flash-0731"
+# Must stay the CALLABLE API id, not a version label: TierRouter forwards it
+# verbatim to https://api.deepseek.com/v1, so a non-addressable id 400s every
+# swarm/regression call the moment DEEPSEEK_API_KEY exists.
+MODEL_SLUG = "deepseek-v4-flash"
 ROUTE_NAME = "deepseek-v4-flash"
 
 
