@@ -110,8 +110,20 @@ jobs:
                 # The lease pins the inspected tip so a concurrent update
                 # aborts the force.
                 echo "::warning::dev is a patch-equivalent replay on divergent SHAs — migrating to main lineage"
-                git push --force-with-lease="refs/heads/dev:${lease}" \
-                  origin "$(git rev-parse origin/main):refs/heads/dev"
+                if ! git push --force-with-lease="refs/heads/dev:${lease}" \
+                  origin "$(git rev-parse origin/main):refs/heads/dev"; then
+                  # Rejected lease = a concurrent job advanced dev after we
+                  # captured it (review Major, #182): re-check convergence
+                  # before declaring failure.
+                  git fetch origin dev
+                  if git merge-base --is-ancestor \
+                    "$(git rev-parse origin/main)" origin/dev; then
+                    echo "migration converged via a concurrent update — done"
+                  else
+                    echo "::error::migration lease rejected and dev still off main lineage — reconcile manually"
+                    exit 1
+                  fi
+                fi
               else
                 echo "::error::dev has commits not patch-equivalent to main — reconcile manually"
                 exit 1
