@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import cast
 
 from click.testing import CliRunner
 
@@ -30,7 +31,8 @@ def _make_db_with_run(path: str) -> str:
     policy = ConsolidationPolicy(min_turns=4, batch_size=4, interval_hours=0, agent_id=agent)
     run = ScheduledConsolidator(store, granules).run(policy)
     b.close()
-    return run.run_id
+    # run_id is Optional only for dry runs; a real run always records one.
+    return cast(str, run.run_id)
 
 
 def test_replay_ls_lists_run(tmp_path):
