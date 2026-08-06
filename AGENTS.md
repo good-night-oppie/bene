@@ -34,7 +34,7 @@ Env: `BENE_DB` (db path), `BENE_CONFIG` (config path).
 
 ## Code map
 
-```
+```text
 bene/core.py          Bene VFS engine (spawn/read/write/checkpoint/restore)
 bene/cli/main.py      every CLI command — the authority on flags
 bene/kernel/          2.0 kernel: engrams.py, eval/ (probes), evolve/ (genomes,

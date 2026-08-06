@@ -4,7 +4,6 @@ Run a risky migration with an undo button: when a 2-million-row backfill went ba
 
 > **One checkpoint before the risky phase turns a 2-million-row mistake into a 0.31-second fix.**
 
-
 *Checkpoint after phase 1; the phase-2 backfill pauses itself on a NULL anomaly at row 847,412; restore in 0.3s; analytics agents keep running.*
 
 ## Start with the payoff: the restore

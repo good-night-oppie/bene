@@ -6,7 +6,6 @@ This tutorial is the **start-here** entry point. It exercises every BENE subsyst
 
 ![BENE — isolated agent workspaces, durable execution, reusable knowledge](hero-v04.png)
 
-
 ---
 
 ## Prerequisites

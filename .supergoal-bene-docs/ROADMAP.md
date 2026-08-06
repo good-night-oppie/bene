@@ -7,14 +7,17 @@
 **Root note:** isolated at `.supergoal-bene-docs/` so og's active `.supergoal/` (zh-translation goal) is NOT touched.
 
 ## Narrative spine
+
 - **WHY** — BENE is the durable, auditable, local-first multi-agent *substrate* that backs **agentdex-cli** (the arena). A raw LLM is the beast of the gom jabbar — it reacts, it doesn't build; a harness is the framework that lets it build. BENE is that harness.
 - **WHAT** — local-first SQLite multi-agent harness: per-agent VFS · checkpoints · engrams · eval-probe kill-gates · autonomy ladder · MCP server · evolutionary meta-harness search.
 - **HOW** — harness engineering: tiny PRs, falsifiable eval-gates, the breeding program, trace-based RAG.
 
 ## HARD CONSTRAINT
+
 Do **NOT** open-source or expose agentdex-cli internals. agentdex is the real consumer, but every example/case-study is **pseudo-code / abstract architecture ONLY**.
 
 ## Decomposition (mirrored to fleet kanban `adx-cli-global-feedback`, ids BENE-DOC-01..10)
+
 | Card | Pri | Lane | Assignee | Deliverable |
 |---|---|---|---|---|
 | BENE-DOC-01 | P1 | blog | bene | Scaffold /blog (index + post template + nav + build-docs.py) |
@@ -29,10 +32,12 @@ Do **NOT** open-source or expose agentdex-cli internals. agentdex is the real co
 | BENE-DOC-10 | P1 | render-deploy | bene | Render + deploy + 4 view×lang render-verify |
 
 ## Risks / sequencing
+
 1. **Collision with og's live zh-translation** — bene-core authors NEW EN files (blog/*, cs03-05, what/why/how); og translates. Don't edit a doc og is mid-translating; new files are collision-free. EN-source first, zh follows (same pattern as the uv-run→bene sequencing).
 2. **HARD CONSTRAINT leak** — every arena reference is pseudo-code; reviewer/gate must scan for agentdex internals before any deploy.
 3. **Ground-truth** — every code snippet ground-truth-run (exit 0) against the real CLI; no fabricated output (per accuracy-gate-vs-docs-review lesson).
 4. **Render lane is bene's** — bene-core ships .md content as tiny PRs; bene lineage owns build-docs.py + Koyeb deploy + render-verify (render-verify-bilingual-site lesson: chromium dump-DOM, not grep/babel-compile).
 
 ## Execution
+
 Tiny-PR discipline per ADDENDUM_GIT_PR_DISCIPLINE; isolated worktree per PR (shared tree). Drive P0→P1→P2. Durable queue = the kanban; a bene-core successor resumes from it after any ctx-handoff.

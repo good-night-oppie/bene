@@ -6,7 +6,6 @@ You should be able to upgrade your model the way you upgrade a library: change o
 
 > **One CI job, 12 minutes: five benchmarks replayed against the new model, and any score that falls more than 5% blocks the deploy on its own.**
 
-
 *One upgrade, end to end: the suite replays, `code_review` falls 8.4%, the gate holds the deploy, a five-iteration search recovers the score, and the swap ships Monday.*
 
 You'll follow one real upgrade — `claude-sonnet-4-5` to `claude-sonnet-4-6` — from green pipeline to blocked deploy to restored baseline, with no person watching any step of it.

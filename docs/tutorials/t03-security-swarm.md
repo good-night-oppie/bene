@@ -6,7 +6,6 @@ Point four isolated agents at one pull request — injection, secrets, auth, des
 
 > **One scanner per attack surface, zero shared state, every finding in one table.**
 
-
 *PR-2847 under review: the scanners launch together, and one query collects everything they found.*
 
 ## Launch the swarm

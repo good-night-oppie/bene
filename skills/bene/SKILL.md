@@ -47,9 +47,11 @@ uv run bene demo --no-ui     # 2. keyless five-capability smoke (expect "story c
 uv run bene init             # 3. creates ./bene.db (expect "Initialized BENE database: ./bene.db")
 uv run bene --json ls | jq . # 4. expect [] on a fresh db
 ```
+
 If step 2 fails, STOP — nothing downstream is trustworthy. See Failure modes.
 
 **Five-capability mental model (10 lines):**
+
 1. **Engram ladder** — one engram store, tiers 0 trace → 1 episodic → 2 semantic → 3 procedural (skills) → 4 strategic (genomes/genes); promotion never mutates sources; provenance is mandatory.
 2. **Probes + kill gates** — pre-registered gate specs, sha256-locked; tamper → refuse; a gate that can't kill the baseline is VOID; verdicts are ACCEPT/REJECT/VOID engrams.
 3. **Breeding program** — structured genomes (5 components), reflective mutation, Pareto frontier; `promote()` raises `PromotionBlocked` without an ACCEPT verdict.
@@ -103,6 +105,7 @@ uv run bene checkpoints <agent_id>                                        # 3. l
 uv run bene diff <agent_id> --from <cp_a> --to <cp_b>                     # 4. face the failed turn — see its path
 uv run bene restore <agent_id> --checkpoint <cp_a>                        # 5. only the clean state remains
 ```
+
 Python: `db = Bene("bene.db"); a = db.spawn("worker"); db.write(a, "/plan.md", b"..."); cp = db.checkpoint(a, label="safe"); db.restore(a, cp)`.
 🔴 CHECKPOINT — `restore` overwrites current VFS state. Run step 4 (diff) and show the user before step 5 when work might be lost.
 **Verify:** `uv run bene --json checkpoints <agent_id> | jq length` ≥ 1; after restore, `uv run bene read <agent_id> /plan.md` shows pre-failure content.
@@ -125,6 +128,7 @@ log.decide(iid, planner)                                                     # 4
 plan = db.read(planner, "/plan.md")            # 5. executor reads the plan (cross-agent read is allowed)
 db.write(executor, "/progress.md", b"- step 1 done")  # 6. scratchpad updated after EVERY subtask
 ```
+
 **Verify:** `uv run bene log tail --n 5` shows intent → vote → decision; `uv run bene read <executor> /progress.md` reflects the last finished step.
 
 ### R3 — Make agent claims checkable: probe + relative kill gate, promote ONLY on ACCEPT
@@ -149,6 +153,7 @@ if v.status == ACCEPT:
     promote(cand, store=store, conn=db.conn)                                 # 4. records gated_by link
 # else: change the CANDIDATE, never the gate — a REJECT stands.
 ```
+
 If the gate cannot kill the baseline (e.g. threshold -999), registration marks it `inadmissible` and every run returns VOID — your eval was fake; write a real gate.
 **Verify:** `uv run bene --json experiments ls --kind probe | jq '.[0].summary'` contains ACCEPT or REJECT; `uv run bene probe ls` shows status `admissible`.
 
@@ -172,6 +177,7 @@ ep = g.consolidate([t1, t2], summary="episode: fixed retry bug via jitter",
 r = AdaptiveRetriever(handle.store).query(agent_id, "retry bug", k=8)        # 4. out: RetrievalResult
 print(r.path, len(r.hits))   # "fast"|"slow" — the spend decision is recorded on the query engram
 ```
+
 CLI equivalents: `bene memory write <agent_id> "..." --type insight --key k` · `bene memory search "retry"` · `bene skills save -n name -d desc -t "template {param}"` · `bene skills apply <id> -p param=value`.
 **Verify:** `uv run bene --json memory search "retry" | jq length` ≥ 1; engram mirror: `uv run bene query "SELECT COUNT(*) FROM engrams WHERE kind='semantic'"` > 0.
 Limitation: retrieval ranking is static BM25 — `record_outcome` counters do NOT feed ranking (planned; measured −13.3pp vs outcome-weighted ranking in COMMUNITY-BENCH A1b).
@@ -188,6 +194,7 @@ report = det.scan(agent_id, window=50)        # signals: repeated failed calls, 
 if report.polluted:
     det.recover(agent_id, report, bene=db)    # pollution engram -> consolidate requirements -> restore latest checkpoint
 ```
+
 Strategies: `recency-window` (default) · `relevance-topk` (long_horizon + has_relevance signals) · `compress-then-pack` (error_rate > 0.3). `assemble` NEVER exceeds budget (property-tested).
 🔴 CHECKPOINT — `recover()` restores the latest checkpoint. Confirm with the user before invoking on an agent holding unsaved work; with no checkpoint it only advises respawn.
 **Verify:** `packed.manifest["estimated_tokens"] <= 2000` is True; after recover, `uv run bene query "SELECT COUNT(*) FROM engrams WHERE kind='pollution'"` ≥ 1.
@@ -201,13 +208,16 @@ policy.grant(agent_id, 2, granted_by="orchestrator")      # L2: act-in-sandbox
 policy.grant(agent_id, 4, granted_by="human:eddie")       # L4 REQUIRES granted_by="human:<name>" — else ValueError
 policy.level_for(agent_id)                                 # unknown agents default to L0
 ```
+
 Denied capability dispatches emit trust engrams automatically — trust is earned AND spent visibly.
+
 ```bash
 uv run bene trust <agent_id>        # 4 signals + composite (computed, never declared)
 uv run bene --json senses           # the live-db manifest an incoming agent reads FIRST
 uv run bene sweep <agent_id_or_path> # debt scan: debug prints, stale TODOs, dup blocks, dead imports
 uv run bene experiments ls          # probe/evolution journal
 ```
+
 🔴 CHECKPOINT — never grant L4 without an explicit human instruction naming the human; relay the name into `granted_by="human:<name>"`.
 **Verify:** `uv run bene --json trust <agent_id> | jq .composite` returns a number in [0,1].
 
@@ -218,12 +228,15 @@ uv run bene mh search --benchmark text_classify --iterations 5 --candidates 3 --
 uv run bene mh search --benchmark text_classify --iterations 5 --candidates 3 --background               # 2. real search
 uv run bene mh status <search_agent_id> && uv run bene mh frontier <search_agent_id>                     # 3. inspect
 ```
+
 Benchmarks: `text_classify`, `math_rag`, `agentic_coding`. Then bridge the winner into the gated breeding program:
+
 ```python
 from bene.kernel.adapters import genome_from_candidate
 genome = genome_from_candidate(candidate_dict)   # components: memory_policy, retrieval_policy, context_strategy, tool_config, prompt
 # persist genome.encode() as a tier-4 strategic engram, then R3: probe -> ACCEPT -> promote
 ```
+
 🔴 CHECKPOINT — mh search burns model tokens (iterations × candidates × problems). Confirm budget with the user before any non-`--dry-run` run with iterations > 5.
 **Verify:** `uv run bene mh frontier <id>` shows non-zero scores on a provider-backed run (an all-zero frontier there means evaluation is broken — diagnose before iterating). Keyless caveat: seed evaluation needs model calls, so with no provider even `--dry-run` legitimately scores 0.0 — judge keyless dry-runs by exit 0 + non-empty frontier, not by score.
 Limitation (honesty): the mh_search → kill-gate loop is NOT wired end-to-end; `genome_from_candidate` is the manual bridge (CLAIMS-AUDIT: partial).
@@ -234,17 +247,20 @@ Limitation (honesty): the mh_search → kill-gate loop is NOT wired end-to-end; 
 uv run bene serve --transport stdio                          # tool families: agent_*, mh_*, agent_memory_*, shared_log_* (count: see context map)
 uv run bene serve --transport sse --host 127.0.0.1 --port 8788
 ```
+
 **Verify:** from the connected agent, call `agent_ls` — expect a JSON agent list; or smoke locally first with `uv run bene demo --no-ui`.
 
 ### Fan-out default (fix architecture, not prompts)
 
 For N independent outputs (scaffold N agents, process N traces, review N files): do NOT ask one agent to "do all N thoroughly" — decompose into parallel isolated agents, then cross-validate:
+
 ```bash
 uv run bene parallel \
   --task security "Review auth.py for security risks" \
   --task tests "Write focused unit tests for auth.py" \
   --task docs "Update the auth module documentation"
 ```
+
 Each writes to its own VFS (same paths never collide). Cross-validate by spawning one reviewer agent over the others' outputs (`bene read <id> /path`).
 **Verify:** `uv run bene --json ls | jq '[.[] | select(.status=="completed")] | length'` equals N.
 Keyless expectation: without a provider each task still spawns its own agent but every one lands status `failed` — N agents listed with 0 `completed` means missing provider config (R1 prerequisite), not a fan-out bug.

@@ -49,13 +49,21 @@ def test_f1_thin_section_gate_blocks_placeholder_bodies() -> None:
     # must be False with the section listed in thin_sections.
     benchmark = GoalcraftBenchmark()
     problem = benchmark.get_search_set()[0]
-    kwargs = {
-        "brief": str(problem.input["brief"]),
-        "expected_check": str(problem.input["checks"]),
-        "expected_state_file": str(problem.input["state_file"]),
-    }
-    control = score_goal(_goal(problem), **kwargs)
-    thin = score_goal(_goal(problem, boundaries="Boundaries: x"), **kwargs)
+    brief = str(problem.input["brief"])
+    expected_check = str(problem.input["checks"])
+    expected_state_file = str(problem.input["state_file"])
+    control = score_goal(
+        _goal(problem),
+        brief=brief,
+        expected_check=expected_check,
+        expected_state_file=expected_state_file,
+    )
+    thin = score_goal(
+        _goal(problem, boundaries="Boundaries: x"),
+        brief=brief,
+        expected_check=expected_check,
+        expected_state_file=expected_state_file,
+    )
     assert control["contract_pass"] == 1.0
     assert control["thin_sections"] == []
     assert thin["thin_sections"] == ["boundaries"]

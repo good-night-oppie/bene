@@ -25,6 +25,7 @@ output is whatever the binary returns at that commit.
 - VHS ≥ 0.11.0 (`charmbracelet/vhs`)
 - JetBrains Mono installed in `fontconfig` (the font specified in every
   tape). On this dev box:
+
   ```bash
   curl -sL https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip -o /tmp/jbm.zip
   mkdir -p ~/.local/share/fonts/jbm
@@ -32,6 +33,7 @@ output is whatever the binary returns at that commit.
   fc-cache -f ~/.local/share/fonts/
   fc-match "JetBrains Mono"   # → JetBrainsMono-Regular.ttf
   ```
+
   If JetBrains Mono isn't installed, VHS falls back to a default sans-serif
   with wider tracking — that was the "字母间距好大" bug observed
   2026-06-15.
@@ -40,7 +42,7 @@ output is whatever the binary returns at that commit.
 
 Applied to every gap tape; future tapes should keep these.
 
-1. **"上下文是稀缺资源"** (harness-engineering video #06 — 
+1. **"上下文是稀缺资源"** (harness-engineering video #06 —
    `data/silver/lists/vibe-coding/06_OpenAI提出新概念Harness Engineering`).
    The viewer's attention budget is the constraint, same as Codex's context
    budget. Use VHS `Hide` for every setup line (`cd`, `bene init`,

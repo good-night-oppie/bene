@@ -4,7 +4,6 @@ Hand bene a labeled dataset and one or more starting harnesses, then walk away: 
 
 > **One command replaces "tweak the prompt and rerun" with a measured, resumable, fully recorded search.**
 
-
 bene implements the technique from the [Meta-Harness paper (arXiv:2603.28052)](https://yoonholee.com/meta-harness/); full citation and the reference artifact are listed under [Sources and worked examples](#sources-and-worked-examples). In bene's lore this is the breeding program — patient, multi-generation selection — applied to harness code.
 
 ---
@@ -18,7 +17,6 @@ The usual way to claw back that 6x is artisanal — edit a prompt, eyeball the o
 ---
 
 ## Launch your first search
-
 
 Seed searches run against built-in datasets:
 
@@ -397,7 +395,6 @@ At level 10, every domain pays a severe quality penalty as context is aggressive
 
 ## CORAL: getting unstuck (v0.2.0)
 
-
 Left running long enough, any iterative search starts to circle: the proposer settles into a local optimum and keeps shipping variations of the same idea. CORAL ([arXiv:2604.01658](https://arxiv.org/abs/2604.01658)) attacks that plateau on three fronts, and bene implements all three.
 
 ### Front 1 — detect stagnation, force a pivot
@@ -643,7 +640,6 @@ bene mh knowledge
 - **Authors:** Yoonho Lee, Roshen Nair, Qizheng Zhang, Kangwook Lee, Omar Khattab, Chelsea Finn (Stanford / KRAFTON / MIT)
 
 ### Worked examples
-
 
 **Technical:**
 

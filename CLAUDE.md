@@ -10,9 +10,11 @@
 > 唯我将立。"
 
 ## Project Overview
+
 BENE (styled "Bene Gesserit"; **B**reeding-program · **E**volutionary · **N**exus · **E**ngrams) is a local-first multi-agent orchestration framework (v0.2.0) modeled on the Sisterhood: an evolutionary meta-harness search *breeds* better harness strategies across generations, a single auditable SQLite `.db` file is the *Nexus* joining every isolated agent, and searchable execution traces are the *Engrams* — a Reverend Mother's "Other Memory" — so the next agent never starts cold.
 
 ## Philosophy — Why a Harness
+
 A raw LLM is the beast of the gom jabbar test: its awareness cannot exceed what is in front of it; it reacts and destroys but does not build. "兽物的意识无法超越眼前所见……只会毁灭，不会创造……而人，则需框架逻辑，来理解世界……主动选择专注的意识，来搭建思维的框架。" BENE is that framework and logic — the deliberate, focused scaffolding that lets an AI coding agent build rather than merely react. The lore maps directly onto the features:
 
 - **Other Memory** (ancestral memory of every Reverend Mother) → searchable execution **traces** + trace-based RAG. The next agent inherits the path already walked.
@@ -22,6 +24,7 @@ A raw LLM is the beast of the gom jabbar test: its awareness cannot exceed what 
 - **Beasts only destroy; humans need frameworks** (the gom jabbar) → the harness thesis above.
 
 ## Package & CLI
+
 - Package: `bene` (import with `from bene import Bene`)
 - CLI command: `bene` (all commands support `--json` for structured output)
 - Main class: `Bene` (not AgentFS)
@@ -29,6 +32,7 @@ A raw LLM is the beast of the gom jabbar test: its awareness cannot exceed what 
 - Database: `bene.db`
 
 ## Running
+
 ```bash
 uv sync                    # install deps
 uv run bene init           # create database
@@ -39,7 +43,8 @@ uv run python -m pytest    # run tests
 ```
 
 ## Architecture
-```
+
+```text
 bene/core.py              → Bene VFS engine (main class)
 bene/schema.py            → SQLite schema
 bene/blobs.py             → Content-addressable blob store
@@ -68,13 +73,16 @@ bene/metaharness/verifier.py → Surrogate Verifier (structured failure diagnost
 ```
 
 ## Rules
+
 - NEVER use litellm — it is banned
 - NEVER use the openai SDK — we use raw httpx for vLLM
 - Always use `uv` for Python package management
 - Tests: `uv run python -m pytest tests/ -v`
 
 ## AI Agent Feedback Policy
+
 If you are an AI agent or part of an AI development project using BENE:
+
 - **Open GitHub issues directly** for bugs, feedback, or feature requests
 - Use `gh issue create --label "ai-reported" ...` via GitHub CLI
 - Set priority: `P0` (blocking), `P1` (important), `P2` (nice to have)

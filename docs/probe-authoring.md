@@ -40,12 +40,15 @@ shapes:
 1. **Relative to a healthy baseline.** Mark the gate `relative_to_baseline: true`
    and compare `(subject − baseline)` against a positive margin. An unchanged
    candidate shows zero improvement and is killed → admissible.
+
    ```python
    {"name": "quality_improves", "metric": "quality", "op": ">=",
     "threshold": 0.05, "relative_to_baseline": True}   # baseline = a healthy run
    ```
+
 2. **Absolute against a broken baseline.** Use an absolute threshold the *broken*
    incumbent fails.
+
    ```python
    {"name": "propagated", "metric": "propagated_true", "op": ">=",
     "threshold": 1.0}                                   # baseline = the broken (0) env
@@ -102,6 +105,7 @@ echo '{"quality": 0.0}' > baseline.json
 # Subject improves by 1.0 (>= 0.05 margin) -> ACCEPT, exit 0
 bene --json probe run quality-probe --subject subject.json --baseline baseline.json
 ```
+
 ```json
 {
   "status": "ACCEPT",
@@ -121,6 +125,7 @@ A subject that does not clear the margin REJECTs and exits non-zero:
 echo '{"quality": 0.0}' > flat.json
 bene --json probe run quality-probe --subject flat.json --baseline baseline.json || echo "build failed (exit $?)"
 ```
+
 ```json
 {
   "status": "REJECT",
@@ -146,6 +151,7 @@ VOIDs silently — useless, but not loud about it. Make it loud in CI:
 # Exit non-zero if ANY registered probe is inadmissible
 bene --json probe ls --check-admissible
 ```
+
 ```json
 {
   "ok": false,
@@ -168,7 +174,8 @@ broken environment and ACCEPTs the fix:
 ```bash
 uv run python examples/lighthouse_trace_probe.py
 ```
-```
+
+```text
 [shape gate ] registration: inadmissible
 [shape gate ] run verdict : VOID  (bene refuses a gate that cannot fail)
 [falsifiable] registration: admissible

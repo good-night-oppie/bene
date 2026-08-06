@@ -4,7 +4,6 @@ Checkpoint an agent before risky work, and a failed run costs one restore comman
 
 > **One call to save, one to rewind, one to diff — all history in one SQLite file on your machine.**
 
-
 ---
 
 ## Save a known-good state

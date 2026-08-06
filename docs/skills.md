@@ -4,7 +4,6 @@ When one agent in your project works out a dependable procedure, every agent aft
 
 > **The point in one line:** a skill is a prompt template with `{param}` holes that any project agent can locate by full-text search, render with its own values, and grade after use.
 
-
 Everything stays on your machine. The whole library is a pair of SQLite tables (`agent_skills` plus its full-text index) inside the same database file as the rest of your project state — copy the file and the skills travel with it.
 
 ## How agents use it
@@ -118,7 +117,6 @@ Five MCP tools expose the library to agents running under either harness:
 | `skill_outcome` | Record success or failure for a used skill |
 
 ### A worked session
-
 
 ```text
 # Before starting a refactoring task:

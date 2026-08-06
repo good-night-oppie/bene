@@ -22,7 +22,6 @@ bene ui --db ./project.db  # specific database
 
 ## Read the timeline
 
-
 The centerpiece is a **Gantt timeline**, bucketed into *waves*: agents whose start times cluster together — in practice, one `bene parallel` invocation or one MCP-fired batch.
 
 ### Waves

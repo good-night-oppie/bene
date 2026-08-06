@@ -10,7 +10,6 @@ ML experimentation defaults to serial: form a hypothesis, train, stare at the cu
 
 ---
 
-
 *Spawned at 22:00; scale-explorer reports in first at 00:14, arch-explorer last at 05:47; the 06:00 SQL comparison names the winner.*
 
 ---
@@ -271,7 +270,6 @@ results = await ccr.run_parallel(DIRECTIONS)
 ## Go bigger: three GPUs, six agents, three model tiers
 
 When the lab outgrows one GPU, the tier router places each agent on a specific model via `force_model`: cheap hyperparameter sweeps go to the small model, creative hypothesis generation goes to the largest one.
-
 
 ### The layout
 
