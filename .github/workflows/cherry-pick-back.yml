@@ -93,10 +93,20 @@ jobs:
             # LOUDLY for manual reconcile rather than silently rewriting.
             if ! git push origin "${{ github.sha }}:refs/heads/dev"; then
               git fetch origin dev
+              lease="$(git rev-parse origin/dev)"
               if git merge-base --is-ancestor "${{ github.sha }}" origin/dev; then
                 echo "dev already contains ${{ github.sha }} (concurrent replay won) — converged"
+              elif [ -z "$(git cherry origin/main origin/dev | grep '^+' || true)" ]; then
+                # Review P1 (#179): every dev-only commit is patch-equivalent
+                # to a main commit (old HEAD:dev pick fallback, or squash-
+                # merged pick PRs) — dev is still the replay line, just on
+                # different SHAs. Migrate it onto main's history; the lease
+                # pins the tip we inspected so a concurrent update aborts.
+                echo "::warning::dev is a patch-equivalent replay on divergent SHAs — migrating to main lineage"
+                git push --force-with-lease="refs/heads/dev:${lease}" \
+                  origin "${{ github.sha }}:refs/heads/dev"
               else
-                echo "::error::dev has diverged from the main replay — reconcile manually"
+                echo "::error::dev has commits not patch-equivalent to main — reconcile manually"
                 exit 1
               fi
             fi
@@ -110,6 +120,20 @@ jobs:
           SHORT: ${{ steps.pick.outputs.short }}
         run: |
           set -euo pipefail
+          # Review P1 (#179): in the overlapping-push race a LATER main
+          # commit can fail its preliminary cherry-pick against a STALE dev
+          # tip (it depends on the earlier commit not yet replayed) even
+          # though directly advancing dev to this SHA is a plain fast-
+          # forward carrying both. Attempt that recovery before declaring
+          # a conflict; if dev is not an ancestor of this SHA (genuine
+          # divergence, e.g. PR-path merges), fall through to the issue.
+          git fetch origin dev
+          if git merge-base --is-ancestor origin/dev "${SHA}"; then
+            if git push origin "${SHA}:refs/heads/dev"; then
+              echo "stale-tip race recovered by fast-forward — no real conflict, skipping issue"
+              exit 0
+            fi
+          fi
           body_file="$(mktemp)"
           {
             echo "Commit ${SHA} on main does not cleanly cherry-pick onto dev."
