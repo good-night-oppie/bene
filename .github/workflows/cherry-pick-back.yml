@@ -82,8 +82,24 @@ jobs:
             --title "chore: cherry-pick ${{ steps.pick.outputs.short }} to dev" \
             --body "Auto-replay of main commit ${{ github.sha }} onto dev to keep integration trunk in sync."
           then
-            echo "::warning::PR creation denied by org policy — pushing pick directly to dev"
-            git push origin "HEAD:dev"
+            echo "::warning::PR creation denied by org policy — fast-forwarding dev directly"
+            # Race-safe replay (review P1, #177 follow-up): push the MAIN
+            # SHA itself, not the pick. While the PR path is policy-blocked
+            # dev is a pure main mirror, so this is a fast-forward that
+            # also self-heals any commit a skipped/raced run missed (FF
+            # carries all ancestors). If a concurrent job already advanced
+            # dev past us, the ancestor check converges instead of failing;
+            # a dev that genuinely diverged (PR-path merges resumed) fails
+            # LOUDLY for manual reconcile rather than silently rewriting.
+            if ! git push origin "${{ github.sha }}:refs/heads/dev"; then
+              git fetch origin dev
+              if git merge-base --is-ancestor "${{ github.sha }}" origin/dev; then
+                echo "dev already contains ${{ github.sha }} (concurrent replay won) — converged"
+              else
+                echo "::error::dev has diverged from the main replay — reconcile manually"
+                exit 1
+              fi
+            fi
             git push origin --delete "${{ steps.pick.outputs.branch }}" || true
           fi
       - name: File issue on conflict
