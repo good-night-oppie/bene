@@ -92,19 +92,26 @@ jobs:
             # a dev that genuinely diverged (PR-path merges resumed) fails
             # LOUDLY for manual reconcile rather than silently rewriting.
             if ! git push origin "${{ github.sha }}:refs/heads/dev"; then
-              git fetch origin dev
+              git fetch origin dev main
               lease="$(git rev-parse origin/dev)"
               if git merge-base --is-ancestor "${{ github.sha }}" origin/dev; then
                 echo "dev already contains ${{ github.sha }} (concurrent replay won) — converged"
-              elif [ -z "$(git cherry origin/main origin/dev | grep '^+' || true)" ]; then
-                # Review P1 (#179): every dev-only commit is patch-equivalent
-                # to a main commit (old HEAD:dev pick fallback, or squash-
-                # merged pick PRs) — dev is still the replay line, just on
-                # different SHAs. Migrate it onto main's history; the lease
-                # pins the tip we inspected so a concurrent update aborts.
+              elif [ -z "$(git cherry origin/main origin/dev | grep '^+' || true)" ] \
+                && [ -z "$(git rev-list --merges origin/main..origin/dev)" ]; then
+                # Review P1 (#179): dev-only commits that are all patch-
+                # equivalent to main (old HEAD:dev pick fallback, squash-
+                # merged pick PRs) mean dev is still the replay line on
+                # different SHAs. Migrate it onto main's history — to the
+                # FETCHED MAIN TIP, not github.sha: an older commit's run
+                # racing a newer replay must never rewind dev (#179
+                # follow-up High). git-cherry is blind to MERGE commits,
+                # which can carry content (#179 follow-up Major) — any
+                # dev-only merge commit refuses migration and goes loud.
+                # The lease pins the inspected tip so a concurrent update
+                # aborts the force.
                 echo "::warning::dev is a patch-equivalent replay on divergent SHAs — migrating to main lineage"
                 git push --force-with-lease="refs/heads/dev:${lease}" \
-                  origin "${{ github.sha }}:refs/heads/dev"
+                  origin "$(git rev-parse origin/main):refs/heads/dev"
               else
                 echo "::error::dev has commits not patch-equivalent to main — reconcile manually"
                 exit 1
@@ -128,9 +135,20 @@ jobs:
           # a conflict; if dev is not an ancestor of this SHA (genuine
           # divergence, e.g. PR-path merges), fall through to the issue.
           git fetch origin dev
+          if git merge-base --is-ancestor "${SHA}" origin/dev; then
+            echo "dev already contains ${SHA} — converged, no conflict"
+            exit 0
+          fi
           if git merge-base --is-ancestor origin/dev "${SHA}"; then
             if git push origin "${SHA}:refs/heads/dev"; then
               echo "stale-tip race recovered by fast-forward — no real conflict, skipping issue"
+              exit 0
+            fi
+            # Push raced a concurrent advance (#179 follow-up Medium):
+            # refetch and re-check convergence before declaring a conflict.
+            git fetch origin dev
+            if git merge-base --is-ancestor "${SHA}" origin/dev; then
+              echo "converged during the race — no conflict"
               exit 0
             fi
           fi
