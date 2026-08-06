@@ -68,7 +68,12 @@ jobs:
               status="$(echo "${probe}" | jq -c .c)"
               legs="$(echo "${probe}" | jq -r .n)"
               case "${status}" in
-                '["success"]'|*failure*|*cancelled*|*timed_out*|*action_required*) break ;;
+                '["success"]')
+                  # A lone early leg reads success before its siblings are
+                  # even created (review Major, #180) — keep waiting until
+                  # the full fan-out is present.
+                  [ "${legs}" -ge 5 ] && break ;;
+                *failure*|*cancelled*|*timed_out*|*action_required*) break ;;
               esac
             done
             echo "post-dispatch dev ci/strict conclusions: ${status} (legs: ${legs})"
