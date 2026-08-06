@@ -4,7 +4,6 @@ Put an action up for a vote before any agent runs it. The shared log lets bene a
 
 > **Agents agree before they act — and every step of the agreement is a row you can query.**
 
-
 The protocol is LogAct, from a 2026 Meta paper, credited in [Lineage](#lineage).
 
 ---

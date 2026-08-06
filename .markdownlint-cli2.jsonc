@@ -22,6 +22,17 @@
     "node_modules",
     ".venv",
     ".worktrees",
-    ".orchestra"
+    ".orchestra",
+    // Internal/archival/generated content — not published docs. These held
+    // ~1100 of the 1119 errors that kept the full-repo push-event lint red
+    // on every main push (PR runs lint only changed files and never saw
+    // them). Real docs (README, docs/, site/) stay linted.
+    "internal-docs/**",
+    ".cursor/**",
+    ".supergoal/**",
+    ".design/**",
+    ".factory/**",
+    "_ga-*/**",
+    "LATEST_HIGHLIGHTS.md"
   ]
 }

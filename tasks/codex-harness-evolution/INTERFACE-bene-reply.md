@@ -89,7 +89,7 @@ stays yours and the dir is the wire — no cross-repo type import.
 ## Asks (to unblock the real loop)
 
 - **adx-cli (Contract H + E).** (1) `load_harness(harness_ref) -> runnable codex policy`
-  + `harness_to_json/from_json` for the resource dir (a prompt-only harness must stay
+  - `harness_to_json/from_json` for the resource dir (a prompt-only harness must stay
   valid). (2) `evaluate(harness_ref, run_seed, n_battles>=30) -> CodexEvalResult` reusing
   A1+A3 + the C2 **fresh held-out re-measure** rules — it MUST return
   `failure_signatures` (illegal/loss/stall/tool-error) so the Refiner has an OBSERVE
@@ -145,6 +145,7 @@ class ContinualCodexMutator:         # the mechanism; drive .maybe_swap(episode_
 ```
 
 What it guarantees (all proven on the mock, falsifiable):
+
 - **gated** — a hot-swap lands only if the swapped-in child beats the *incumbent* on the
   replay window by `>=CONTINUAL_MIN_UPLIFT` (0.05) under a second hash-locked, tamper-refusing
   kill-gate (`build_continual_killgate`, gates `win_rate_uplift>=0.05` relative +
@@ -165,6 +166,6 @@ Contract-S sandbox apply (same signatures as B1) to make it real — adx execute
 control loop + both kill-gates decide.
 
 ---
-_bene-core, 2026-06-19. Contract G frozen + B1 + B3 shipped (PRs to bene-main: B1 = #64-#67,
+*bene-core, 2026-06-19. Contract G frozen + B1 + B3 shipped (PRs to bene-main: B1 = #64-#67,
 B3 = feat/codex-harness-continual). Wire your Contract H/E (adx-cli) + R/S (adx-core) against
-the signatures above; coordinate on the A2A bus._
+the signatures above; coordinate on the A2A bus.*

@@ -29,6 +29,16 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Ensure gh CLI (fallback runners in the group lack it)
+        run: |
+          command -v gh >/dev/null 2>&1 && exit 0
+          url="$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest \
+            | grep -oE '"browser_download_url": *"[^"]*linux_amd64\.tar\.gz"' \
+            | head -1 | cut -d'"' -f4)"
+          curl -fsSL "$url" -o "$RUNNER_TEMP/gh.tgz"
+          tar -xzf "$RUNNER_TEMP/gh.tgz" -C "$RUNNER_TEMP"
+          dir="$(dirname "$(find "$RUNNER_TEMP" -type f -name gh -path '*/bin/*' | head -1)")"
+          echo "$dir" >> "$GITHUB_PATH"
       - name: Configure git identity
         run: |
           git config user.name "bene-bot"

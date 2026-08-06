@@ -4,7 +4,6 @@ Diagnose a 2am production outage without leaving SQLite: two SELECT statements a
 
 > **Because every agent write lands in an append-only journal, "what changed?" is a query — not a 90-minute investigation.**
 
-
 *The recorded run: pager at 02:17, first query at 02:17:12, cause in hand at 02:17:24, then a hotfix that takes the error rate from 23% back to 0%.*
 
 ## The 2am question

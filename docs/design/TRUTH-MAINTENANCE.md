@@ -35,7 +35,7 @@ explained and replayable.
 
 ## Lifecycle
 
-```
+```text
                 emit fact
                     │
                     ▼

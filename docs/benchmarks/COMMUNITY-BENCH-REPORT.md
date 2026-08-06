@@ -71,9 +71,9 @@ Capability gaps (N/A-planned rows, per PREREG principle 4 these count against an
 
 Implemented-mechanism deficits (not capability gaps, but losses/failures of shipped code):
 
-4. **A6** — mirror write path performs a second WAL commit+fsync per write (~2× per-write latency on this host); structural, not noise.
-5. **B1** — `evaluator.py` calls `diagnostic_view()`/`region_key()` unconditionally; no bundled benchmark implements them; inherited byte-identical from the 0.1.0 predecessor HEAD.
-6. **B3** — the only benchmark that implements the B1 hooks (the bug_triage package) was silently dropped in the migration, most plausibly by the gitignore.
+1. **A6** — mirror write path performs a second WAL commit+fsync per write (~2× per-write latency on this host); structural, not noise.
+2. **B1** — `evaluator.py` calls `diagnostic_view()`/`region_key()` unconditionally; no bundled benchmark implements them; inherited byte-identical from the 0.1.0 predecessor HEAD.
+3. **B3** — the only benchmark that implements the B1 hooks (the bug_triage package) was silently dropped in the migration, most plausibly by the gitignore.
 
 What can be claimed, supported by this run: parity with KAOS on static BM25 retrieval (A1) and probe discipline (A7); a faster — though mechanistically lighter — consolidation pass (A3); the Temporal/storage port runs (B2); and five mechanisms (verdict-gated promotion, pollution-recovery loop, enforced autonomy ladder, trust-weighted consensus, budget-enforced context assembly) for which command-level evidence shows no peer ships an equivalent (C1–C5). That is a narrower statement than supersession, and it is the strongest one this protocol permits.
 
@@ -99,85 +99,111 @@ What can be claimed, supported by this run: parity with KAOS on static BM25 retr
 <summary>Section A commands (A1/A1b, A2, A3, A4, A5, A6, A7)</summary>
 
 **A1 / A1b — BENE:**
-```
+
+```text
 cd /home/admin/gh/bene-main && uv run python /tmp/bene_a1_bench.py
 ```
+
 Throwaway db `/tmp/bene_a1_bench.db`; raw per-query JSON at `/tmp/bene_a1_results.json`. Dataset (40 skills + 15 queries + stopword list + `_fts_safe` OR-normalizer) extracted verbatim via AST from `/home/admin/gh/kaos/demo_realistic_retrieval_bench/run.py`. Field mapping arm1 (identical to KAOS bench's own seeding): name=name, description=desc, template=f"Apply {name} to the task", tags=["benchmark","realistic"], source_agent_id=seed agent. Mapping arm2: title=name, payload=description+"\n"+template body, provenance={system:benchmark, agent_id:seed}.
 
 **A1 / A1b — KAOS:**
-```
+
+```text
 rm -rf /tmp/kaos_bench_copy && cp -r /home/admin/gh/kaos/demo_realistic_retrieval_bench /tmp/kaos_bench_copy && rm -f /tmp/kaos_bench_copy/results.* && cd /home/admin/gh/kaos && uv run python /tmp/kaos_bench_copy/run.py
 ```
+
 Exit 0, <1 min. Committed bm25 final_accuracy 0.7333, weighted 0.8667; re-run deviation 0% including identical per-query pattern; curves [63,67,63,65] (bm25) and [60,70,70,70] (weighted). Both repos had pre-existing dirty trees; every module exercised is unmodified at HEAD; nothing under /home/admin/gh/kaos was written.
 
 **A2 — BENE absence:**
-```
+
+```text
 grep -rniE 'plasticity|usage_multiplier|wilson|localiz|quality.*signal' /home/admin/gh/bene-main/bene/kernel/ /home/admin/gh/bene-main/bene/skills.py   # 0 hits
 ```
+
 `bene/skills.py` search() ranks by pure FTS5 BM25 (ORDER BY rank, line 234); `record_outcome()` increments counters that never feed ranking. The decay/consolidation scheduler is planned, not shipped. Note: skills CAN be listed sorted by success_count (`list(order_by='success_count')`) — manual sorting, not search-time ranking; least-favorable interpretation reported.
 
 **A2 — KAOS:**
-```
+
+```text
 cp -r /home/admin/gh/kaos/demo_neuroplasticity_bench /tmp/bench_neuro && cd /tmp/bench_neuro && rm -f results.* *.db && PYTHONPATH=/home/admin/gh/kaos /home/admin/gh/kaos/.venv/bin/python run.py
 ```
+
 absolute_gain_pp=10.0, relative_gain_pct=12.5; 2 s wall; 0% deviation from committed `/home/admin/gh/kaos/demo_neuroplasticity_bench/results.json`. KAOS break_even_episode=null; weighted training curve below bm25 throughout (0.4→0.6 vs 0.6→0.7).
 
 **A3 — BENE:**
-```
+
+```text
 cd /home/admin/gh/bene-main && uv run python /tmp/bene_a3_consolidation.py
 ```
+
 1000 trace engrams, single thread, throwaway /tmp db: p50 177.96 ms, max 191.76 ms, min 170.63 ms over 3 passes; seeding 4.6 s excluded per KAOS protocol. Traces seeded with KAOS bench's exact VOCAB/DOMAINS lists, 50% failures; analyst_fn = cheap deterministic per-vocab-token patch extractor; 3 consolidated skill engrams per pass.
 
 **A3 — KAOS:**
-```
+
+```text
 cp -r /home/admin/gh/kaos/demo_consolidation_scale_bench /tmp/kaos_consol_bench_a3   # copy patched only: SCALES=[1000], sys.path pinned to /home/admin/gh/kaos
 cd /home/admin/gh/kaos && uv run python /tmp/kaos_consol_bench_a3/run.py
 ```
+
 run_consolidation(dry_run=True) @ N=1000: committed p50 475.97 ms / max 482.49 ms; re-run p50 600.43 ms / max 602.25 ms (3 repeats, seed 5.1 s). Re-run deviates +26% (>10%) → re-run governs per protocol; verdict identical under either.
 
 **A4 — BENE absence:**
-```
+
+```text
 grep -rniE 'localiz' /home/admin/gh/bene-main/bene/   # 0 hits
 grep -rn 'analyst_fn|TraceDistiller' bene/ tests/      # only analysts are test lambdas in tests/kernel/test_evolve.py
 ```
+
 `bene/kernel/evolve/distill.py` (99 lines): `AnalystFn = Callable[[str, bool], list[Patch]]`, caller-supplied; evidence chain is a free-text field; no step model, no trace-index, no earliest-decisive-error scoring, no confidence output.
 
 **A4 — KAOS:**
-```
+
+```text
 cp -r /home/admin/gh/kaos/demo_critical_step_bench /tmp/bench_critstep && cd /tmp/bench_critstep && rm -f results.* *.db && PYTHONPATH=/home/admin/gh/kaos /home/admin/gh/kaos/.venv/bin/python run.py
 ```
+
 hits=5/5 (gate ≥4/5), exact match on all 5, confidences 0.65–0.90, 1 s wall, 0% deviation from committed results.json. Mechanism: `kaos.dream.phases.localize.localize()`.
 
 **A5 — BENE absence:**
-```
+
+```text
 grep -rniE 'wilson|quality.*signal|usage_multiplier' /home/admin/gh/bene-main/bene/kernel/ /home/admin/gh/bene-main/bene/skills.py   # 0 hits
 ```
+
 `record_outcome(skill_id, success: bool)` is binary-only; no quality parameter, no Wilson estimator; counters never influence search anyway.
 
 **A5 — KAOS:**
-```
+
+```text
 cp -r /home/admin/gh/kaos/demo_quality_score_bench /tmp/bench_quality && cd /tmp/bench_quality && rm -f results.* *.db && PYTHONPATH=/home/admin/gh/kaos /home/admin/gh/kaos/.venv/bin/python run.py
 ```
+
 accuracy_delta_pp=4.0 (binary 85.33% pstdev 0.0267 → quality 89.33% pstdev 0.0327; 5 seeds 42–46, 120 episodes), variance_reduction=−0.006 (their variance hypothesis failed); 13 s wall, 0% deviation from committed results.json. Bench reuses demo_realistic_retrieval_bench's library via PYTHONPATH; dependency committed and unmodified.
 
 **A6 — BENE:**
-```
+
+```text
 cd /home/admin/gh/bene-main && uv run python /tmp/bene_a6_mirror_overhead.py   # executed twice; least favorable values reported
 ```
+
 1000 writes per mode, fresh /tmp dbs, time.perf_counter, single thread. Without kernel p50 3.81 ms / p95 7.88 ms; with attach_kernel mirror p50 7.59 ms / p95 13.48 ms; overhead p50 3.83 ms, p95 5.53 ms (run1: 3.833/4.140; run2: 3.785/5.533).
 
 **A6 — KAOS:**
-```
+
+```text
 cp -r /home/admin/gh/kaos/demo_plasticity_overhead_bench /tmp/kaos_overhead_bench_a6   # copy patched only: sys.path pinned to /home/admin/gh/kaos
 cd /home/admin/gh/kaos && uv run python /tmp/kaos_overhead_bench_a6/run.py
 ```
+
 Committed deltas (auto ON − OFF, p50/op): record_outcome −24.6 µs, memory_search −87.0 µs, agent_complete +962.0 µs. Re-run on this host: +168.9 µs, −15.1 µs, +3.69 ms (KAOS's own bench printed agent_complete OVER BUDGET here). Re-run governs (>10% deviation; committed numbers from a slower-fsync host). LOSS under either source. No KAOS files modified; no bene/ source edits; all runs from /tmp copies.
 
 **A7 — BENE:**
-```
+
+```text
 cd /home/admin/gh/bene-main && uv run python -m pytest tests/kernel/test_eval.py tests/kernel/test_hardening.py -q   # 23 passed in 7.85s
 uv run python /tmp/a7_live_probe.py   # throwaway db /tmp/a7-live-probe.db, exit 0
 ```
+
 P1 lock: relative gate (quality delta ≥0.05, relative_to_baseline=true) registered, stored lock_sha256=1030d2242ac613a4... == sha256(stored spec) == lock_hash(in-memory gates), status=admissible. P2 tamper: `UPDATE probe_registry SET gate_spec=<0.05→−9.0>` then run() raised LockTamperError. P3 falsification self-test: unkillable gate (threshold −999) → inadmissible, run() verdict=VOID. P4 honest verdict: original spec restored via UPDATE; run(worse +0.02)=REJECT, run(better +0.10)=ACCEPT, 2 verdicts persisted in experiment_runs (per `bene/kernel/eval/verdict.py:69`; first script attempt wrongly queried a `probe_verdicts` table — /tmp script fixed, zero bene/ edits). Peer parity target: `kaos/eval/harness/probe.py`, `kaos/eval/harness/verdict.py` (ACCEPT/REJECT/VOID); no peer rerun required per PREREG.
 
 </details>
@@ -186,42 +212,52 @@ P1 lock: relative gate (quality delta ≥0.05, relative_to_baseline=true) regist
 <summary>Section B commands (B1, B2, B3)</summary>
 
 **B1 — BENE:**
-```
+
+```text
 cd /home/admin/gh/bene-main && uv run python -m pytest tests/test_metaharness.py -q -p no:cacheprovider   # 37 passed in 0.11s
 uv run python /tmp/b1_live_mock.py
 uv run --project /home/admin/gh/bene-main python /tmp/b1_diag.py
 ```
+
 Live mock: MockRouter.route returns ```python harness blocks; MockClient.chat backs the injected llm(); TextClassifyBenchmark synthetic dataset search_size=8; db /tmp/bene_b1_mock.db. Output: iterations_completed=2/2, harnesses_evaluated=7 (3 seeds + 2×2 proposed), frontier=7 points, proposer route() called 2×, exit 0, no uncaught exceptions. Diagnosis: 100% of per-problem evals raise `AttributeError: 'TextClassifyBenchmark' object has no attribute 'diagnostic_view'`, caught at `bene/metaharness/evaluator.py:152`; every score zeroed; frontier degenerate. Root cause: `bene/metaharness/evaluator.py:89-90` calls `benchmark.diagnostic_view()`/`region_key()` unconditionally; `bene/metaharness/benchmarks/base.py` defines neither; no bundled benchmark (text_classify/math_rag/agentic_coding/arc_agi3) implements them.
 
 **B1 — the 0.1.0 predecessor comparison:**
-```
+
+```text
 diff $PREDECESSOR_SRC/predecessor/metaharness/benchmarks/base.py /home/admin/gh/bene-main/bene/metaharness/benchmarks/base.py   # identical
 grep -rn 'def diagnostic_view'   # only predecessor/predecessor/benchmarks/[redacted]_bug_triage/v2_benchmark.py and test-local _DiagnosticBenchmark in both repos' tests
 ```
+
 evaluator.py diff is rename-only (Predecessor01→Bene, DARTRouter→TierRouter). Mandated `gh issue create` could not be filed: `git remote -v` empty in bene-main.
 
 **B2 — BENE:**
-```
+
+```text
 cd /home/admin/gh/bene-main && uv run python -m pytest tests/test_runtime_invariants.py tests/storage/ tests/temporal/ tests/test_runtime_core.py tests/test_runtime_handle.py tests/test_temporal_runtime.py -q -p no:cacheprovider
 # 39 passed, 2 skipped (module-level: could not import 'temporalio'), 10 warnings in 2.79s
 uv run --group temporal python -m pytest <same 6 targets> -q -p no:cacheprovider
 # 58 passed, 0 skipped, 0 failed, 10 warnings in 13.81s
 ```
+
 temporalio/asyncpg extras declared in `pyproject.toml [dependency-groups].temporal`. Warnings: EXTERNAL_WRITE with reconciliation_strategy=None (TOCTOU on activity retry). Repo HEAD 83cb7ce, no source modifications.
 
 **B3 — BENE:**
-```
+
+```text
 cd /home/admin/gh/bene-main && uv run python -c "import bene.benchmarks.bug_triage.benchmark, bene.benchmarks.bug_triage.game_master"
 # ModuleNotFoundError: No module named 'bene.benchmarks.bug_triage'  (exit 1)
 # adjusted name bene.benchmarks.[redacted]_bug_triage.* → same error
 ```
+
 `ls bene/benchmarks/` shows only a namespace `__init__.py` + `__pycache__`; `find` over bene-main and the sibling /home/admin/gh/bene checkout (src/bene empty) finds no triage package; zero dataset files. Parent `bene/benchmarks/` gitignored (.gitignore:20).
 
 **B3 — the 0.1.0 predecessor (read-only):**
-```
+
+```text
 cd /tmp && PYTHONDONTWRITEBYTECODE=1 uv run --project $PREDECESSOR_SRC python -B -c "import predecessor.benchmarks.[redacted]_bug_triage.benchmark, predecessor.benchmarks.[redacted]_bug_triage.game_master"
 # 'the 0.1.0 predecessor imports OK'
 ```
+
 data/search_set.jsonl = 121 JSONL rows (keys: expected/id/input/provenance); data/world_physics.json = dict of 6 keys. No files created under $PREDECESSOR_SRC or /home/admin/gh/kaos.
 
 </details>
@@ -230,45 +266,54 @@ data/search_set.jsonl = 121 JSONL rows (keys: expected/id/input/provenance); dat
 <summary>Section C commands (C1–C5)</summary>
 
 **C1:**
-```
+
+```text
 uv run python -m pytest tests/kernel/test_evolve.py -k promotion -q   # 3 passed, 15 deselected in 1.14s
 grep -rEn 'PromotionBlocked' kaos/ predecessor/                               # 0 hits
 grep 'promot' /home/admin/gh/kaos/kaos/metaharness/search.py           # 0 matches
 grep -rE 'from kaos.eval|Verdict|REJECT|ACCEPT' kaos/metaharness/*.py  # 0 hits; same for predecessor/metaharness/*.py
 ls predecessor/eval                                                           # No such file or directory
 ```
+
 Mechanism: `bene/kernel/evolve/gepa.py:40` PromotionBlocked; gate logic gepa.py:193-211. KAOS frontier: search.py `_compute_frontier`, lines 93–244.
 
 **C2:**
-```
+
+```text
 uv run python -m pytest tests/kernel/test_memory_os.py -k "pollut or recover" -q   # 3 passed, 18 deselected in 1.14s
 grep -rEn 'pollution' kaos/ predecessor/                                                  # 0 hits
 grep -rEn 'quarantine|contaminat|evict|decay' kaos/memory.py predecessor/memory.py kaos/dream/   # 0 hits
 ```
 
 **C3:**
-```
+
+```text
 uv run python -m pytest tests/kernel/test_harness_layer.py -k "denied or autonomy" -q   # 1 passed, 18 deselected in 0.41s
 uv run python -m pytest tests/kernel/test_harness_layer.py -q                            # 19 passed in 6.44s (supplementary)
 uv run python -m pytest tests/kernel/test_capabilities.py -k "denied or autonomy" -q     # 2 passed (supplementary)
 grep -rEn 'autonomy' /home/admin/gh/kaos/kaos/ $PREDECESSOR_SRC/predecessor/                  # 0 hits in both
 ```
+
 Peer `capabilit` hits only in isolation.py (lines 122–128): Linux-kernel capability drop for FUSE. BENE machinery: `bene/kernel/capabilities.py` + `bene/kernel/harness/autonomy.py`.
 
 **C4:**
-```
+
+```text
 uv run python -m pytest tests/kernel/test_trust.py -q                  # 12 passed in 4.27s
 uv run python -m pytest tests/kernel/test_adapters.py -k weighted -q   # 1 passed, 10 deselected
 grep -rn 'weighted_tally' kaos/ predecessor/                                  # 0 hits
 grep 'weight' kaos/shared_log.py predecessor/predecessor/shared_log.py               # 0 hits
 ```
-Peer `trust` hits: kaos/eval/__init__.py:5 'trustworthy', kaos/eval/harness/types.py:74 'untrustworthy', predecessor/.../run_lab.py:371 '# trusted, in-process' — prose only. Peer vote(): boolean approve + free text (kaos/shared_log.py:252, predecessor/predecessor/shared_log.py:178). Adjacent: kaos/memory.py:140-199 rank='weighted' search mode (bm25 × retrieval-frequency × recency) — search ranking, not trust.
+
+Peer `trust` hits: kaos/eval/**init**.py:5 'trustworthy', kaos/eval/harness/types.py:74 'untrustworthy', predecessor/.../run_lab.py:371 '# trusted, in-process' — prose only. Peer vote(): boolean approve + free text (kaos/shared_log.py:252, predecessor/predecessor/shared_log.py:178). Adjacent: kaos/memory.py:140-199 rank='weighted' search mode (bm25 × retrieval-frequency × recency) — search ranking, not trust.
 
 **C5:**
-```
+
+```text
 uv run python -m pytest tests/kernel/test_memory_os.py -k budget -q   # 1 passed, 20 deselected in 0.05s
 grep -rn 'budget' kaos/ predecessor/   # hits exclusively time/cost budgets: arc_agi3.py time_budget (76,123,240,397,423), predecessor run_lab.py/run_overnight.py spend budget, predecessor/temporal/workflow.py:228 history_budget, cli 30-min rollback budget
 ```
+
 Adjacent peer mechanism: router/context.py `ContextCompressor.compress(messages, max_tokens)` (kaos line 64, predecessor line 62) — best-effort, final trim loop stops at len(compressed)<=4 regardless of remaining size; no manifest, no never-exceed property test.
 
 </details>
@@ -276,9 +321,6 @@ Adjacent peer mechanism: router/context.py `ContextCompressor.compress(messages,
 ---
 
 *Report generated 2026-06-11 against PREREG sha256 `f9179cf814e9a7d713007d7fc4c66f25e25a011f68dc4c6e70cf5c201b5043f8`. Verdicts assigned under least-favorable-to-BENE readings throughout; per PREREG principle 3, the LOSS/NA-LOSS/FAIL rows above are reported as successful audit outcomes, not failures of the audit.*
-
-
-
 
 ---
 

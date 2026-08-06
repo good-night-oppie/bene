@@ -8,7 +8,6 @@ Put autonomous bene agents to work on a GPU you already own, steer them from Cla
 
 > **The whole system's state is one SQLite file on your disk — `cp bene.db backup.db` is a complete backup, and nothing leaves your machine.**
 
-
 > **At the end of this tutorial, you will have:**
 >
 > - vLLM serving a 7B model on your GPU (or any OpenAI-compatible endpoint pointed at remotely).
@@ -346,7 +345,6 @@ Nothing the agent did is missing from this list: `agent_spawn`, `file_write`, `t
 
 ## Step 6 — Fan out: three agents at once (5 min)
 
-
 In Claude Code:
 
 > *"Use BENE to run 3 agents in parallel:*
@@ -398,7 +396,6 @@ A Textual TUI tracking every agent — running, completed, failed, killed — wi
 
 ## Step 7 — Undo: checkpoint, restore, diff (5 min)
 
-
 ### Scenario: safe refactor with rollback
 
 > *"Use BENE to: (1) spawn an agent 'refactorer'. (2) Write this code to /src/auth.py: [paste code]. (3) Checkpoint with label 'original'. (4) Have it refactor to add error handling."*
@@ -420,7 +417,6 @@ Read it as time travel for debugging — replay the agent's path move by move, t
 > **See also.** [tutorials/t02 — End-to-End Self-Healing](t02-e2e-self-healing.md) — wrong-fix detection, surgical rollback, root cause from the audit trail in one worked example. Per-agent restore in 0.3 s.
 
 ## Step 8 — Investigate: SQL against a failure (3 min)
-
 
 When an agent fails, the evidence is already in the database. Four prompts cover most post-mortems:
 

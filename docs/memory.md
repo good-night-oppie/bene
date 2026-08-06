@@ -4,7 +4,6 @@ Write a finding down once and any agent that runs later — next iteration, next
 
 > **One agent's lesson becomes every agent's context: a single shared, full-text-searchable memory for the whole project.**
 
-
 Clean-room build of an idea from [claude-mem](https://github.com/thedotmack/claude-mem) (AGPL-3.0) — see [Credits](#credits).
 
 ---

@@ -46,7 +46,6 @@ This isn't a thin wrapper around a model API. It's a ground-up implementation of
 
 **Dataset:** 200 labeled PR review comments. Baseline zero-shot accuracy: **48%**.
 
-
 ---
 
 ## Step 1: Define the Benchmark

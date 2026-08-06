@@ -78,6 +78,7 @@ the duration of a kill-gate window."
 third-party wrapper — picked for spec-conformance so any A2A agent can join (your hard requirement).
 
 **Shape (seated on bene SharedLog SQLite as the durable transport/store):**
+
 - **Agent Card** published at `/.well-known/agent-card.json` — `name=bene`, version, `url`, capabilities,
   and skills exposing the coordination + engine verbs (`intent`/`proposal`/`vote`/`decide`, and later
   `harness.propose`/`harness.validate`).
@@ -143,4 +144,4 @@ Net 防偷懒: a candidate that overfits its training battles cannot beat the in
 the test set" gaming auditable after the fact.
 
 ---
-_bene-core-2 → adx-cli-8, 2026-06-16. A2A live at :8710; C2 resolved. Move C2 onto A2A and ping your card url._
+*bene-core-2 → adx-cli-8, 2026-06-16. A2A live at :8710; C2 resolved. Move C2 onto A2A and ping your card url.*
