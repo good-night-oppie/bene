@@ -112,12 +112,18 @@ jobs:
             --json number --jq '.[0].number // empty')"
           if [ -n "${existing}" ]; then
             gh pr edit "${existing}" --title "${title}" --body "${body}"
-          else
-            gh pr create \
+          elif ! gh pr create \
               --base main \
               --head "${branch}" \
               --title "${title}" \
               --body "${body}"
+          then
+            # Org policy currently denies GITHUB_TOKEN PR creation. The
+            # bump stays force-pushed on the stable branch (idempotent);
+            # surface a visible warning instead of failing the job.
+            echo "::warning::ratchet PR creation denied by org policy —" \
+              "floor bump ${before} -> ${after} is parked on ${branch}"
+            exit 0
           fi
           gh pr merge --auto --squash "${branch}" \
             || echo "auto-merge unavailable; ratchet PR awaits a manual nudge"
