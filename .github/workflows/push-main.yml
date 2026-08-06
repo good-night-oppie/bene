@@ -39,6 +39,8 @@ jobs:
         with:
           version: "0.11.7"
           enable-cache: true
+          # Shared self-hosted uv cache: never prune from CI (see ci.yml note).
+          prune-cache: false
           python-version: "3.12"
 
       - name: Install dev dependencies
