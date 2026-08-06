@@ -24,7 +24,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 DEFAULT_TABLE = "completions"
 
@@ -73,7 +73,9 @@ def append_once(
         f"INSERT INTO {table_sql} (idempotency_key, payload) VALUES (?, ?)",
         (idempotency_key, json.dumps(payload)),
     )
-    return int(cur.lastrowid), True
+    # cast: sqlite3 types lastrowid as Optional, but it is always set after a
+    # successful INSERT on this cursor.
+    return cast(int, cur.lastrowid), True
 
 
 def complete_in_order(

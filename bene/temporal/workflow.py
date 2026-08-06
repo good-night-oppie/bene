@@ -19,8 +19,10 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Any
 
-from temporalio import workflow
-from temporalio.common import RetryPolicy
+from temporalio import workflow  # type: ignore[import-not-found]  # optional `temporal` dep group, absent in default env
+from temporalio.common import (  # type: ignore[import-not-found]  # optional `temporal` dep group, absent in default env
+    RetryPolicy,
+)
 
 with workflow.unsafe.imports_passed_through():
     from bene.temporal.activities import (

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from a2a.server.apps import A2AStarletteApplication
-from a2a.server.request_handlers import DefaultRequestHandler
+from a2a.server.apps import A2AStarletteApplication  # type: ignore[import-not-found]  # a2a-sdk is the optional bene[a2a] extra, absent from the type-check env
+from a2a.server.request_handlers import DefaultRequestHandler  # type: ignore[import-not-found]  # a2a-sdk is the optional bene[a2a] extra, absent from the type-check env
 
 from bene.a2a.card import DEFAULT_URL, build_bene_agent_card
 from bene.a2a.executor import BeneAgentExecutor
