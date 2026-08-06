@@ -58,6 +58,27 @@ _NEGATION_RE = r"(?:\b(?:not|no|never|avoid|without|refrain|cannot)\b|n't\b)"
 # "Do not merge BEFORE running <check>" prohibits merging, not running <check>.
 _SCOPE_BREAKER_RE = r"\b(?:before|until|unless|prior to|ahead of|rather than|instead of)\b"
 
+# Sentinel substituted for a masked term; \x00 never appears in goal prose.
+_TERM_MARKER = "\x00term\x00"
+
+# Clause delimiters shared by every clause-scoped check in this module.
+_CLAUSE_SPLIT_RE = r"[.;\n]"
+
+# Sub-clause boundaries INSIDE one clause: the shared delimiters plus the
+# coordinators that hand a negation's scope to the next predicate ("has no
+# failures AND passes" — the "no" stops at "and").
+_SUBCLAUSE_SPLIT_RE = rf"(?:{_CLAUSE_SPLIT_RE}|,|\b(?:and|but|or)\b)"
+
+# Tokens that state the passing predicate of a done clause.
+_PASS_TOKEN_RE = r"\b(?:pass(?:es|ed|ing)?|green|succeed(?:s|ed)?)\b"
+
+# A short comma-delimited insertion ("Do not, before merging, run <check>")
+# parks a scope-breaker between a negation and its target without changing
+# what is negated. Conservative by construction: BOTH commas must be present,
+# at most five words sit between them, and a segment holding the masked term
+# never matches (\x00 is excluded from the word tokens).
+_PARENTHETICAL_RE = r",\s*(?:[^\s,\x00]+(?:\s+[^\s,\x00]+){0,4})\s*,"
+
 # An auxiliary may sit between the term and a negation that governs it
 # ("<check> must not be run"), but a conjunction may not ("<check> and do not …").
 # Known tradeoff: "<check> must not be SKIPPED" (a double negative that requires
@@ -70,6 +91,9 @@ _TRAILING_NEGATION_RE = (
 
 # A verify section has to COMMAND the evidence, not merely mention it: the
 # degenerate stub pastes the command and the state file with no verb at all.
+# The verb must also sit in the SAME clause as the expected check — a verb
+# stranded in a neighboring clause commands something else (see
+# ``_evidence_verb_commands``).
 _EVIDENCE_VERB_RE = (
     r"\b(?:run|runs|running|rerun|reruns|rerunning|re-run|execute|executes|executing"
     r"|inspect|inspects|inspecting|record|records|recording|capture|captures|capturing"
@@ -289,7 +313,7 @@ def score_goal(
     negated_evidence = _is_negated(verify_body, expected_check) or _is_negated(
         verify_body, expected_state_file
     )
-    evidence_verb = bool(re.search(_EVIDENCE_VERB_RE, verify_body, re.IGNORECASE))
+    evidence_verb = _evidence_verb_commands(verify_body, expected_check)
     evidence_contract = exact_check and exact_state_file and evidence_verb and not negated_evidence
     verifiability = (
         float(evidence_contract)
@@ -303,14 +327,18 @@ def score_goal(
     done_clause = _done_clause(iterate_body)
     # `.*` between the verification noun and "pass" otherwise swallows the
     # inversion, so "Done only when verification does not pass" — a goal that
-    # declares done-on-failure — would satisfy the completion contract.
+    # declares done-on-failure — would satisfy the completion contract. The
+    # negation test is scoped to the sub-clause carrying the passing
+    # predicate: "has no failures and passes" leaves the pass predicate clean
+    # (the "no" governs "failures") and remains a valid contract, while
+    # "does not pass" negates the predicate itself and is rejected.
     done_contract = bool(
         re.fullmatch(
             r"\s*done only when\s+(?:(?:the|a)\s+)?(?:stated\s+)?(?:verification|verify|check|test).*\bpass(?:es|ed)?\s*[.!]?\s*",
             done_clause,
             re.IGNORECASE,
         )
-    ) and not re.search(_NEGATION_RE, done_clause, re.IGNORECASE)
+    ) and not _pass_predicate_negated(done_clause)
     no_effort_done = not any(
         re.search(pattern, iterate_body.lower()) for pattern in _EFFORT_DONE_PATTERNS
     )
@@ -388,21 +416,32 @@ def _is_negated(text: str, term: str | None) -> bool:
     # Terms are commands and paths, so they contain the very characters used as
     # clause delimiters ("pytest tests/test_payment_form.py"). Mask them before
     # splitting, or the term is torn in half and never found.
-    marker = "\x00term\x00"
-    masked = text.replace(term, marker)
+    masked = text.replace(term, _TERM_MARKER)
     return any(
-        _clause_negates(clause, marker)
-        for clause in re.split(r"[.;\n]", masked)
-        if marker in clause
+        _clause_negates(clause, _TERM_MARKER)
+        for clause in re.split(_CLAUSE_SPLIT_RE, masked)
+        if _TERM_MARKER in clause
     )
 
 
 def _clause_negates(clause: str, term: str) -> bool:
+    # A comma-delimited parenthetical between a negation and the term ("Do
+    # not, before merging, run <check>") must not break the negation's scope:
+    # strip short insertions before scope analysis so the negation reattaches
+    # to what follows. _PARENTHETICAL_RE never matches across the masked term.
+    clause = re.sub(_PARENTHETICAL_RE, " ", clause)
+    # The term can occur several times in one clause ("Run <check>, but never
+    # run <check> …"). Prohibition wins for a kill-gate scorer: the term is
+    # negated when ANY occurrence is.
     index = clause.find(term)
-    if index < 0:
-        return False
-    before, after = clause[:index], clause[index + len(term) :]
+    while index >= 0:
+        if _occurrence_negated(clause[:index], clause[index + len(term) :]):
+            return True
+        index = clause.find(term, index + len(term))
+    return False
 
+
+def _occurrence_negated(before: str, after: str) -> bool:
     # Negation BEFORE the term — only if nothing re-scopes it onto another verb.
     last = None
     for match in re.finditer(_NEGATION_RE, before, re.IGNORECASE):
@@ -413,6 +452,40 @@ def _clause_negates(clause: str, term: str) -> bool:
     # Negation AFTER the term — must attach to the term itself, not to a
     # following coordinated clause.
     return bool(re.match(_TRAILING_NEGATION_RE, after, re.IGNORECASE))
+
+
+def _evidence_verb_commands(text: str, term: str | None) -> bool:
+    """Report whether an evidence verb commands ``term`` in the SAME clause.
+
+    A verb anywhere in the Verify section is not a command of the evidence:
+    "Inspect the documentation; <check> with output in <state>" mentions the
+    check without commanding it. The verb must share a clause (split on the
+    same delimiters as negation scoping) with an occurrence of the term.
+    Without an expected term the section-wide scan is kept.
+    """
+    if not term:
+        return bool(re.search(_EVIDENCE_VERB_RE, text, re.IGNORECASE))
+    masked = text.replace(term, _TERM_MARKER)
+    return any(
+        _TERM_MARKER in clause and re.search(_EVIDENCE_VERB_RE, clause, re.IGNORECASE)
+        for clause in re.split(_CLAUSE_SPLIT_RE, masked)
+    )
+
+
+def _pass_predicate_negated(done_clause: str) -> bool:
+    """Report whether the done clause negates its own passing predicate.
+
+    The clause is cut at the shared clause delimiters plus intra-clause
+    coordinators; only a negation inside a sub-clause that carries a pass
+    token (pass/green/succeeds) rejects. "has no failures and passes" stays
+    clean — its "no" governs "failures", not "passes" — while "does not
+    pass" is rejected.
+    """
+    return any(
+        re.search(_NEGATION_RE, sub, re.IGNORECASE)
+        for sub in re.split(_SUBCLAUSE_SPLIT_RE, done_clause, flags=re.IGNORECASE)
+        if re.search(_PASS_TOKEN_RE, sub, re.IGNORECASE)
+    )
 
 
 def _has_section_heading(text: str, alias: str) -> bool:
