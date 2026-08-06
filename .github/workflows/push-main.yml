@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: ratchet-${{ github.ref }}
@@ -60,18 +61,40 @@ jobs:
           echo "after=$after"   >> "$GITHUB_OUTPUT"
           echo "changed=$([[ "$before" != "$after" ]] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
 
-      - name: Commit and push if changed
+      - name: Open ratchet PR if changed
         if: steps.ratchet.outputs.changed == 'yes'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Direct `git push origin HEAD:main` is rejected with GH013 by the
+        # branch ruleset (GITHUB_TOKEN has no bypass), which kept this job
+        # red on every floor bump since the ruleset landed. Land the bump
+        # via a PR instead. Caveat: PRs opened with GITHUB_TOKEN do not
+        # trigger CI workflows, so required checks will not start on their
+        # own — auto-merge is requested best-effort and the PR may need a
+        # human nudge (close/reopen re-triggers CI, or merge manually).
+        # Swapping GH_TOKEN for a PAT/app token makes this fully automatic.
         run: |
+          set -euo pipefail
           git config user.name  "bene-ratchet[bot]"
           git config user.email "bene-ratchet@users.noreply.github.com"
-          git add .coverage-floor
           before="${{ steps.ratchet.outputs.before }}"
           after="${{ steps.ratchet.outputs.after }}"
-          git commit -m "ci: ratchet coverage floor ${before} -> ${after} [skip ci]"
-          git push origin HEAD:main
+          branch="bot/ratchet-floor-$(git rev-parse --short=12 HEAD)"
+          git checkout -b "${branch}"
+          git add .coverage-floor
+          git commit -m "ci: ratchet coverage floor ${before} -> ${after}"
+          git push origin "${branch}"
+          body="Auto-ratchet from green main HEAD ${GITHUB_SHA}."
+          body="${body} One-line .coverage-floor bump; see push-main.yml"
+          body="${body} for the PR-based flow rationale."
+          gh pr create \
+            --base main \
+            --head "${branch}" \
+            --title "ci: ratchet coverage floor ${before} -> ${after}" \
+            --body "${body}"
+          gh pr merge --auto --squash "${branch}" \
+            || echo "auto-merge unavailable; ratchet PR awaits a manual nudge"
 
       - name: Summary
         run: |
