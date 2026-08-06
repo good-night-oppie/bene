@@ -80,19 +80,33 @@ jobs:
           git config user.email "bene-ratchet@users.noreply.github.com"
           before="${{ steps.ratchet.outputs.before }}"
           after="${{ steps.ratchet.outputs.after }}"
-          branch="bot/ratchet-floor-$(git rev-parse --short=12 HEAD)"
-          git checkout -b "${branch}"
+          # STABLE branch name + force-push = idempotent across job reruns,
+          # partial failures (branch pushed but PR create errored), and
+          # unrelated main merges while a ratchet PR is still pending —
+          # there is only ever one ratchet branch and at most one open PR.
+          branch="bot/ratchet-floor"
+          git checkout -B "${branch}"
           git add .coverage-floor
-          git commit -m "ci: ratchet coverage floor ${before} -> ${after}"
-          git push origin "${branch}"
+          # [skip-ratchet] must survive into the squash-merge commit message
+          # (= PR title), so the post-merge push-main run skips instead of
+          # cascading another bump PR while the floor catches up.
+          title="ci: ratchet coverage floor ${before} -> ${after} [skip-ratchet]"
+          git commit -m "${title}"
+          git push -f origin "${branch}"
           body="Auto-ratchet from green main HEAD ${GITHUB_SHA}."
           body="${body} One-line .coverage-floor bump; see push-main.yml"
           body="${body} for the PR-based flow rationale."
-          gh pr create \
-            --base main \
-            --head "${branch}" \
-            --title "ci: ratchet coverage floor ${before} -> ${after}" \
-            --body "${body}"
+          existing="$(gh pr list --head "${branch}" --base main --state open \
+            --json number --jq '.[0].number // empty')"
+          if [ -n "${existing}" ]; then
+            gh pr edit "${existing}" --title "${title}" --body "${body}"
+          else
+            gh pr create \
+              --base main \
+              --head "${branch}" \
+              --title "${title}" \
+              --body "${body}"
+          fi
           gh pr merge --auto --squash "${branch}" \
             || echo "auto-merge unavailable; ratchet PR awaits a manual nudge"
 
