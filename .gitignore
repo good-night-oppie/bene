@@ -51,3 +51,8 @@ a2a-coord.db*
 
 # Auto-generated per-session memory (distill_highlights.py) — never commit
 LATEST_HIGHLIGHTS.md
+
+# employer-derived benchmark: removed 2026-08-08, never re-add (NDA)
+bene/benchmarks/bug_triage/
+# archived planning w/ personal career + HR detail: keep local, never publish
+.supergoal/_archive-*/
