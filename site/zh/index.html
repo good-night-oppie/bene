@@ -149,7 +149,7 @@ const Pill = ({ children }) => (
 );
 
 // ─── 卡点 demo (录屏 — 展示 BENE 怎么解决每个 gap) ─────────────────
-// 录屏源 site/demos/tapes/gap-N-*.tape；GIF 是对 bene v0.2.1 实跑的，没改过输出
+// 录屏源 site/demos/tapes/gap-N-*.tape；GIF 是对已发布版本实跑的，没改过输出
 const GapDemo = ({ gif, caption }) => (
   <div className="mt-5 bg-[rgb(var(--term))] border border-bene-dim rounded-sm overflow-hidden">
     <div className="flex items-center px-3 py-2 border-b border-bene-dim bg-bene-surface">
@@ -258,7 +258,7 @@ const Hero = () => (
     <div className="max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12 w-full">
       <div className="flex items-center gap-3 mb-8 font-mono text-[11px] tracking-[0.15em] uppercase text-bene-muted">
         <span className="w-1.5 h-1.5 rounded-full bg-bene-accent" />
-        <span>v0.2.1</span>
+        <span>v0.2.2</span>
         <span className="text-bene-dim">·</span>
         <span>local-first 多智能体 harness</span>
         <span className="text-bene-dim">·</span>
@@ -289,7 +289,7 @@ const Hero = () => (
           <Pill>30 秒上手：init、跑通、grep 出 agent 的记忆</Pill>
           <Pill>一份 bene.db，不上云、不要 API key</Pill>
           <Pill>能塞进 Claude Code / Cursor / Aider</Pill>
-          <p className="text-[11px] text-bene-dim font-mono mt-1">30 秒来自真实 bene v0.2.1 run — 输出未编辑</p>
+          <p className="text-[11px] text-bene-dim font-mono mt-1">30 秒来自真实 bene run — 输出未编辑</p>
         </div>
       </div>
       <Terminal>
@@ -331,7 +331,7 @@ const TheGap = () => (
       论文里早翻过去的四个线上卡点。<br />
       <span className="text-bene-muted">你现在那套能接住一部分——BENE 把它们收进同一份可审计的文件。</span>
     </h2>
-    <p className="font-mono text-xs text-bene-muted mb-8">下面 4 段录屏都是对 bene v0.2.1 实跑出来的；输出没改过一个字。</p>
+    <p className="font-mono text-xs text-bene-muted mb-8">下面 4 段录屏都是对已发布版本实跑出来的；输出没改过一个字。</p>
     <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-16">
       <Card className="md:col-span-12 h-full">
         <h3 className="font-mono text-bene-accent mb-4">卡点 1：eval 跑过了，线上不一定扛得住</h3>
@@ -494,7 +494,7 @@ const Proof = () => {
           <Terminal caption={tabs[a].c}>{tabs[a].r}</Terminal>
         </div>
       </div>
-      <p className="font-mono text-xs text-bene-muted mb-8">Tab 1 是对 bene v0.2.1 实跑的——0.3s、12 个 engram、4 次 experiment run 都是没改过的原始输出。</p>
+      <p className="font-mono text-xs text-bene-muted mb-8">Tab 1 是对已发布版本实跑的——0.3s、12 个 engram、4 次 experiment run 都是没改过的原始输出。</p>
       <p className="font-mono text-sm text-bene-text border-l-2 border-bene-accent pl-4">
         再跑一句 <code className="text-bene-accent">bene dashboard</code>。还是那份 .db，直接撑起实时 TUI，不补埋点。
       </p>
