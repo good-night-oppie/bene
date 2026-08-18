@@ -160,7 +160,7 @@ const Pill = ({ children }) => (
 
 // ─── Gap demo (a recorded terminal showing how BENE addresses one gap) ─
 // Source .tape sits in site/demos/tapes/gap-N-*.tape; the GIF is recorded
-// against bene v0.2.1 with no edits.
+// against a tagged bene release with no edits.
 const GapDemo = ({ gif, caption }) => (
   <div className="mt-5 bg-[rgb(var(--term))] border border-bene-dim rounded-sm overflow-hidden">
     <div className="flex items-center px-3 py-2 border-b border-bene-dim bg-bene-surface">
@@ -269,7 +269,7 @@ const Hero = () => (
     <div className="max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] mx-auto px-5 md:px-8 lg:px-12 w-full">
       <div className="flex items-center gap-3 mb-8 font-mono text-[11px] tracking-[0.15em] uppercase text-bene-muted">
         <span className="w-1.5 h-1.5 rounded-full bg-bene-accent" />
-        <span>v0.2.1</span>
+        <span>v0.2.2</span>
         <span className="text-bene-dim">·</span>
         <span>local-first multi-agent harness</span>
         <span className="text-bene-dim">·</span>
@@ -300,7 +300,7 @@ const Hero = () => (
           <Pill>30 seconds to first run: init, smoke, grep your agent's memory</Pill>
           <Pill>one bene.db, no cloud, no keys</Pill>
           <Pill>works inside Claude Code, Cursor, Aider</Pill>
-          <p className="text-[11px] text-bene-dim font-mono mt-1">30s from a real bene v0.2.1 run — output unedited</p>
+          <p className="text-[11px] text-bene-dim font-mono mt-1">30s from a real bene run — output unedited</p>
         </div>
       </div>
       <Terminal>
@@ -342,7 +342,7 @@ const TheGap = () => (
       Production gaps the research moved past.<br />
       <span className="text-bene-muted">Your stack closes some — BENE closes them in one auditable file.</span>
     </h2>
-    <p className="font-mono text-xs text-bene-muted mb-8">The 4 clips below are real runs recorded against bene v0.2.1 — no output edits.</p>
+    <p className="font-mono text-xs text-bene-muted mb-8">The 4 clips below are real runs recorded against a tagged bene release — no output edits.</p>
     <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-16">
       <Card className="md:col-span-12 h-full">
         <h3 className="font-mono text-bene-accent mb-4">Gap 1. Eval scoring ≠ promotion gating</h3>
@@ -505,7 +505,7 @@ const Proof = () => {
           <Terminal caption={tabs[a].c}>{tabs[a].r}</Terminal>
         </div>
       </div>
-      <p className="font-mono text-xs text-bene-muted mb-8">Tab 1 is a real bene v0.2.1 run — its 0.3s, 12 engrams, and 4 experiment runs are unedited output.</p>
+      <p className="font-mono text-xs text-bene-muted mb-8">Tab 1 is a real bene run — its 0.3s, 12 engrams, and 4 experiment runs are unedited output.</p>
       <p className="font-mono text-sm text-bene-text border-l-2 border-bene-accent pl-4">
         Run <code className="text-bene-accent">bene dashboard</code>. The same .db drives a live TUI with no extra instrumentation.
       </p>
