@@ -1,6 +1,6 @@
 [project]
 name = "bene"
-version = "0.2.1"
+version = "0.2.2"
 description = "BENE — Breeding-program Evolutionary Nexus for Engrams. Isolated, auditable, portable agent runtimes backed by SQLite."
 readme = "README.md"
 license = "MIT"
