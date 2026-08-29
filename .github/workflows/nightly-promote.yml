@@ -44,11 +44,15 @@ jobs:
           # Conclusions + leg count in one probe. The count floor guards the
           # partial-presence window (review Major, #180): one finished leg
           # with the rest not yet created must not read as green — the
-          # strict gate fans out 6 legs, so require at least 5.
+          # strict gate fans out 6 legs, so require at least 5. Reusable
+          # workflow check names are prefixed by the caller job (for example
+          # "strict-snapshot / ci/strict/fast"), so match ci/strict anywhere
+          # on a path boundary. Push snapshots skip the PR-only regression leg;
+          # skipped legs count as present but not as a non-green conclusion.
           strict_probe() {
             gh api "repos/${GITHUB_REPOSITORY}/commits/${dev_sha}/check-runs" \
-              --jq '[.check_runs[] | select(.name | startswith("ci/strict"))]
-                    | {c: ([.[].conclusion] | unique), n: length}'
+              --jq '[.check_runs[] | select(.name | test("(^| / )ci/strict/"))]
+                    | {c: ([.[] | select(.conclusion != "skipped") | .conclusion] | unique), n: length}'
           }
           probe="$(strict_probe)"
           status="$(echo "${probe}" | jq -c .c)"
