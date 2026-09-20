@@ -65,19 +65,26 @@ class BeneAgentExecutor(AgentExecutor):
         """Map (kind, payload) -> a SharedLog entry. Falls back to mail on any
         malformed typed payload so a peer can never crash the endpoint."""
         log = SharedLog(self._conn)
+        actor = {key: data[key] for key in ("session", "gen") if key in data}
         try:
             if kind == "intent":
-                return "intent", log.intent(sender, text or data.get("action", ""), {"via": "a2a"})
+                return "intent", log.intent(
+                    sender, text or data.get("action", ""), {"via": "a2a", **actor}
+                )
             if kind == "proposal":
                 return "proposal", log.intent(
-                    sender, text or "proposal", {"via": "a2a", "kind": "proposal", "data": data}
+                    sender,
+                    text or "proposal",
+                    {"via": "a2a", "kind": "proposal", "data": data, **actor},
                 )
             if kind == "vote":
                 intent_id = int(data["intent_id"])
-                entry = log.vote(sender, intent_id, bool(data.get("approve", True)), reason=text)
+                entry = log.vote(
+                    sender, intent_id, bool(data.get("approve", True)), reason=text, metadata=actor
+                )
                 return "vote", entry.log_id
             if kind in ("decide", "decision"):
-                entry = log.decide(int(data["intent_id"]), sender)
+                entry = log.decide(int(data["intent_id"]), sender, metadata=actor)
                 return "decision", entry.log_id
         except (KeyError, ValueError, TypeError):
             pass  # malformed typed payload -> durable mail fallback below
@@ -87,7 +94,10 @@ class BeneAgentExecutor(AgentExecutor):
         else:
             recipient = recipient.strip()
         entry = log.mail(
-            sender, recipient, text or json.dumps(data), metadata={"via": "a2a", "kind": kind}
+            sender,
+            recipient,
+            text or json.dumps(data),
+            metadata={"via": "a2a", "kind": kind, **actor},
         )
         return "mail", entry.log_id
 

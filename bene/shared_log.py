@@ -181,6 +181,8 @@ class SharedLog:
         intent_id: int,
         approve: bool,
         reason: str = "",
+        *,
+        metadata: dict[str, Any] | None = None,
     ) -> LogEntry:
         """Cast a vote on an intent.
 
@@ -193,7 +195,7 @@ class SharedLog:
         return self._append(
             "vote",
             agent_id,
-            {"approve": approve, "reason": reason},
+            {**(metadata or {}), "approve": approve, "reason": reason},
             ref_id=intent_id,
         )
 
@@ -219,7 +221,9 @@ class SharedLog:
             votes=votes,
         )
 
-    def decide(self, intent_id: int, agent_id: str) -> LogEntry:
+    def decide(
+        self, intent_id: int, agent_id: str, *, metadata: dict[str, Any] | None = None
+    ) -> LogEntry:
         """Record a decision entry based on current vote tally.
 
         Idempotent: if a decision already exists for this intent, returns it.
@@ -236,6 +240,7 @@ class SharedLog:
             "decision",
             agent_id,
             {
+                **(metadata or {}),
                 "passed": summary.passed,
                 "approve": summary.approve,
                 "reject": summary.reject,

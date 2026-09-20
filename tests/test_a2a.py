@@ -141,6 +141,51 @@ def test_message_send_routes_mail_to_structured_recipient(tmp_path):
     assert len(mails) == 1 and mails[0].payload.get("to") == "mroute-weco"
 
 
+@pytest.mark.parametrize("kind", ["mail", "intent", "proposal", "vote", "decide", "invalid_vote"])
+@pytest.mark.parametrize(
+    "actor",
+    [{"session": "fixture-session", "gen": "fixture-3"}, {"session": None, "gen": None}, {}],
+)
+def test_actor_fields_survive_durable_roundtrip(tmp_path, kind, actor):
+    db = str(tmp_path / "a2a.db")
+    log = SharedLog(Bene(db).conn)
+    data = {"recipient": "  harness  ", **actor}
+    if kind in ("vote", "decide"):
+        data["intent_id"] = log.intent("fixture", "setup")
+    wire_kind = "vote" if kind == "invalid_vote" else kind
+    with TestClient(build_app(db, "http://testserver/")) as client:
+        response = _post_message(
+            client, "provenance fixture", data=data, agent="fixture", kind=wire_kind
+        )
+        assert response.status_code == 200 and "result" in response.json()
+        if kind == "decide":
+            # Replays retain the original decision's actor instead of relabeling history.
+            response = _post_message(
+                client,
+                "replay",
+                data={**data, "session": "different", "gen": "other-4"},
+                agent="other",
+                kind="decide",
+            )
+            assert response.status_code == 200 and "result" in response.json()
+    stored_kind = {
+        "intent": "intent",
+        "proposal": "intent",
+        "vote": "vote",
+        "decide": "decision",
+    }.get(kind, "mail")
+    rows = SharedLog(Bene(db).conn).read(type=stored_kind)
+    assert len(rows) == 1
+    row = rows[0]
+    assert row.agent_id == "fixture"
+    for key in ("session", "gen"):
+        assert (key in row.payload) == (key in actor)
+        if key in actor:
+            assert row.payload[key] == actor[key]
+    if stored_kind == "mail":
+        assert row.payload["to"] == "harness"
+
+
 def test_harness_validate_handshake_accepts_good_source(tmp_path):
     db = str(tmp_path / "a2a.db")
     app = build_app(db, "http://testserver/")
